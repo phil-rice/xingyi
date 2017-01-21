@@ -3,7 +3,7 @@ package org.validoc.utils.caching
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicLong
 
-import org.validoc.utils.Futurable
+import org.validoc.utils.{Futurable, FuturableWithFailure}
 import org.validoc.utils.logging.Logging
 import org.validoc.utils.map.{MapSizeStrategy, MaxMapSizeStrategy}
 import org.validoc.utils.service.WrappingService
@@ -49,7 +49,9 @@ trait CachingOps {
   def cachingMetrics: CachingMetricSnapShot
 }
 
-class CachingService[M[_] : Futurable, Req, Res](delegate: Req => M[Res], cachingConfigWithName: CachingConfigWithNameAndSize[M], addToGlobal: Boolean = true)(implicit cachingProperties: CachingProperties[Req]) extends WrappingService[M, Req, Res](cachingConfigWithName.name, delegate) with CachingOps with Logging {
+class CachingService[M[_], F, Req, Res](delegate: Req => M[Res], cachingConfigWithName: CachingConfigWithNameAndSize[M], addToGlobal: Boolean = true)
+                                       (implicit cachingProperties: CachingProperties[Req],
+                                        futurableWithFailure: FuturableWithFailure[M, F]) extends WrappingService[M, Req, Res](cachingConfigWithName.name, delegate) with CachingOps with Logging {
 
   import Futurable._
 
@@ -133,7 +135,7 @@ class CachingService[M[_] : Futurable, Req, Res](delegate: Req => M[Res], cachin
       cachingMetricsData.inTransitRequests.incrementAndGet()
       debug(s"Launching an intransit for $name  with $thisId request is $request")
     }.flatMap { _ => delegate(request) }
-      .onComplete(addToCache(thisId, request, _), failed(thisId, request, _))
+      .report[F](addToCache(thisId, request, _), {  failed(thisId, request, _) })
   }
 
   private def logRequest(request: Req, whatsHappening: String) = debug(s" $whatsHappening for request $request")
