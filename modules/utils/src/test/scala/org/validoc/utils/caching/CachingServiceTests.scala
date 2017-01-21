@@ -46,14 +46,14 @@ class CachingServiceTests extends FlatSpec with Matchers with MockitoSugar with 
 
   val lock = new Object
 
-  def withServices(fn: CachingService[DelegateRequest, String, Future] => DelegateService[Future] => NanoTimeService => Unit, cacheSizeStrategy: MapSizeStrategy = NoMapSizeStrategy): Unit =
+  def withServices(fn: CachingService[Future, DelegateRequest, String] => DelegateService[Future] => NanoTimeService => Unit, cacheSizeStrategy: MapSizeStrategy = NoMapSizeStrategy): Unit =
     lock.synchronized {
       implicit val ec = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
       val delegateService = new DelegateService[Future]()
       val timeService = mock[NanoTimeService]
       val cachingConfig = CachingConfig[Future](timeService, DurationStaleCacheStategy(100, 1000))
       val cachingConfigWithNameAndSize = new CachingConfigWithNameAndSize[Future](cachingConfig, "cachingServiceTests", cacheSizeStrategy)
-      val cachingService = new CachingService[DelegateRequest, String, Future](delegateService, cachingConfigWithNameAndSize)
+      val cachingService = new CachingService[Future, DelegateRequest, String](delegateService, cachingConfigWithNameAndSize)
       fn(cachingService)(delegateService)(timeService)
     }
 
@@ -68,7 +68,7 @@ class CachingServiceTests extends FlatSpec with Matchers with MockitoSugar with 
                    inTransitWithoutResults: Option[Long] = None,
                    cacheSize: Option[Int] = None,
                    removedBecauseTooFull: Long = 0
-                  )(implicit cachingService: CachingService[DelegateRequest, String, Future]): Unit =
+                  )(implicit cachingService: CachingService[Future, DelegateRequest, String]): Unit =
     eventually {
       val metrics = cachingService.cachingMetrics
       val fullPrefix = "\n" + prefix + s"\n"  + s"\n$metrics\n"

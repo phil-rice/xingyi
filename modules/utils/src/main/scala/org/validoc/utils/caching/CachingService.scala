@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicLong
 import org.validoc.utils.Futurable
 import org.validoc.utils.logging.Logging
 import org.validoc.utils.map.{MapSizeStrategy, MaxMapSizeStrategy}
+import org.validoc.utils.service.WrappingService
 import org.validoc.utils.time.NanoTimeService
 
 case class CachedId(id: Long)
@@ -48,7 +49,7 @@ trait CachingOps {
   def cachingMetrics: CachingMetricSnapShot
 }
 
-class CachingService[Req, Res, M[_] : Futurable](val delegate: Req => M[Res], val cachingConfigWithName: CachingConfigWithNameAndSize[M], addToGlobal: Boolean = true)(implicit cachingProperties: CachingProperties[Req]) extends (Req => M[Res]) with CachingOps with Logging {
+class CachingService[M[_] : Futurable, Req, Res](delegate: Req => M[Res], cachingConfigWithName: CachingConfigWithNameAndSize[M], addToGlobal: Boolean = true)(implicit cachingProperties: CachingProperties[Req]) extends WrappingService[M, Req, Res](cachingConfigWithName.name, delegate) with CachingOps with Logging {
 
   import Futurable._
 

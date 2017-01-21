@@ -20,6 +20,8 @@ trait Futurable[M[T]] {
 
   /** The parameter to onException might be a left or it might be an exception. Type safety is lost here because my type-fu isn't good enough to make Futurable nice to use and keep type safety */
   def onComplete[T](m: M[T], onSuccess: T => Unit, onFailure: Any => Unit): M[T]
+
+  def onFailure[T](m: M[T], onFailure: Any => Unit) = onComplete[T](m, _ => (), onFailure)
 }
 
 object Futurable {
@@ -30,6 +32,8 @@ object Futurable {
     def flatMap[T2](fn: T => M[T2]) = implicitly[Futurable[M]].flatMap[T, T2](mt, fn)
 
     def onComplete[F](onSuccess: T => Unit, onFailure: Any => Unit) = implicitly[Futurable[M]].onComplete[T](mt, onSuccess, onFailure)
+
+    def onFailure[F](onFailure: Any => Unit) = implicitly[Futurable[M]].onFailure[T](mt, onFailure)
   }
 
   implicit def FuturableForFuture(implicit executionContext: ExecutionContext) = new Futurable[Future] {
@@ -42,7 +46,7 @@ object Futurable {
     override def map[T, T2](m: Future[T], fn: (T) => T2): Future[T2] = ???
 
     override def onComplete[T](m: Future[T], onSuccess: (T) => Unit, onFailure: (Any) => Unit) = {
-      m.onComplete(_.fold(onFailure, onSuccess))
+      m.onComplete(t => t.fold(onFailure, onSuccess))
       m
     }
   }
