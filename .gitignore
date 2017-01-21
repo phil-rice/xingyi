@@ -1,0 +1,14 @@
+.idea
+.idea_modules
+*.iml
+target
+project/target
+_site/
+Gemfile.lock
+.lib
+.DS_Store
+sbt
+.sbt-local
+.history
+.ensime
+.ensime_cache/
