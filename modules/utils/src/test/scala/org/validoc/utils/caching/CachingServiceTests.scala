@@ -5,8 +5,8 @@ import java.util.concurrent.{CountDownLatch, Executors}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
-import org.validoc.utils.Futurable
-import org.validoc.utils.map.{MapSizeStrategy, MaxMapSizeStrategy, NoMapSizeStrategy, NoMapSizeStrategy$}
+import org.validoc.utils.concurrency.Futurable
+import org.validoc.utils.map.{MapSizeStrategy, MaxMapSizeStrategy, NoMapSizeStrategy}
 import org.validoc.utils.time.{NanoTimeService, SystemClockNanoTimeService}
 
 import scala.concurrent.duration._
@@ -68,10 +68,10 @@ class CachingServiceTests extends FlatSpec with Matchers with MockitoSugar with 
                    inTransitWithoutResults: Option[Long] = None,
                    cacheSize: Option[Int] = None,
                    removedBecauseTooFull: Long = 0
-                  )(implicit cachingService: CachingService[Future, Throwable,  DelegateRequest, String]): Unit =
+                  )(implicit cachingService: CachingService[Future, Throwable, DelegateRequest, String]): Unit =
     eventually {
       val metrics = cachingService.cachingMetrics
-      val fullPrefix = "\n" + prefix + s"\n"  + s"\n$metrics\n"
+      val fullPrefix = "\n" + prefix + s"\n" + s"\n$metrics\n"
       withClue(s"$fullPrefix bypassedRequests")(metrics.bypassedRequests shouldBe bypassedRequest)
       withClue(s"$fullPrefix requests")(metrics.requests shouldBe requests)
       withClue(s"$fullPrefix staleRequest")(metrics.staleRequest shouldBe staleRequests)

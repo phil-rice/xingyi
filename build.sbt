@@ -15,3 +15,7 @@ lazy val commonSettings = Seq(
 
 lazy val utils = (project in file("modules/utils")).
   settings(commonSettings: _*)
+
+lazy val sample = (project in file("modules/sample")).
+  dependsOn(utils).aggregate(utils).
+  settings(commonSettings: _*)

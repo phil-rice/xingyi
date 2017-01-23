@@ -1,6 +1,6 @@
 package org.validoc.utils.profiling
 
-import org.validoc.utils.{Futurable, FuturableWithFailure}
+import org.validoc.utils.concurrency.FuturableWithFailure
 import org.validoc.utils.service.WrappingService
 import org.validoc.utils.time.NanoTimeService
 
@@ -8,7 +8,7 @@ import org.validoc.utils.time.NanoTimeService
 class ProfilingService[M[_], F, Req, Res](name: String, delegate: Req => M[Res], timeService: NanoTimeService, override val priority: Int)
                                          (implicit futurableWithFailure: FuturableWithFailure[M, F]) extends WrappingService[M, Req, Res](name, delegate) {
 
-  import Futurable._
+  import org.validoc.utils.concurrency.Futurable._
 
   val succeededData = new PageQueryMeteredData
   val failedData = new PageQueryMeteredData

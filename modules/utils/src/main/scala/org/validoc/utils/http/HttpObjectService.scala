@@ -1,14 +1,15 @@
 package org.validoc.utils.http
 
-import org.validoc.utils.{Futurable, FuturableWithFailure}
-import org.validoc.utils.service.{ServiceDisplayData, ServiceWithDisplayData, WrappingService}
+import org.validoc.utils.Service
+import org.validoc.utils.concurrency.{Futurable, FuturableWithFailure}
+import org.validoc.utils.service.{ServiceDisplayData, ServiceWithDisplayData}
 
 
-class HttpClientService[M[_], F, HttpReq, Req, HttpRes, Res](name: String, rawClient: HttpReq => M[HttpRes], responseProcessor: ResponseProcessor[Req, Res, F], priority: Int = 0)
+class HttpObjectService[M[_], F, HttpReq, Req, HttpRes, Res](name: String, rawClient: HttpReq => M[HttpRes], responseProcessor: ResponseProcessor[Req, Res, F], priority: Int = 0)
                                                             (implicit futurableWithFailure: FuturableWithFailure[M, F],
                                                              toRequest: ToHttpRequest[Req, HttpReq],
                                                              toServiceResponse: ToServiceResponse[HttpRes])
-  extends (Req => M[Res]) with ServiceWithDisplayData {
+  extends Service[M,Req,Res] with ServiceWithDisplayData {
 
   import Futurable._
 

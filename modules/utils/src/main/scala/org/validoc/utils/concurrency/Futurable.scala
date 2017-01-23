@@ -1,5 +1,6 @@
-package org.validoc.utils
+package org.validoc.utils.concurrency
 
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
@@ -18,6 +19,8 @@ trait Futurable[M[_]] {
 
   def flatMap[T, T2](m: M[T], fn: T => M[T2]): M[T2]
 
+  def delay(duration: FiniteDuration): M[Unit]
+
 }
 
 
@@ -33,15 +36,12 @@ trait FuturableWithFailure[M[_], F] extends Futurable[M] {
 
 object Futurable {
 
-  implicit class TPimper[M[_] : Futurable, T](t: T) {
-    def lift = implicitly[Futurable[M]].lift(t)
-
-  }
 
   implicit class MonadPimper[M[_] : Futurable, T](mt: M[T]) {
     def map[T2](fn: T => T2) = implicitly[Futurable[M]].map[T, T2](mt, fn)
 
     def flatMap[T2](fn: T => M[T2]) = implicitly[Futurable[M]].flatMap[T, T2](mt, fn)
+
   }
 
   implicit class MonadPimperWithFailures[M[_], T](mt: M[T]) {
@@ -71,6 +71,9 @@ object Futurable {
         case Success(t) => onSuccess(t)
         case Failure(t) => onFailure(t)
       })
+
+    override def delay(duration: FiniteDuration): Future[Unit] =
+      DelayedFuture(duration)(())
   }
 
 }

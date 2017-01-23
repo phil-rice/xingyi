@@ -3,7 +3,7 @@ package org.validoc.utils.caching
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicLong
 
-import org.validoc.utils.{Futurable, FuturableWithFailure}
+import org.validoc.utils.concurrency.{Futurable, FuturableWithFailure}
 import org.validoc.utils.logging.Logging
 import org.validoc.utils.map.{MapSizeStrategy, MaxMapSizeStrategy}
 import org.validoc.utils.service.WrappingService
