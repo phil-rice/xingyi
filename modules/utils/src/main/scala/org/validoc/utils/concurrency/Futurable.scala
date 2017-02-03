@@ -1,23 +1,20 @@
 package org.validoc.utils.concurrency
 
+import org.validoc.utils.monads.{FlatMap, Monad}
+
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 
+
 /** M[_] is typically Future[_], or Task[_], or FutureEitherT or some other concurrency thing that does things in the future
   * Uses of M[_] are quite likely to make the assumption that launch fires things off in another thread.
   * */
-trait Futurable[M[_]] {
-
-  def lift[T](t: T): M[T]
+trait Futurable[M[_]] extends Monad[M]{
 
   /** Users may make the assumption that the task done in launch is on another thread */
   def launch[T](t: => T): M[T]
-
-  def map[T, T2](m: M[T], fn: T => T2): M[T2]
-
-  def flatMap[T, T2](m: M[T], fn: T => M[T2]): M[T2]
 
   def delay(duration: FiniteDuration): M[Unit]
 
