@@ -6,8 +6,6 @@ import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-
-
 /** M[_] is typically Future[_], or Task[_], or FutureEitherT or some other concurrency thing that does things in the future
   * Uses of M[_] are quite likely to make the assumption that launch fires things off in another thread.
   * */
@@ -34,12 +32,6 @@ trait FuturableWithFailure[M[_], F] extends Futurable[M] {
 object Futurable {
 
 
-  implicit class MonadPimper[M[_] : Futurable, T](mt: M[T]) {
-    def map[T2](fn: T => T2) = implicitly[Futurable[M]].map[T, T2](mt, fn)
-
-    def flatMap[T2](fn: T => M[T2]) = implicitly[Futurable[M]].flatMap[T, T2](mt, fn)
-
-  }
 
   implicit class MonadPimperWithFailures[M[_], T](mt: M[T]) {
 

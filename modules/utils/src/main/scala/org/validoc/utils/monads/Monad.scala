@@ -20,4 +20,13 @@ trait Monad[M[_]] extends FlatMap[M] {
   def flatMap[T, T2](m: M[T], fn: T => M[T2]): M[T2]
 }
 
+object Monad{
+  implicit class MonadPimper[M[_] : Monad, T](mt: M[T]) {
+    def map[T2](fn: T => T2) = implicitly[Monad[M]].map[T, T2](mt, fn)
+
+    def flatMap[T2](fn: T => M[T2]) = implicitly[Monad[M]].flatMap[T, T2](mt, fn)
+
+  }
+
+}
 

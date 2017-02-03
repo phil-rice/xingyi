@@ -26,6 +26,7 @@ class RetryService[M[_], F, Req, Res](delegate: Req => M[Res], resRetry: NeedsRe
   val metrics = new RetryMetrics
 
   import org.validoc.utils.concurrency.Futurable._
+  import org.validoc.utils.monads.Monad._
 
   require(retries > 0, s"Retries should be more than 0 and are $retries")
 

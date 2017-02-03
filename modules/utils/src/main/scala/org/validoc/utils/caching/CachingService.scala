@@ -53,6 +53,7 @@ class CachingService[M[_], F, Req, Res](delegate: Req => M[Res], cachingConfigWi
                                        (implicit cachingProperties: CachingProperties[Req],
                                         futurableWithFailure: FuturableWithFailure[M, F]) extends WrappingService[M, Req, Res](cachingConfigWithName.name, delegate) with CachingOps with Logging {
 
+  import org.validoc.utils.monads.Monad._
   import Futurable._
 
   private val cachingMetricsData = CachingMetrics()
@@ -135,7 +136,9 @@ class CachingService[M[_], F, Req, Res](delegate: Req => M[Res], cachingConfigWi
       cachingMetricsData.inTransitRequests.incrementAndGet()
       debug(s"Launching an intransit for $name  with $thisId request is $request")
     }.flatMap { _ => delegate(request) }
-      .report[F](addToCache(thisId, request, _), {  failed(thisId, request, _) })
+      .report[F](addToCache(thisId, request, _), {
+      failed(thisId, request, _)
+    })
   }
 
   private def logRequest(request: Req, whatsHappening: String) = debug(s" $whatsHappening for request $request")
