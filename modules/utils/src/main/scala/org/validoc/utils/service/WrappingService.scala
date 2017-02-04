@@ -1,10 +1,10 @@
 package org.validoc.utils.service
 
 import org.validoc.utils.Service
-import org.validoc.utils.concurrency.Futurable
+import org.validoc.utils.concurrency.Async
 
 
-abstract class WrappingService[M[_] : Futurable, Req, Res](name: String, val delegate:Service[M,_,_])
+abstract class WrappingService[M[_] : Async, Req, Res](name: String, val delegate:Service[M,Req, Res])
   extends Service[M,Req,Res]
     with ServiceWithDisplayData
     with ServiceWithChildren[M] {

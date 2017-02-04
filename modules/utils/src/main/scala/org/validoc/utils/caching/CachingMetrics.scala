@@ -2,7 +2,7 @@ package org.validoc.utils.caching
 
 import java.util.concurrent.atomic.AtomicLong
 
-import org.validoc.utils.map.ReportMapSizeChange
+import org.validoc.utils.map.{ReportMapSizeReduction, SafeMap}
 
 
 case class CachingMetrics(bypassedRequests: AtomicLong = new AtomicLong,
@@ -12,8 +12,8 @@ case class CachingMetrics(bypassedRequests: AtomicLong = new AtomicLong,
                           delegateRequests: AtomicLong = new AtomicLong,
                           delegateSuccesses: AtomicLong = new AtomicLong,
                           delegateFailures: AtomicLong = new AtomicLong,
-                          removedBecauseTooFull: AtomicLong = new AtomicLong) extends ReportMapSizeChange {
-  def snapshot[K, V](name: String, cache: Map[K, V], sizeString: String) = {
+                          removedBecauseTooFull: AtomicLong = new AtomicLong) extends ReportMapSizeReduction {
+  def snapshot[K, V](name: String, cache: SafeMap[K, V], sizeString: String) = {
     val (inTransit, cachedResults, inTransitWithoutResults) = cache.foldLeft((0, 0, 0)) {
       case ((inTransit, cachedResults, inTransitWithoutResults), (req, CachedValue(_, _, inTransitOption, valueOption))) =>
         (inTransit + inTransitOption.fold(0)(_ => 1),

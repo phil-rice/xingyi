@@ -3,11 +3,10 @@ package org.validoc.utils.caching
 import java.util.concurrent.{CountDownLatch, Executors}
 
 import org.scalatest.concurrent.Eventually
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{FlatSpec, Matchers}
-import org.validoc.utils.concurrency.Futurable
+import org.validoc.utils.UtilsSpec
+import org.validoc.utils.concurrency.Async
 import org.validoc.utils.map.{MapSizeStrategy, MaxMapSizeStrategy, NoMapSizeStrategy}
-import org.validoc.utils.time.{NanoTimeService, SystemClockNanoTimeService}
+import org.validoc.utils.time.NanoTimeService
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -23,16 +22,16 @@ case class DelegateRequest(key: String, result: Try[String], bypassCache: Boolea
   }
 }
 
-class DelegateService[M[_] : Futurable] extends (DelegateRequest => M[String]) {
+class DelegateService[M[_] : Async] extends (DelegateRequest => M[String]) {
 
-  def apply(req: DelegateRequest): M[String] = implicitly[Futurable[M]].launch {
+  def apply(req: DelegateRequest): M[String] = implicitly[Async[M]].async {
     req.countDownLatch.await()
     req.result.get
   }
 }
 
 
-class CachingServiceTests extends FlatSpec with Matchers with MockitoSugar with Eventually {
+class CachingServiceTests extends UtilsSpec with Eventually {
 
   import org.mockito.Mockito._
 
@@ -40,13 +39,14 @@ class CachingServiceTests extends FlatSpec with Matchers with MockitoSugar with 
   val lock = new Object
 
   type CService = CachingService[Future, DelegateRequest, String, String]
+
   def withServices(fn: CService => DelegateService[Future] => NanoTimeService => Unit, cacheSizeStrategy: MapSizeStrategy = NoMapSizeStrategy): Unit =
     lock.synchronized {
       implicit val ec = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
       val delegateService = new DelegateService[Future]()
       val timeService = mock[NanoTimeService]
-      val cachingStrategy = CachingStrategy[Future, DelegateRequest, String, String](_.key, 100 nanos, 1000 nanos, _.bypassCache, cacheSizeStrategy)
-      val cachingService = new CachingService[Future, DelegateRequest, String, String]("someName", delegateService, cachingStrategy)
+      val cachingStrategy = CachingStrategy[Future, DelegateRequest, String, String](_.key, 100 nanos, 1000 nanos, _.bypassCache, timeService, _.isSuccess)
+      val cachingService = new CachingService[Future, DelegateRequest, String, String]("someName", delegateService, cachingStrategy, cacheSizeStrategy)
       fn(cachingService)(delegateService)(timeService)
     }
 
@@ -78,8 +78,9 @@ class CachingServiceTests extends FlatSpec with Matchers with MockitoSugar with 
       cacheSize.foreach(i => withClue(s"$fullPrefix cacheSize")(metrics.cacheSize shouldBe i))
     }
 
+  behavior of "CachingService"
 
-  "CachingService" should "bypass the cache if the request has caching properties set to do not cache" in {
+  it should "bypass the cache if the request has caching properties set to do not cache" in {
     withServices { implicit cachingService =>
       delegateService =>
         timeService =>
@@ -92,8 +93,7 @@ class CachingServiceTests extends FlatSpec with Matchers with MockitoSugar with 
   }
 
 
-
-  it should "Add the first ever intransit for a request to the caching map" in {
+  it should "Add the first ever intransit for a request to the caching org.validoc.utils.map" in {
     withServices { implicit cachingService =>
       delegateService =>
         timeService =>
@@ -101,7 +101,8 @@ class CachingServiceTests extends FlatSpec with Matchers with MockitoSugar with 
           val future = cachingService(request)
           checkMetrics("Before countdown", requests = 1, delegateRequests = 1, inTransitWithoutResults = Some(1), inTransits = Some(1))
           request.countDownLatch.countDown()
-          Await.result(future, 5 seconds) shouldBe "result"
+          eventually(future.isCompleted)
+          withClue("waiting to finish")(Await.result(future, 5 seconds) shouldBe "result")
           checkMetrics("After awaiting", requests = 1, delegateRequests = 1, delegateSuccesses = 1)
     }
   }
@@ -140,6 +141,7 @@ class CachingServiceTests extends FlatSpec with Matchers with MockitoSugar with 
           checkMetrics("After awaiting for future2", requests = 2, delegateRequests = 1, delegateSuccesses = 1)
     }
   }
+
   it should "launch a new intransit if a second request implies staleness, but return the stale value" in {
     withServices { implicit cachingService =>
       delegateService =>
@@ -185,9 +187,14 @@ class CachingServiceTests extends FlatSpec with Matchers with MockitoSugar with 
           Await.result(future2, 5 seconds) shouldBe "result1"
 
           request2.countDownLatch.countDown()
-          checkMetrics("after future2 finished", requests = 2, delegateRequests = 2, delegateSuccesses = 2, staleRequests = 1)
+          checkMetrics("after future2 finished ", requests = 2, delegateRequests = 2, delegateSuccesses = 2, staleRequests = 1)
+
           val future3 = cachingService(request3)
+          checkMetrics("after future3 started ", requests = 3, delegateRequests = 2, delegateSuccesses = 2, staleRequests = 1)
+          request3.countDownLatch.countDown()
+          Await.result(future2, 5 seconds) shouldBe "result1" //this was served while stale
           Await.result(future3, 5 seconds) shouldBe "result2"
+
           checkMetrics("after future3 finished", requests = 3, delegateRequests = 2, delegateSuccesses = 2, staleRequests = 1)
     }
   }
@@ -292,9 +299,10 @@ class CachingServiceTests extends FlatSpec with Matchers with MockitoSugar with 
           val future1 = cachingService(request1)
           checkMetrics("after future 1 started ", requests = 1, delegateRequests = 1, delegateSuccesses = 0, cacheSize = Some(1))
           cachingService.clearCache
+          checkMetrics("after clearCache", requests = 1, delegateRequests = 1, delegateSuccesses = 0, cacheSize = Some(0))
           request1.countDownLatch.countDown()
           Await.result(future1, 5 seconds) shouldBe "result1"
-          checkMetrics("after future 1 finished ", requests = 1, delegateRequests = 1, delegateSuccesses = 1, cacheSize = Some(0))
+          checkMetrics("after future 1 finished ", requests = 1, delegateRequests = 1, delegateSuccesses = 1, cacheSize = Some(1))
 
           val future2 = cachingService(request2)
           checkMetrics("after future 2 started ", requests = 2, delegateRequests = 2, delegateSuccesses = 1, cacheSize = Some(1))
@@ -335,7 +343,7 @@ class CachingServiceTests extends FlatSpec with Matchers with MockitoSugar with 
   }
 
   it should "note a failing outstanding request to mess things up after a clearcache" in {
-    withServices { implicit cachingService =>
+    withServices(cacheSizeStrategy = MaxMapSizeStrategy(3, 2), fn = { implicit cachingService =>
       delegateService =>
         timeService =>
           val request1 = DelegateRequest("sameKey", Failure(new RuntimeException))
@@ -346,112 +354,78 @@ class CachingServiceTests extends FlatSpec with Matchers with MockitoSugar with 
           cachingService.clearCache
           checkMetrics("after future 1 started ", requests = 1, delegateRequests = 1, delegateFailures = 0, cacheSize = Some(0))
           request1.countDownLatch.countDown()
-          checkMetrics("after future 1 finished ", requests = 1, delegateRequests = 1, delegateFailures = 1, cacheSize = Some(0))
+          checkMetrics("after future 1 finished ", requests = 1, delegateRequests = 1, delegateFailures = 1, cacheSize = Some(1))
 
           val future2 = cachingService(request2)
           request2.countDownLatch.countDown()
           checkMetrics("after future 2 started ", requests = 2, delegateRequests = 2, delegateFailures = 1, delegateSuccesses = 1, cacheSize = Some(1))
           Await.result(future2, 5 seconds) shouldBe "result2"
-    }
+    })
   }
 
+
   it should "have a time to live, and after that time any queries blow away the cache and start again" in {
-    withServices { implicit cachingService =>
-      delegateService =>
-        timeService =>
-          val request1 = DelegateRequest("sameKey", Success("result1"))
-          val request2 = DelegateRequest("sameKey", Success("result2"))
+    withServices {
+      implicit cachingService =>
+        delegateService =>
+          timeService =>
+            val request1 = DelegateRequest("sameKey", Success("result1"))
+            val request2 = DelegateRequest("sameKey", Success("result2"))
 
-          val future1 = cachingService(request1)
+            val future1 = cachingService(request1)
 
-          checkMetrics("after future 1 started ", requests = 1, delegateRequests = 1, cacheSize = Some(1))
-          request1.countDownLatch.countDown()
-          checkMetrics("after future 1 finished ", requests = 1, delegateRequests = 1, delegateSuccesses = 1, cacheSize = Some(1))
+            checkMetrics("after future 1 started ", requests = 1, delegateRequests = 1, cacheSize = Some(1))
+            request1.countDownLatch.countDown()
+            checkMetrics("after future 1 finished ", requests = 1, delegateRequests = 1, delegateSuccesses = 1, cacheSize = Some(1))
 
-          when(timeService.apply()) thenReturn 1200
+            when(timeService.apply()) thenReturn 1200
 
-          val future2 = cachingService(request2)
+            val future2 = cachingService(request2)
 
-          checkMetrics("after future 2 started ", requests = 2, delegateRequests = 2, delegateSuccesses = 1, deadRequests = 1, cacheSize = Some(1))
+            checkMetrics("after future 2 started ", requests = 2, delegateRequests = 2, delegateSuccesses = 1, deadRequests = 1, cacheSize = Some(1))
 
-          future2.isCompleted shouldBe false
-          request2.countDownLatch.countDown()
-          checkMetrics("after future 2 finished ", requests = 2, delegateRequests = 2, delegateSuccesses = 2, deadRequests = 1, cacheSize = Some(1))
-          Await.result(future2, 5 seconds) shouldBe "result2"
+            future2.isCompleted shouldBe false
+            request2.countDownLatch.countDown()
+            checkMetrics("after future 2 finished ", requests = 2, delegateRequests = 2, delegateSuccesses = 2, deadRequests = 1, cacheSize = Some(1))
+            Await.result(future2, 5 seconds) shouldBe "result2"
     }
   }
 
   it should "have a maximum size and randomly delete items if the maximum size is exceeded" in {
-    withServices { implicit cachingService =>
-      delegateService =>
-        timeService =>
-          val request1 = DelegateRequest("sameKey", Success("result1"))
-          val request2 = DelegateRequest("sameKey", Success("result2"))
+    withServices(cacheSizeStrategy = MaxMapSizeStrategy(4, 2), fn = {
+      implicit cachingService =>
+        delegateService =>
+          timeService =>
+            val request1 = DelegateRequest("key1", Success("result1"))
+            val request2 = DelegateRequest("key2", Success("result2"))
+            val request3 = DelegateRequest("key3", Success("result3"))
+            val request4 = DelegateRequest("key4", Success("result4"))
+            val request5 = DelegateRequest("key5", Success("result5"))
+            val request6 = DelegateRequest("key6", Success("result6"))
+            val request7 = DelegateRequest("key7", Success("result7"))
 
-          val future1 = cachingService(request1)
+            def addAndCheck(request: DelegateRequest): Unit = {
+              val future1 = cachingService(request)
+              val future2 = cachingService(request)
+              future1 shouldBe future2 //the last thing added should be in, others might not
+              request.countDownLatch.countDown()
+            }
 
-          checkMetrics("after future 1 started ", requests = 1, delegateRequests = 1, cacheSize = Some(1))
-          request1.countDownLatch.countDown()
-          checkMetrics("after future 1 finished ", requests = 1, delegateRequests = 1, delegateSuccesses = 1, cacheSize = Some(1))
+            addAndCheck(request1)
+            checkMetrics("after 1", requests = 2, delegateRequests = 1, delegateSuccesses = 1, cacheSize = Some(1))
+            addAndCheck(request2)
+            checkMetrics("after 2", requests = 4, delegateRequests = 2, delegateSuccesses = 2, cacheSize = Some(2))
+            addAndCheck(request3)
+            checkMetrics("after 3", requests = 6, delegateRequests = 3, delegateSuccesses = 3, cacheSize = Some(3))
+            addAndCheck(request4)
+            checkMetrics("after 4", requests = 8, delegateRequests = 4, delegateSuccesses = 4, cacheSize = Some(4))
+            addAndCheck(request5)
+            checkMetrics("after 5", requests = 10, delegateRequests = 5, delegateSuccesses = 5, cacheSize = Some(3),removedBecauseTooFull=2)
+            addAndCheck(request6)
+            checkMetrics("after 6", requests = 12, delegateRequests = 6, delegateSuccesses = 6, cacheSize = Some(4),removedBecauseTooFull=2)
+            addAndCheck(request7)
+            checkMetrics("after 7", requests = 14, delegateRequests = 7, delegateSuccesses = 7, cacheSize = Some(3),removedBecauseTooFull=4)
 
-          when(timeService.apply()) thenReturn 1200
-
-          val future2 = cachingService(request2)
-
-          checkMetrics("after future 2 started ", requests = 2, delegateRequests = 2, delegateSuccesses = 1, deadRequests = 1, cacheSize = Some(1))
-
-          future2.isCompleted shouldBe false
-          request2.countDownLatch.countDown()
-          checkMetrics("after future 2 finished ", requests = 2, delegateRequests = 2, delegateSuccesses = 2, deadRequests = 1, cacheSize = Some(1))
-          Await.result(future2, 5 seconds) shouldBe "result2"
-    }
-
-  }
-
-  "Caching config withNameAndSize" should "return " in {
-    import ExecutionContext.Implicits._
-//    val config = CachingConfig[Future](SystemClockNanoTimeService, new DurationStaleCacheStategy(100, 1000))
-//    config.withNameAndSize("someName", 124) shouldBe CachingConfigWithNameAndSize(config, "someName", MaxMapSizeStrategy(124, 12))
-//    config.withNameAndSize("someName", 3) shouldBe CachingConfigWithNameAndSize(config, "someName", MaxMapSizeStrategy(3, 1))
-    fail
-  }
-
-  "A  max cache size strategy" should "return the cache as is if the size of the cache is less than the max" in {
-    withServices(cacheSizeStrategy = new MaxMapSizeStrategy(3, 2), fn = { implicit cachingService =>
-      delegateService =>
-        timeService =>
-          val request1 = DelegateRequest("key1", Success("result1"))
-          val request2 = DelegateRequest("key2", Success("result2"))
-          val request3 = DelegateRequest("key3", Success("result3"))
-          val request4 = DelegateRequest("key4", Success("result4"))
-          val request5 = DelegateRequest("key5", Success("result4"))
-          val request6 = DelegateRequest("key6", Success("result4"))
-          val requests = Set(request1, request2, request3, request4, request5, request6)
-
-          try {
-            cachingService(request1)
-            checkMetrics("after request1", requests = 1, delegateRequests = 1, cacheSize = Some(1))
-            cachingService(request2)
-            checkMetrics("after request2", requests = 2, delegateRequests = 2, cacheSize = Some(2))
-            cachingService(request3)
-            checkMetrics("after request3", requests = 3, delegateRequests = 3, cacheSize = Some(3))
-            val future4 = cachingService(request4)
-            cachingService(request4) shouldBe future4 // it's important future4 is in the cache
-            checkMetrics("after request4", requests = 5, delegateRequests = 4, cacheSize = Some(2), removedBecauseTooFull = 2)
-
-            val future5 = cachingService(request5)
-            cachingService(request5) shouldBe future5 // it's important future5 is in the cache
-            checkMetrics("after request5", requests = 7, delegateRequests = 5, cacheSize = Some(3), removedBecauseTooFull = 2)
-
-            val future6 = cachingService(request6)
-            cachingService(request6) shouldBe future6 // it's important future6 is in the cache
-            checkMetrics("after request6", requests = 9, delegateRequests = 6, cacheSize = Some(2), removedBecauseTooFull = 4)
-
-            cachingService.cachingMetrics.cacheSize shouldBe 2
-
-          } finally {
-            requests.foreach(_.countDownLatch.countDown()) //just clearing up threads}
-          }
     })
   }
 }

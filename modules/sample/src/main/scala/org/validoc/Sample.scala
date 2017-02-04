@@ -2,7 +2,7 @@
 //
 //import java.util.concurrent.Executors
 //
-//import org.validoc.utils.concurrency.{Futurable, FuturableWithFailure}
+//import org.validoc.utils.concurrency.{Async, AsyncWithFailure}
 //import org.validoc.utils.http._
 //import org.validoc.utils.serviceBuilder.ServiceBuilderLanguage
 //
@@ -29,7 +29,7 @@
 //object SampleServices extends Finatra {
 //  val ecForHttpRequests = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(1000))
 //
-//  override implicit def futurableWithFailureForHttp: FuturableWithFailure[Future, Throwable] = Futurable.FuturableWithFailureForFuture(ecForHttpRequests)
+//  override implicit def asyncWithFailureForHttp: AsyncWithFailure[Future, Throwable] = Async.AsyncWithFailureForFuture(ecForHttpRequests)
 //
 //  override implicit def toServiceResponse: ToServiceResponse[_root_.org.validoc.SampleServices.FinatraHttpRes] = ???
 //}

@@ -1,6 +1,6 @@
 package org.validoc.utils.service
 
-import org.validoc.utils.concurrency.Futurable
+import org.validoc.utils.concurrency.Async
 
 case class ServiceDisplayData(typeName: String, name: String, priority: Int)
 
@@ -32,7 +32,7 @@ object Displayable {
 
 }
 
-case class DisplayableService[M[_] : Futurable, Req, Res, Service <: Req => M[Res] : Displayable](service: Service) extends (Req => M[Res]) {
+case class DisplayableService[M[_] : Async, Req, Res, Service <: Req => M[Res] : Displayable](service: Service) extends (Req => M[Res]) {
   val displayble = implicitly[Displayable[Service]]
   val displayData = displayble.displayData(service)
 
