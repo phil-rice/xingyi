@@ -9,9 +9,9 @@ case class CachingMetrics(bypassedRequests: AtomicLong = new AtomicLong,
                           requests: AtomicLong = new AtomicLong,
                           staleRequest: AtomicLong = new AtomicLong,
                           deadRequest: AtomicLong = new AtomicLong,
-                          inTransitRequests: AtomicLong = new AtomicLong,
-                          inTransitSucesses: AtomicLong = new AtomicLong,
-                          inTransitFailures: AtomicLong = new AtomicLong,
+                          delegateRequests: AtomicLong = new AtomicLong,
+                          delegateSuccesses: AtomicLong = new AtomicLong,
+                          delegateFailures: AtomicLong = new AtomicLong,
                           removedBecauseTooFull: AtomicLong = new AtomicLong) extends ReportMapSizeChange {
   def snapshot[K, V](name: String, cache: Map[K, V], sizeString: String) = {
     val (inTransit, cachedResults, inTransitWithoutResults) = cache.foldLeft((0, 0, 0)) {
@@ -21,7 +21,7 @@ case class CachingMetrics(bypassedRequests: AtomicLong = new AtomicLong,
           inTransitWithoutResults + valueOption.fold(inTransitOption.fold(0)(_ => 1))(_ => 0))
     }
     CachingMetricSnapShot(name, bypassedRequests.get(), requests.get, staleRequest.get, deadRequest.get(),
-      inTransitRequests.get, inTransitSucesses.get, inTransitFailures.get,
+      delegateRequests.get, delegateSuccesses.get, delegateFailures.get,
       cache.size, inTransit, cachedResults, inTransitWithoutResults, removedBecauseTooFull.get(), sizeString
     )
 
@@ -36,17 +36,17 @@ case class CachingMetricSnapShot(name: String,
                                  requests: Long,
                                  staleRequest: Long,
                                  deadRequest: Long,
-                                 inTransitRequests: Long,
-                                 inTransitSucesses: Long,
-                                 inTransitFailures: Long,
+                                 delegateRequests: Long,
+                                 delegateSuccesses: Long,
+                                 delegateFailures: Long,
                                  cacheSize: Int,
                                  inTransits: Int,
                                  cachedResults: Int,
                                  inTransitWithoutResults: Int,
                                  removedBecauseTooFull: Long, cacheSizeStrategyString: String) {
   override def toString: String =
-    s"CachingMetricSnapShot($name,bypassedRequests=$bypassedRequests,requests=$requests,staleRequest=$staleRequest,deadRequest=$deadRequest,inTransitRequests=$inTransitRequests," +
-      s"inTransitSucesses=$inTransitSucesses,inTransitFailures=$inTransitFailures,bypassedRequests=$bypassedRequests,cacheSize=$cacheSize," +
+    s"CachingMetricSnapShot($name,bypassedRequests=$bypassedRequests,requests=$requests,staleRequest=$staleRequest,deadRequest=$deadRequest,delegateRequests=$delegateRequests," +
+      s"delegateSuccesses=$delegateSuccesses,delegateFailures=$delegateFailures,bypassedRequests=$bypassedRequests,cacheSize=$cacheSize," +
       s"inTransits=$inTransits,cachedResults=$cachedResults,inTransitWithoutResults=$inTransitWithoutResults," +
       s"removedBecauseTooFull=$removedBecauseTooFull" +
       s"cacheSizeStrategy=[${cacheSizeStrategyString}]"
