@@ -33,6 +33,17 @@ object Async {
     def registerSideEffectWhenComplete[T2](sideEffect: Try[T] => Unit) = async.registerSideEffectWhenComplete(mt, sideEffect)
   }
 
+  implicit class ValuePimper[T](t: T) {
+    def lift[M[_] : Async]: M[T] = implicitly[Async[M]].lift(t)
+  }
+
+  implicit class TryPimper[T](t: Try[T]) {
+    def lift[M[_] : Async]: M[T] = implicitly[Async[M]].liftTry(t)
+  }
+
+  implicit class ExceptionPimper(t: Throwable) {
+    def lift[M[_] : Async, T]: M[T] = implicitly[Async[M]].liftTry(Failure(t))
+  }
 
 
   implicit def asyncForFuture(implicit executionContext: ExecutionContext) = new Async[Future] {
