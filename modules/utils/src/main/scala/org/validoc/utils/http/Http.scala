@@ -2,63 +2,64 @@ package org.validoc.utils.http
 
 import java.net.URLEncoder
 
-object Status{
+object Status {
   val Ok = Status(200)
   val NotFound = Status(404)
 }
+
 case class Status(code: Int) extends AnyVal
 
 case class Body(s: String) extends AnyVal
 
 case class ContentType(s: String) extends AnyVal
 
-case class AcceptHeader(s: String) extends AnyVal
-
-case class Header(name: String, value: String)
-
 
 trait UriFragment {
   protected def encode(s: String) = URLEncoder.encode(s, "UTF-8")
 
-  def encoded: String
+  def asUriString: String
 }
 
 case class HostName(host: String) extends UriFragment {
-  override def encoded: String = encode(host)
+  override def asUriString: String = host
 }
 
 case class Protocol(protocol: String) extends UriFragment {
-  override def encoded: String = encode(protocol)
+  require(protocol.forall(_.isLetter), protocol)
+
+  override def asUriString: String = protocol
 }
 
 case class Path(path: String) extends UriFragment {
   require(path.startsWith("/"), s"Path should start with / was ${path}")
 
-  override def encoded: String = encode(path)
+  override def asUriString: String = path
 }
 
 case class QueryParamName(name: String) extends UriFragment {
-  override def encoded: String = encode(name)
+  override def asUriString: String = encode(name)
 }
 
 case class QueryParamValue(value: String) extends UriFragment {
-  override def encoded: String = encode(value)
+  override def asUriString: String = encode(value)
 }
 
 object QueryParam {
+  def apply(tuples: (String, String)*):Seq[QueryParam] = tuples.map { case (n, v) => QueryParam(QueryParamName(n), QueryParamValue(v)) }
+
   def encoded(params: Seq[QueryParam]) = params match {
     case Nil => ""
-    case _ => params.map(_.encoded).mkString("?", "&", "")
+    case _ => params.map(_.asUriString).mkString("?", "&", "")
   }
 }
 
 case class QueryParam(name: QueryParamName, value: QueryParamValue) extends UriFragment {
-  def encoded = s"${URLEncoder.encode(name.name, "UTF-8")}=${URLEncoder.encode(value.value, "UTF-8")}"
+  def asUriString = s"${name.asUriString}=${value.asUriString}"
 }
 
 case class Uri(protocol: Protocol, host: HostName, path: Path, params: QueryParam*) extends UriFragment {
-  override def toString = s"Uri($encoded)"
+  override def toString = s"Uri($asUriString)"
 
-  override def encoded: String = s"${protocol.encoded}://${host.encoded}${path.encoded}${QueryParam.encoded(params)}"
+  override def asUriString: String = s"${protocol.asUriString}://${host.asUriString}${path.asUriString}${QueryParam.encoded(params)}"
 }
 

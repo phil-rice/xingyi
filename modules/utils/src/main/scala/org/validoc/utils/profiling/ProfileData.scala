@@ -24,7 +24,7 @@ class ProfilingBucket {
   override def toString = f"$averageDurationInMs%,8.2fms/${count.get}%-4s"
 }
 
-class PageQueryMeteredData extends HasShortToString {
+class ProfileData extends HasShortToString {
   val all = new ProfilingBucket
   val under1ms = new ProfilingBucket
   val under100ms = new ProfilingBucket

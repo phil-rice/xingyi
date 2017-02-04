@@ -1,9 +1,9 @@
 package org.validoc.utils.concurrency
 
-import org.validoc.utils.monads.{FlatMap, Monad}
+import org.validoc.utils.monads.Monad
 
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.{FiniteDuration, _}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 /** M[_] is typically Future[_], or Task[_], or FutureEitherT or some other concurrency thing that does things in the future
@@ -19,6 +19,8 @@ trait Async[M[_]] extends Monad[M] {
   def transform[T1, T2](mt: M[T1], fn: Try[T1] => M[T2]): M[T2]
 
   def registerSideEffectWhenComplete[T](m: M[T], sideEffect: Try[T] => Unit): M[T]
+
+  def await[T](mt: M[T], duration: Duration): T
 }
 
 object Async {
@@ -38,11 +40,11 @@ object Async {
   }
 
   implicit class TryPimper[T](t: Try[T]) {
-    def lift[M[_] : Async]: M[T] = implicitly[Async[M]].liftTry(t)
+    def liftTry[M[_] : Async]: M[T] = implicitly[Async[M]].liftTry(t)
   }
 
   implicit class ExceptionPimper(t: Throwable) {
-    def lift[M[_] : Async, T]: M[T] = implicitly[Async[M]].liftTry(Failure(t))
+    def liftThrowable[M[_] : Async, T]: M[T] = implicitly[Async[M]].liftTry(Failure(t))
   }
 
 
@@ -67,6 +69,8 @@ object Async {
     override def liftTry[T](tryT: Try[T]): Future[T] = tryT.fold(Future.failed, Future.successful)
 
     override def transform[T1, T2](mt: Future[T1], fn: (Try[T1]) => Future[T2]): Future[T2] = mt.transformWith(fn)
+
+    override def await[T](mt: Future[T], duration: Duration): T = Await.result(mt, duration)
   }
 
 }

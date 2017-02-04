@@ -29,7 +29,7 @@ class HttpObjectService[M[_] : Async, HttpReq, Req, HttpRes, Res](name: String,
             case _ => responseProcessor.statusUnexpected(requestDetails(req), serviceResponse)
           }
         }.lift
-        case Failure(t) => responseProcessor.exception(t).lift
+        case Failure(t) => responseProcessor.exception(t).liftTry
       }
     }
   }
