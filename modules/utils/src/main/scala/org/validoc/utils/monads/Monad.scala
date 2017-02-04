@@ -15,12 +15,16 @@ object FlatMap {
 trait Monad[M[_]] extends FlatMap[M] {
   def lift[T](t: T): M[T]
 
+  /** This may just throw the exception if it's not meaningfull to lift it. Meaningful monads include Try, Future ... */
+  def liftThrowable[T](throwable: Throwable): M[T]
+
   def map[T, T2](m: M[T], fn: T => T2): M[T2]
 
   def flatMap[T, T2](m: M[T], fn: T => M[T2]): M[T2]
 }
 
-object Monad{
+object Monad {
+
   implicit class MonadPimper[M[_] : Monad, T](mt: M[T]) {
     def map[T2](fn: T => T2) = implicitly[Monad[M]].map[T, T2](mt, fn)
 
