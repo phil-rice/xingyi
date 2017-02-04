@@ -4,28 +4,32 @@ import org.validoc.utils.Service
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.time.NanoTimeService
 
+import scala.util.{Failure, Success, Try}
+import org.validoc.utils.concurrency.Async._
 
-class ProfilingService[M[_] : Async, F, Req, Res](name: String, delegate: Req => M[Res], timeService: NanoTimeService)
-  extends Service[M, Req, Res] {
 
-  import org.validoc.utils.concurrency.Async._
-
-  val succeededData = new ProfileData
-  val failedData = new ProfileData
-
+trait TryProfileData {
   def clearData = {
     succeededData.clearData
     failedData.clearData
   }
 
+  val succeededData = new ProfileData
+  val failedData = new ProfileData
+
+  def event(nanos: Long)(result: Try[_]): Unit = result match {
+    case Success(_) => succeededData.event(nanos)
+    case Failure(_) => failedData.event(nanos)
+  }
+}
+
+object TryProfileData extends TryProfileData
+
+class ProfilingService[M[_] : Async, Req, Res](name: String, delegate: Req => M[Res], timeService: NanoTimeService, tryProfileData: TryProfileData = TryProfileData)
+  extends Service[M, Req, Res] {
+
   override def apply(request: Req): M[Res] = {
     val start = timeService()
-
-    def addTime(data: ProfileData)(ignore: Any) = {
-      val duration = timeService() - start
-      data.event(duration)
-    }
-
-    delegate(request).registerSideEffectWhenComplete(_.fold(addTime(succeededData), addTime(failedData)))
+    delegate(request).registerSideEffectWhenComplete(tryProfileData.event(timeService() - start))
   }
 }

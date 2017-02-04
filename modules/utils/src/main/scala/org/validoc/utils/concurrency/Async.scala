@@ -1,6 +1,6 @@
 package org.validoc.utils.concurrency
 
-import org.validoc.utils.monads.Monad
+import org.validoc.utils.monads.{FlatMap, Monad}
 
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -25,10 +25,13 @@ trait Async[M[_]] extends Monad[M] {
 
 object Async {
 
-  implicit class AsyncPimper[M[_], T](mt: M[T])(implicit async: Async[M]) {
-    def map[T2](fn: T => T2) = async.map(mt, fn)
+  implicit class FlatMapPimper[M[_] : FlatMap, T](mt: M[T]) {
+    def flatMap[T2](fn: T => M[T2]) = implicitly[FlatMap[M]].flatMap(mt, fn)
+  }
 
-    def flatMap[T2](fn: T => M[T2]) = async.flatMap(mt, fn)
+  implicit class AsyncPimper[M[_], T](mt: M[T])(implicit async: Async[M]) {
+
+    def map[T2](fn: T => T2) = async.map(mt, fn)
 
     def transform[T2](fn: Try[T] => M[T2]) = async.transform(mt, fn)
 
@@ -37,6 +40,8 @@ object Async {
 
   implicit class ValuePimper[T](t: T) {
     def lift[M[_] : Async]: M[T] = implicitly[Async[M]].lift(t)
+
+    def liftValue[M[_] : Async]: M[T] = implicitly[Async[M]].lift(t)
   }
 
   implicit class TryPimper[T](t: Try[T]) {

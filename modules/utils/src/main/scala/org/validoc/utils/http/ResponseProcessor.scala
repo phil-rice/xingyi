@@ -10,10 +10,7 @@ object ResponseProcessor {
 
   def optionalParsed[Query, T](parser: String => T) = new ResponseProcessorForOption[Query, T](parser)
 
-  def parsedOrIssue[Query, T, Issue](parser: String => T, issuer: (Query) => Issue, exceptionProcessor: Throwable => Issue) =
-    new ResponseProcessorForIssue[Query, T, Issue](parser, issuer, exceptionProcessor)
 }
-
 case class RequestDetails[Req](req: Req, requestSummary: String)
 
 trait ResponseProcessor[Req, T] {
@@ -43,10 +40,3 @@ class ResponseProcessorForOption[Req, T](parser: String => T) extends ResponsePr
   override def statusNotFound(requestDetails: RequestDetails[Req], serviceResponse: ServiceResponse): Option[T] = None
 }
 
-class ResponseProcessorForIssue[Req, T, Issue](parser: String => T, issuer: (Req) => Issue, exceptionProcessor: Throwable => Issue) extends ResponseProcessor[Req, Either[Issue, T]] {
-  override def statusOk(serviceResponse: ServiceResponse) = Right(parser(serviceResponse.body.s))
-
-  override def statusNotFound(requestDetails: RequestDetails[Req], serviceResponse: ServiceResponse): Either[Issue, T] = Left(issuer(requestDetails.req))
-
-  override def exception(t: Throwable): Try[Either[Issue, T]] = Success(Left(exceptionProcessor(t)))
-}

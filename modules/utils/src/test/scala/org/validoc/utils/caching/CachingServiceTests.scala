@@ -270,19 +270,19 @@ class CachingServiceTests extends UtilsSpec with Eventually {
           when(timeService.apply()) thenReturn 200
 
           val future2 = cachingService(request2)
+          checkMetrics("after future 1 finished and future 2 started", requests = 2, delegateRequests = 2, delegateSuccesses = 1, delegateFailures = 0, staleRequests = 1)
           request2.countDownLatch.countDown()
-          checkMetrics("after future 1 finished and future 2 started", requests = 2, delegateRequests = 2, delegateSuccesses = 1, delegateFailures = 1, staleRequests = 1)
+          checkMetrics("after future 1 finished and future 2 finish", requests = 2, delegateRequests = 2, delegateSuccesses = 1, delegateFailures = 1, staleRequests = 1)
           await(future2) shouldBe "result1"
 
           val future3 = cachingService(request3)
+          await(future3) shouldBe "result1" //this is actually stale and the result of the first request
           checkMetrics("after future 1&2 finished and future 3 started", requests = 3, delegateRequests = 3, delegateSuccesses = 1, delegateFailures = 1, staleRequests = 2)
           request3.countDownLatch.countDown()
-          await(future3) shouldBe "result1"
           checkMetrics("After awaiting for future3", requests = 3, delegateRequests = 3, delegateSuccesses = 2, delegateFailures = 1, staleRequests = 2)
 
           val future4 = cachingService(request4)
           checkMetrics("after future 1&2&3 finished and future 4 started", requests = 4, delegateRequests = 3, delegateSuccesses = 2, delegateFailures = 1, staleRequests = 2)
-          request4.countDownLatch.countDown()
           await(future4) shouldBe "result3"
           checkMetrics("After awaiting for future4", requests = 4, delegateRequests = 3, delegateSuccesses = 2, delegateFailures = 1, staleRequests = 2)
     }

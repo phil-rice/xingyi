@@ -19,6 +19,7 @@ abstract class AbstractAsyncPimperTests[M[_]] extends UtilsSpec {
 
   it should "lift things" in {
     1.lift[M].await shouldBe 1
+    1.liftValue[M].await shouldBe 1
     Success(1).liftTry[M].await shouldBe 1
     val me1 = runtimeException.liftThrowable[M, Int]
     intercept[RuntimeException](me1.await) shouldBe runtimeException
