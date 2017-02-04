@@ -35,7 +35,6 @@ class CachingServiceTests extends UtilsSpec with Eventually {
 
   import org.mockito.Mockito._
 
-
   val lock = new Object
 
   type CService = CachingService[Future, DelegateRequest, String, String]
@@ -87,7 +86,7 @@ class CachingServiceTests extends UtilsSpec with Eventually {
           val request = DelegateRequest("key", Success("result"), bypassCache = true)
           val future: Future[String] = cachingService(request)
           request.countDownLatch.countDown()
-          Await.result(future, 5 seconds) shouldBe "result"
+          await(future) shouldBe "result"
           checkMetrics("", bypassedRequest = 1, inTransitWithoutResults = Some(0))
     }
   }
@@ -102,7 +101,7 @@ class CachingServiceTests extends UtilsSpec with Eventually {
           checkMetrics("Before countdown", requests = 1, delegateRequests = 1, inTransitWithoutResults = Some(1), inTransits = Some(1))
           request.countDownLatch.countDown()
           eventually(future.isCompleted)
-          withClue("waiting to finish")(Await.result(future, 5 seconds) shouldBe "result")
+          withClue("waiting to finish")(await(future) shouldBe "result")
           checkMetrics("After awaiting", requests = 1, delegateRequests = 1, delegateSuccesses = 1)
     }
   }
@@ -118,7 +117,7 @@ class CachingServiceTests extends UtilsSpec with Eventually {
           val future2 = cachingService(request2)
           checkMetrics("before countdown", requests = 2, delegateRequests = 1, inTransits = Some(1))
           request1.countDownLatch.countDown()
-          Await.result(future2, 5 seconds) shouldBe "result1" //from the future of request1
+          await(future2) shouldBe "result1" //from the future of request1
           checkMetrics("After awaiting", requests = 2, delegateRequests = 1, delegateSuccesses = 1, inTransits = Some(0))
     }
   }
@@ -132,12 +131,12 @@ class CachingServiceTests extends UtilsSpec with Eventually {
           request1 shouldEqual request2
           val future1 = cachingService(request1)
           request1.countDownLatch.countDown()
-          Await.result(future1, 5 seconds) shouldBe "result1" //making sure that future1 has finished
+          await(future1) shouldBe "result1" //making sure that future1 has finished
 
           checkMetrics("after future 1 finished ", requests = 1, delegateRequests = 1, delegateSuccesses = 1)
           val future2 = cachingService(request2)
           checkMetrics("after future 1 finished and future 2 started", requests = 2, delegateRequests = 1, delegateSuccesses = 1)
-          Await.result(future2, 5 seconds) shouldBe "result1" //from the future of request1
+          await(future2) shouldBe "result1" //from the future of request1
           checkMetrics("After awaiting for future2", requests = 2, delegateRequests = 1, delegateSuccesses = 1)
     }
   }
@@ -151,7 +150,7 @@ class CachingServiceTests extends UtilsSpec with Eventually {
 
           val future1 = cachingService(request1)
           request1.countDownLatch.countDown()
-          Await.result(future1, 5 seconds) shouldBe "result1"
+          await(future1) shouldBe "result1"
           checkMetrics("after future 1 finished", requests = 1, delegateRequests = 1, delegateSuccesses = 1)
 
           when(timeService.apply()) thenReturn 200
@@ -161,7 +160,7 @@ class CachingServiceTests extends UtilsSpec with Eventually {
           checkMetrics("after future 1&2 finished", requests = 2, delegateRequests = 2, delegateSuccesses = 2, staleRequests = 1)
 
           val future3 = cachingService(request2)
-          Await.result(future3, 5 seconds) shouldBe "result2"
+          await(future3) shouldBe "result2"
           checkMetrics("after future 1, and 3", requests = 3, delegateRequests = 2, delegateSuccesses = 2, staleRequests = 1)
 
     }
@@ -177,14 +176,14 @@ class CachingServiceTests extends UtilsSpec with Eventually {
 
           val future1 = cachingService(request1)
           request1.countDownLatch.countDown()
-          Await.result(future1, 5 seconds) shouldBe "result1"
+          await(future1) shouldBe "result1"
           checkMetrics("after future 1 finished ", requests = 1, delegateRequests = 1, delegateSuccesses = 1)
 
           when(timeService.apply()) thenReturn 200
 
           val future2 = cachingService(request2)
           checkMetrics("after future 1 finished and future 2 started", requests = 2, delegateRequests = 2, delegateSuccesses = 1, staleRequests = 1)
-          Await.result(future2, 5 seconds) shouldBe "result1"
+          await(future2) shouldBe "result1"
 
           request2.countDownLatch.countDown()
           checkMetrics("after future2 finished ", requests = 2, delegateRequests = 2, delegateSuccesses = 2, staleRequests = 1)
@@ -192,8 +191,8 @@ class CachingServiceTests extends UtilsSpec with Eventually {
           val future3 = cachingService(request3)
           checkMetrics("after future3 started ", requests = 3, delegateRequests = 2, delegateSuccesses = 2, staleRequests = 1)
           request3.countDownLatch.countDown()
-          Await.result(future2, 5 seconds) shouldBe "result1" //this was served while stale
-          Await.result(future3, 5 seconds) shouldBe "result2"
+          await(future2) shouldBe "result1" //this was served while stale
+          await(future3) shouldBe "result2"
 
           checkMetrics("after future3 finished", requests = 3, delegateRequests = 2, delegateSuccesses = 2, staleRequests = 1)
     }
@@ -210,7 +209,7 @@ class CachingServiceTests extends UtilsSpec with Eventually {
 
           val future1 = cachingService(request1)
           request1.countDownLatch.countDown()
-          Await.result(future1, 5 seconds) shouldBe "result1"
+          await(future1) shouldBe "result1"
           checkMetrics("after future 1 finished ", requests = 1, delegateRequests = 1, delegateSuccesses = 1)
 
           when(timeService.apply()) thenReturn 200
@@ -223,13 +222,13 @@ class CachingServiceTests extends UtilsSpec with Eventually {
 
           request2.countDownLatch.countDown()
           request3.countDownLatch.countDown()
-          Await.result(future2, 5 seconds) shouldBe "result1"
-          Await.result(future3, 5 seconds) shouldBe "result1"
+          await(future2) shouldBe "result1"
+          await(future3) shouldBe "result1"
           checkMetrics("after future3 finished", requests = 3, delegateRequests = 2, delegateSuccesses = 2, staleRequests = 2)
 
           val future4 = cachingService(request4)
           request4.countDownLatch.countDown()
-          Await.result(future4, 5 seconds) shouldBe "result2"
+          await(future4) shouldBe "result2"
           checkMetrics("after future3 finished", requests = 4, delegateRequests = 2, delegateSuccesses = 2, staleRequests = 2)
     }
   }
@@ -243,13 +242,13 @@ class CachingServiceTests extends UtilsSpec with Eventually {
 
           val future1 = cachingService(request1)
           request1.countDownLatch.countDown()
-          intercept[RuntimeException](Await.result(future1, 5 seconds))
+          intercept[RuntimeException](await(future1))
           checkMetrics("after future 1 fiCnished ", requests = 1, delegateRequests = 1, delegateFailures = 1)
 
           val future2 = cachingService(request2)
           checkMetrics("after future 1 finished and future 2 started", requests = 2, delegateRequests = 2, delegateFailures = 1)
           request2.countDownLatch.countDown()
-          Await.result(future2, 5 seconds) shouldBe "result2"
+          await(future2) shouldBe "result2"
           checkMetrics("After awaiting for future2", requests = 2, delegateRequests = 2, delegateSuccesses = 1, delegateFailures = 1)
     }
   }
@@ -273,18 +272,18 @@ class CachingServiceTests extends UtilsSpec with Eventually {
           val future2 = cachingService(request2)
           request2.countDownLatch.countDown()
           checkMetrics("after future 1 finished and future 2 started", requests = 2, delegateRequests = 2, delegateSuccesses = 1, delegateFailures = 1, staleRequests = 1)
-          Await.result(future2, 5 seconds) shouldBe "result1"
+          await(future2) shouldBe "result1"
 
           val future3 = cachingService(request3)
           checkMetrics("after future 1&2 finished and future 3 started", requests = 3, delegateRequests = 3, delegateSuccesses = 1, delegateFailures = 1, staleRequests = 2)
           request3.countDownLatch.countDown()
-          Await.result(future3, 5 seconds) shouldBe "result1"
+          await(future3) shouldBe "result1"
           checkMetrics("After awaiting for future3", requests = 3, delegateRequests = 3, delegateSuccesses = 2, delegateFailures = 1, staleRequests = 2)
 
           val future4 = cachingService(request4)
           checkMetrics("after future 1&2&3 finished and future 4 started", requests = 4, delegateRequests = 3, delegateSuccesses = 2, delegateFailures = 1, staleRequests = 2)
           request4.countDownLatch.countDown()
-          Await.result(future4, 5 seconds) shouldBe "result3"
+          await(future4) shouldBe "result3"
           checkMetrics("After awaiting for future4", requests = 4, delegateRequests = 3, delegateSuccesses = 2, delegateFailures = 1, staleRequests = 2)
     }
   }
@@ -301,7 +300,7 @@ class CachingServiceTests extends UtilsSpec with Eventually {
           cachingService.clearCache
           checkMetrics("after clearCache", requests = 1, delegateRequests = 1, delegateSuccesses = 0, cacheSize = Some(0))
           request1.countDownLatch.countDown()
-          Await.result(future1, 5 seconds) shouldBe "result1"
+          await(future1) shouldBe "result1"
           checkMetrics("after future 1 finished ", requests = 1, delegateRequests = 1, delegateSuccesses = 1, cacheSize = Some(1))
 
           val future2 = cachingService(request2)
@@ -309,7 +308,7 @@ class CachingServiceTests extends UtilsSpec with Eventually {
 
           request2.countDownLatch.countDown()
           checkMetrics("after future2 finished", requests = 2, delegateRequests = 2, delegateSuccesses = 2)
-          Await.result(future2, 5 seconds) shouldBe "result2"
+          await(future2) shouldBe "result2"
     }
   }
   it should "not use data from a transit after cache has been cleared, and another request already sent" in {
@@ -328,17 +327,17 @@ class CachingServiceTests extends UtilsSpec with Eventually {
           checkMetrics("after future 2 started ", requests = 2, delegateRequests = 2, delegateSuccesses = 0, cacheSize = Some(1))
 
           request1.countDownLatch.countDown()
-          Await.result(future1, 5 seconds) shouldBe "result1"
+          await(future1) shouldBe "result1"
           checkMetrics("after future 1 finished ", requests = 2, delegateRequests = 2, delegateSuccesses = 1, cacheSize = Some(1))
 
           request2.countDownLatch.countDown()
           checkMetrics("after future2 finished", requests = 2, delegateRequests = 2, delegateSuccesses = 2)
-          Await.result(future2, 5 seconds) shouldBe "result2"
+          await(future2) shouldBe "result2"
 
           val future3 = cachingService(request3)
           request3.countDownLatch.countDown()
           checkMetrics("future 3 finished", requests = 3, delegateRequests = 2, delegateSuccesses = 2)
-          Await.result(future3, 5 seconds) shouldBe "result2"
+          await(future3) shouldBe "result2"
     }
   }
 
@@ -359,7 +358,7 @@ class CachingServiceTests extends UtilsSpec with Eventually {
           val future2 = cachingService(request2)
           request2.countDownLatch.countDown()
           checkMetrics("after future 2 started ", requests = 2, delegateRequests = 2, delegateFailures = 1, delegateSuccesses = 1, cacheSize = Some(1))
-          Await.result(future2, 5 seconds) shouldBe "result2"
+          await(future2) shouldBe "result2"
     })
   }
 
@@ -387,7 +386,7 @@ class CachingServiceTests extends UtilsSpec with Eventually {
             future2.isCompleted shouldBe false
             request2.countDownLatch.countDown()
             checkMetrics("after future 2 finished ", requests = 2, delegateRequests = 2, delegateSuccesses = 2, deadRequests = 1, cacheSize = Some(1))
-            Await.result(future2, 5 seconds) shouldBe "result2"
+            await(future2) shouldBe "result2"
     }
   }
 
@@ -420,11 +419,11 @@ class CachingServiceTests extends UtilsSpec with Eventually {
             addAndCheck(request4)
             checkMetrics("after 4", requests = 8, delegateRequests = 4, delegateSuccesses = 4, cacheSize = Some(4))
             addAndCheck(request5)
-            checkMetrics("after 5", requests = 10, delegateRequests = 5, delegateSuccesses = 5, cacheSize = Some(3),removedBecauseTooFull=2)
+            checkMetrics("after 5", requests = 10, delegateRequests = 5, delegateSuccesses = 5, cacheSize = Some(3), removedBecauseTooFull = 2)
             addAndCheck(request6)
-            checkMetrics("after 6", requests = 12, delegateRequests = 6, delegateSuccesses = 6, cacheSize = Some(4),removedBecauseTooFull=2)
+            checkMetrics("after 6", requests = 12, delegateRequests = 6, delegateSuccesses = 6, cacheSize = Some(4), removedBecauseTooFull = 2)
             addAndCheck(request7)
-            checkMetrics("after 7", requests = 14, delegateRequests = 7, delegateSuccesses = 7, cacheSize = Some(3),removedBecauseTooFull=4)
+            checkMetrics("after 7", requests = 14, delegateRequests = 7, delegateSuccesses = 7, cacheSize = Some(3), removedBecauseTooFull = 4)
 
     })
   }

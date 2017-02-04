@@ -82,7 +82,7 @@ class CachingService[M[_], Req, Id, Res](val name: String,
       metrics.requests.incrementAndGet()
       cachedRequest(req)
     }
-  
+
   def findCommand(req: Req, staleState: CachedValue[M, Res] => StaleState)(c: CachedValue[M, Res]): CacheCommand = {
     (c, staleState(c)) match {
       case (c@CachedValue(_, _, None, _), Dead) => DeadNeedsClearingAndDelegation(req, c)

@@ -22,11 +22,25 @@ trait Async[M[_]] extends Monad[M] {
 }
 
 object Async {
-  implicit def AsyncForFuture(implicit executionContext: ExecutionContext) = new Async[Future] {
+
+  implicit class AsyncPimper[M[_], T](mt: M[T])(implicit async: Async[M]) {
+    def map[T2](fn: T => T2) = async.map(mt, fn)
+
+    def flatMap[T2](fn: T => M[T2]) = async.flatMap(mt, fn)
+
+    def transform[T2](fn: Try[T] => M[T2]) = async.transform(mt, fn)
+
+    def registerSideEffectWhenComplete[T2](sideEffect: Try[T] => Unit) = async.registerSideEffectWhenComplete(mt, sideEffect)
+  }
+
+
+
+  implicit def asyncForFuture(implicit executionContext: ExecutionContext) = new Async[Future] {
     override def lift[T](t: => T): Future[T] = Try(t) match {
       case Success(s) => Future.successful(t)
       case Failure(e) => Future.failed(e)
     }
+
     override def async[T](t: => T): Future[T] = Future(t)
 
     override def flatMap[T, T2](m: Future[T], fn: (T) => Future[T2]): Future[T2] = m.flatMap[T2](fn)

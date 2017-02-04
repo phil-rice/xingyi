@@ -106,7 +106,7 @@ class FutureAsyncTests extends AbstractAsyncTests[Future] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  override implicit val async: Async[Future] = Async.AsyncForFuture
+  override implicit val async: Async[Future] = Async.asyncForFuture
 
   override def checkHasException[E <: Exception : ClassTag](a: Future[String]) = {
     intercept[E](awaitFor(a))
