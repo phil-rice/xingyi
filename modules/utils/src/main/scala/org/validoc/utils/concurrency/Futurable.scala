@@ -4,18 +4,12 @@ import org.validoc.utils.monads.{FlatMap, Monad}
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 /** M[_] is typically Future[_], or Task[_], or FutureEitherT or some other concurrency thing that does things in the future
   * Uses of M[_] are quite likely to make the assumption that launch fires things off in another thread.
   * */
 
-trait FuturableSideEffect[T] {
-  def succeed(t: T)
-
-  def exception(t: Throwable)
-
-}
 
 trait Futurable[M[_]] extends Monad[M] {
 
@@ -24,7 +18,7 @@ trait Futurable[M[_]] extends Monad[M] {
 
   def delay(duration: FiniteDuration): M[Unit]
 
-  def registerSideEffectWhenComplete[T](m: M[T], sideEffect: FuturableSideEffect[T]): M[T]
+  def registerSideEffectWhenComplete[T](m: M[T], sideEffect: Try[T] => Unit): M[T]
 }
 
 
@@ -74,14 +68,12 @@ object Futurable {
     override def delay(duration: FiniteDuration): Future[Unit] =
       DelayedFuture(duration)(())
 
-    override def liftThrowable[T](throwable: Throwable): Future[T] = Future.failed(throwable)
+    //    override def liftThrowable[T](throwable: Throwable): Future[T] = Future.failed(throwable)
 
-    override def registerSideEffectWhenComplete[T](m: Future[T], sideEffect: FuturableSideEffect[T]): Future[T] = {
-      m.transformWith(_ match {
-        case Success(t) => sideEffect.succeed(t); m
-        case Failure(t) => sideEffect.exception(t); m
-      })
-    }
+    override def registerSideEffectWhenComplete[T](m: Future[T], sideEffect: Try[T] => Unit): Future[T] =
+      m.transformWith { tryT => sideEffect(tryT); m }
+
+    override def liftTry[T](tryT: Try[T]): Future[T] = tryT.fold(Future.failed, Future.successful)
   }
 
 }

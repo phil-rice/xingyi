@@ -5,10 +5,12 @@ import java.util.function.UnaryOperator
 
 import org.validoc.utils.Service
 import org.validoc.utils.caching._
-import org.validoc.utils.caching2.WhatToDoWithReturnedResults.error
-import org.validoc.utils.concurrency.{DoubleCheckLock, Futurable, FuturableSideEffect}
+import org.validoc.utils.concurrency.{DoubleCheckLock, Futurable}
 import org.validoc.utils.logging.Logging
 import org.validoc.utils.time.NanoTimeService
+
+import scala.util.Try
+import language.higherKinds
 
 trait CachingStrategy[M[_], Req, Id, Res] {
   def bypassCache(req: Req): Boolean
@@ -21,43 +23,12 @@ trait CachingStrategy[M[_], Req, Id, Res] {
 
   def staleCachingStrategy: StaleCacheStrategy2
 
-  def whatToDoWithReturnedResult: WhatToDoWithReturnedResults[M, Id, Res]
-
 }
 
 trait ShouldCacheStrategy[Res] {
-  def shouldCacheThrowable(throwable: Throwable): Boolean
-
-  def shouldCacheResult(res: Res): Boolean
+  def shouldCacheResult(res: Try[Res]): Boolean
 }
 
-trait WhatToDoWithReturnedResults[M[_], Id, Res] {
-  def modifyCache(name: String, shouldCacheStrategy: ShouldCacheStrategy[Res], cache: ModifyCache[Id, CachedValue2[M, Res]])(reqId: Id, c: CachedValue2[M, Res]): FuturableSideEffect[Res]
-}
-
-object WhatToDoWithReturnedResults extends Logging {
-  def apply[M[_], Id, Res](implicit futurable: Futurable[M]) = new WhatToDoWithReturnedResults[M, Id, Res] {
-
-    override def modifyCache(name: String, shouldCacheStrategy: ShouldCacheStrategy[Res], cache: ModifyCache[Id, CachedValue2[M, Res]])(reqId: Id, c: CachedValue2[M, Res]) = new FuturableSideEffect[Res] {
-      override def succeed(res: Res): Unit = {
-        cache(reqId) { cNew =>
-          if (cNew.inFlightId != c.inFlightId) cNew
-          else if (shouldCacheStrategy.shouldCacheResult(res)) cNew.copy(inFlight = None, value = Some(futurable.lift(res)))
-          else cNew.copy(inFlight = None)
-        }
-      }
-
-      override def exception(exception: Throwable): Unit = {
-        cache(reqId) { cNew =>
-          error(s"ReqId $reqId returned from $name with $exception", exception)
-          if (cNew.inFlightId != c.inFlightId) cNew
-          else if (shouldCacheStrategy.shouldCacheThrowable(exception)) cNew.copy(inFlight = None, value = Some(futurable.liftThrowable(exception)))
-          else cNew.copy(inFlight = None)
-        }
-      }
-    }
-  }
-}
 
 trait StaleCacheStrategy2 {
   def state[M[_]](cacheName: String)(timeService: NanoTimeService)(cachedValue: CachedValue2[M, _]): StaleState
@@ -104,18 +75,29 @@ class Cache[M[_] : Futurable, Req, Id, Res](name: String, delegate: Service[M, R
 
   private def staleState = cachingStrategy.staleCachingStrategy.state[M](name)(nanoTimeService) _
 
-  private def whatToDoWithResult = cachingStrategy.whatToDoWithReturnedResult.modifyCache(name, cachingStrategy.shouldCacheStrategy, map) _
+  private def recordResult(req: Req, c: CachedValue2[M, Res])(tryRes: Try[Res]) = {
+    map(id(req)) { cNew =>
+      if (cNew.inFlightId != c.inFlightId) cNew
+      else if (shouldCacheStrategy.shouldCacheResult(tryRes)) cNew.copy(inFlight = None, value = Some(futurable.liftTry(tryRes)))
+      else cNew.copy(inFlight = None)
+    }
+  }
 
   private def askDelegate(req: Req, c: CachedValue2[M, Res]) = {
-    val result: M[Res] = delegate(req)
-    val reqId = id(req)
-    futurable.registerSideEffectWhenComplete(result, whatToDoWithResult(reqId, c))
-    c.copy(inFlight = Some(result))
+    val delegateResult: M[Res] = delegate(req)
+    val finalResult = futurable.registerSideEffectWhenComplete(delegateResult, recordResult(req, c))
+    c.copy(inFlight = Some(finalResult))
   }
 
 
   private def sendToDelegateIfNeededUpdatingCache(req: Req)(c: CachedValue2[M, Res]): CachedValue2[M, Res] = {
     (c, staleState(c)) match {
+      case (c@CachedValue2(_, _, None, _), Dead) =>
+        logRequest(req, s"Have dead data, and nothing intransit. Time to nuke the dead data,  and request new")
+        askDelegate(req, c.copy(value = None))
+      case (c@CachedValue2(_, _, Some(intransit), None), Dead) =>
+        logRequest(req, s"Have dead data, but something intransit, so using intransit")
+        c
       case (c@CachedValue2(__, _, None, None), _) =>
         logRequest(req, s"No data in the cache. Launching a upstream request")
         askDelegate(req, c)
@@ -131,19 +113,12 @@ class Cache[M[_] : Futurable, Req, Id, Res](name: String, delegate: Service[M, R
       case (c@CachedValue2(_, _, Some(inTransit), _), Stale) =>
         logRequest(req, s"Have stale data, already have intransit, so using stale data")
         c
-      case (c@CachedValue2(_, _, None, _), Dead) =>
-        logRequest(req, s"Have dead data, and nothing intransit. Time to nuke the dead data,  and request new")
-        askDelegate(req, c.copy(value = None))
-      case (c@CachedValue2(_, _, Some(intransit), None), Dead) =>
-        logRequest(req, s"Have dead data, but something intransit, so using intransit")
-        c
       case (c, s) => throw new RuntimeException(s"unexpected state. stale $s value $c")
     }
   }
 
   private def cachedRequest(req: Req): M[Res] = {
-    val reqId = id(req)
-    map(reqId)(sendToDelegateIfNeededUpdatingCache(req)).valueToUse
+    map(id(req))(sendToDelegateIfNeededUpdatingCache(req)).valueToUse
   }
 
 
