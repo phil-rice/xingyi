@@ -31,12 +31,19 @@ object Async {
 
   implicit class AsyncPimper[M[_], T](mt: M[T])(implicit async: Async[M]) {
 
+    def join[T2](mt2: M[T2]) = async.join2(mt, mt2)
+
     def map[T2](fn: T => T2) = async.map(mt, fn)
 
     def transform[T2](fn: Try[T] => M[T2]) = async.transform(mt, fn)
 
     def registerSideEffectWhenComplete[T2](sideEffect: Try[T] => Unit) = async.registerSideEffectWhenComplete(mt, sideEffect)
   }
+
+  implicit class SeqOfMsPimper[M[_] : Async, T](seq: Seq[M[T]]) {
+    def join: M[Seq[T]] = implicitly[Async[M]].join(seq)
+  }
+
 
   implicit class ValuePimper[T](t: T) {
     def lift[M[_] : Async]: M[T] = implicitly[Async[M]].lift(t)
