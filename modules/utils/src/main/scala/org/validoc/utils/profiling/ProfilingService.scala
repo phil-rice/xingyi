@@ -2,7 +2,7 @@ package org.validoc.utils.profiling
 
 import org.validoc.utils.Service
 import org.validoc.utils.concurrency.Async
-import org.validoc.utils.time.NanoTimeService
+import org.validoc.utils.time.{NanoTimeService, SystemClockNanoTimeService}
 
 import scala.util.{Failure, Success, Try}
 import org.validoc.utils.concurrency.Async._
@@ -25,7 +25,7 @@ trait TryProfileData {
 
 object TryProfileData extends TryProfileData
 
-class ProfilingService[M[_] : Async, Req, Res](name: String, delegate: Req => M[Res], timeService: NanoTimeService, tryProfileData: TryProfileData = TryProfileData)
+class ProfilingService[M[_] : Async, Req, Res](name: String, delegate: Req => M[Res], timeService: NanoTimeService=SystemClockNanoTimeService, tryProfileData: TryProfileData = TryProfileData)
   extends Service[M, Req, Res] {
 
   override def apply(request: Req): M[Res] = {

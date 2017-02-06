@@ -7,14 +7,16 @@ trait FlatMap[M[_]] {
 
 }
 
+trait CanMap[M[_]] {
+  def map[T, T2](m: M[T], fn: T => T2): M[T2]
+}
 
-trait Monad[M[_]] extends FlatMap[M] {
+
+trait Monad[M[_]] extends FlatMap[M] with CanMap[M] {
   def lift[T](t: => T): M[T]
 
   /** This may just throw the exception if it's not meaningfull to lift it. Meaningful monads include Try, Future ... */
   def liftTry[T](tryT: Try[T]): M[T]
-
-  def map[T, T2](m: M[T], fn: T => T2): M[T2]
 
   def join2[T1, T2](m1: M[T1], m2: M[T2]): M[(T1, T2)] = flatMap(m1, (t1: T1) => flatMap(m2, (t2: T2) => lift((t1, t2))))
 

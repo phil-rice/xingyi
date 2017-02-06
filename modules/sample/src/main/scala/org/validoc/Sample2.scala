@@ -1,10 +1,8 @@
 package org.validoc
 
 import org.validoc.domain._
-import org.validoc.utils.aggregate.{Enricher, HasChildren, Merger}
+import org.validoc.utils.aggregate.{Enricher, HasChildren}
 import org.validoc.utils.concurrency.Async
-import org.validoc.utils.concurrency.Async._
-import org.validoc.utils.monads.Kleisli._
 
 trait WrappedTypes[M[_]] {
 
@@ -44,11 +42,13 @@ class Sample2[M[_], HttpReq, HttpRes](mostPopularHttp: Service[M, HttpReq, HttpR
 
   def profile[Req, Res]: Wrapped[Req, Res] = ???
 
+  def parseCacheAndProfile[Req, Res](parser: String, config: String) =
+    parse[Req, Res](parser) andThen cache(config) andThen profile
 
   val homePageService1 =
     aggregate(
       aggregate(
-        (parse[Unit, MostPopular]("parser") andThen cache("config") andThen profile) (mostPopularHttp),
+        parseCacheAndProfile[Unit,MostPopular]("parser", "config")(mostPopularHttp),
         (parse[ProgrammeId, Programme]("parse") andThen cache("config")) (programmeHttp)).
         enrich[EnrichedMostPopular],
       aggregate(
