@@ -1,16 +1,16 @@
 package org.validoc.utils.http
 
-import org.validoc.utils.GatewayException
+import org.validoc.utils.{GatewayException, UnexpectedException, UnexpectedParserException}
 import org.validoc.utils.logging.Logging
-
-import scala.util.{Failure, Success, Try}
+import org.validoc.utils.parser.{ErrorResult, FoundResult, ParserFinder, ParserResult}
 
 object ResponseProcessor {
-  def parsed[Query, T](parser: String => T) = new ResponseProcessorExpectingResult[Query, T](parser)
+  def parsed[Query, T](parserFinder: ParserFinder[T]) = new ResponseProcessorExpectingResult[Query, T](parserFinder)
 
-  def optionalParsed[Query, T](parser: String => T) = new ResponseProcessorForOption[Query, T](parser)
+  def optionalParsed[Query, T](parserFinder: ParserFinder[T]) = new ResponseProcessorForOption[Query, T](parserFinder)
 
 }
+
 case class RequestDetails[Req](req: Req, requestSummary: String)
 
 trait ResponseProcessor[Req, T] {
@@ -18,25 +18,31 @@ trait ResponseProcessor[Req, T] {
 
   def statusNotFound(requestDetails: RequestDetails[Req], serviceResponse: ServiceResponse): T
 
-  def statusUnexpected(requestDetails: RequestDetails[Req], serviceResponse: ServiceResponse): T = {
+  def statusUnexpected(requestDetails: RequestDetails[Req], serviceResponse: ServiceResponse): T =
     throw GatewayException(requestDetails, serviceResponse)
-  }
 
-  def exception(t: Throwable): Try[T] = Failure(t)
 
+  def exception(requestDetails: RequestDetails[Req], t: Throwable): T = throw new UnexpectedException(requestDetails, t)
+
+  protected def process[T](parserFinder: ParserFinder[T], serviceResponse: ServiceResponse) =
+    try {
+      parserFinder(serviceResponse.contentType, serviceResponse.body.s)
+    } catch {
+      case t: Throwable => throw new UnexpectedParserException(serviceResponse, t)
+    }
 }
 
 
-class ResponseProcessorExpectingResult[Req, T](parser: String => T) extends ResponseProcessor[Req, T] {
-  override def statusOk(serviceResponse: ServiceResponse): T = parser(serviceResponse.body.s)
+class ResponseProcessorExpectingResult[Req, T](parserFinder: ParserFinder[T]) extends ResponseProcessor[Req, T] {
+  override def statusOk(serviceResponse: ServiceResponse) = process(parserFinder, serviceResponse).valueOrException
 
-  override def statusNotFound(requestDetails: RequestDetails[Req], serviceResponse: ServiceResponse): T =
+  override def statusNotFound(requestDetails: RequestDetails[Req], serviceResponse: ServiceResponse) =
     statusUnexpected(requestDetails, serviceResponse)
 }
 
-class ResponseProcessorForOption[Req, T](parser: String => T) extends ResponseProcessor[Req, Option[T]] with Logging {
-  override def statusOk(serviceResponse: ServiceResponse): Option[T] = Some(parser(serviceResponse.body.s))
+class ResponseProcessorForOption[Req, T](parserFinder: ParserFinder[T]) extends ResponseProcessor[Req, Option[T]] with Logging {
+  override def statusOk(serviceResponse: ServiceResponse) = process(parserFinder, serviceResponse).map(Some(_)).valueOrException
 
-  override def statusNotFound(requestDetails: RequestDetails[Req], serviceResponse: ServiceResponse): Option[T] = None
+  override def statusNotFound(requestDetails: RequestDetails[Req], serviceResponse: ServiceResponse) = FoundResult(serviceResponse.contentType, None).valueOrException
 }
 

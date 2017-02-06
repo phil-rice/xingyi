@@ -25,8 +25,8 @@ abstract class AbstractParserSpec[T <: ParserFinder[String]] extends UtilsSpec {
     setup { (finder, parser) =>
       finder.find(ctMain) shouldBe FoundResult(ctMain, parser)
     }
-
   }
+
   it should "have a apply method that finds a parser and then applies it" in {
     setup { (finder, parser) =>
       when(parser.apply("someString")) thenReturn ("someResult")

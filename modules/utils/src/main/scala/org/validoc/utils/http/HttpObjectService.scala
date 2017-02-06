@@ -7,11 +7,10 @@ import scala.util.{Failure, Success}
 
 
 class HttpObjectService[M[_] : Async, HttpReq, Req, HttpRes, Res](name: String,
-                                                                     rawClient: Service[M, HttpReq, HttpRes],
-                                                                     responseProcessor: ResponseProcessor[Req, Res])
-                                                                    (implicit toRequest: ToHttpRequest[Req, HttpReq],
-                                                                     toServiceResponse: ToServiceResponse[HttpRes])
-  extends Service[M, Req, Res] {
+                                                                  rawClient: Service[M, HttpReq, HttpRes],
+                                                                  responseProcessor: ResponseProcessor[Req, Res])
+                                                                 (implicit toRequest: ToHttpRequest[Req, HttpReq],
+                                                                  toServiceResponse: ToServiceResponse[HttpRes]) extends Service[M, Req, Res] {
 
   import Async._
 
@@ -19,7 +18,7 @@ class HttpObjectService[M[_] : Async, HttpReq, Req, HttpRes, Res](name: String,
 
   override def apply(req: Req): M[Res] = {
     val httpReq = toRequest.toHttpRequest(req)
-    rawClient(httpReq).transform { tryRes =>
+    rawClient(httpReq).transform[Res] { tryRes =>
       tryRes match {
         case Success(httpRes) => {
           val serviceResponse = toServiceResponse.response(httpRes)
@@ -29,9 +28,8 @@ class HttpObjectService[M[_] : Async, HttpReq, Req, HttpRes, Res](name: String,
             case _ => responseProcessor.statusUnexpected(requestDetails(req), serviceResponse)
           }
         }.lift
-        case Failure(t) => responseProcessor.exception(t).liftTry
+        case Failure(t) => responseProcessor.exception(requestDetails(req), t).lift
       }
     }
   }
-
 }

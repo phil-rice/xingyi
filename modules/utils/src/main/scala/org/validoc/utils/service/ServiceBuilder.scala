@@ -6,6 +6,7 @@ import org.validoc.utils.caching.{CachingService, CachingStrategy}
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.http.{HttpObjectService, ResponseProcessor, ToHttpRequest, ToServiceResponse}
 import org.validoc.utils.map.MaxMapSizeStrategy
+import org.validoc.utils.parser.ParserFinder
 import org.validoc.utils.profiling.ProfilingService
 
 import scala.concurrent.duration.Duration
@@ -19,9 +20,9 @@ trait WrappedTypes[M[_]] {
 trait ServiceBuilder[M[_], HttpReq, HttpRes] extends WrappedTypes[M] {
   protected implicit def async: Async[M]
 
-  def parse[Req, Res](parser: String => Res)(implicit toRequest: ToHttpRequest[Req, HttpReq],
-                                             toServiceResponse: ToServiceResponse[HttpRes]): Modify[HttpReq, HttpRes, Req, Res] =
-    service => new HttpObjectService[M, HttpReq, Req, HttpRes, Res]("someName", service, ResponseProcessor.parsed(parser))
+  def parse[Req, Res](parserFinder: ParserFinder[Res])(implicit toRequest: ToHttpRequest[Req, HttpReq],
+                                                  toServiceResponse: ToServiceResponse[HttpRes]): Modify[HttpReq, HttpRes, Req, Res] =
+    service => new HttpObjectService[M, HttpReq, Req, HttpRes, Res]("someName", service, ResponseProcessor.parsed(parserFinder))
 
   def cache[Req, Id, Res](idFn: Req => Id, maxCacheSize: Int, timeToStale: Duration, timeToDead: Duration): Wrapped[Req, Res] =
     service => new CachingService[M, Req, Id, Res](

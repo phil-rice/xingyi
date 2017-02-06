@@ -1,55 +1,62 @@
 package org.validoc.utils.http
 
-import org.validoc.utils.{GatewayException, UtilsSpec}
-
-import scala.util.Failure
+import org.validoc.utils.parser.ParserFinder
+import org.validoc.utils.{GatewayException, UnexpectedException, UnexpectedParserException, UtilsSpec}
 
 
 class ResponseProcessorTests extends UtilsSpec {
 
   case class Result(s: String)
 
-  def parser: String => Result = Result(_)
+  val parserFinder = ParserFinder.always(Result(_))
+  val runtimeException = new RuntimeException
+  val errorThrowingParserFinder = ParserFinder.always[Result](s => throw runtimeException)
 
-  val statusResponse = ServiceResponse(Status(111), Body("someBody"), ContentType("some/content"))
+  val serviceResponse = ServiceResponse(Status(111), Body("someBody"), ContentType("some/content"))
 
   val requestDetails = RequestDetails("someReq", "someSummary")
 
-  val runtimeException = new RuntimeException
 
   behavior of "ResponseProcessorExpectingResult"
 
   it should "have statusOk that returns a result" in {
-    ResponseProcessor.parsed(parser).statusOk(statusResponse) shouldBe Result("someBody")
+    ResponseProcessor.parsed(parserFinder).statusOk(serviceResponse) shouldBe Result("someBody")
+  }
+
+  it should "nest any exception in the parser with a parser exception" in {
+    intercept[UnexpectedParserException](ResponseProcessor.parsed(errorThrowingParserFinder).statusOk(serviceResponse)) shouldBe UnexpectedParserException(serviceResponse, runtimeException)
   }
 
   it should "have statusNotFound that throws a GatewayException" in {
-    intercept[GatewayException](ResponseProcessor.parsed(parser).statusNotFound(requestDetails, statusResponse)) shouldBe
-      GatewayException(requestDetails, statusResponse)
+    intercept[GatewayException](ResponseProcessor.parsed(parserFinder).statusNotFound(requestDetails, serviceResponse)) shouldBe
+      GatewayException(requestDetails, serviceResponse)
   }
   it should "have statusUnexpected that throws a GatewayException" in {
-    intercept[GatewayException](ResponseProcessor.parsed(parser).statusUnexpected(requestDetails, statusResponse)) shouldBe
-      GatewayException(requestDetails, statusResponse)
+    intercept[GatewayException](ResponseProcessor.parsed(parserFinder).statusUnexpected(requestDetails, serviceResponse)) shouldBe
+      GatewayException(requestDetails, serviceResponse)
   }
 
-  it should "have a exception method that returns a failure" in {
-    ResponseProcessor.parsed(parser).exception(runtimeException) shouldBe Failure(runtimeException)
+  it should "have a exception method that throws a unexpected exception" in {
+    intercept[UnexpectedException](ResponseProcessor.parsed(parserFinder).exception(requestDetails,runtimeException)) shouldBe UnexpectedException(requestDetails, runtimeException)
   }
   behavior of "ResponseProcessorForOption"
 
   it should "have statusOk that returns a result" in {
-    ResponseProcessor.optionalParsed(parser).statusOk(statusResponse) shouldBe Some(Result("someBody"))
+    ResponseProcessor.optionalParsed(parserFinder).statusOk(serviceResponse) shouldBe Some(Result("someBody"))
+  }
+  it should "nest any exception in the parser with a parser exception" in {
+    intercept[UnexpectedParserException](ResponseProcessor.optionalParsed(errorThrowingParserFinder).statusOk(serviceResponse)) shouldBe UnexpectedParserException(serviceResponse, runtimeException)
   }
 
   it should "have statusNotFound that return None" in {
-    ResponseProcessor.optionalParsed(parser).statusNotFound(requestDetails, statusResponse) shouldBe None
+    ResponseProcessor.optionalParsed(parserFinder).statusNotFound(requestDetails, serviceResponse) shouldBe None
   }
   it should "have statusUnexpected that throws a GatewayException" in {
-    intercept[GatewayException](ResponseProcessor.optionalParsed(parser).statusUnexpected(requestDetails, statusResponse)) shouldBe
-      GatewayException(requestDetails, statusResponse)
+    intercept[GatewayException](ResponseProcessor.optionalParsed(parserFinder).statusUnexpected(requestDetails, serviceResponse)) shouldBe
+      GatewayException(requestDetails, serviceResponse)
   }
 
   it should "have a exception method that returns a failure" in {
-    ResponseProcessor.optionalParsed(parser).exception(runtimeException) shouldBe Failure(runtimeException)
+    intercept[UnexpectedException](ResponseProcessor.optionalParsed(parserFinder).exception(requestDetails, runtimeException)) shouldBe UnexpectedException(requestDetails, runtimeException)
   }
 }
