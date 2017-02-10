@@ -7,9 +7,24 @@ import org.validoc.utils.concurrency.Async
 import org.validoc.utils.functions.Functions
 import org.validoc.utils.logging.Logging
 import org.validoc.utils.map.{MapSizeStrategy, SafeMap}
+import org.validoc.utils.time.NanoTimeService
 
 import scala.language.higherKinds
 import scala.util.Try
+
+trait Id
+case class StringId(id: String) extends Id
+
+trait CachableResult[Res] {
+  def shouldCacheStrategy(req: Try[Res]): Boolean
+}
+
+trait CachableKey[Req] {
+  def id(req: Req): Id
+
+  def bypassCache(req: Req): Boolean
+}
+
 
 trait CachingOps {
   def name: String
@@ -19,33 +34,39 @@ trait CachingOps {
   def cachingMetrics: CachingMetricSnapShot
 }
 
-class CachingService[M[_], Req, Id, Res](val name: String,
-                                         protected val delegate: Service[M, Req, Res],
-                                         protected val cachingStrategy: CachingStrategy[M, Req, Id, Res],
-                                         sizeStrategy: MapSizeStrategy)
-                                        (implicit protected val async: Async[M])
-  extends HasCachingCommands[M, Req, Id, Res] with Service[M, Req, Res] with CachingOps with Logging {
+class CachingService[M[_] : Async, Req:CachableKey, Res:CachableResult](val name: String,
+                                             protected val delegate: Service[M, Req, Res],
+                                             protected val cachingStrategy: StaleCacheStrategy,
+                                             sizeStrategy: MapSizeStrategy)
+                                            (implicit timeService: NanoTimeService)
+
+  extends HasCachingCommands[M, Req, Res] with Service[M, Req, Res] with CachingOps with Logging {
+
+  val async = implicitly[Async[M]]
+  val cachableKey = implicitly[CachableKey[Req]]
+  val cachableResult = implicitly[CachableResult[Res]]
 
   import cachingStrategy._
 
   private val nextId = new AtomicLong()
   protected val metrics = CachingMetrics()
-  protected val map = SafeMap[Id, CachedValue[M, Res]](CachedValue[M, Res](nanoTimeService(), CachedId(nextId.getAndIncrement()), None, None), sizeStrategy, metrics)
+  protected val map =
+    SafeMap[Id, CachedValue[M, Res]](default = CachedValue[M, Res](timeService(), CachedId(nextId.getAndIncrement()), None, None), sizeStrategy, metrics)
 
   override def clearCache = map.clear
 
   private def logRequest(request: Req, whatsHappening: String) = debug(s" Cache $name. $whatsHappening for request $request")
 
-  private def staleState = staleCachingStrategy.state[M](name)(nanoTimeService) _
+  private def staleState = cachingStrategy.state[M](name) _
 
   override def cachingMetrics: CachingMetricSnapShot = metrics.snapshot(name, map, sizeStrategy.toString)
 
   private def recordResult(req: Req, c: CachedValue[M, Res])(tryRes: Try[Res]) = {
     trace(s"recordResult($req, $c)($tryRes)")
-    map(id(req)) { cNew =>
+    map(cachableKey.id(req)) { cNew =>
       tryRes.fold(_ => metrics.delegateFailures, _ => metrics.delegateSuccesses).incrementAndGet()
       if (cNew.inFlightId != c.inFlightId) cNew
-      else if (shouldCacheStrategy(tryRes)) cNew.copy(time = nanoTimeService(), inFlight = None, value = Some(async.liftTry(tryRes)))
+      else if (cachableResult.shouldCacheStrategy(tryRes)) cNew.copy(time = timeService(), inFlight = None, value = Some(async.liftTry(tryRes)))
       else cNew.copy(inFlight = None)
     }
   }
@@ -69,13 +90,13 @@ class CachingService[M[_], Req, Id, Res](val name: String,
   def updateMetrics = Functions.pipelineFn[CacheCommand](_.updateMetrics(metrics)) _
 
   private def cachedRequest(req: Req): M[Res] = {
-    map(id(req))(
+    map(cachableKey.id(req))(
       findCommand(req, staleState) _ andThen updateMetrics andThen updateLog andThen sendDelegateIfNeeded
     ).valueToUse
   }
 
   override def apply(req: Req): M[Res] =
-    if (bypassCache(req)) {
+    if (cachableKey.bypassCache(req)) {
       metrics.bypassedRequests.incrementAndGet()
       delegate(req)
     } else {
@@ -98,7 +119,7 @@ class CachingService[M[_], Req, Id, Res](val name: String,
 }
 
 
-trait HasCachingCommands[M[_], Req, Id, Res] extends Logging {
+trait HasCachingCommands[M[_], Req, Res] extends Logging {
 
   trait CacheCommand {
     def req: Req

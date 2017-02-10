@@ -22,6 +22,16 @@ case class DelegateRequest(key: String, result: Try[String], bypassCache: Boolea
   }
 }
 
+object DelegateRequest {
+
+  implicit object CachableKeyForDelegateRequest extends CachableKey[DelegateRequest] {
+    override def id(req: DelegateRequest): Id = StringId(req.key)
+
+    override def bypassCache(req: DelegateRequest): Boolean = req.bypassCache
+  }
+
+}
+
 class DelegateService[M[_] : Async] extends (DelegateRequest => M[String]) {
 
   def apply(req: DelegateRequest): M[String] = implicitly[Async[M]].async {
@@ -33,19 +43,23 @@ class DelegateService[M[_] : Async] extends (DelegateRequest => M[String]) {
 
 class CachingServiceTests extends UtilsSpec with Eventually {
 
+  implicit object CachableResultForString extends CachableResult[String] {
+    override def shouldCacheStrategy(req: Try[String]): Boolean = req.isSuccess
+  }
+
   import org.mockito.Mockito._
 
   val lock = new Object
 
-  type CService = CachingService[Future, DelegateRequest, String, String]
+  type CService = CachingService[Future, DelegateRequest, String]
 
   def withServices(fn: CService => DelegateService[Future] => NanoTimeService => Unit, cacheSizeStrategy: MapSizeStrategy = NoMapSizeStrategy): Unit =
     lock.synchronized {
       implicit val ec = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
       val delegateService = new DelegateService[Future]()
-      val timeService = mock[NanoTimeService]
-      val cachingStrategy = CachingStrategy[Future, DelegateRequest, String, String](_.key, 100 nanos, 1000 nanos, _.bypassCache, timeService, _.isSuccess)
-      val cachingService = new CachingService[Future, DelegateRequest, String, String]("someName", delegateService, cachingStrategy, cacheSizeStrategy)
+      implicit val timeService = mock[NanoTimeService]
+      val cachingStrategy = DurationStaleCacheStategy(100, 1000)
+      val cachingService = new CachingService[Future, DelegateRequest, String]("someName", delegateService, cachingStrategy, cacheSizeStrategy)
       fn(cachingService)(delegateService)(timeService)
     }
 

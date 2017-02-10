@@ -8,7 +8,6 @@ object ResponseProcessor {
   def parsed[Query, T](parserFinder: ParserFinder[T]) = new ResponseProcessorExpectingResult[Query, T](parserFinder)
 
   def optionalParsed[Query, T](parserFinder: ParserFinder[T]) = new ResponseProcessorForOption[Query, T](parserFinder)
-
 }
 
 case class RequestDetails[Req](req: Req, requestSummary: String)

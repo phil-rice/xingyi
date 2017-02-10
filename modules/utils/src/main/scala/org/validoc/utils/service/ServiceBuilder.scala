@@ -2,12 +2,13 @@ package org.validoc.utils.service
 
 import org.validoc.utils.Service
 import org.validoc.utils.aggregate._
-import org.validoc.utils.caching.{CachingService, CachingStrategy}
+import org.validoc.utils.caching.{CachableKey, CachableResult, CachingService, DurationStaleCacheStategy}
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.http.{HttpObjectService, ResponseProcessor, ToHttpRequest, ToServiceResponse}
 import org.validoc.utils.map.MaxMapSizeStrategy
 import org.validoc.utils.parser.ParserFinder
 import org.validoc.utils.profiling.ProfilingService
+import org.validoc.utils.time.NanoTimeService
 
 import scala.concurrent.duration.Duration
 
@@ -21,14 +22,14 @@ trait ServiceBuilder[M[_], HttpReq, HttpRes] extends WrappedTypes[M] {
   protected implicit def async: Async[M]
 
   def parse[Req, Res](parserFinder: ParserFinder[Res])(implicit toRequest: ToHttpRequest[Req, HttpReq],
-                                                  toServiceResponse: ToServiceResponse[HttpRes]): Modify[HttpReq, HttpRes, Req, Res] =
+                                                       toServiceResponse: ToServiceResponse[HttpRes]): Modify[HttpReq, HttpRes, Req, Res] =
     service => new HttpObjectService[M, HttpReq, Req, HttpRes, Res]("someName", service, ResponseProcessor.parsed(parserFinder))
 
-  def cache[Req, Id, Res](idFn: Req => Id, maxCacheSize: Int, timeToStale: Duration, timeToDead: Duration): Wrapped[Req, Res] =
-    service => new CachingService[M, Req, Id, Res](
+  def cache[Req:CachableKey,  Res: CachableResult]( maxCacheSize: Int, timeToStale: Duration, timeToDead: Duration)(implicit timeService: NanoTimeService): Wrapped[Req, Res] =
+    service => new CachingService[M, Req, Res](
       "someName",
       service,
-      CachingStrategy[M, Req, Id, Res](idFn, timeToStale, timeToDead, _ => false),
+      DurationStaleCacheStategy(timeToStale.toNanos, timeToDead.toNanos),
       MaxMapSizeStrategy(maxCacheSize, Math.min(1, maxCacheSize / 5)))
 
   def profile[Req, Res]: Wrapped[Req, Res] =
