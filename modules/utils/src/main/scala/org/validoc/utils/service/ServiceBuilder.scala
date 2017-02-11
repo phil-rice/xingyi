@@ -4,7 +4,7 @@ import org.validoc.utils.Service
 import org.validoc.utils.aggregate._
 import org.validoc.utils.caching.{CachableKey, CachableResult, CachingService, DurationStaleCacheStategy}
 import org.validoc.utils.concurrency.Async
-import org.validoc.utils.http.{HttpObjectService, ResponseProcessor, ToHttpRequest, ToServiceResponse}
+import org.validoc.utils.http._
 import org.validoc.utils.map.MaxMapSizeStrategy
 import org.validoc.utils.parser.ParserFinder
 import org.validoc.utils.profiling.ProfilingService
@@ -21,11 +21,10 @@ trait WrappedTypes[M[_]] {
 trait ServiceBuilder[M[_], HttpReq, HttpRes] extends WrappedTypes[M] {
   protected implicit def async: Async[M]
 
-  def parse[Req, Res](parserFinder: ParserFinder[Res])(implicit toRequest: ToHttpRequest[Req, HttpReq],
-                                                       toServiceResponse: ToServiceResponse[HttpRes]): Modify[HttpReq, HttpRes, Req, Res] =
-    service => new HttpObjectService[M, HttpReq, Req, HttpRes, Res]("someName", service, ResponseProcessor.parsed(parserFinder))
+  def parse[Req: ToRequest, Res: ParserFinder](implicit toServiceResponse: ToServiceResponse[HttpRes],toHttpReq: ServiceRequest => HttpReq): Modify[HttpReq, HttpRes, Req, Res] =
+    service => new HttpObjectService[M, HttpReq, Req, HttpRes, Res]("someName", service, ResponseProcessor.parsed(implicitly[ParserFinder[Res]]))
 
-  def cache[Req:CachableKey,  Res: CachableResult]( maxCacheSize: Int, timeToStale: Duration, timeToDead: Duration)(implicit timeService: NanoTimeService): Wrapped[Req, Res] =
+  def cache[Req: CachableKey, Res: CachableResult](maxCacheSize: Int, timeToStale: Duration, timeToDead: Duration)(implicit timeService: NanoTimeService): Wrapped[Req, Res] =
     service => new CachingService[M, Req, Res](
       "someName",
       service,

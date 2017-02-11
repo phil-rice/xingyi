@@ -1,6 +1,16 @@
 package org.validoc.utils.http
 
-import java.net.URLEncoder
+import java.net.{URL, URLEncoder}
+
+sealed trait Method
+
+case object Get extends Method
+
+case object Post extends Method
+
+case object Put extends Method
+
+case object Delete extends Method
 
 object Status {
   val Ok = Status(200)
@@ -13,6 +23,8 @@ case class Body(s: String) extends AnyVal
 
 case class ContentType(s: String) extends AnyVal
 
+case class AcceptHeader(s: String) extends AnyVal
+
 
 trait UriFragment {
   protected def encode(s: String) = URLEncoder.encode(s, "UTF-8")
@@ -24,14 +36,19 @@ case class HostName(host: String) extends UriFragment {
   override def asUriString: String = host
 }
 
+
 case class Protocol(protocol: String) extends UriFragment {
   require(protocol.forall(_.isLetter), protocol)
 
   override def asUriString: String = protocol
 }
 
+case class Port(port: Int) extends UriFragment {
+  override def asUriString: String = port.toString
+}
+
 case class Path(path: String) extends UriFragment {
-  require(path.startsWith("/"), s"Path should start with / was ${path}")
+  require(path.startsWith("/") ||path == "", s"Path should start with / was ${path}")
 
   override def asUriString: String = path
 }
@@ -44,8 +61,25 @@ case class QueryParamValue(value: String) extends UriFragment {
   override def asUriString: String = encode(value)
 }
 
+class QueryParamException(msg: String) extends Exception(msg)
+
 object QueryParam {
-  def apply(tuples: (String, String)*):Seq[QueryParam] = tuples.map { case (n, v) => QueryParam(QueryParamName(n), QueryParamValue(v)) }
+  def apply(paramString: String): Seq[QueryParam] = {
+    val withoutQuestionMark = if (paramString.startsWith("?")) paramString.substring(1) else paramString
+    withoutQuestionMark match {
+      case "" => Seq()
+      case s  =>
+        val parts = s.split("&")
+        parts.toSeq.map {
+          part =>
+            val nameValue = part.split("=")
+            if (nameValue.size != 2) throw new QueryParamException(s"QueryParam part must have one and only one equals in it. This part is [$nameValue] from url $s")
+            QueryParam(QueryParamName(nameValue(0)), QueryParamValue(nameValue(1)))
+        }
+    }
+  }
+
+  def apply(tuples: (String, String)*): Seq[QueryParam] = tuples.map { case (n, v) => QueryParam(QueryParamName(n), QueryParamValue(v)) }
 
   def encoded(params: Seq[QueryParam]) = params match {
     case Nil => ""
@@ -57,9 +91,25 @@ case class QueryParam(name: QueryParamName, value: QueryParamValue) extends UriF
   def asUriString = s"${name.asUriString}=${value.asUriString}"
 }
 
-case class Uri(protocol: Protocol, host: HostName, path: Path, params: QueryParam*) extends UriFragment {
+class ProtocolException(msg: String) extends Exception(msg)
+object Uri {
+  def apply(s: String): Uri = {
+    val url = new URL(s)
+    val port = url.getPort match {
+      case -1 if url.getProtocol == "http" => 80
+      case -1 if url.getProtocol == "https" => 443
+      case -1 => throw new ProtocolException("A port must be specified if the protocol isn't http or https")
+      case x => x
+    }
+    def str(x: String) =if (x==null) "" else x
+    Uri(Protocol(url.getProtocol), HostName(url.getHost), Port(port), Path(str(url.getPath)), QueryParam(str(url.getQuery)): _*)
+  }
+}
+
+case class Uri(protocol: Protocol, host: HostName, port: Port, path: Path, params: QueryParam*) extends UriFragment {
   override def toString = s"Uri($asUriString)"
 
-  override def asUriString: String = s"${protocol.asUriString}://${host.asUriString}${path.asUriString}${QueryParam.encoded(params)}"
+  override def asUriString: String =
+    s"${protocol.asUriString}://${host.asUriString}:${port.port}${path.asUriString}${QueryParam.encoded(params)}"
 }
 

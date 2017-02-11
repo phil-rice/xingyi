@@ -13,16 +13,40 @@ import scala.language.higherKinds
 import scala.util.Try
 
 trait Id
+
 case class StringId(id: String) extends Id
+
+case class IntId(id: String) extends Id
+
+case object UnitId extends Id
 
 trait CachableResult[Res] {
   def shouldCacheStrategy(req: Try[Res]): Boolean
+}
+
+trait CachableResultUsingSucesses[Res] extends CachableResult[Res]{
+  def shouldCacheStrategy(req: Try[Res]): Boolean = req.isSuccess
+
+}
+
+object CachableResult {
+
+  implicit object CachableResultForString extends CachableResultUsingSucesses[String]
+
 }
 
 trait CachableKey[Req] {
   def id(req: Req): Id
 
   def bypassCache(req: Req): Boolean
+}
+
+object CachableKey {
+  implicit object CachableKeyForUnit extends CachableKey[Unit] {
+    override def id(req: Unit): Id = UnitId
+
+    override def bypassCache(req: Unit): Boolean = false
+  }
 }
 
 
@@ -34,11 +58,11 @@ trait CachingOps {
   def cachingMetrics: CachingMetricSnapShot
 }
 
-class CachingService[M[_] : Async, Req:CachableKey, Res:CachableResult](val name: String,
-                                             protected val delegate: Service[M, Req, Res],
-                                             protected val cachingStrategy: StaleCacheStrategy,
-                                             sizeStrategy: MapSizeStrategy)
-                                            (implicit timeService: NanoTimeService)
+class CachingService[M[_] : Async, Req: CachableKey, Res: CachableResult](val name: String,
+                                                                          protected val delegate: Service[M, Req, Res],
+                                                                          protected val cachingStrategy: StaleCacheStrategy,
+                                                                          sizeStrategy: MapSizeStrategy)
+                                                                         (implicit timeService: NanoTimeService)
 
   extends HasCachingCommands[M, Req, Res] with Service[M, Req, Res] with CachingOps with Logging {
 

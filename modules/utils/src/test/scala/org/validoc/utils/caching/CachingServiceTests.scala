@@ -43,9 +43,7 @@ class DelegateService[M[_] : Async] extends (DelegateRequest => M[String]) {
 
 class CachingServiceTests extends UtilsSpec with Eventually {
 
-  implicit object CachableResultForString extends CachableResult[String] {
-    override def shouldCacheStrategy(req: Try[String]): Boolean = req.isSuccess
-  }
+
 
   import org.mockito.Mockito._
 
