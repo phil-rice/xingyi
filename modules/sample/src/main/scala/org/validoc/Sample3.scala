@@ -1,12 +1,15 @@
 package org.validoc
 
 import org.validoc.domain._
-import org.validoc.utils.http._
+import org.validoc.utils.caching.{CachableKey, CachableResult}
+import org.validoc.utils.http.{ToServiceRequest, _}
 import org.validoc.utils.parser.ParserFinder
 import org.validoc.utils.service.{IHttpSetup, IService, ServiceInterpreters, ServiceTag}
+import org.validoc.utils.time.{NanoTimeService, SystemClockNanoTimeService}
 
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
+
 
 trait BruceSetup {
 
@@ -16,14 +19,13 @@ trait BruceSetup {
 
   def programmeAndProductionsHttp[T, HttpReq, HttpRes](implicit s: IHttpSetup[T, HttpReq, HttpRes]): ServiceTag[T, HttpReq, HttpRes] = s.rawService("programmeAndProductions")
 
-  def getObject[T, HttpReq, HttpRes: ToServiceResponse, Req: ClassTag : ToServiceRequest, Res: ParserFinder : ClassTag]
+  def getObject[T, HttpReq, HttpRes: ToServiceResponse, Req: ClassTag : ToServiceRequest : CachableKey, Res: ParserFinder : ClassTag : CachableResult]
   (timeToStale: Duration, timeToDead: Duration, maxSize: Int, rawService: ServiceTag[T, HttpReq, HttpRes])
-  (implicit s: IHttpSetup[T, HttpReq, HttpRes],
-   toHttpReq: (ServiceRequest) => HttpReq): ServiceTag[T, Req, Res] = {
+  (implicit s: IHttpSetup[T, HttpReq, HttpRes], toHttpReq: (ServiceRequest) => HttpReq, nanoTimeService: NanoTimeService): ServiceTag[T, Req, Res] = {
     s.cached[Req, Res](timeToStale, timeToDead, maxSize, s.profiled(s.httpCallout(rawService)))
   }
 
-  def enrichedMostPopularService[T, HttpReq, HttpRes: ToServiceResponse](implicit s: IHttpSetup[T, HttpReq, HttpRes], toHttpReq: (ServiceRequest) => HttpReq): ServiceTag[T, MostPopularQuery, EnrichedMostPopular] =
+  def enrichedMostPopularService[T, HttpReq, HttpRes: ToServiceResponse](implicit s: IHttpSetup[T, HttpReq, HttpRes], toHttpReq: (ServiceRequest) => HttpReq, nanoTimeService: NanoTimeService): ServiceTag[T, MostPopularQuery, EnrichedMostPopular] =
     s.enrich[MostPopularQuery, MostPopular, EnrichedMostPopular, ProgrammeId, Programme](
       getObject[T, HttpReq, HttpRes, MostPopularQuery, MostPopular](2 minutes, 10 hours, 20, mostPopularHttp),
       getObject[T, HttpReq, HttpRes, ProgrammeId, Programme](2 minutes, 10 hours, 2000, programmeAndProductionsHttp), //
@@ -31,7 +33,7 @@ trait BruceSetup {
       { (mp: MostPopular, programmes: Seq[Programme]) => EnrichedMostPopular(mp, programmes) }
     )
 
-  def enrichedPromotionService[T, HttpReq, HttpRes: ToServiceResponse](implicit s: IHttpSetup[T, HttpReq, HttpRes], toHttpReq: (ServiceRequest) => HttpReq) =
+  def enrichedPromotionService[T, HttpReq, HttpRes: ToServiceResponse](implicit s: IHttpSetup[T, HttpReq, HttpRes], toHttpReq: (ServiceRequest) => HttpReq, nanoTimeService: NanoTimeService) =
     s.enrich[HomePageQuery, Promotion, EnrichedPromotion, ProductionId, Production](
       getObject[T, HttpReq, HttpRes, HomePageQuery, Promotion](2 minutes, 10 hours, 20, promotionHttp),
       getObject[T, HttpReq, HttpRes, ProductionId, Production](2 minutes, 10 hours, 2000, programmeAndProductionsHttp), //
@@ -39,7 +41,7 @@ trait BruceSetup {
       { (p: Promotion, productions: Seq[Production]) => EnrichedPromotion(p.name, productions) }
     )
 
-  def homePageService[T, HttpReq, HttpRes: ToServiceResponse](implicit s: IHttpSetup[T, HttpReq, HttpRes], toHttpReq: (ServiceRequest) => HttpReq) =
+  def homePageService[T, HttpReq, HttpRes: ToServiceResponse](implicit s: IHttpSetup[T, HttpReq, HttpRes], toHttpReq: (ServiceRequest) => HttpReq, nanoTimeService: NanoTimeService) =
     s.merge[HomePageQuery, HomePage, MostPopularQuery, EnrichedMostPopular, HomePageQuery, EnrichedPromotion](
       enrichedMostPopularService,
       enrichedPromotionService,
@@ -64,7 +66,10 @@ object Sample3 extends App with BruceSetup {
     override def apply(v1: ServiceRequest): String = v1.uri.asUriString
   }
 
+
   implicit val printer = new ServiceInterpreters.ServiceToString[String, String]
+
+  implicit val nanoTimeService = SystemClockNanoTimeService
 
   println(homePageService[String, String, String])
   println
