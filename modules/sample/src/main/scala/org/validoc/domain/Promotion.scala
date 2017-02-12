@@ -4,12 +4,12 @@ import org.validoc.utils.aggregate.{Enricher, HasChildren}
 import org.validoc.utils.caching.CachableResultUsingSucesses
 import org.validoc.utils.parser.ParserFinder
 
-case class Promotion(name: String, productions: List[ProductionId])
+case class Promotion(name: String, productionIds: List[ProductionId])
 
 object Promotion {
 
   implicit object HasChildrenForPromotion extends HasChildren[Promotion, ProductionId] {
-    override def apply(p: Promotion): Seq[ProductionId] = p.productions
+    override def apply(p: Promotion): Seq[ProductionId] = p.productionIds
   }
 
   implicit object CachableResultForPromotion extends CachableResultUsingSucesses[Promotion]
