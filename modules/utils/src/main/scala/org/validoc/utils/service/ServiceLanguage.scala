@@ -12,7 +12,7 @@ case class ServiceTag[T, Req, Res](t: T)
 
 
 trait IService[T] {
-  def cached[Req: CachableKey, Res: CachableResult](timeToStale: Duration, timeToDead: Duration, maxSize: Int, delegate: ServiceTag[T, Req, Res]): ServiceTag[T, Req, Res]
+  def cached[Req: CachableKey, Res: CachableResult](timeToStale: Duration, timeToDead: Duration, maxSize: Int)( delegate: ServiceTag[T, Req, Res]): ServiceTag[T, Req, Res]
 
   def profiled[Req, Res](delegate: ServiceTag[T, Req, Res])(implicit timeService: NanoTimeService): ServiceTag[T, Req, Res]
 
@@ -42,7 +42,7 @@ trait IHttpSetup[T, HttpReq, HttpRes] extends IService[T] {
 object ServiceInterpreters {
 
   class ServiceToString[HttpReq, HttpRes] extends IHttpSetup[String, HttpReq, HttpRes] {
-    override def cached[Req: CachableKey, Res: CachableResult](timeToStale: Duration, timeToDead: Duration, maxSize: Int, delegate: ServiceTag[String, Req, Res]): ServiceTag[String, Req, Res] =
+    override def cached[Req: CachableKey, Res: CachableResult](timeToStale: Duration, timeToDead: Duration, maxSize: Int)( delegate: ServiceTag[String, Req, Res]): ServiceTag[String, Req, Res] =
       ServiceTag(s"Cached(${timeToStale}, ${timeToDead}, $maxSize) ~~~> ${delegate.t}")
 
     override def httpCallout[Req: ClassTag : ToServiceRequest, Res: ParserFinder : ClassTag, HttpReq, HttpRes](t: ServiceTag[String, HttpReq, HttpRes])
