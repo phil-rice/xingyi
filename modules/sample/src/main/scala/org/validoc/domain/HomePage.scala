@@ -1,7 +1,7 @@
 package org.validoc.domain
 
 import org.validoc.utils.caching.{CachableKey, CachableResultUsingSucesses, Id, UnitId}
-import org.validoc.utils.http.{Get, ServiceRequest, ToRequest, Uri}
+import org.validoc.utils.http.{Get, ServiceRequest, ToServiceRequest, Uri}
 
 case class HomePage(mostPopular: EnrichedMostPopular, promotions: EnrichedPromotion)
 
@@ -22,8 +22,8 @@ object HomePageQuery extends HomePageQuery {
     override def bypassCache(req: HomePageQuery): Boolean = false
   }
 
-  implicit object ToRequestForHomePageQuery extends ToRequest[HomePageQuery] {
-    override def toRequest(req: HomePageQuery): ServiceRequest =
+  implicit object ToRequestForHomePageQuery extends ToServiceRequest[HomePageQuery] {
+    override def apply(req: HomePageQuery): ServiceRequest =
       ServiceRequest(Get, Uri("someUri"))
   }
 }

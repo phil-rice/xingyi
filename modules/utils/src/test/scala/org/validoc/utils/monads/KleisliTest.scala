@@ -17,7 +17,7 @@ abstract class AbstractKleisliTest[M[_] : Async] extends UtilsSpec {
   val second: String => M[Double] = _.toDouble.liftValue[M]
 
   it should "allow A => M[B] and B => M[C] to be composed giving A => M[C]" in {
-    (first ==> second) (1).await shouldBe 1.0d
+    (first >=> second) (1).await shouldBe 1.0d
   }
 }
 

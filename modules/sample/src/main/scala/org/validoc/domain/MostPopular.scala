@@ -3,7 +3,7 @@ package org.validoc.domain
 
 import org.validoc.utils.aggregate.{Enricher, HasChildren}
 import org.validoc.utils.caching.{CachableKey, CachableResultUsingSucesses, Id, UnitId}
-import org.validoc.utils.http.{Get, ServiceRequest, ToRequest, Uri}
+import org.validoc.utils.http.{Get, ServiceRequest, ToServiceRequest, Uri}
 import org.validoc.utils.parser.ParserFinder
 
 trait MostPopularQuery
@@ -16,8 +16,8 @@ object MostPopularQuery extends MostPopularQuery {
     override def bypassCache(req: MostPopularQuery): Boolean = false
   }
 
-  implicit object ToRequestForMostPopularQuery extends ToRequest[MostPopularQuery] {
-    override def toRequest(req: MostPopularQuery): ServiceRequest =
+  implicit object ToRequestForMostPopularQuery extends ToServiceRequest[MostPopularQuery] {
+    override def apply(req: MostPopularQuery): ServiceRequest =
       ServiceRequest(Get, Uri("someUri"))
   }
 
@@ -48,6 +48,8 @@ object EnrichedMostPopular {
       EnrichedMostPopular(children)
   }
 
-  def apply(p: MostPopular, children: Seq[Programme]): EnrichedMostPopular =
-    EnrichedMostPopular(children)
+  def apply(p: MostPopular, children: Seq[Programme]): EnrichedMostPopular = EnrichedMostPopular(children)
+
+  implicit object CachableResultForEnrichedMostPopular extends CachableResultUsingSucesses[EnrichedMostPopular]
+
 }

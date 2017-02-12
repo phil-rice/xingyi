@@ -24,6 +24,7 @@ case class Body(s: String) extends AnyVal
 case class ContentType(s: String) extends AnyVal
 
 case class AcceptHeader(s: String) extends AnyVal
+case class Header(s: String) extends AnyVal
 
 
 trait UriFragment {

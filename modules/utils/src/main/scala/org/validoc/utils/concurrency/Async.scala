@@ -44,6 +44,24 @@ object Async {
     def join: M[Seq[T]] = implicitly[Async[M]].join(seq)
   }
 
+  implicit class AsyncFunctionPimper[M[_], P, R](fn: P => M[R])(implicit async: Async[M]) {
+    def andTransform[R2](fail: Throwable => M[R2], succeed: R => M[R2]) = { p: P =>
+      async.transform(fn(p), {tryR: Try[R] =>
+        tryR match {
+          case Success(s) => succeed(s)
+          case Failure(t) => fail(t)
+        }
+      })
+    }
+    def andTransformAndLift[R2](fail: Throwable => R2, succeed: R => R2) = { p: P =>
+      async.transform(fn(p), {tryR: Try[R] =>
+        tryR match {
+          case Success(s) => succeed(s).lift
+          case Failure(t) => fail(t).lift
+        }
+      })
+    }
+  }
 
   implicit class ValuePimper[T](t: T) {
     def lift[M[_] : Async]: M[T] = implicitly[Async[M]].lift(t)

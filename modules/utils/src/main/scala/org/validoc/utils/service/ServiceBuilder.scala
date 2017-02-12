@@ -21,7 +21,7 @@ trait WrappedTypes[M[_]] {
 trait ServiceBuilder[M[_], HttpReq, HttpRes] extends WrappedTypes[M] {
   protected implicit def async: Async[M]
 
-  def parse[Req: ToRequest, Res: ParserFinder](implicit toServiceResponse: ToServiceResponse[HttpRes],toHttpReq: ServiceRequest => HttpReq): Modify[HttpReq, HttpRes, Req, Res] =
+  def parse[Req: ToServiceRequest, Res: ParserFinder](implicit toServiceResponse: ToServiceResponse[HttpRes], toHttpReq: ServiceRequest => HttpReq): Modify[HttpReq, HttpRes, Req, Res] =
     service => new HttpObjectService[M, HttpReq, Req, HttpRes, Res]("someName", service, ResponseProcessor.parsed(implicitly[ParserFinder[Res]]))
 
   def cache[Req: CachableKey, Res: CachableResult](maxCacheSize: Int, timeToStale: Duration, timeToDead: Duration)(implicit timeService: NanoTimeService): Wrapped[Req, Res] =
@@ -43,5 +43,6 @@ trait ServiceBuilder[M[_], HttpReq, HttpRes] extends WrappedTypes[M] {
     def merge[ReqE, ResE](merger: (Res1, Res2) => ResE)(implicit reqMtoReq1: ReqE => Req1, reqMtoReq2: ReqE => Req2): Service[M, ReqE, ResE] =
       new MergeService[M, ReqE, ResE, Req1, Res1, Req2, Res2](tuple._1, tuple._2, merger)
   }
+
 
 }

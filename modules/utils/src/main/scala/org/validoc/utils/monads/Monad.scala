@@ -10,6 +10,11 @@ trait FlatMap[M[_]] {
 trait CanMap[M[_]] {
   def map[T, T2](m: M[T], fn: T => T2): M[T2]
 }
+object CanMap{
+  implicit class ArrowPimper[M[_] : CanMap, P, R](fn: P => M[R]) {
+    def >>>[R2](fn2: R => R2) = { p: P => implicitly[CanMap[M]].map[R, R2](fn(p), fn2) }
+  }
+}
 
 
 trait Monad[M[_]] extends FlatMap[M] with CanMap[M] {

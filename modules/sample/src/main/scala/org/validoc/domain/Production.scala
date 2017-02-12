@@ -1,15 +1,15 @@
 package org.validoc.domain
 
 import org.validoc.utils.caching.{CachableKey, CachableResultUsingSucesses, Id, StringId}
-import org.validoc.utils.http.{Get, ServiceRequest, ToRequest, Uri}
+import org.validoc.utils.http.{Get, ServiceRequest, ToServiceRequest, Uri}
 import org.validoc.utils.parser.ParserFinder
 
 
 case class ProductionId(id: String) extends AnyVal
 
 object ProductionId{
-  implicit object ToRequestForHomePageQueryForProductionId extends ToRequest[ProductionId] {
-    override def toRequest(req: ProductionId): ServiceRequest =
+  implicit object ToRequestForHomePageQueryForProductionId extends ToServiceRequest[ProductionId] {
+    override def apply(req: ProductionId): ServiceRequest =
       ServiceRequest(Get, Uri(s"someId/${req.id}"))
   }
   implicit object CachableKeyForProductionId extends CachableKey[ProductionId] {
