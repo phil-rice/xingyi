@@ -25,7 +25,7 @@ class HttpObjectService[M[_] : Async, HttpReq, Req: ToServiceRequest, HttpRes, R
   }
 
   override def apply(req: Req): M[Res] = {
-    ((toRequest andThen toHttpReq andThen rawClient) andTransformAndLift(
+    (toRequest andThen toHttpReq andThen rawClient andTransformAndLift(
       responseProcessor.exception(requestDetails(req), _),
       toServiceResponse andThen processServiceResponse(req)
     )) (req)
