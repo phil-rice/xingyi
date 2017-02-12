@@ -51,8 +51,47 @@ trait BruceSetup {
     )
 }
 
+class BruceSetup2[T, HttpReq, HttpRes: ToServiceResponse](implicit s: IHttpSetup[T, HttpReq, HttpRes], toHttpReq: (ServiceRequest) => HttpReq, nanoTimeService: NanoTimeService) {
 
-object Sample3 extends App with BruceSetup {
+  def mostPopularHttp: ServiceTag[T, HttpReq, HttpRes] = s.rawService("mostPopular")
+
+  def promotionHttp: ServiceTag[T, HttpReq, HttpRes] = s.rawService("promotion")
+
+  def programmeAndProductionsHttp: ServiceTag[T, HttpReq, HttpRes] = s.rawService("programmeAndProductions")
+
+  def getObject[Req: ClassTag : ToServiceRequest : CachableKey, Res: ParserFinder : ClassTag : CachableResult]
+  (timeToStale: Duration, timeToDead: Duration, maxSize: Int, rawService: ServiceTag[T, HttpReq, HttpRes]): ServiceTag[T, Req, Res] =
+    s.cached[Req, Res](timeToStale, timeToDead, maxSize, s.profiled(s.httpCallout(rawService)))
+
+
+  def enrichedMostPopularService: ServiceTag[T, MostPopularQuery, EnrichedMostPopular] =
+    s.enrich[MostPopularQuery, MostPopular, EnrichedMostPopular, ProgrammeId, Programme](
+      getObject[MostPopularQuery, MostPopular](2 minutes, 10 hours, 20, mostPopularHttp),
+      getObject[ProgrammeId, Programme](2 minutes, 10 hours, 2000, programmeAndProductionsHttp), //
+      { mp: MostPopular => mp.programmeIds }, //
+      { (mp: MostPopular, programmes: Seq[Programme]) => EnrichedMostPopular(mp, programmes) }
+    )
+
+  def enrichedPromotionService =
+    s.enrich[HomePageQuery, Promotion, EnrichedPromotion, ProductionId, Production](
+      getObject[HomePageQuery, Promotion](2 minutes, 10 hours, 20, promotionHttp),
+      getObject[ProductionId, Production](2 minutes, 10 hours, 2000, programmeAndProductionsHttp), //
+      { p: Promotion => p.productionIds }, //
+      { (p: Promotion, productions: Seq[Production]) => EnrichedPromotion(p.name, productions) }
+    )
+
+  def homePageService =
+    s.merge[HomePageQuery, HomePage, MostPopularQuery, EnrichedMostPopular, HomePageQuery, EnrichedPromotion](
+      enrichedMostPopularService,
+      enrichedPromotionService,
+      x => MostPopularQuery,
+      x => x,
+      HomePage.apply
+    )
+}
+
+
+object Sample3 extends BruceSetup with App {
 
   implicit object ServiceResponseForString extends ToServiceResponse[String] {
     override def apply(v1: String): ServiceResponse = ServiceResponse(Status.Ok, Body(v1), ContentType("text/plain"))
