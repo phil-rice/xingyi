@@ -10,7 +10,7 @@ import org.validoc.utils.map.{MapSizeStrategy, SafeMap}
 import org.validoc.utils.time.NanoTimeService
 
 import scala.language.higherKinds
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 trait Id
 
@@ -24,7 +24,7 @@ trait CachableResult[Res] {
   def shouldCacheStrategy(req: Try[Res]): Boolean
 }
 
-trait CachableResultUsingSucesses[Res] extends CachableResult[Res]{
+trait CachableResultUsingSucesses[Res] extends CachableResult[Res] {
   def shouldCacheStrategy(req: Try[Res]): Boolean = req.isSuccess
 
 }
@@ -42,11 +42,13 @@ trait CachableKey[Req] {
 }
 
 object CachableKey {
+
   implicit object CachableKeyForUnit extends CachableKey[Unit] {
     override def id(req: Unit): Id = UnitId
 
     override def bypassCache(req: Unit): Boolean = false
   }
+
 }
 
 
@@ -85,10 +87,10 @@ class CachingService[M[_] : Async, Req: CachableKey, Res: CachableResult](val na
 
   override def cachingMetrics: CachingMetricSnapShot = metrics.snapshot(name, map, sizeStrategy.toString)
 
-  private def recordResult(req: Req, c: CachedValue[M, Res])(tryRes: Try[Res]) = {
+  private def recordResult(req: Req, c: CachedValue[M, Res])(tryRes: Try[Res]): CachedValue[M, Res] = {
     trace(s"recordResult($req, $c)($tryRes)")
     map(cachableKey.id(req)) { cNew =>
-      tryRes.fold(_ => metrics.delegateFailures, _ => metrics.delegateSuccesses).incrementAndGet()
+      (if (tryRes.isFailure) metrics.delegateFailures else metrics.delegateSuccesses).incrementAndGet()
       if (cNew.inFlightId != c.inFlightId) cNew
       else if (cachableResult.shouldCacheStrategy(tryRes)) cNew.copy(time = timeService(), inFlight = None, value = Some(async.liftTry(tryRes)))
       else cNew.copy(inFlight = None)

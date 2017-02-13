@@ -26,6 +26,7 @@ object HomePageQuery extends HomePageQuery {
     override def apply(req: HomePageQuery): ServiceRequest =
       ServiceRequest(Get, Uri("someUri"))
   }
+  implicit def fromServiceRequest(sr: ServiceRequest) = HomePageQuery
 }
 
 

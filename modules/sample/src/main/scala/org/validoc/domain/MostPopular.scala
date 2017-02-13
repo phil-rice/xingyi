@@ -22,6 +22,8 @@ object MostPopularQuery extends MostPopularQuery {
   }
 
   implicit def fromHomePageQuery(h: HomePageQuery) = MostPopularQuery
+
+  implicit def fromServiceRequest(sr: ServiceRequest) = MostPopularQuery
 }
 
 

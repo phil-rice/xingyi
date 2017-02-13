@@ -1,14 +1,11 @@
 package org.validoc
 
 import org.validoc.domain._
-import org.validoc.utils.caching.{CachableKey, CachableResult}
-import org.validoc.utils.http.{ToServiceRequest, _}
-import org.validoc.utils.parser.ParserFinder
-import org.validoc.utils.service.{IHttpSetup, IService, ServiceInterpreters, ServiceTag}
+import org.validoc.utils.http._
+import org.validoc.utils.service.{IHttpSetup, ServiceInterpreters, ServiceTag}
 import org.validoc.utils.time.{NanoTimeService, SystemClockNanoTimeService}
 
 import scala.concurrent.duration._
-import scala.reflect.ClassTag
 
 
 class PromotionSetup[HttpReq, HttpRes: ToServiceResponse](implicit toHttpReq: (ServiceRequest) => HttpReq, nanoTimeService: NanoTimeService) {
@@ -21,10 +18,10 @@ class PromotionSetup[HttpReq, HttpRes: ToServiceResponse](implicit toHttpReq: (S
 
   def enrichedMostPopularService[T](implicit s: IHttpSetup[T, HttpReq, HttpRes]): ServiceTag[T, MostPopularQuery, EnrichedMostPopular] = {
     import s._
-    aggregate(
+    endpoint0("/mostpopular")(aggregate(
       getCachedProfiledObject[MostPopularQuery, MostPopular](2 minutes, 10 hours, 20, mostPopularHttp),
       getCachedProfiledObject[ProgrammeId, Programme](2 minutes, 10 hours, 2000, programmeAndProductionsHttp)).
-      enrich[EnrichedMostPopular]
+      enrich[EnrichedMostPopular])
   }
 
   def enrichedPromotionService[T](implicit s: IHttpSetup[T, HttpReq, HttpRes]) = {
@@ -37,10 +34,10 @@ class PromotionSetup[HttpReq, HttpRes: ToServiceResponse](implicit toHttpReq: (S
 
   def homePageService[T](implicit s: IHttpSetup[T, HttpReq, HttpRes]) = {
     import s._
-    aggregate(
+    endpoint0("/homepage")(aggregate(
       enrichedMostPopularService,
       enrichedPromotionService).
-      merge[HomePageQuery, HomePage](HomePage.apply)
+      merge[HomePageQuery, HomePage](HomePage.apply))
   }
 }
 
@@ -67,6 +64,8 @@ object Sample3 extends App {
 
   import setup._
 
+  println(enrichedMostPopularService[String])
+  println
   println(homePageService[String])
   println
   println(enrichedPromotionService[String])

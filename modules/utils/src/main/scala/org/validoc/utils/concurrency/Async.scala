@@ -1,6 +1,7 @@
 package org.validoc.utils.concurrency
 
 import org.validoc.utils.monads.{FlatMap, Monad}
+import sun.security.pkcs11.wrapper.Functions
 
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -18,7 +19,7 @@ trait Async[M[_]] extends Monad[M] {
 
   def transform[T1, T2](mt: M[T1], fn: Try[T1] => M[T2]): M[T2]
 
-  def registerSideEffectWhenComplete[T](m: M[T], sideEffect: Try[T] => Unit): M[T]
+  def registerSideEffectWhenComplete[T](m: M[T], sideEffect: Try[T] => _): M[T]
 
   def await[T](mt: M[T], duration: Duration): T
 }
@@ -46,15 +47,16 @@ object Async {
 
   implicit class AsyncFunctionPimper[M[_], P, R](fn: P => M[R])(implicit async: Async[M]) {
     def andTransform[R2](fail: Throwable => M[R2], succeed: R => M[R2]) = { p: P =>
-      async.transform(fn(p), {tryR: Try[R] =>
+      async.transform(fn(p), { tryR: Try[R] =>
         tryR match {
           case Success(s) => succeed(s)
           case Failure(t) => fail(t)
         }
       })
     }
+
     def andTransformAndLift[R2](fail: Throwable => R2, succeed: R => R2) = { p: P =>
-      async.transform(fn(p), {tryR: Try[R] =>
+      async.transform(fn(p), { tryR: Try[R] =>
         tryR match {
           case Success(s) => succeed(s).lift
           case Failure(t) => fail(t).lift
@@ -93,12 +95,20 @@ object Async {
     override def delay(duration: FiniteDuration): Future[Unit] =
       DelayedFuture(duration)(())
 
-    override def registerSideEffectWhenComplete[T](m: Future[T], sideEffect: Try[T] => Unit): Future[T] =
-      m.transformWith { tryT => sideEffect(tryT); m }
+    override def registerSideEffectWhenComplete[T](m: Future[T], sideEffect: Try[T] => _): Future[T] = {
+      m.onComplete { tryT: Try[T] => sideEffect(tryT) }
+      m
+    }
 
-    override def liftTry[T](tryT: Try[T]): Future[T] = tryT.fold(Future.failed, Future.successful)
+    //      m.transformWith { tryT => sideEffect(tryT); m }
 
-    override def transform[T1, T2](mt: Future[T1], fn: (Try[T1]) => Future[T2]): Future[T2] = mt.transformWith(fn)
+    override def liftTry[T](tryT: Try[T]): Future[T] = tryT match {
+      case Success(t) => Future.successful(t)
+      case Failure(t) => Future.failed(t)
+    }
+
+    override def transform[T1, T2](mt: Future[T1], fn: (Try[T1]) => Future[T2]): Future[T2] =
+      mt.flatMap[T2](t => fn(Success(t))).recoverWith { case t: Throwable => fn(Failure(t)) }
 
     override def await[T](mt: Future[T], duration: Duration): T = Await.result(mt, duration)
   }
