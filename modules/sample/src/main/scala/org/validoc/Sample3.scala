@@ -10,34 +10,36 @@ import scala.concurrent.duration._
 
 class PromotionSetup[HttpReq, HttpRes: ToServiceResponse](implicit toHttpReq: (ServiceRequest) => HttpReq, nanoTimeService: NanoTimeService) {
 
-  def mostPopularHttp[Tag[_,_]](implicit s: IHttpSetup[Tag, HttpReq, HttpRes]): Tag[ HttpReq, HttpRes] = s.rawService("mostPopular")
+  def mostPopularHttp[Tag[_, _]](implicit s: IHttpSetup[Tag, HttpReq, HttpRes]): Tag[HttpReq, HttpRes] = s.rawService("mostPopular")
 
-  def promotionHttp[Tag[_,_]](implicit s: IHttpSetup[Tag, HttpReq, HttpRes]): Tag[ HttpReq, HttpRes] = s.rawService("promotion")
+  def promotionHttp[Tag[_, _]](implicit s: IHttpSetup[Tag, HttpReq, HttpRes]): Tag[HttpReq, HttpRes] = s.rawService("promotion")
 
-  def programmeAndProductionsHttp[Tag[_,_]](implicit s: IHttpSetup[Tag, HttpReq, HttpRes]): Tag[ HttpReq, HttpRes] = s.rawService("programmeAndProductions")
+  def programmeAndProductionsHttp[Tag[_, _]](implicit s: IHttpSetup[Tag, HttpReq, HttpRes]): Tag[HttpReq, HttpRes] = s.rawService("programmeAndProductions")
 
-  def enrichedMostPopularService[Tag[_,_]](implicit s: IHttpSetup[Tag, HttpReq, HttpRes]): Tag[MostPopularQuery, EnrichedMostPopular] = {
+  def enrichedMostPopularService[Tag[_, _]](implicit s: IHttpSetup[Tag, HttpReq, HttpRes]): Tag[MostPopularQuery, EnrichedMostPopular] = {
     import s._
-    endpoint0("/mostpopular")(aggregate(
+    (aggregate(
       getCachedProfiledObject[MostPopularQuery, MostPopular](2 minutes, 10 hours, 20, mostPopularHttp),
       getCachedProfiledObject[ProgrammeId, Programme](2 minutes, 10 hours, 2000, programmeAndProductionsHttp)).
       enrich[EnrichedMostPopular])
   }
 
-  def enrichedPromotionService[Tag[_,_]](implicit s: IHttpSetup[Tag, HttpReq, HttpRes]) = {
+  def enrichedPromotionService[Tag[_, _]](implicit s: IHttpSetup[Tag, HttpReq, HttpRes]) = {
     import s._
     aggregate(
-      getCachedProfiledObject[HomePageQuery, Promotion](2 minutes, 10 hours, 20, promotionHttp),
+      cached[HomePageQuery, Promotion](2 minutes, 10 hours, 20)(profiled(httpCallout(promotionHttp))),
+      //      getCachedProfiledObject[HomePageQuery, Promotion](2 minutes, 10 hours, 20, promotionHttp),
       getCachedProfiledObject[ProductionId, Production](2 minutes, 10 hours, 2000, programmeAndProductionsHttp)).
       enrich[EnrichedPromotion]
   }
 
-  def homePageService[Tag[_,_]](implicit s: IHttpSetup[Tag, HttpReq, HttpRes]) = {
+  def homePageService[Tag[_, _]](implicit s: IHttpSetup[Tag, HttpReq, HttpRes]) = {
     import s._
-    endpoint0("/homepage")(aggregate(
-      enrichedMostPopularService,
-      enrichedPromotionService).
-      merge[HomePageQuery, HomePage](HomePage.apply))
+    endpoint0("/endpoint")(
+      aggregate(
+        enrichedMostPopularService,
+        enrichedPromotionService).
+        merge[HomePageQuery, HomePage](HomePage.apply))
   }
 }
 

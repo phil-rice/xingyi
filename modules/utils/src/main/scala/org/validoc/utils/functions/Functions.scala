@@ -14,7 +14,7 @@ object Functions {
   def split[P, Temp, R](tempFn: P => Temp, fn: (Temp, P) => R) = { p: P => fn(tempFn(p), p) }
 
   implicit class FunctionPimper[Req, Res](fn: Req => Res) {
-    def ~>[Res2](fn2: Res => Res2) = { res: Req => fn2(fn(res)) }
+    def ~>[Res2](fn2: Res => Res2): (Req) => Res2 = { res: Req => fn2(fn(res)) }
 
     def ~~>[Res2](wrappedFunction: (Req => Res) => (Req => Res2)): (Req => Res2) = { req: Req => wrappedFunction(fn)(req) }
 

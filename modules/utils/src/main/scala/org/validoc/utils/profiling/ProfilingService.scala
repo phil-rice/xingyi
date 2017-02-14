@@ -8,7 +8,7 @@ import scala.util.{Failure, Success, Try}
 import org.validoc.utils.concurrency.Async._
 
 
-trait TryProfileData {
+class TryProfileData {
   def clearData = {
     succeededData.clearData
     failedData.clearData
@@ -23,10 +23,13 @@ trait TryProfileData {
   }
 }
 
-object TryProfileData extends TryProfileData
+trait ProfileOps{
+  def name: String
+  def tryProfileData: TryProfileData
+}
 
-class ProfilingService[M[_] : Async, Req, Res](name: String, delegate: Req => M[Res], timeService: NanoTimeService=SystemClockNanoTimeService, tryProfileData: TryProfileData = TryProfileData)
-  extends Service[M, Req, Res] {
+class ProfilingService[M[_] : Async, Req, Res](val name: String, delegate: Req => M[Res], timeService: NanoTimeService = SystemClockNanoTimeService, val tryProfileData: TryProfileData = new TryProfileData)
+  extends Service[M, Req, Res] with ProfileOps {
 
   override def apply(request: Req): M[Res] = {
     val start = timeService()

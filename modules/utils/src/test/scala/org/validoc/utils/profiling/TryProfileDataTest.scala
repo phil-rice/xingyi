@@ -13,7 +13,7 @@ class TryProfileDataTest extends UtilsSpec {
   val success = Success(1)
   val failure = Failure(new RuntimeException)
   it should "separately record success and failure times" in {
-    val pd = TryProfileData
+    val pd = new TryProfileData
 
     pd.event(100 micros)(success)
     pd.event(100 micros)(success)
@@ -29,7 +29,7 @@ class TryProfileDataTest extends UtilsSpec {
   }
 
   it should "clearData and allow more recordings" in {
-    val pd = TryProfileData
+    val pd = new TryProfileData
 
     pd.event(100 micros)(success)
     pd.event(100 micros)(success)

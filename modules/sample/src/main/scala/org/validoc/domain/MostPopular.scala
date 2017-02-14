@@ -3,7 +3,7 @@ package org.validoc.domain
 
 import org.validoc.utils.aggregate.{Enricher, HasChildren}
 import org.validoc.utils.caching.{CachableKey, CachableResultUsingSucesses, Id, UnitId}
-import org.validoc.utils.http.{Get, ServiceRequest, ToServiceRequest, Uri}
+import org.validoc.utils.http._
 import org.validoc.utils.parser.ParserFinder
 
 trait MostPopularQuery
@@ -21,9 +21,12 @@ object MostPopularQuery extends MostPopularQuery {
       ServiceRequest(Get, Uri("someUri"))
   }
 
+  implicit object FromServiceRequestForMostPopularQuery extends FromServiceRequest[MostPopularQuery] {
+    override def apply(v1: ServiceRequest): MostPopularQuery = MostPopularQuery
+  }
+
   implicit def fromHomePageQuery(h: HomePageQuery) = MostPopularQuery
 
-  implicit def fromServiceRequest(sr: ServiceRequest) = MostPopularQuery
 }
 
 
@@ -51,6 +54,7 @@ object EnrichedMostPopular {
   }
 
   def apply(p: MostPopular, children: Seq[Programme]): EnrichedMostPopular = EnrichedMostPopular(children)
+
 
   implicit object CachableResultForEnrichedMostPopular extends CachableResultUsingSucesses[EnrichedMostPopular]
 

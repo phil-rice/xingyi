@@ -17,12 +17,16 @@ trait OriginalReq[Req] {
   def path(req: Req): Path
 }
 
-class EndPointService[M[_]:Async, Req: FromServiceRequest, Res: ToServiceResponse](delegate: Service[M, Req, Res]) extends Service[M, ServiceRequest, ServiceResponse] {
+trait EndPointOps[M[_]] extends Service[M, ServiceRequest, ServiceResponse] {
+  def path: String
+}
+
+class EndPointService[M[_] : Async, Req: FromServiceRequest, Res: ToServiceResponse](val path: String, delegate: Service[M, Req, Res]) extends EndPointOps[M] {
   val fromServiceRequest = implicitly[FromServiceRequest[Req]]
   val toServiceResponse = implicitly[ToServiceResponse[Res]]
 
 
   override def apply(serviceRequest: ServiceRequest): M[ServiceResponse] =
-   (fromServiceRequest andThen delegate >>> toServiceResponse) (serviceRequest)
+    (fromServiceRequest andThen delegate >>> toServiceResponse) (serviceRequest)
 
 }

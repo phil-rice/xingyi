@@ -25,7 +25,11 @@ class RetryMetrics {
 
 }
 
-class RetryService[M[_] : Async, Req, Res](delegate: Service[M, Req, Res], resRetry: NeedsRetry[Res], retries: Int, delay: Delay) extends Service[M, Req, Res] {
+trait RetryOps{
+  def metrics: RetryMetrics
+}
+
+class RetryService[M[_] : Async, Req, Res](delegate: Service[M, Req, Res], resRetry: NeedsRetry[Res], retries: Int, delay: Delay) extends Service[M, Req, Res] with RetryOps {
 
   val metrics = new RetryMetrics
   val async = implicitly[Async[M]]

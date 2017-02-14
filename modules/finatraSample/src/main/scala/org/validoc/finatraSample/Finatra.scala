@@ -1,14 +1,18 @@
 package org.validoc.finatraSample
 
-import com.sun.javafx.util.Logging
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
-import com.twitter.logging.Logging
+import com.twitter.util
 import org.validoc.PromotionSetup
 import org.validoc.finatra.FinatraServer
+import org.validoc.utils.concurrency.Async
 import org.validoc.utils.http._
-import org.validoc.utils.service.ServiceInterpreters
+import org.validoc.utils.service.{ServiceInterpreters, StringServiceTag}
 import org.validoc.utils.time.SystemClockNanoTimeService
+
+import scala.concurrent
+import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.util.{Failure, Success, Try}
 
 case class FinatraRequest()
 
@@ -16,6 +20,7 @@ class SampleController extends Controller {
   get("/") { request: FinatraRequest => "Hello World" }
   get("/req") { request: Request => "Hi" }
 }
+
 
 object Finatra extends App {
 
@@ -39,9 +44,9 @@ object Finatra extends App {
 
   import setup._
 
-  println(enrichedMostPopularService[String])
+  println(enrichedMostPopularService[StringServiceTag])
   println
-  println(homePageService[String])
+  println(homePageService[StringServiceTag])
   println
 
   new FinatraServer(8080, new SampleController).main(args)
