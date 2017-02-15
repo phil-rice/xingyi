@@ -1,25 +1,14 @@
 package org.validoc.finatraSample
 
-import com.twitter.finagle.http.Request
-import com.twitter.finatra.http.Controller
-import com.twitter.util
+import com.twitter.finagle.http.{Request, Response}
+import com.twitter.util.{Future, FuturePool}
 import org.validoc.PromotionSetup
-import org.validoc.finatra.FinatraServer
-import org.validoc.utils.concurrency.Async
+import org.validoc.domain.{EnrichedMostPopular, MostPopularQuery}
+import org.validoc.finatra.{EndpointController, FinatraServer, MockFinatraService, PingController}
 import org.validoc.utils.http._
-import org.validoc.utils.service.{ServiceInterpreters, StringServiceTag}
+import org.validoc.utils.service.ServiceInterpreters.ServicesGroupedForAsync
+import org.validoc.utils.service.{ServiceData, ServiceInterpreters, StringServiceTag}
 import org.validoc.utils.time.SystemClockNanoTimeService
-
-import scala.concurrent
-import scala.concurrent.duration.{Duration, FiniteDuration}
-import scala.util.{Failure, Success, Try}
-
-case class FinatraRequest()
-
-class SampleController extends Controller {
-  get("/") { request: FinatraRequest => "Hello World" }
-  get("/req") { request: Request => "Hi" }
-}
 
 
 object Finatra extends App {
@@ -36,19 +25,37 @@ object Finatra extends App {
     override def apply(v1: ServiceRequest): String = v1.uri.asUriString
   }
 
-  implicit val printer = new ServiceInterpreters.ServiceToString[String, String]
-
   implicit val nanoTimeService = SystemClockNanoTimeService
 
-  val setup = new PromotionSetup[String, String]()
+  {
+    implicit val printer = new ServiceInterpreters.ServiceToString[String, String]
+
+    val setup = new PromotionSetup[String, String]()
+
+    import setup._
+
+    println(enrichedMostPopularService[StringServiceTag])
+    println
+    println(homePageService[StringServiceTag])
+    println
+  }
+
+  implicit val futurePool = FuturePool.unboundedPool
+
+  val services = MockFinatraService("mostPopular", "promotion", "programmeAndProductions")
+
+  import org.validoc.finatra.FinatraPlayground._
+
+  implicit val serviceData = new ServiceInterpreters.ServicesGroupedForAsync[Future, Request, Response](services).makeSetup
+
+  val setup = new PromotionSetup[Request, Response]
 
   import setup._
 
-  println(enrichedMostPopularService[StringServiceTag])
-  println
-  println(homePageService[StringServiceTag])
-  println
+  type AsyncServiceData[Req, Res] = ServiceData[Future, Req, Res, Request, Response]
 
-  new FinatraServer(8080, new SampleController).main(args)
+  val sd = homePageService[AsyncServiceData]
+  println(sd)
+  new FinatraServer(8080, new PingController, new EndpointController(sd)).main(args)
 
 }

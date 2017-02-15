@@ -1,7 +1,7 @@
 package org.validoc.finatra
 
 import com.twitter.finagle.http
-import com.twitter.finagle.http.{Request, Response}
+import com.twitter.finagle.http.{Method, Request, Response}
 import com.twitter.finatra.http.filters.{CommonFilters, LoggingMDCFilter, TraceIdMDCFilter}
 import com.twitter.finatra.http.routing.HttpRouter
 import com.twitter.finatra.http.{Controller, HttpServer}
@@ -17,7 +17,19 @@ import scala.util.{Failure, Success, Try}
 
 object FinatraPlayground {
 
-  implicit class AsyncForTwitterFuture(futurePool: FuturePool) extends Async[TFuture] {
+  implicit object toServiceResponseForFinatraResponse extends ToServiceResponse[Response] {
+    override def apply(response: Response): ServiceResponse =
+      ServiceResponse(Status(response.statusCode), Body(response.contentString), ContentType(response.mediaType.getOrElse("")))
+  }
+
+  implicit def toServiceRequest(request: Request) = ServiceRequest(Get, Uri(request.path), request.headerMap.get("Accept").map(AcceptHeader(_)))
+
+  implicit def toRequest(serviceRequest: ServiceRequest) = {
+    Request(Method(serviceRequest.method.toString.toUpperCase), serviceRequest.uri.asUriString)
+  }
+
+
+  implicit def asyncForTwitterFuture(implicit futurePool: FuturePool) = new Async[TFuture] {
     override def async[T](t: => T): TFuture[T] = futurePool(t)
 
     override def delay(duration: FiniteDuration): TFuture[Unit] = TFuture(())
@@ -49,21 +61,31 @@ object FinatraPlayground {
 
   }
 
-  def serviceLanguage(futurePool: FuturePool, services: Map[String, Service[TFuture, Request, Response]]): ServicesGroupedForAsync[TFuture, Request, Response] = {
-    implicit val async = new AsyncForTwitterFuture(futurePool)
-    new ServiceInterpreters.ServicesGroupedForAsync[TFuture, Request, Response](services)
-  }
+
 }
 
 class EndpointController(serviceData: ServiceData[TFuture, _, _, Request, Response]) extends Controller {
+  println(s"EndpointController: $serviceData")
+  println(s"EndpointController endpoints: ${serviceData.endPoints}")
   serviceData.endPoints.foreach { endPoint =>
+    println(s"Processing endpoint: $endPoint")
     get(endPoint.path) { request: Request =>
-      val serviceRequest = ServiceRequest(Get, Uri(request.path), request.headerMap.get("Accept").map(AcceptHeader(_)))
-      endPoint(serviceRequest).map { r: ServiceResponse =>
-        response.status(http.Status(r.status.code)).body(r.body.s).contentType(r.contentType.s)
+      println(s"On endpoint: ${endPoint.path} ${request.uri} ${request.remoteAddress}")
+      try {
+        val serviceRequest = ServiceRequest(Get, Uri(Protocol("http"), HostName("unknown"), Port(80), Path(request.path)), request.headerMap.get("Accept").map(AcceptHeader(_)))
+        println(s"On endpoint: ${endPoint.path} serviceRequest is $serviceRequest")
+        endPoint(serviceRequest).map { r: ServiceResponse =>
+          response.status(http.Status(r.status.code)).body(r.body.s).contentType(r.contentType.s)
+        }
+      } catch {
+        case e: Throwable => e.printStackTrace(); throw e
       }
     }
   }
+}
+
+class PingController extends Controller {
+  get("/ping") { request: Request => response.ok("pong").contentType("text/plain") }
 }
 
 class FinatraServer(port: Int, controllers: Controller*) extends HttpServer {

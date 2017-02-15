@@ -2,7 +2,9 @@ package org.validoc.utils.http
 
 import java.net.{URL, URLEncoder}
 
-sealed trait Method
+sealed trait Method{
+  override def toString: String = getClass.getSimpleName.dropRight(1)
+}
 
 case object Get extends Method
 

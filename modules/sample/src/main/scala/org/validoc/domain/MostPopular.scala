@@ -18,7 +18,7 @@ object MostPopularQuery extends MostPopularQuery {
 
   implicit object ToRequestForMostPopularQuery extends ToServiceRequest[MostPopularQuery] {
     override def apply(req: MostPopularQuery): ServiceRequest =
-      ServiceRequest(Get, Uri("someUri"))
+      ServiceRequest(Get, Uri("http://someUri"))
   }
 
   implicit object FromServiceRequestForMostPopularQuery extends FromServiceRequest[MostPopularQuery] {

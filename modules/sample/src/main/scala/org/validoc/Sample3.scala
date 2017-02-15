@@ -27,7 +27,7 @@ class PromotionSetup[HttpReq, HttpRes: ToServiceResponse](implicit toHttpReq: (S
   def enrichedPromotionService[Tag[_, _]](implicit s: IHttpSetup[Tag, HttpReq, HttpRes]) = {
     import s._
     aggregate(
-      cached[HomePageQuery, Promotion](2 minutes, 10 hours, 20)(profiled(httpCallout(promotionHttp))),
+      cached[PromotionQuery, Promotion](2 minutes, 10 hours, 20)(profiled(httpCallout(promotionHttp))),
       //      getCachedProfiledObject[HomePageQuery, Promotion](2 minutes, 10 hours, 20, promotionHttp),
       getCachedProfiledObject[ProductionId, Production](2 minutes, 10 hours, 2000, programmeAndProductionsHttp)).
       enrich[EnrichedPromotion]

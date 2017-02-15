@@ -22,7 +22,6 @@ trait EndPoints[Tag[_, _]] {
   def endpoint1[Req: FromServiceRequest, Res: ToServiceResponse](path: String)(delegate: Tag[Req, Res]): Tag[ServiceRequest, ServiceResponse]
 
   def endpoint2[Req: FromServiceRequest, Res: ToServiceResponse](path: String)(delegate: Tag[Req, Res]): Tag[ServiceRequest, ServiceResponse]
-
 }
 
 
@@ -56,8 +55,6 @@ trait IService[Tag[_, _]] extends EndPoints[Tag] {
     def merge[ReqE, ResE](merger: (Res1, Res2) => ResE)(implicit reqMtoReq1: ReqE => Req1, reqMtoReq2: ReqE => Req2): Tag[ReqE, ResE] =
       IService.this.merge(tuple._1, tuple._2, merger)
   }
-
-
 }
 
 
@@ -73,6 +70,7 @@ trait IHttpSetup[Tag[_, _], HttpReq, HttpRes] extends IService[Tag] {
     cached[Req, Res](timeToStale, timeToDead, maxSize)(profiled[Req, Res](httpCallout[Req, Res](rawService)))
   }
 }
+
 
 
 case class ServiceData[M[_], Req, Res, HttpReq, HttpRes](service: Req => M[Res],
@@ -168,6 +166,8 @@ object ServiceInterpreters {
   class ServicesGroupedForAsync[M[_] : Async, HttpReq, HttpRes](services: Map[String, Service[M, HttpReq, HttpRes]]) {
     type AsyncService[Req, Res] = Req => M[Res]
     type AsyncServiceData[Req, Res] = ServiceData[M, Req, Res, HttpReq, HttpRes]
+
+    def makeSetup: ServiceToServiceData = new ServiceToServiceData
 
     class ServiceToServiceData extends IHttpSetup[AsyncServiceData, HttpReq, HttpRes] {
       override def rawService(name: String): AsyncServiceData[HttpReq, HttpRes] =
