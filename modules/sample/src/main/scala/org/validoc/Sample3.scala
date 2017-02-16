@@ -11,15 +11,15 @@ import scala.concurrent.duration._
 
 class PromotionSetup[M[_], HttpReq, HttpRes: ToServiceResponse](implicit toHttpReq: (ServiceRequest) => HttpReq, nanoTimeService: NanoTimeService, makeHttpService: MakeHttpService[M, HttpReq, HttpRes]) {
 
-  type Setup[Tag[_, _]] = IHttpSetup[Tag, M, HttpReq, HttpRes]
+  type Setup[Tag[M[_], _, _]] = IHttpSetup[Tag, M, HttpReq, HttpRes]
 
-  def mostPopularHttp[Tag[_, _]](implicit s: Setup[Tag]) = s.rawService("mostPopular")
+  def mostPopularHttp[Tag[M[_], _, _]](implicit s: Setup[Tag]) = s.rawService("mostPopular")
 
-  def promotionHttp[Tag[_, _]](implicit s: Setup[Tag]) = s.rawService("promotion")
+  def promotionHttp[Tag[M[_], _, _]](implicit s: Setup[Tag]) = s.rawService("promotion")
 
-  def programmeAndProductionsHttp[Tag[_, _]](implicit s: Setup[Tag]) = s.rawService("programmeAndProductions")
+  def programmeAndProductionsHttp[Tag[M[_], _, _]](implicit s: Setup[Tag]) = s.rawService("programmeAndProductions")
 
-  def enrichedMostPopularService[Tag[_, _]](implicit s: Setup[Tag]) = {
+  def enrichedMostPopularService[Tag[M[_], _, _]](implicit s: Setup[Tag]) = {
     import s._
     (aggregate(
       getCachedProfiledObject[MostPopularQuery, MostPopular](2 minutes, 10 hours, 20, mostPopularHttp),
@@ -27,7 +27,7 @@ class PromotionSetup[M[_], HttpReq, HttpRes: ToServiceResponse](implicit toHttpR
       enrich[EnrichedMostPopular])
   }
 
-  def enrichedPromotionService[Tag[_, _]](implicit s: Setup[Tag]) = {
+  def enrichedPromotionService[Tag[M[_], _, _]](implicit s: Setup[Tag]) = {
     import s._
     aggregate(
       cached[PromotionQuery, Promotion](2 minutes, 10 hours, 20)(profiled(httpCallout(promotionHttp))),
@@ -36,7 +36,7 @@ class PromotionSetup[M[_], HttpReq, HttpRes: ToServiceResponse](implicit toHttpR
       enrich[EnrichedPromotion]
   }
 
-  def homePageService[Tag[_, _]](implicit s: Setup[Tag]) = {
+  def homePageService[Tag[M[_], _, _]](implicit s: Setup[Tag]) = {
     import s._
     endpoint0("/endpoint")(
       aggregate(
