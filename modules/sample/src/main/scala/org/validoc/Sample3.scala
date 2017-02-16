@@ -1,22 +1,25 @@
 package org.validoc
 
 import org.validoc.domain._
+import org.validoc.utils.concurrency.Async
 import org.validoc.utils.http._
-import org.validoc.utils.service.{IHttpSetup, ServiceInterpreters, StringServiceTag}
+import org.validoc.utils.service.{IHttpSetup, MakeHttpService, ServiceInterpreters, StringServiceTag}
 import org.validoc.utils.time.{NanoTimeService, SystemClockNanoTimeService}
 
 import scala.concurrent.duration._
 
 
-class PromotionSetup[HttpReq, HttpRes: ToServiceResponse](implicit toHttpReq: (ServiceRequest) => HttpReq, nanoTimeService: NanoTimeService) {
+class PromotionSetup[M[_], HttpReq, HttpRes: ToServiceResponse](implicit toHttpReq: (ServiceRequest) => HttpReq, nanoTimeService: NanoTimeService, makeHttpService: MakeHttpService[M, HttpReq, HttpRes]) {
 
-  def mostPopularHttp[Tag[_, _]](implicit s: IHttpSetup[Tag, HttpReq, HttpRes]): Tag[HttpReq, HttpRes] = s.rawService("mostPopular")
+  type Setup[Tag[_, _]] = IHttpSetup[Tag, M, HttpReq, HttpRes]
 
-  def promotionHttp[Tag[_, _]](implicit s: IHttpSetup[Tag, HttpReq, HttpRes]): Tag[HttpReq, HttpRes] = s.rawService("promotion")
+  def mostPopularHttp[Tag[_, _]](implicit s: Setup[Tag]) = s.rawService("mostPopular")
 
-  def programmeAndProductionsHttp[Tag[_, _]](implicit s: IHttpSetup[Tag, HttpReq, HttpRes]): Tag[HttpReq, HttpRes] = s.rawService("programmeAndProductions")
+  def promotionHttp[Tag[_, _]](implicit s: Setup[Tag]) = s.rawService("promotion")
 
-  def enrichedMostPopularService[Tag[_, _]](implicit s: IHttpSetup[Tag, HttpReq, HttpRes]): Tag[MostPopularQuery, EnrichedMostPopular] = {
+  def programmeAndProductionsHttp[Tag[_, _]](implicit s: Setup[Tag]) = s.rawService("programmeAndProductions")
+
+  def enrichedMostPopularService[Tag[_, _]](implicit s: Setup[Tag]) = {
     import s._
     (aggregate(
       getCachedProfiledObject[MostPopularQuery, MostPopular](2 minutes, 10 hours, 20, mostPopularHttp),
@@ -24,7 +27,7 @@ class PromotionSetup[HttpReq, HttpRes: ToServiceResponse](implicit toHttpReq: (S
       enrich[EnrichedMostPopular])
   }
 
-  def enrichedPromotionService[Tag[_, _]](implicit s: IHttpSetup[Tag, HttpReq, HttpRes]) = {
+  def enrichedPromotionService[Tag[_, _]](implicit s: Setup[Tag]) = {
     import s._
     aggregate(
       cached[PromotionQuery, Promotion](2 minutes, 10 hours, 20)(profiled(httpCallout(promotionHttp))),
@@ -33,7 +36,7 @@ class PromotionSetup[HttpReq, HttpRes: ToServiceResponse](implicit toHttpReq: (S
       enrich[EnrichedPromotion]
   }
 
-  def homePageService[Tag[_, _]](implicit s: IHttpSetup[Tag, HttpReq, HttpRes]) = {
+  def homePageService[Tag[_, _]](implicit s: Setup[Tag]) = {
     import s._
     endpoint0("/endpoint")(
       aggregate(
@@ -58,11 +61,15 @@ object Sample3 extends App {
     override def apply(v1: ServiceRequest): String = v1.uri.asUriString
   }
 
-  implicit val printer = new ServiceInterpreters.ServiceToString[String, String]
+  implicit val printer = new ServiceInterpreters.ServiceToString[Option, String, String]
 
   implicit val nanoTimeService = SystemClockNanoTimeService
 
-  val setup = new PromotionSetup[String, String]()
+  implicit object MakeHttpServiceForString extends MakeHttpService[Option, String, String] {
+    override def create(name: String): (String) => Option[String] = (req => Some(s"HttpService($req)"))
+  }
+
+  val setup = new PromotionSetup[Option, String, String]()
 
   import setup._
 

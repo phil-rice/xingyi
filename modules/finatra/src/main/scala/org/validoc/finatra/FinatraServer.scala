@@ -64,7 +64,7 @@ object FinatraPlayground {
 
 }
 
-class EndpointController(serviceData: ServiceData[TFuture, _, _, Request, Response]) extends Controller {
+class EndpointController(serviceData: ServiceData[TFuture, _, _]) extends Controller {
   println(s"EndpointController: $serviceData")
   println(s"EndpointController endpoints: ${serviceData.endPoints}")
   serviceData.endPoints.foreach { endPoint =>

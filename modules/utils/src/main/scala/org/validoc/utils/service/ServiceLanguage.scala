@@ -1,20 +1,31 @@
 package org.validoc.utils.service
 
-import org.validoc.utils.Service
 import org.validoc.utils.aggregate.{EnrichParentChildService, Enricher, HasChildren, MergeService}
 import org.validoc.utils.caching._
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.http._
 import org.validoc.utils.map.MaxMapSizeStrategy
 import org.validoc.utils.parser.ParserFinder
-import org.validoc.utils.profiling.{ProfileOps, ProfilingService, TryProfileData}
+import org.validoc.utils.profiling.{ProfileOps, ProfilingService}
 import org.validoc.utils.retry.{NeedsRetry, RetryOps, RetryService}
 import org.validoc.utils.time.{Delay, NanoTimeService}
 
-import scala.concurrent.duration.{Duration, _}
+import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 
+
 case class StringServiceTag[Req, Res](t: String)
+
+
+trait MakeHttpService[M[_], HttpReq, HttRes] {
+  def create(name: String): (HttpReq => M[HttRes])
+}
+
+object MakeHttpService {
+  def apply[M[_], HttpReq, HttpRes](map: Map[String, (HttpReq => M[HttpRes])]) = new MakeHttpService[M, HttpReq, HttpRes] {
+    override def create(name: String): (HttpReq) => M[HttpRes] = map(name)
+  }
+}
 
 trait EndPoints[Tag[_, _]] {
   def endpoint0[Req: FromServiceRequest, Res: ToServiceResponse](path: String)(delegate: Tag[Req, Res]): Tag[ServiceRequest, ServiceResponse]
@@ -32,7 +43,6 @@ trait IService[Tag[_, _]] extends EndPoints[Tag] {
   def retry[Req, Res](delegate: Tag[Req, Res], resRetry: NeedsRetry[Res], retries: Int, delay: Delay)(implicit timeService: NanoTimeService): Tag[Req, Res]
 
   def profiled[Req, Res](delegate: Tag[Req, Res])(implicit timeService: NanoTimeService): Tag[Req, Res]
-
 
 
   def enrich[Req, Res, ResE, ReqC, ResC](parent: Tag[Req, Res],
@@ -55,14 +65,16 @@ trait IService[Tag[_, _]] extends EndPoints[Tag] {
     def merge[ReqE, ResE](merger: (Res1, Res2) => ResE)(implicit reqMtoReq1: ReqE => Req1, reqMtoReq2: ReqE => Req2): Tag[ReqE, ResE] =
       IService.this.merge(tuple._1, tuple._2, merger)
   }
+
 }
 
 
-trait IHttpSetup[Tag[_, _], HttpReq, HttpRes] extends IService[Tag] {
-  def rawService(name: String): Tag[HttpReq, HttpRes]
+trait IHttpSetup[Tag[_, _], M[_], HttpReq, HttpRes] extends IService[Tag] {
+  def rawService(name: String)(implicit makeHttpService: MakeHttpService[M, HttpReq, HttpRes]): Tag[HttpReq, HttpRes]
+
   def httpCallout[Req: ClassTag : ToServiceRequest, Res: ParserFinder : ClassTag](t: Tag[HttpReq, HttpRes])
-                                                                                                   (implicit toServiceResponse: ToServiceResponse[HttpRes],
-                                                                                                    toHttpReq: ServiceRequest => HttpReq): Tag[Req, Res]
+                                                                                 (implicit toServiceResponse: ToServiceResponse[HttpRes],
+                                                                                  toHttpReq: ServiceRequest => HttpReq): Tag[Req, Res]
 
   def getCachedProfiledObject[Req: ClassTag : ToServiceRequest : CachableKey, Res: ParserFinder : ClassTag : CachableResult]
   (timeToStale: Duration, timeToDead: Duration, maxSize: Int, rawService: Tag[HttpReq, HttpRes])
@@ -72,16 +84,15 @@ trait IHttpSetup[Tag[_, _], HttpReq, HttpRes] extends IService[Tag] {
 }
 
 
-
-case class ServiceData[M[_], Req, Res, HttpReq, HttpRes](service: Req => M[Res],
-                                                         endPoints: List[EndPointOps[M]] = List(),
-                                                         cachedServices: List[CachingOps] = List(),
-                                                         profileServices: List[ProfileOps] = List(),
-                                                         retryServices: List[RetryOps] = List()) {
-  def withService[ReqN, ResN](newService: ReqN => M[ResN]): ServiceData[M, ReqN, ResN, HttpReq, HttpRes] =
+case class ServiceData[M[_], Req, Res](service: Req => M[Res],
+                                       endPoints: List[EndPointOps[M]] = List(),
+                                       cachedServices: List[CachingOps] = List(),
+                                       profileServices: List[ProfileOps] = List(),
+                                       retryServices: List[RetryOps] = List()) {
+  def withService[ReqN, ResN](newService: ReqN => M[ResN]): ServiceData[M, ReqN, ResN] =
     ServiceData(newService, endPoints, cachedServices, profileServices, retryServices)
 
-  def merge[ReqN, ResN](newService: ReqN => M[ResN], otherServiceData: ServiceData[M, _, _, HttpReq, HttpRes]): ServiceData[M, ReqN, ResN, HttpReq, HttpRes] =
+  def merge[ReqN, ResN](newService: ReqN => M[ResN], otherServiceData: ServiceData[M, _, _]): ServiceData[M, ReqN, ResN] =
     ServiceData(newService, endPoints ++ otherServiceData.endPoints,
       cachedServices ++ otherServiceData.cachedServices,
       profileServices ++ otherServiceData.profileServices,
@@ -90,21 +101,21 @@ case class ServiceData[M[_], Req, Res, HttpReq, HttpRes](service: Req => M[Res],
 
 object ServiceInterpreters {
 
-  class ServiceToString[HttpReq, HttpRes] extends IHttpSetup[StringServiceTag, HttpReq, HttpRes] {
+  class ServiceToString[M[_], HttpReq, HttpRes] extends IHttpSetup[StringServiceTag, M, HttpReq, HttpRes] {
     override def cached[Req: CachableKey, Res: CachableResult](timeToStale: Duration, timeToDead: Duration, maxSize: Int)(delegate: StringServiceTag[Req, Res])(implicit timeService: NanoTimeService): StringServiceTag[Req, Res] =
       StringServiceTag(s"Cached(${timeToStale}, ${timeToDead}, $maxSize) ~~~> ${delegate.t}")
 
     override def httpCallout[Req: ClassTag : ToServiceRequest,
     Res: ParserFinder : ClassTag](t: StringServiceTag[HttpReq, HttpRes])
-                                                   (implicit toServiceResponse: ToServiceResponse[HttpRes],
-                                                    toHttpReq: (ServiceRequest) => HttpReq): StringServiceTag[Req, Res] =
+                                 (implicit toServiceResponse: ToServiceResponse[HttpRes],
+                                  toHttpReq: (ServiceRequest) => HttpReq): StringServiceTag[Req, Res] =
       StringServiceTag(s"Http(${implicitly[ClassTag[Req]].runtimeClass.getSimpleName},${implicitly[ClassTag[Res]].runtimeClass.getSimpleName}) ~~> ${t.t}")
 
 
     override def profiled[Req, Res](delegate: StringServiceTag[Req, Res])(implicit timeService: NanoTimeService): StringServiceTag[Req, Res] =
       StringServiceTag(s"Profile ~~> ${delegate.t}")
 
-    override def rawService(name: String): StringServiceTag[HttpReq, HttpRes] = StringServiceTag(s"RawService($name)")
+    override def rawService(name: String)(implicit makeHttpService: MakeHttpService[M, HttpReq, HttpRes]): StringServiceTag[HttpReq, HttpRes] = StringServiceTag(s"RawService($name)")
 
     override def enrich[Req, Res, ResE, ReqC, ResC](parent: StringServiceTag[Req, Res], child: StringServiceTag[ReqC, ResC])(implicit enricher: Enricher[ResE, Res, ResC], children: HasChildren[Res, ReqC]): StringServiceTag[Req, ResE] =
       StringServiceTag(s"Enrich(${parent.t}), ${child.t})")
@@ -126,11 +137,11 @@ object ServiceInterpreters {
       StringServiceTag(s"retry($retries), $delay) ~~~> ${delegate.t}")
   }
 
-  class ServiceLanguageForAsync[M[_] : Async, HttpReq, HttpRes](services: Map[String, Service[M, HttpReq, HttpRes]]) {
+  class ServiceLanguageForAsync[M[_] : Async, HttpReq, HttpRes] {
     type AsyncService[Req, Res] = Req => M[Res]
 
-    class ServiceToService extends IHttpSetup[AsyncService, HttpReq, HttpRes] {
-      override def rawService(name: String): AsyncService[HttpReq, HttpRes] = services(name)
+    class ServiceToService extends IHttpSetup[AsyncService, M, HttpReq, HttpRes] {
+      override def rawService(name: String)(implicit makeHttpService: MakeHttpService[M, HttpReq, HttpRes]): AsyncService[HttpReq, HttpRes] = makeHttpService.create(name)
 
       override def cached[Req: CachableKey, Res: CachableResult](timeToStale: Duration, timeToDead: Duration, maxSize: Int)(delegate: Req => M[Res])(implicit timeService: NanoTimeService): AsyncService[Req, Res] =
         new CachingService[M, Req, Res]("someName", delegate, DurationStaleCacheStategy(timeToStale.toNanos, timeToDead.toNanos), MaxMapSizeStrategy(maxSize, maxSize / 4))
@@ -158,20 +169,18 @@ object ServiceInterpreters {
 
       override def endpoint2[Req: FromServiceRequest, Res: ToServiceResponse](path: String)(delegate: AsyncService[Req, Res]): AsyncService[ServiceRequest, ServiceResponse] =
         new EndPointService[M, Req, Res](path, delegate)
-
     }
-
   }
 
-  class ServicesGroupedForAsync[M[_] : Async, HttpReq, HttpRes](services: Map[String, Service[M, HttpReq, HttpRes]]) {
+  class ServicesGroupedForAsync[M[_] : Async, HttpReq, HttpRes] {
     type AsyncService[Req, Res] = Req => M[Res]
-    type AsyncServiceData[Req, Res] = ServiceData[M, Req, Res, HttpReq, HttpRes]
+    type AsyncServiceData[Req, Res] = ServiceData[M, Req, Res]
 
     def makeSetup: ServiceToServiceData = new ServiceToServiceData
 
-    class ServiceToServiceData extends IHttpSetup[AsyncServiceData, HttpReq, HttpRes] {
-      override def rawService(name: String): AsyncServiceData[HttpReq, HttpRes] =
-        ServiceData(services(name))
+    class ServiceToServiceData extends IHttpSetup[AsyncServiceData, M, HttpReq, HttpRes] {
+      override def rawService(name: String)(implicit makeHttpService: MakeHttpService[M, HttpReq, HttpRes]): AsyncServiceData[HttpReq, HttpRes] =
+        ServiceData(makeHttpService.create(name))
 
       override def cached[Req: CachableKey, Res: CachableResult](timeToStale: Duration, timeToDead: Duration, maxSize: Int)(delegate: AsyncServiceData[Req, Res])(implicit timeService: NanoTimeService): AsyncServiceData[Req, Res] = {
         val newService = new CachingService[M, Req, Res]("someName", delegate.service, DurationStaleCacheStategy(timeToStale.toNanos, timeToDead.toNanos), MaxMapSizeStrategy(maxSize, maxSize / 4))
@@ -217,6 +226,7 @@ object ServiceInterpreters {
         val newService = new EndPointService[M, Req, Res](path, delegate.service)
         delegate.withService(newService).copy(endPoints = newService :: delegate.endPoints)
       }
+
     }
 
   }
