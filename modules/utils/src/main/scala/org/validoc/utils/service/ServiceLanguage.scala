@@ -138,8 +138,26 @@ object ServiceInterpreters {
       StringServiceTag(s"retry($retries), $delay) ~~~> ${delegate.t}")
   }
 
-  class ServiceLanguageForAsync[M[_] : Async, HttpReq, HttpRes] extends IHttpSetup[Service, M, HttpReq, HttpRes] {
+
+  abstract class MakeServices[Tag[M[_], _, _], M[_] : Async, HttpReq, HttpRes] extends IHttpSetup[Tag, M, HttpReq, HttpRes] {
     type AsyncService[Req, Res] = Req => M[Res]
+
+    def makeCache[Req: CachableKey, Res: CachableResult](timeToStale: Duration, timeToDead: Duration, maxSize: Int)(delegate: Req => M[Res])(implicit timeService: NanoTimeService) =
+      new CachingService[M, Req, Res]("someName", delegate, DurationStaleCacheStategy(timeToStale.toNanos, timeToDead.toNanos), MaxMapSizeStrategy(maxSize, maxSize / 4))
+
+    def makeRetry[Req, Res](delegate: AsyncService[Req, Res], resRetry: NeedsRetry[Res], retries: Int, delay: Delay)(implicit timeService: NanoTimeService) =
+      new RetryService[M, Req, Res](delegate, resRetry, retries, delay)
+
+    def makeProfile[Req, Res](delegate: Req => M[Res])(implicit timeService: NanoTimeService) =
+      new ProfilingService[M, Req, Res]("someName", delegate, timeService)
+
+    def makeHhttpCallout[Req: ClassTag : ToServiceRequest, Res: ParserFinder : ClassTag](t: AsyncService[HttpReq, HttpRes])(implicit toServiceResponse: ToServiceResponse[HttpRes], toHttpReq: (ServiceRequest) => HttpReq): AsyncService[Req, Res] =
+      new HttpObjectService[M, HttpReq, Req, HttpRes, Res]("someName", t, ResponseProcessor.parsed(implicitly[ParserFinder[Res]]))
+
+  }
+
+
+  class ServiceLanguageForAsync[M[_] : Async, HttpReq, HttpRes] extends MakeServices[Service, M, HttpReq, HttpRes] {
 
     override def rawService(name: String)(implicit makeHttpService: MakeHttpService[M, HttpReq, HttpRes]): AsyncService[HttpReq, HttpRes] = makeHttpService.create(name)
 
@@ -172,30 +190,28 @@ object ServiceInterpreters {
 
   }
 
-  class ServicesGroupedForAsync[M[_] : Async, HttpReq, HttpRes] extends IHttpSetup[ServiceData, M, HttpReq, HttpRes] {
-
-    //    def makeSetup: ServiceToServiceData = new ServiceToServiceData
+  class ServicesGroupedForAsync[M[_] : Async, HttpReq, HttpRes] extends MakeServices[ServiceData, M, HttpReq, HttpRes] {
 
     override def rawService(name: String)(implicit makeHttpService: MakeHttpService[M, HttpReq, HttpRes]): ServiceData[M, HttpReq, HttpRes] =
       ServiceData(makeHttpService.create(name))
 
     override def cached[Req: CachableKey, Res: CachableResult](timeToStale: Duration, timeToDead: Duration, maxSize: Int)(delegate: ServiceData[M, Req, Res])(implicit timeService: NanoTimeService): ServiceData[M, Req, Res] = {
-      val newService = new CachingService[M, Req, Res]("someName", delegate.service, DurationStaleCacheStategy(timeToStale.toNanos, timeToDead.toNanos), MaxMapSizeStrategy(maxSize, maxSize / 4))
+      val newService = makeCache(timeToStale, timeToDead, maxSize)(delegate.service)
       delegate.withService(newService).copy(cachedServices = newService :: delegate.cachedServices)
     }
 
     override def retry[Req, Res](delegate: ServiceData[M, Req, Res], resRetry: NeedsRetry[Res], retries: Int, delay: Delay)(implicit timeService: NanoTimeService): ServiceData[M, Req, Res] = {
-      val newService = new RetryService[M, Req, Res](delegate.service, resRetry, retries, delay)
+      val newService: RetryService[M, Req, Res] = makeRetry(delegate.service, resRetry, retries, delay)
       delegate.withService(newService).copy(retryServices = newService :: delegate.retryServices)
     }
 
     override def profiled[Req, Res](delegate: ServiceData[M, Req, Res])(implicit timeService: NanoTimeService): ServiceData[M, Req, Res] = {
-      val newService = new ProfilingService[M, Req, Res]("someName", delegate.service, timeService)
+      val newService = makeProfile(delegate.service)
       delegate.withService(newService).copy(profileServices = newService :: delegate.profileServices)
     }
 
     override def httpCallout[Req: ClassTag : ToServiceRequest, Res: ParserFinder : ClassTag](t: ServiceData[M, HttpReq, HttpRes])(implicit toServiceResponse: ToServiceResponse[HttpRes], toHttpReq: (ServiceRequest) => HttpReq): ServiceData[M, Req, Res] = {
-      val newService: HttpObjectService[M, HttpReq, Req, HttpRes, Res] = new HttpObjectService[M, HttpReq, Req, HttpRes, Res]("someName", t.service, ResponseProcessor.parsed(implicitly[ParserFinder[Res]]))
+      val newService = makeHhttpCallout[Req,Res](t.service)
       t.withService[Req, Res](newService)
     }
 
@@ -224,4 +240,5 @@ object ServiceInterpreters {
       delegate.withService(newService).copy(endPoints = newService :: delegate.endPoints)
     }
   }
+
 }

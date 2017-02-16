@@ -9,17 +9,17 @@ import org.validoc.utils.time.{NanoTimeService, SystemClockNanoTimeService}
 import scala.concurrent.duration._
 
 
-class PromotionSetup[M[_], HttpReq, HttpRes: ToServiceResponse](implicit toHttpReq: (ServiceRequest) => HttpReq, nanoTimeService: NanoTimeService, makeHttpService: MakeHttpService[M, HttpReq, HttpRes]) {
+class PromotionSetup[Tag[M[_], _, _], M[_], HttpReq, HttpRes: ToServiceResponse](implicit toHttpReq: (ServiceRequest) => HttpReq, nanoTimeService: NanoTimeService, makeHttpService: MakeHttpService[M, HttpReq, HttpRes], s: IHttpSetup[Tag, M, HttpReq, HttpRes]) {
 
-  type Setup[Tag[M[_], _, _]] = IHttpSetup[Tag, M, HttpReq, HttpRes]
+  type Setup = IHttpSetup[Tag, M, HttpReq, HttpRes]
 
-  def mostPopularHttp[Tag[M[_], _, _]](implicit s: Setup[Tag]) = s.rawService("mostPopular")
+  val mostPopularHttp = s.rawService("mostPopular")
 
-  def promotionHttp[Tag[M[_], _, _]](implicit s: Setup[Tag]) = s.rawService("promotion")
+  val promotionHttp = s.rawService("promotion")
 
-  def programmeAndProductionsHttp[Tag[M[_], _, _]](implicit s: Setup[Tag]) = s.rawService("programmeAndProductions")
+  val programmeAndProductionsHttp = s.rawService("programmeAndProductions")
 
-  def enrichedMostPopularService[Tag[M[_], _, _]](implicit s: Setup[Tag]) = {
+  val enrichedMostPopularService = {
     import s._
     (aggregate(
       getCachedProfiledObject[MostPopularQuery, MostPopular](2 minutes, 10 hours, 20, mostPopularHttp),
@@ -27,7 +27,7 @@ class PromotionSetup[M[_], HttpReq, HttpRes: ToServiceResponse](implicit toHttpR
       enrich[EnrichedMostPopular])
   }
 
-  def enrichedPromotionService[Tag[M[_], _, _]](implicit s: Setup[Tag]) = {
+  val enrichedPromotionService = {
     import s._
     aggregate(
       cached[PromotionQuery, Promotion](2 minutes, 10 hours, 20)(profiled(httpCallout(promotionHttp))),
@@ -36,7 +36,7 @@ class PromotionSetup[M[_], HttpReq, HttpRes: ToServiceResponse](implicit toHttpR
       enrich[EnrichedPromotion]
   }
 
-  def homePageService[Tag[M[_], _, _]](implicit s: Setup[Tag]) = {
+  val homePageService = {
     import s._
     endpoint0("/endpoint")(
       aggregate(
@@ -69,13 +69,13 @@ object Sample3 extends App {
     override def create(name: String): (String) => Option[String] = (req => Some(s"HttpService($req)"))
   }
 
-  val setup = new PromotionSetup[Option, String, String]()
+  val setup = new PromotionSetup[StringServiceTag, Option, String, String]()
 
   import setup._
 
-  println(enrichedMostPopularService[StringServiceTag])
+  println(enrichedMostPopularService)
   println
-  println(homePageService[StringServiceTag])
+  println(homePageService)
   println
-  println(enrichedPromotionService[StringServiceTag])
+  println(enrichedPromotionService)
 }

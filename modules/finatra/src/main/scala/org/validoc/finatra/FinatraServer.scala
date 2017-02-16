@@ -84,6 +84,9 @@ class EndpointController(serviceData: ServiceData[TFuture, _, _]) extends Contro
   }
 }
 
+class StatusController(serviceData: ServiceData[TFuture, _, _]) extends Controller{
+}
+
 class PingController extends Controller {
   get("/ping") { request: Request => response.ok("pong").contentType("text/plain") }
 }

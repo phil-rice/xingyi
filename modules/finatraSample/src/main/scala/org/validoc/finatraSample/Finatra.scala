@@ -20,11 +20,11 @@ object Finatra extends App {
   implicit val futurePool = FuturePool.unboundedPool
   implicit val serviceData = new ServiceInterpreters.ServicesGroupedForAsync[Future, Request, Response]
 
-  val setup = new PromotionSetup[Future, Request, Response]
+  val setup = new PromotionSetup[ServiceData,Future, Request, Response]
 
   import setup._
 
-  val sd = homePageService[ServiceData]
+  val sd = homePageService
   println(sd)
   new FinatraServer(8080, new PingController, new EndpointController(sd)).main(args)
 
