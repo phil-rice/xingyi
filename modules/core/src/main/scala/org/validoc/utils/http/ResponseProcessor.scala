@@ -8,9 +8,13 @@ object ResponseProcessor {
   def parsed[Query, T](parserFinder: ParserFinder[T]) = new ResponseProcessorExpectingResult[Query, T](parserFinder)
 
   def optionalParsed[Query, T](parserFinder: ParserFinder[T]) = new ResponseProcessorForOption[Query, T](parserFinder)
+
+  def defaultIfNotFound[Query, T](parserFinder: ParserFinder[T], default: T) = new ResponseProcessorForDefault[Query, T](parserFinder, default)
 }
 
-case class RequestDetails[Req](req: Req, requestSummary: String)
+
+
+class NotFoundException(requestDetails: RequestDetails[_], serviceResponse: ServiceResponse) extends Exception(s"Status 404 for $requestDetails")
 
 trait ResponseProcessor[Req, T] {
   def statusOk(serviceResponse: ServiceResponse): T
@@ -36,12 +40,19 @@ class ResponseProcessorExpectingResult[Req, T](parserFinder: ParserFinder[T]) ex
   override def statusOk(serviceResponse: ServiceResponse) = process(parserFinder, serviceResponse).valueOrException
 
   override def statusNotFound(requestDetails: RequestDetails[Req], serviceResponse: ServiceResponse) =
-    statusUnexpected(requestDetails, serviceResponse)
+    throw new NotFoundException(requestDetails, serviceResponse)
 }
+
 
 class ResponseProcessorForOption[Req, T](parserFinder: ParserFinder[T]) extends ResponseProcessor[Req, Option[T]] with Logging {
   override def statusOk(serviceResponse: ServiceResponse) = process(parserFinder, serviceResponse).map(Some(_)).valueOrException
 
   override def statusNotFound(requestDetails: RequestDetails[Req], serviceResponse: ServiceResponse) = FoundResult(serviceResponse.contentType, None).valueOrException
+}
+
+class ResponseProcessorForDefault[Req, T](parserFinder: ParserFinder[T], default: T) extends ResponseProcessor[Req, T] with Logging {
+  override def statusOk(serviceResponse: ServiceResponse) = process(parserFinder, serviceResponse).valueOrException
+
+  override def statusNotFound(requestDetails: RequestDetails[Req], serviceResponse: ServiceResponse) = default
 }
 

@@ -1,4 +1,5 @@
 
+
 val versions = new {
   val scala = "2.11.8"
   //  val scala = "2.12.1"
@@ -8,13 +9,17 @@ val versions = new {
   val guice = "4.0"
 }
 
+
 lazy val commonSettings = Seq(
   version := "1.0",
+  organization := "org.validoc",
+  publishMavenStyle := true,
   scalaVersion := versions.scala,
   libraryDependencies += "org.mockito" % "mockito-all" % versions.mockito % "test",
   libraryDependencies += "org.scalatest" %% "scalatest" % versions.scalatest % "test"
 )
 lazy val finatraSettings = commonSettings ++ Seq(
+
   libraryDependencies += "com.twitter" %% "finatra-http" % versions.finatra,
   libraryDependencies += "com.twitter" %% "finatra-http" % versions.finatra % "test",
   libraryDependencies += "com.twitter" %% "inject-server" % versions.finatra % "test",

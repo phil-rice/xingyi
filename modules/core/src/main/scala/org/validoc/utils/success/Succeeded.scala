@@ -1,13 +1,21 @@
 package org.validoc.utils.success
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 
 trait Succeeded[T] {
   def apply(t: Try[T]): SucceededState[T]
 }
 
-sealed trait SucceededState[T]{
+
+class DefaultSucceeded[T] extends Succeeded[T] {
+  def apply(t: Try[T]) = t match {
+    case Success(t) => SuccessState(t)
+    case Failure(t) => ExceptionState(t)
+  }
+}
+
+sealed trait SucceededState[T] {
   def asKey: String
 }
 

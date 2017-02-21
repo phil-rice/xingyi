@@ -1,13 +1,18 @@
 package org.validoc.utils.service
 
+import java.util.concurrent.Future
+
 import org.validoc.utils.Service
 import org.validoc.utils.aggregate._
 import org.validoc.utils.caching.{CachableKey, CachableResult, CachingService, DurationStaleCacheStategy}
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.http._
+import org.validoc.utils.logging.LoggingService
 import org.validoc.utils.map.MaxMapSizeStrategy
+import org.validoc.utils.metrics.{MetricReporter, MetricsService, ReportData}
 import org.validoc.utils.parser.ParserFinder
 import org.validoc.utils.profiling.ProfilingService
+import org.validoc.utils.success.Succeeded
 import org.validoc.utils.time.NanoTimeService
 
 import scala.concurrent.duration.Duration
@@ -18,11 +23,23 @@ trait WrappedTypes[M[_]] {
   type Modify[Req1, Res1, Req2, Res2] = Service[M, Req1, Res1] => Service[M, Req2, Res2]
 }
 
-trait ServiceBuilder[M[_], HttpReq, HttpRes] extends WrappedTypes[M] {
+trait ParserServiceBuilder[M[_], HttpReq, HttpRes]  extends  WrappedTypes[M]{
   protected implicit def async: Async[M]
 
   def parse[Req: ToServiceRequest, Res: ParserFinder](implicit toServiceResponse: ToServiceResponse[HttpRes], toHttpReq: ServiceRequest => HttpReq): Modify[HttpReq, HttpRes, Req, Res] =
     service => new HttpObjectService[M, HttpReq, Req, HttpRes, Res]("someName", service, ResponseProcessor.parsed(implicitly[ParserFinder[Res]]))
+
+  def parseOption[Req: ToServiceRequest, Res: ParserFinder](implicit toServiceResponse: ToServiceResponse[HttpRes], toHttpReq: ServiceRequest => HttpReq): Modify[HttpReq, HttpRes, Req, Option[Res]] =
+    service => new HttpObjectService[M, HttpReq, Req, HttpRes, Option[Res]]("someName", service, ResponseProcessor.optionalParsed[Req, Res](implicitly[ParserFinder[Res]]))
+
+  def parseDefaultIfNotFound[Req: ToServiceRequest, Res: ParserFinder](default: Res)(implicit toServiceResponse: ToServiceResponse[HttpRes], toHttpReq: ServiceRequest => HttpReq): Modify[HttpReq, HttpRes, Req, Option[Res]] =
+    service => new HttpObjectService[M, HttpReq, Req, HttpRes, Option[Res]]("someName", service, ResponseProcessor.optionalParsed[Req, Res](implicitly[ParserFinder[Res]]))
+}
+
+trait ServiceBuilder[M[_], HttpReq, HttpRes] extends ParserServiceBuilder[M, HttpReq, HttpRes] {
+
+  def logging[Req, Res: Succeeded](pattern: String = "{0}"): Wrapped[Req, Res] =
+    delegate => new LoggingService[M, Req, Res](delegate, pattern)
 
   def cache[Req: CachableKey, Res: CachableResult](maxCacheSize: Int, timeToStale: Duration, timeToDead: Duration)(implicit timeService: NanoTimeService): Wrapped[Req, Res] =
     service => new CachingService[M, Req, Res](
@@ -32,6 +49,11 @@ trait ServiceBuilder[M[_], HttpReq, HttpRes] extends WrappedTypes[M] {
       MaxMapSizeStrategy(maxCacheSize, Math.min(1, maxCacheSize / 5)))
 
   def profile[Req, Res]: Wrapped[Req, Res] = service => new ProfilingService("someName", service)
+
+
+  def metrics[Req, Res: ReportData](metricReporter: MetricReporter)(implicit timeService: NanoTimeService): Wrapped[Req, Res] = service =>
+    new MetricsService[M, Req, Res]("somename", metricReporter)(service)
+
 
   def aggregate[P, C](serviceP: P, serviceC: C) = (serviceP, serviceC)
 

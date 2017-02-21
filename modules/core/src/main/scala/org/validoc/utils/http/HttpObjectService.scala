@@ -14,7 +14,7 @@ class HttpObjectService[M[_] : Async, HttpReq, Req: ToServiceRequest, HttpRes, R
 
   val toRequest = implicitly[ToServiceRequest[Req]]
 
-  def requestDetails(req: Req) = RequestDetails(req, s"Calling $name with $req")
+  def requestDetails = RequestDetails[Req](name) _
 
   def processServiceResponse(req: Req) = { serviceResponse: ServiceResponse =>
     serviceResponse.status match {

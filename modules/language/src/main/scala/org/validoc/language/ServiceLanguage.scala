@@ -83,6 +83,7 @@ trait IHttpSetup[Tag[M[_], _, _], M[_], HttpReq, HttpRes] extends IService[Tag, 
   (implicit toHttpReq: (ServiceRequest) => HttpReq, nanoTimeService: NanoTimeService, toHttpResponse: ToServiceResponse[HttpRes]): Tag[M, Req, Res] = {
     cached[Req, Res](timeToStale, timeToDead, maxSize)(profiled[Req, Res](httpCallout[Req, Res](rawService)))
   }
+
 }
 
 

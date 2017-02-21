@@ -15,6 +15,7 @@ trait ReportData[T] {
   def reportData(t: Try[T], duration: Long): Map[String, MetricValue]
 }
 
+
 object ReportData {
   implicit def reportDataForTry[T](implicit succeeded: Succeeded[T]) = new ReportData[T] {
     override def reportData(t: Try[T], duration: Long): Map[String, MetricValue] =
