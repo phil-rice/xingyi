@@ -31,8 +31,7 @@ trait ServiceBuilder[M[_], HttpReq, HttpRes] extends WrappedTypes[M] {
       DurationStaleCacheStategy(timeToStale.toNanos, timeToDead.toNanos),
       MaxMapSizeStrategy(maxCacheSize, Math.min(1, maxCacheSize / 5)))
 
-  def profile[Req, Res]: Wrapped[Req, Res] =
-    service => new ProfilingService("someName", service)
+  def profile[Req, Res]: Wrapped[Req, Res] = service => new ProfilingService("someName", service)
 
   def aggregate[P, C](serviceP: P, serviceC: C) = (serviceP, serviceC)
 

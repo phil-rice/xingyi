@@ -1,9 +1,8 @@
 package org.validoc
 
 import org.validoc.domain._
-import org.validoc.utils.concurrency.Async
+import org.validoc.language.{IHttpSetup, MakeHttpService, ServiceInterpreters, StringServiceTag}
 import org.validoc.utils.http._
-import org.validoc.utils.service.{IHttpSetup, MakeHttpService, ServiceInterpreters, StringServiceTag}
 import org.validoc.utils.time.{NanoTimeService, SystemClockNanoTimeService}
 
 import scala.concurrent.duration._

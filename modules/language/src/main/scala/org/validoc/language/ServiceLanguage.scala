@@ -1,4 +1,4 @@
-package org.validoc.utils.service
+package org.validoc.language
 
 import org.validoc.utils.Service
 import org.validoc.utils.aggregate.{EnrichParentChildService, Enricher, HasChildren, MergeService}
@@ -9,6 +9,7 @@ import org.validoc.utils.map.MaxMapSizeStrategy
 import org.validoc.utils.parser.ParserFinder
 import org.validoc.utils.profiling.{ProfileOps, ProfilingService}
 import org.validoc.utils.retry.{NeedsRetry, RetryOps, RetryService}
+import org.validoc.utils.service.{EndPointOps, EndPointService}
 import org.validoc.utils.time.{Delay, NanoTimeService}
 
 import scala.concurrent.duration.Duration

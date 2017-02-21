@@ -6,11 +6,12 @@ import com.twitter.finatra.http.filters.{CommonFilters, LoggingMDCFilter, TraceI
 import com.twitter.finatra.http.routing.HttpRouter
 import com.twitter.finatra.http.{Controller, HttpServer}
 import com.twitter.util.{Await, FuturePool, Return, Throw, Duration => TDuration, Future => TFuture, Try => TTry, _}
+import org.validoc.language.ServiceData
 import org.validoc.utils.Service
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.http._
-import org.validoc.utils.service.{ServiceData, ServiceInterpreters}
-import org.validoc.utils.service.ServiceInterpreters.ServicesGroupedForAsync
+import org.validoc.utils.service.ServiceInterpreters
+import org.validoc.language.ServiceInterpreters.ServicesGroupedForAsync
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.{Failure, Success, Try}

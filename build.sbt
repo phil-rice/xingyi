@@ -1,9 +1,7 @@
 
-
-
 val versions = new {
   val scala = "2.11.8"
-//  val scala = "2.12.1"
+  //  val scala = "2.12.1"
   val finatra = "2.2.0"
   val scalatest = "3.0.1"
   val mockito = "1.10.19"
@@ -35,15 +33,19 @@ lazy val finatraSettings = commonSettings ++ Seq(
   libraryDependencies += "com.twitter" %% "finatra-jackson" % versions.finatra % "test" classifier "tests"
 
 )
-lazy val utils = (project in file("modules/utils")).
+lazy val core = (project in file("modules/core")).
   settings(commonSettings: _*)
+
+lazy val language = (project in file("modules/language")).
+  settings(commonSettings: _*).
+  dependsOn(core).aggregate(core)
 
 lazy val finatra = (project in file("modules/finatra")).
   settings(finatraSettings: _*).
-dependsOn(utils).aggregate(utils)
+  dependsOn(language)
 
 lazy val sample = (project in file("modules/sample")).
-  dependsOn(utils).aggregate(utils).
+  dependsOn(language).aggregate(language).
   settings(commonSettings: _*)
 
 lazy val finatraSample = (project in file("modules/finatraSample")).

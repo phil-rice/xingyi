@@ -3,11 +3,8 @@ package org.validoc.finatraSample
 import com.twitter.finagle.http.{Request, Response}
 import com.twitter.util.{Future, FuturePool}
 import org.validoc.PromotionSetup
-import org.validoc.domain.{EnrichedMostPopular, MostPopularQuery}
 import org.validoc.finatra.{EndpointController, FinatraServer, MockFinatraService, PingController}
-import org.validoc.utils.http._
-import org.validoc.utils.service.ServiceInterpreters.ServicesGroupedForAsync
-import org.validoc.utils.service.{MakeHttpService, ServiceData, ServiceInterpreters, StringServiceTag}
+import org.validoc.language.{MakeHttpService, ServiceData, ServiceInterpreters}
 import org.validoc.utils.time.SystemClockNanoTimeService
 
 
