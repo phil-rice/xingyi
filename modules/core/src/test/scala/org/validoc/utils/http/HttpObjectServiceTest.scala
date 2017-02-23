@@ -2,16 +2,15 @@ package org.validoc.utils.http
 
 import java.util.concurrent.Executors
 
-import org.mockito.ArgumentCaptor
-import org.validoc.utils.{Service, UtilsSpec}
-import org.validoc.utils.concurrency.Async
 import org.mockito.Mockito._
+import org.validoc.utils.concurrency.MDCPropagatingExecutionContext
+import org.validoc.utils.{Service, UtilsSpec}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Success
 
 
 class HttpObjectServiceTest extends UtilsSpec {
+
   behavior of "HttpObjectService with 'parser' response processor"
 
   case class HttpRes(s: String)
@@ -21,7 +20,6 @@ class HttpObjectServiceTest extends UtilsSpec {
   type Req = String
   type Res = String
   //    override def toSummary(req: Req): String = s"summary_$req"
-  implicit val ec = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
 
   implicit object ToHttpRequestForReq extends ToServiceRequest[Req] {
     override def apply(req: Req): ServiceRequest = ServiceRequest(Get, Uri(req))

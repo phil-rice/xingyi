@@ -1,8 +1,8 @@
-package org.validoc.utils
+package org.validoc.utils.time
 
-import org.validoc.utils.time.RandomDelay
+import org.validoc.utils.UtilsSpec
 
-import concurrent.duration._
+import scala.concurrent.duration._
 
 class TimeSpec extends UtilsSpec {
   behavior of "Delay"

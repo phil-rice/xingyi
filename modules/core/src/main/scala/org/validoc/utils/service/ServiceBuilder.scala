@@ -9,7 +9,7 @@ import org.validoc.utils.concurrency.Async
 import org.validoc.utils.http._
 import org.validoc.utils.logging.LoggingService
 import org.validoc.utils.map.MaxMapSizeStrategy
-import org.validoc.utils.metrics.{MetricReporter, MetricsService, ReportData}
+import org.validoc.utils.metrics._
 import org.validoc.utils.parser.ParserFinder
 import org.validoc.utils.profiling.ProfilingService
 import org.validoc.utils.success.Succeeded
@@ -23,7 +23,7 @@ trait WrappedTypes[M[_]] {
   type Modify[Req1, Res1, Req2, Res2] = Service[M, Req1, Res1] => Service[M, Req2, Res2]
 }
 
-trait ParserServiceBuilder[M[_], HttpReq, HttpRes]  extends  WrappedTypes[M]{
+trait ParserServiceBuilder[M[_], HttpReq, HttpRes] extends WrappedTypes[M] {
   protected implicit def async: Async[M]
 
   def parse[Req: ToServiceRequest, Res: ParserFinder](implicit toServiceResponse: ToServiceResponse[HttpRes], toHttpReq: ServiceRequest => HttpReq): Modify[HttpReq, HttpRes, Req, Res] =
@@ -51,9 +51,9 @@ trait ServiceBuilder[M[_], HttpReq, HttpRes] extends ParserServiceBuilder[M, Htt
   def profile[Req, Res]: Wrapped[Req, Res] = service => new ProfilingService("someName", service)
 
 
-  def metrics[Req, Res: ReportData](metricReporter: MetricReporter)(implicit timeService: NanoTimeService): Wrapped[Req, Res] = service =>
-    new MetricsService[M, Req, Res]("somename", metricReporter)(service)
-
+  def metrics[Req, Res: ReportData](prefix: String)(implicit timeService: NanoTimeService, putMetrics: PutMetrics, reportData: ReportData[Res]): Wrapped[Req, Res] = {
+    service => new MetricsService[M, Req, Res](prefix, service)(async, timeService, putMetrics, reportData)
+  }
 
   def aggregate[P, C](serviceP: P, serviceC: C) = (serviceP, serviceC)
 
@@ -64,6 +64,5 @@ trait ServiceBuilder[M[_], HttpReq, HttpRes] extends ParserServiceBuilder[M, Htt
     def merge[ReqE, ResE](merger: (Res1, Res2) => ResE)(implicit reqMtoReq1: ReqE => Req1, reqMtoReq2: ReqE => Req2): Service[M, ReqE, ResE] =
       new MergeService[M, ReqE, ResE, Req1, Res1, Req2, Res2](tuple._1, tuple._2, merger)
   }
-
 
 }

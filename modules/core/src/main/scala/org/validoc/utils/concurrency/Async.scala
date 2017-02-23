@@ -1,5 +1,6 @@
 package org.validoc.utils.concurrency
 
+import org.validoc.utils.logging.LoggingAdapter
 import org.validoc.utils.monads.{FlatMap, Monad}
 import sun.security.pkcs11.wrapper.Functions
 
@@ -80,7 +81,8 @@ object Async {
   }
 
 
-  implicit def asyncForFuture(implicit executionContext: ExecutionContext) = new Async[Future] {
+  implicit def asyncForFuture(implicit executionContext: MDCPropagatingExecutionContext, loggingAdapter: LoggingAdapter) = new Async[Future] {
+
     override def lift[T](t: => T): Future[T] = Try(t) match {
       case Success(s) => Future.successful(t)
       case Failure(e) => Future.failed(e)

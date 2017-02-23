@@ -7,13 +7,14 @@ import org.validoc.utils.{Service, UtilsSpec}
 
 import scala.concurrent.{ExecutionContext, Future}
 import org.mockito.Mockito._
+import org.validoc.utils.concurrency.MDCPropagatingExecutionContext
+
 import scala.concurrent.duration._
 import scala.util.Success
 
 class RetryServiceTest extends UtilsSpec {
   type Req = String
   type Res = String
-  implicit val ec = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
 
   behavior of "RetryService"
 

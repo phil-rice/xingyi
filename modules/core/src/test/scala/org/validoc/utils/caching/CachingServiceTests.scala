@@ -4,7 +4,7 @@ import java.util.concurrent.{CountDownLatch, Executors}
 
 import org.scalatest.concurrent.Eventually
 import org.validoc.utils.UtilsSpec
-import org.validoc.utils.concurrency.Async
+import org.validoc.utils.concurrency.{Async, MDCPropagatingExecutionContext}
 import org.validoc.utils.map.{MapSizeStrategy, MaxMapSizeStrategy, NoMapSizeStrategy}
 import org.validoc.utils.time.NanoTimeService
 
@@ -53,7 +53,7 @@ class CachingServiceTests extends UtilsSpec with Eventually {
 
   def withServices(fn: CService => DelegateService[Future] => NanoTimeService => Unit, cacheSizeStrategy: MapSizeStrategy = NoMapSizeStrategy): Unit =
     lock.synchronized {
-      implicit val ec = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
+      implicit val ec: MDCPropagatingExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
       val delegateService = new DelegateService[Future]()
       implicit val timeService = mock[NanoTimeService]
       val cachingStrategy = DurationStaleCacheStategy(100, 1000)

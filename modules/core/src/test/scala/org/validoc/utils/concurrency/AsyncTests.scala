@@ -3,6 +3,7 @@ package org.validoc.utils.concurrency
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
 import org.validoc.utils.UtilsSpec
+import org.validoc.utils.concurrency.Async.AsyncPimper
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
@@ -93,18 +94,16 @@ abstract class AbstractAsyncTests[A[_]] extends UtilsSpec {
   }
 
   it should "transform successes" in {
-    awaitFor(async.transform[String,String](async.lift("one"), _ match { case Success("one") => async.lift("two") })) shouldBe "two"
+    awaitFor(async.transform[String, String](async.lift("one"), _ match { case Success("one") => async.lift("two") })) shouldBe "two"
   }
   it should "transform failures" in {
     val runtimeException = new RuntimeException
-    awaitFor(async.transform[String,String](async.liftTry(Failure(runtimeException)), _ match { case Failure(e) if e == runtimeException => async.lift("two") })) shouldBe "two"
+    awaitFor(async.transform[String, String](async.liftTry(Failure(runtimeException)), _ match { case Failure(e) if e == runtimeException => async.lift("two") })) shouldBe "two"
   }
 }
 
 class FutureAsyncTests extends AbstractAsyncTests[Future] {
   override def awaitFor(a: Future[String]): String = Await.result(a, 5 seconds)
-
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   override implicit val async: Async[Future] = Async.asyncForFuture
 

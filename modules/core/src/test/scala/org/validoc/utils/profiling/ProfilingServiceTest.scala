@@ -1,19 +1,17 @@
 package org.validoc.utils.profiling
 
+import org.mockito.Mockito._
 import org.validoc.utils.UtilsSpec
+import org.validoc.utils.concurrency.Async._
+import org.validoc.utils.concurrency.MDCPropagatingExecutionContext
 import org.validoc.utils.time.NanoTimeService
 
 import scala.concurrent.Future
-import org.mockito.Mockito._
-
-import scala.concurrent.duration.Duration
-import scala.concurrent.duration._
-import org.validoc.utils.concurrency.Async._
-
-import scala.concurrent.ExecutionContext.Implicits._
+import scala.concurrent.duration.{Duration, _}
 import scala.util.Success
 
 class ProfilingServiceTest extends UtilsSpec {
+
   implicit def durationToNanos(d: Duration) = d.toNanos
 
   behavior of "ProfilingService"

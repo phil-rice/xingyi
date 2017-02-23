@@ -38,8 +38,8 @@ abstract class AbstractAsyncPimperTests[M[_]] extends UtilsSpec {
 
   it should "pimp a transform" in {
     val fn = (tryI: Try[Int]) => tryI match {
-      case Success(i) => (i + 1).lift;
-      case Failure(t) => 999.lift
+      case Success(i) => (i + 1).lift[M];
+      case Failure(t) => 999.lift[M]
     }
 
     1.lift[M].transform(fn).await shouldBe 2
@@ -55,7 +55,6 @@ abstract class AbstractAsyncPimperTests[M[_]] extends UtilsSpec {
 
 class FutureAsyncPimperTests extends AbstractAsyncPimperTests[Future] {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   override implicit def async: Async[Future] = Async.asyncForFuture
 }

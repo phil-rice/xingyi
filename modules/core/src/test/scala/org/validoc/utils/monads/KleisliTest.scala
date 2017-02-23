@@ -1,17 +1,16 @@
 package org.validoc.utils.monads
 
 import org.validoc.utils.UtilsSpec
-import org.validoc.utils.concurrency.Async
+import org.validoc.utils.concurrency.{Async, MDCPropagatingExecutionContext}
 
 import scala.concurrent.Future
 
-import scala.concurrent.ExecutionContext.Implicits.global
-
-abstract class AbstractKleisliTest[M[_] : Async] extends UtilsSpec {
+abstract class AbstractKleisliTest[M[_]] extends UtilsSpec {
+  implicit val async: Async[M]
   behavior of "Kleisli"
 
-  import org.validoc.utils.concurrency.Async._
   import Kleisli._
+  import org.validoc.utils.concurrency.Async._
 
   val first: Int => M[String] = _.toString.liftValue[M]
   val second: String => M[Double] = _.toDouble.liftValue[M]
@@ -21,4 +20,6 @@ abstract class AbstractKleisliTest[M[_] : Async] extends UtilsSpec {
   }
 }
 
-class KlesliTestForFuture extends AbstractKleisliTest[Future]
+class KlesliTestForFuture extends AbstractKleisliTest[Future] {
+  override implicit val async: Async[Future] = Async.asyncForFuture
+}
