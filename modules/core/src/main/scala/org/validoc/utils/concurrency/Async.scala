@@ -98,8 +98,7 @@ object Async {
       DelayedFuture(duration)(())
 
     override def registerSideEffectWhenComplete[T](m: Future[T], sideEffect: Try[T] => _): Future[T] = {
-      m.onComplete { tryT: Try[T] => sideEffect(tryT) }
-      m
+      m.transform[T]({ t => sideEffect(Success(t)); t }, { t => sideEffect(Failure(t)); t })
     }
 
     //      m.transformWith { tryT => sideEffect(tryT); m }
