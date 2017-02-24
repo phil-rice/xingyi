@@ -1,7 +1,7 @@
 package org.validoc.utils.http
 
 import org.validoc.utils.parser.ParserFinder
-import org.validoc.utils.{GatewayException, UnexpectedException, UnexpectedParserException, UtilsSpec}
+import org.validoc.utils.{NotFoundException, _}
 
 
 class ResponseProcessorTests extends UtilsSpec {
@@ -27,9 +27,9 @@ class ResponseProcessorTests extends UtilsSpec {
     intercept[UnexpectedParserException](ResponseProcessor.parsed(errorThrowingParserFinder).statusOk(serviceResponse)) shouldBe UnexpectedParserException(serviceResponse, runtimeException)
   }
 
-  it should "have statusNotFound that throws a GatewayException" in {
-    intercept[GatewayException](ResponseProcessor.parsed(parserFinder).statusNotFound(requestDetails, serviceResponse)) shouldBe
-      GatewayException(requestDetails, serviceResponse)
+  it should "have statusNotFound that throws a NotFoundException" in {
+    intercept[NotFoundException](ResponseProcessor.parsed(parserFinder).statusNotFound(requestDetails, serviceResponse)) shouldBe
+      NotFoundException(requestDetails, serviceResponse)
   }
   it should "have statusUnexpected that throws a GatewayException" in {
     intercept[GatewayException](ResponseProcessor.parsed(parserFinder).statusUnexpected(requestDetails, serviceResponse)) shouldBe

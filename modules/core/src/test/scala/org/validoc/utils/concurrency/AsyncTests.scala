@@ -1,11 +1,14 @@
 package org.validoc.utils.concurrency
 
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
+import org.scalatest.BeforeAndAfter
 import org.validoc.utils.UtilsSpec
 import org.validoc.utils.concurrency.Async.AsyncPimper
+import org.validoc.utils.logging.NullLoggingAdapterWithMdc
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
@@ -102,12 +105,31 @@ abstract class AbstractAsyncTests[A[_]] extends UtilsSpec {
   }
 }
 
-class FutureAsyncTests extends AbstractAsyncTests[Future] {
+class FutureAsyncTests extends AbstractAsyncTests[Future] with BeforeAndAfter {
+
+
+
+  before(loggingAdapter.clearMdc)
+
   override def awaitFor(a: Future[String]): String = Await.result(a, 5 seconds)
+
 
   override implicit val async: Async[Future] = Async.asyncForFuture
 
   override def checkHasException[E <: Exception : ClassTag](a: Future[String]) = {
     intercept[E](awaitFor(a))
   }
+
+
+  it should "propogate the MDC with async, restoring MDC at end" in {
+    println(s"Starting Test LoggingAdapter: $loggingAdapter")
+    loggingAdapter.setMDCvalue("someKey", "someValue")
+    await(async.async {
+      loggingAdapter.getMDCvalue("someKey") shouldBe Some("someValue")
+      loggingAdapter.clearMdc
+      "someResult"
+    }) shouldBe "someResult"
+    loggingAdapter.getMDCvalue("someKey") shouldBe Some("someValue")
+  }
+
 }

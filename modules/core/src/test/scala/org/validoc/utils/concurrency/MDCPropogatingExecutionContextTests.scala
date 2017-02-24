@@ -4,11 +4,13 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicReference
 
 import org.scalatest.{FlatSpec, Matchers}
+import org.validoc.utils.UtilsSpec
 import org.validoc.utils.logging.Logging
 
-class MDCPropogatingExecutionContextTests extends FlatSpec with Matchers with Logging {
+import scala.concurrent.Future
 
-  val executionContext: MDCPropagatingExecutionContext = scala.concurrent.ExecutionContext.global
+class MDCPropogatingExecutionContextTests extends UtilsSpec with Logging {
+
 
   behavior of "MDCPropogatingExecutionContext"
 
@@ -17,7 +19,7 @@ class MDCPropogatingExecutionContextTests extends FlatSpec with Matchers with Lo
     val original = copyMDC
     val actual = new AtomicReference[Map[String, String]]()
     val latch = new CountDownLatch(1)
-    executionContext.prepare().execute(new Runnable {
+    ec.prepare().execute(new Runnable {
       override def run(): Unit = {
         actual.set(copyMDC)
         latch.countDown()
@@ -25,6 +27,26 @@ class MDCPropogatingExecutionContextTests extends FlatSpec with Matchers with Lo
     })
     latch.await()
     actual.get shouldBe original
+  }
+
+  it should "work with the Future{block} code" in {
+    setMDCvalue("key1", "value1")
+    val original = copyMDC
+    val actual = new AtomicReference[Map[String, String]]()
+    val latch = new CountDownLatch(1)
+    Future {
+      actual.set(copyMDC)
+      latch.countDown()
+    }
+    latch.await()
+    actual.get shouldBe original
+  }
+
+  it should "restore the MDC at the end" in {
+    setMDCvalue("key1", "value1")
+    val original = copyMDC
+    await(Future(clearMdc))
+    getMDCvalue("key1").get shouldBe "value1"
   }
 
 }

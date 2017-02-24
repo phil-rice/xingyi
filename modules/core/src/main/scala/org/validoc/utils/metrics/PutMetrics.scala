@@ -1,5 +1,7 @@
 package org.validoc.utils.metrics
 
+import org.validoc.utils.success.Succeeded
+
 import scala.util.{Failure, Success, Try}
 
 sealed trait MetricValue

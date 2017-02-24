@@ -6,6 +6,8 @@ import org.validoc.utils.parser.ParserResult
 case class GatewayException(requestDetails: RequestDetails[_], serviceResponse: ServiceResponse) extends
   Exception(s" RequestDetails $requestDetails\nResponse $serviceResponse")
 
+case class NotFoundException(requestDetails: RequestDetails[_], serviceResponse: ServiceResponse) extends Exception(s"Status 404 for $requestDetails")
+
 
 case class UnexpectedException(requestDetails: RequestDetails[_], t: Throwable) extends
   Exception(s" RequestDetails $requestDetails\nNested: $t", t)

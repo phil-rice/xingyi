@@ -110,32 +110,6 @@ trait LoggingAdapter {
   def getMDCvalue(name: String): Option[String]
 
   def clearMdc = setMDC(Map())
-
-//  def propogate[X](block: => X): () => X = {
-//    val mdc = copyMDC
-//    () => {
-//      val original = copyMDC
-//      try {
-//        setMDC(mdc)
-//        block
-//      } finally {
-//        setMDC(original)
-//      }
-//    }
-//  }
-//
-//  def propogateFn[Req, Res](fn: Req => Res): Req => Res = {
-//    val mdc = copyMDC
-//    req => {
-//      val original = copyMDC
-//      try {
-//        setMDC(mdc)
-//        fn(req)
-//      } finally {
-//        setMDC(original)
-//      }
-//    }
-//  }
 }
 
 object LoggingAdapter {
@@ -159,18 +133,13 @@ trait LoggingAdapterWithMdc extends LoggingAdapter {
   def removeMDCvalue(name: String) = map.set(map.get - name)
 
   def getMDCvalue(name: String): Option[String] = map.get.get(name)
-
-
 }
 
+trait LoggingAdapterWithDefaults extends LoggingAdapter {
 
-object PrintlnLoggingAdapter extends LoggingAdapterWithMdc {
-  private def log(sender: Any, level: String, msg: => String): Unit = println(s"[$level] $msg")
+  protected def log(sender: Any, level: String, msg: => String)
 
-  private def log(sender: Any, level: String, msg: => String, t: Throwable): Unit = {
-    println(s"[level]$msg\n${t.getClass.getSimpleName} ${t.getMessage}\n")
-    t.printStackTrace(System.out)
-  }
+  protected def log(sender: Any, level: String, msg: => String, t: Throwable)
 
   override def info(sender: Any, msg: => String): Unit = log(sender, "INFO", msg)
 
@@ -185,4 +154,18 @@ object PrintlnLoggingAdapter extends LoggingAdapterWithMdc {
   override def trace(sender: Any, msg: => String): Unit = log(sender, "TRACE", msg)
 }
 
+object PrintlnLoggingAdapter extends LoggingAdapterWithMdc with LoggingAdapterWithDefaults {
+  protected def log(sender: Any, level: String, msg: => String): Unit = println(s"[$level] $msg")
+
+  protected def log(sender: Any, level: String, msg: => String, t: Throwable): Unit = {
+    println(s"[level]$msg\n${t.getClass.getSimpleName} ${t.getMessage}\n")
+    t.printStackTrace(System.out)
+  }
+}
+
+object NullLoggingAdapterWithMdc extends LoggingAdapterWithMdc with LoggingAdapterWithDefaults {
+  override protected def log(sender: Any, level: String, msg: => String): Unit = {}
+
+  override protected def log(sender: Any, level: String, msg: => String, t: Throwable): Unit = {}
+}
 

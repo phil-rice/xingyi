@@ -2,7 +2,6 @@ package org.validoc.utils.success
 
 import scala.util.{Failure, Success, Try}
 
-
 trait Succeeded[T] {
   def apply(t: Try[T]): SucceededState[T]
 }
@@ -11,6 +10,26 @@ trait Succeeded[T] {
 class DefaultSucceeded[T] extends Succeeded[T] {
   def apply(t: Try[T]) = t match {
     case Success(t) => SuccessState(t)
+    case Failure(t) => ExceptionState(t)
+  }
+}
+
+class SucceededFromFn[T](ok: T => Boolean) extends Succeeded[T] {
+  def apply(t: Try[T]) = t match {
+    case Success(t) if ok(t) => SuccessState(t)
+    case Success(t) => FailedState(t)
+    case Failure(t) => ExceptionState(t)
+  }
+}
+
+object Succeeded {
+  implicit def succeededFromEither[L, R] = new SucceededFromEither[L, R]
+}
+
+class SucceededFromEither[L, R] extends Succeeded[Either[L, R]] {
+  override def apply(t: Try[Either[L, R]]): SucceededState[Either[L, R]] = t match {
+    case Success(Right(s)) => SuccessState(Right(s))
+    case Success(Left(f)) => FailedState(Left(f))
     case Failure(t) => ExceptionState(t)
   }
 }

@@ -1,6 +1,6 @@
 package org.validoc.utils.http
 
-import org.validoc.utils.{GatewayException, UnexpectedException, UnexpectedParserException}
+import org.validoc.utils.{GatewayException, NotFoundException, UnexpectedException, UnexpectedParserException}
 import org.validoc.utils.logging.Logging
 import org.validoc.utils.parser.{ErrorResult, FoundResult, ParserFinder, ParserResult}
 
@@ -14,7 +14,6 @@ object ResponseProcessor {
 
 
 
-class NotFoundException(requestDetails: RequestDetails[_], serviceResponse: ServiceResponse) extends Exception(s"Status 404 for $requestDetails")
 
 trait ResponseProcessor[Req, T] {
   def statusOk(serviceResponse: ServiceResponse): T

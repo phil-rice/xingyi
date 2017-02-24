@@ -1,6 +1,7 @@
 package org.validoc.utils.metrics
 
 import org.scalatest.{FlatSpec, Matchers}
+import org.validoc.utils.success._
 
 import scala.util.{Failure, Success}
 
