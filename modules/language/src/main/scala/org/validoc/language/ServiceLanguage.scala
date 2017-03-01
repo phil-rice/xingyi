@@ -14,7 +14,9 @@ import org.validoc.utils.time.{Delay, NanoTimeService}
 
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
-
+import org.validoc.utils.functions.Functions._
+import org.validoc.utils.metrics.{MetricsService, PutMetrics, ReportData}
+import org.validoc.utils.success.Succeeded
 
 case class StringServiceTag[M[_], Req, Res](t: String)
 
@@ -46,6 +48,7 @@ trait IService[Tag[M[_], _, _], M[_]] extends EndPoints[Tag, M] {
 
   def profiled[Req, Res](delegate: Tag[M, Req, Res])(implicit timeService: NanoTimeService): Tag[M, Req, Res]
 
+  def metrics[Req, Res: ReportData](prefix: String)(delegate: Tag[M, Req, Res])(implicit timeService: NanoTimeService, putMetrics: PutMetrics): Tag[M, Req, Res]
 
   def enrich[Req, Res, ResE, ReqC, ResC](parent: Tag[M, Req, Res],
                                          child: Tag[M, ReqC, ResC])
@@ -79,9 +82,9 @@ trait IHttpSetup[Tag[M[_], _, _], M[_], HttpReq, HttpRes] extends IService[Tag, 
                                                                                   toHttpReq: ServiceRequest => HttpReq): Tag[M, Req, Res]
 
   def getCachedProfiledObject[Req: ClassTag : ToServiceRequest : CachableKey, Res: ParserFinder : ClassTag : CachableResult]
-  (timeToStale: Duration, timeToDead: Duration, maxSize: Int, rawService: Tag[M, HttpReq, HttpRes])
-  (implicit toHttpReq: (ServiceRequest) => HttpReq, nanoTimeService: NanoTimeService, toHttpResponse: ToServiceResponse[HttpRes]): Tag[M, Req, Res] = {
-    cached[Req, Res](timeToStale, timeToDead, maxSize)(profiled[Req, Res](httpCallout[Req, Res](rawService)))
+  (metricPrefix: String, timeToStale: Duration, timeToDead: Duration, maxSize: Int, rawService: Tag[M, HttpReq, HttpRes])
+  (implicit toHttpReq: (ServiceRequest) => HttpReq, nanoTimeService: NanoTimeService, toHttpResponse: ToServiceResponse[HttpRes], putMetrics: PutMetrics, succeeded: Succeeded[HttpRes]): Tag[M, Req, Res] = {
+    (metrics[HttpReq, HttpRes](metricPrefix) _ ~> httpCallout[Req, Res] _ ~> profiled ~> cached(timeToStale, timeToDead, maxSize) _) (rawService)
   }
 
 }
@@ -138,6 +141,9 @@ object ServiceInterpreters {
     //    override def retry[Req, Res](delegate: StringServiceTag[Req, Res], retryCount: Int, backOffPeriod: Duration)(implicit timeService: NanoTimeService): StringServiceTag[Req, Res] =
     override def retry[Req, Res](delegate: StringServiceTag[M, Req, Res], resRetry: NeedsRetry[Res], retries: Int, delay: Delay)(implicit timeService: NanoTimeService): StringServiceTag[M, Req, Res] =
       StringServiceTag(s"retry($retries), $delay) ~~~> ${delegate.t}")
+
+    override def metrics[Req, Res: ReportData](prefix: String)(delegate: StringServiceTag[M, Req, Res])(implicit timeService: NanoTimeService, putMetrics: PutMetrics): StringServiceTag[M, Req, Res] =
+      StringServiceTag(s"metrics ~~~> ${delegate.t}")
   }
 
 
@@ -190,6 +196,9 @@ object ServiceInterpreters {
     override def endpoint2[Req: FromServiceRequest, Res: ToServiceResponse](path: String)(delegate: AsyncService[Req, Res]): AsyncService[ServiceRequest, ServiceResponse] =
       new EndPointService[M, Req, Res](path, delegate)
 
+    override def metrics[Req, Res: ReportData](prefix: String)(delegate: Service[M, Req, Res])(implicit timeService: NanoTimeService, putMetrics: PutMetrics): Service[M, Req, Res] =
+      new MetricsService[M, Req, Res](prefix, delegate)
+
   }
 
   class ServicesGroupedForAsync[M[_] : Async, HttpReq, HttpRes] extends MakeServices[ServiceData, M, HttpReq, HttpRes] {
@@ -213,7 +222,7 @@ object ServiceInterpreters {
     }
 
     override def httpCallout[Req: ClassTag : ToServiceRequest, Res: ParserFinder : ClassTag](t: ServiceData[M, HttpReq, HttpRes])(implicit toServiceResponse: ToServiceResponse[HttpRes], toHttpReq: (ServiceRequest) => HttpReq): ServiceData[M, Req, Res] = {
-      val newService = makeHhttpCallout[Req,Res](t.service)
+      val newService = makeHhttpCallout[Req, Res](t.service)
       t.withService[Req, Res](newService)
     }
 
@@ -240,6 +249,11 @@ object ServiceInterpreters {
     override def endpoint2[Req: FromServiceRequest, Res: ToServiceResponse](path: String)(delegate: ServiceData[M, Req, Res]): ServiceData[M, ServiceRequest, ServiceResponse] = {
       val newService = new EndPointService[M, Req, Res](path, delegate.service)
       delegate.withService(newService).copy(endPoints = newService :: delegate.endPoints)
+    }
+
+    override def metrics[Req, Res: ReportData](prefix: String)(delegate: ServiceData[M, Req, Res])(implicit timeService: NanoTimeService, putMetrics: PutMetrics): ServiceData[M, Req, Res] = {
+      val newService = new MetricsService[M, Req, Res](prefix, delegate.service)
+      delegate.withService[Req, Res](newService)
     }
   }
 

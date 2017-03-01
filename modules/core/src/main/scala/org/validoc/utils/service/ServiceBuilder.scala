@@ -7,7 +7,7 @@ import org.validoc.utils.aggregate._
 import org.validoc.utils.caching.{CachableKey, CachableResult, CachingService, DurationStaleCacheStategy}
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.http._
-import org.validoc.utils.logging.LoggingService
+import org.validoc.utils.logging.{Logging, LoggingAdapter, LoggingService, LoggingStrings}
 import org.validoc.utils.map.MaxMapSizeStrategy
 import org.validoc.utils.metrics._
 import org.validoc.utils.parser.ParserFinder

@@ -1,5 +1,6 @@
 package org.validoc.utils.functions
 
+import org.validoc.utils.monads.FlatMap
 import org.validoc.utils.service.WrappedTypes
 
 object Functions {
@@ -21,6 +22,14 @@ object Functions {
     def ~~~>[Req2, Res2](wrappedFunction: (Req => Res) => (Req2 => Res2)): (Req2 => Res2) = andThen(wrappedFunction)
 
     def andThen[Req2, Res2](wrappedFunction: (Req => Res) => (Req2 => Res2)): (Req2 => Res2) = { req: Req2 => wrappedFunction(fn)(req) }
+  }
+
+
+  implicit class KleisliPimper[M[_] : FlatMap, A, B](fn: A => M[B]) {
+    import org.validoc.utils.concurrency.Async._
+    def >=>[C](newFn: B => M[C]): A => M[C] = andThen(newFn)
+
+    def andThen[C](newFn: B => M[C]): A => M[C] = fn(_).flatMap(newFn)
   }
 
 }

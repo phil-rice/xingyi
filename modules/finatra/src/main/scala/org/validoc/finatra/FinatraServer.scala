@@ -13,7 +13,9 @@ import org.validoc.utils.http._
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.{Failure, Success, Try}
 
-object FinatraPlayground {
+object FinatraPlayground  extends FinatraPlayground
+
+trait FinatraPlayground {
 
   implicit object toServiceResponseForFinatraResponse extends ToServiceResponse[Response] {
     override def apply(response: Response): ServiceResponse =
@@ -56,10 +58,7 @@ object FinatraPlayground {
     override def map[T, T2](m: TFuture[T], fn: (T) => T2): TFuture[T2] = m.map(fn)
 
     override def flatMap[T, T2](m: TFuture[T], fn: (T) => TFuture[T2]): TFuture[T2] = m.flatMap(fn)
-
   }
-
-
 }
 
 class EndpointController(serviceData: ServiceData[TFuture, _, _]) extends Controller {

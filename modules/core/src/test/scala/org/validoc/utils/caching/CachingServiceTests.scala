@@ -201,6 +201,7 @@ class CachingServiceTests extends UtilsWithLoggingSpec with Eventually {
           checkMetrics("after future2 finished ", requests = 2, delegateRequests = 2, delegateSuccesses = 2, staleRequests = 1)
 
           val future3 = cachingService(request3)
+          //Has failed here intermittantly. StapeRequest 2 was not equal to 1
           checkMetrics("after future3 started ", requests = 3, delegateRequests = 2, delegateSuccesses = 2, staleRequests = 1)
           request3.countDownLatch.countDown()
           await(future2) shouldBe "result1" //this was served while stale
