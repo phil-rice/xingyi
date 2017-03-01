@@ -4,7 +4,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
 import org.scalatest.BeforeAndAfter
-import org.validoc.utils.UtilsSpec
+import org.validoc.utils.UtilsWithLoggingSpec
 import org.validoc.utils.concurrency.Async.AsyncPimper
 import org.validoc.utils.logging.NullLoggingAdapterWithMdc
 
@@ -13,7 +13,7 @@ import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
-abstract class AbstractAsyncTests[A[_]] extends UtilsSpec {
+abstract class AbstractAsyncTests[A[_]] extends UtilsWithLoggingSpec {
 
   implicit val async: Async[A]
 

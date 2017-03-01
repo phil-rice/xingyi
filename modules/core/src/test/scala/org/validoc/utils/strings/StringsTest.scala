@@ -1,10 +1,10 @@
 package org.validoc.utils.strings
 
-import org.validoc.utils.UtilsSpec
+import org.validoc.utils.UtilsWithLoggingSpec
 import org.validoc.utils.strings.Strings
 
 
-class StringsTest extends UtilsSpec {
+class StringsTest extends UtilsWithLoggingSpec {
 
   "Strings.ellipse" should "return the string if the length is less than the number" in {
     Strings.ellipses(3)("") shouldBe ""

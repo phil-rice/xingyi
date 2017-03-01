@@ -1,9 +1,9 @@
 package org.validoc.utils.http
 
-import org.validoc.utils.UtilsSpec
+import org.validoc.utils.UtilsWithLoggingSpec
 
 
-class UriTest extends UtilsSpec {
+class UriTest extends UtilsWithLoggingSpec {
   behavior of "Uri"
 
   it should "encode the data correctly  protocol" in {

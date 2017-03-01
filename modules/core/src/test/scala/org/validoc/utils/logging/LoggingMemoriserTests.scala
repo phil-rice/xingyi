@@ -4,7 +4,7 @@ import java.util.UUID
 
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.Eventually
-import org.validoc.utils.UtilsSpec
+import org.validoc.utils.UtilsWithLoggingSpec
 import org.validoc.utils.concurrency.MDCPropagatingExecutionContext
 import org.validoc.utils.time.NanoTimeService
 
@@ -29,7 +29,7 @@ trait LoggingFixture {
   val e2 = new RuntimeException
 }
 
-class LoggingMemoriserTests extends UtilsSpec with LoggingFixture {
+class LoggingMemoriserTests extends UtilsWithLoggingSpec with LoggingFixture {
 
   "LoggingMemoriser for non future blocks" should "return the result of the trace" in {
     val memoriser = new LoggingMemoriseForTests
@@ -78,7 +78,7 @@ class LoggingMemoriserTests extends UtilsSpec with LoggingFixture {
 }
 
 
-class LoggingMemoriserSecretTests extends UtilsSpec with Logging {
+class LoggingMemoriserSecretTests extends UtilsWithLoggingSpec with Logging {
   "LoggingMemoriser" should "replace 'secrets' that are being logged" in {
     val secret = UUID.randomUUID.toString
 
@@ -94,7 +94,7 @@ class LoggingMemoriserSecretTests extends UtilsSpec with Logging {
   }
 }
 
-class LoggingMemoriserFutureTests extends UtilsSpec with LoggingFixture with Eventually with BeforeAndAfterEach with Logging {
+class LoggingMemoriserFutureTests extends UtilsWithLoggingSpec with LoggingFixture with Eventually with BeforeAndAfterEach with Logging {
 
   override def beforeEach(): Unit = {
     super.beforeEach()

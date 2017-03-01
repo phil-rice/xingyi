@@ -14,7 +14,6 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.reflect.ClassTag
 
 class UtilsSpec extends FlatSpec with Matchers with MockitoSugar with Eventually {
-  implicit val loggingAdapter = NullLoggingAdapterWithMdc
   implicit lazy val ec: MDCPropagatingExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
 
   def await[X](f: Future[X]) = Await.result(f, 5 seconds)
@@ -33,4 +32,7 @@ class UtilsSpec extends FlatSpec with Matchers with MockitoSugar with Eventually
     }
   }
 
+}
+class UtilsWithLoggingSpec extends UtilsSpec {
+  implicit val loggingAdapter = NullLoggingAdapterWithMdc
 }

@@ -1,6 +1,6 @@
 package org.validoc.utils.logging
 
-import org.validoc.utils.UtilsSpec
+import org.validoc.utils.UtilsWithLoggingSpec
 import org.validoc.utils.http.RequestDetails
 import org.validoc.utils.success.{Succeeded, SucceededFromFn}
 
@@ -8,7 +8,7 @@ import scala.concurrent.Future
 import scala.util.Success
 
 
-class LoggingServiceTests extends UtilsSpec with LoggingFixture {
+class LoggingServiceTests extends UtilsWithLoggingSpec with LoggingFixture {
 
   behavior of "LoggingService"
 
@@ -22,7 +22,7 @@ class LoggingServiceTests extends UtilsSpec with LoggingFixture {
 
   val runtimeException = new RuntimeException
 
-  def setup(fn: (LoggingService[Future, String, String], LoggingMemoriseForTests) => Unit): Unit = {
+  def setup(fn: LoggingService[Future, String, String] => LoggingMemoriseForTests => LoggingAdapter => Unit): Unit = {
     implicit val suceeded: Succeeded[String] = new SucceededFromFn[String](_ contains "success")
 
     val delegate = { x: String =>
@@ -31,13 +31,19 @@ class LoggingServiceTests extends UtilsSpec with LoggingFixture {
         case _ => throw runtimeException
       }
     }
-    fn(new LoggingService[Future, String, String](delegate, "[{0}]"), new LoggingMemoriseForTests)
+
+    implicit val memoriseForTests = new LoggingMemoriseForTests
+    implicit val loggingAdapter = NullLoggingAdapterWithMdc
+    fn(new LoggingService[Future, String, String](delegate, "[{0}]"))(memoriseForTests)(loggingAdapter)
   }
 
   it should "log at trace level at the start, and then the result of the logging strings when succeeds" in {
-    setup { (service, loggingMemoriser) =>
-      val LoggingReport(Success("success_result"), records) = await(loggingMemoriser.traceFuture(service("success")))
-      records shouldBe "LoggingRecord"
+    setup { service =>
+      loggingMemoriser =>
+        implicit loggingAdapter =>
+          println(s"log at trace at the start logging adapter is $loggingAdapter")
+          val LoggingReport(Success("success_result"), records) = await(loggingMemoriser.traceFuture(service("success")))
+          records shouldBe "LoggingRecorda"
     }
   }
 

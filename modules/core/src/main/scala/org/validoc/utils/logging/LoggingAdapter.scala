@@ -59,7 +59,6 @@ trait Logging {
     LoggingMemoriser.addSpan(purpose, startSpanId, startParseTime, endId, result.toString)
   }
 
-
   def copyMDC(implicit loggingAdapter: LoggingAdapter): Map[String, String] = loggingAdapter.copyMDC
 
   def setMDC(mdc: Map[String, String])(implicit loggingAdapter: LoggingAdapter) = loggingAdapter.setMDC(mdc)
@@ -167,5 +166,7 @@ object NullLoggingAdapterWithMdc extends LoggingAdapterWithMdc with LoggingAdapt
   override protected def log(sender: Any, level: String, msg: => String): Unit = {}
 
   override protected def log(sender: Any, level: String, msg: => String, t: Throwable): Unit = {}
+
+  override def toString: String = s"NullLoggingAdapterWithMdc@${System.identityHashCode(this)}(trace=${copyMDC} "
 }
 

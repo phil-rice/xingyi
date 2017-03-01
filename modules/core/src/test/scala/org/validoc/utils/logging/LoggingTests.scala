@@ -1,11 +1,11 @@
 package org.validoc.utils.logging
 
-import org.validoc.utils.UtilsSpec
+import org.validoc.utils.UtilsWithLoggingSpec
 
 import scala.util.{Failure, Success}
 
 
-class LoggingTests extends UtilsSpec with Logging {
+class LoggingTests extends UtilsWithLoggingSpec with Logging {
 
   val runtimeException = new RuntimeException
 

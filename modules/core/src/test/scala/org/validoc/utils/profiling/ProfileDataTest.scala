@@ -1,11 +1,11 @@
 package org.validoc.utils.profiling
 
-import org.validoc.utils.UtilsSpec
+import org.validoc.utils.UtilsWithLoggingSpec
 import scala.concurrent.duration._
 
 import scala.concurrent.duration.Duration
 
-class ProfileDataTest extends UtilsSpec {
+class ProfileDataTest extends UtilsWithLoggingSpec {
   behavior of "ProfileData"
 
   implicit def durationToNanos(d: Duration) = d.toNanos

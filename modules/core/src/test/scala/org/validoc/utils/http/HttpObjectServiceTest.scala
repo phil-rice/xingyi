@@ -4,12 +4,12 @@ import java.util.concurrent.Executors
 
 import org.mockito.Mockito._
 import org.validoc.utils.concurrency.MDCPropagatingExecutionContext
-import org.validoc.utils.{Service, UtilsSpec}
+import org.validoc.utils.{Service, UtilsWithLoggingSpec}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 
-class HttpObjectServiceTest extends UtilsSpec {
+class HttpObjectServiceTest extends UtilsWithLoggingSpec {
 
   behavior of "HttpObjectService with 'parser' response processor"
 

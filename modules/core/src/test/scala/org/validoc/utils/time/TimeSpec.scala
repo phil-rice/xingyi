@@ -1,10 +1,10 @@
 package org.validoc.utils.time
 
-import org.validoc.utils.UtilsSpec
+import org.validoc.utils.UtilsWithLoggingSpec
 
 import scala.concurrent.duration._
 
-class TimeSpec extends UtilsSpec {
+class TimeSpec extends UtilsWithLoggingSpec {
   behavior of "Delay"
 
   it should "have a delay within 50% of the specified duration" in {

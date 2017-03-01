@@ -1,9 +1,9 @@
 package org.validoc.utils.http
 
-import org.validoc.utils.UtilsSpec
+import org.validoc.utils.UtilsWithLoggingSpec
 
 
-class QueryParamTest extends UtilsSpec {
+class QueryParamTest extends UtilsWithLoggingSpec {
 
   behavior of "QueryParam"
 

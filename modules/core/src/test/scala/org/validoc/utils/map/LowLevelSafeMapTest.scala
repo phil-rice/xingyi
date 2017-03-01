@@ -2,12 +2,12 @@ package org.validoc.utils.map
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.validoc.utils.UtilsSpec
+import org.validoc.utils.UtilsWithLoggingSpec
 
 import scala.reflect.ClassTag
 
 
-abstract class AbstractLowLevelSafeMapTest extends UtilsSpec {
+abstract class AbstractLowLevelSafeMapTest extends UtilsWithLoggingSpec {
 
   def makeMap(initial: => Integer): SafeMap[String, Int]
 

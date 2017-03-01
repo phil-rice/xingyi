@@ -13,13 +13,16 @@ object LoggingMemoriser extends LoggingMemoriser {
   val key = "LoggingMemoriserId"
 
   override def nanoTimeService: NanoTimeService = SystemClockNanoTimeService
+
+  private val nextId = new AtomicInteger()
+
+  def nextTraceId = nextId.incrementAndGet().toString
 }
 
 
 trait LoggingMemoriser {
-  def nanoTimeService: NanoTimeService
 
-  private val nextId = new AtomicInteger()
+  def nanoTimeService: NanoTimeService
 
   val map = scala.collection.concurrent.TrieMap[String, LoggingRecords]()
 
@@ -55,12 +58,14 @@ trait LoggingMemoriser {
 
   def traceFuture[M[_] : Async, X](block: => M[X])(implicit loggingAdapter: LoggingAdapter): M[LoggingReport[X]] = {
     val traceId: String = setup
+    println(s"traceFuture(traceId is $traceId, in loggingAdapter it is ${loggingAdapter.getMDCvalue(LoggingMemoriser.key)}, thisTraceId is ${thisTraceId}")
     block.transform(tryResult => LoggingReport[X](tryResult, map(traceId)).lift).registerSideEffectWhenComplete(_ => cleanup)
   }
 
 
   private def setup[X](implicit loggingAdapter: LoggingAdapter): String = {
-    val traceId = nextId.incrementAndGet().toString
+    val traceId = LoggingMemoriser.nextTraceId
+    println(s"Setup(TraceId is $traceId. LoggingAdapter is $loggingAdapter loggingMemorizer is $this")
     loggingAdapter.setMDCvalue(LoggingMemoriser.key, traceId)
     map.put(traceId.toString, LoggingRecords(Vector(), Vector()))
     traceId
@@ -73,20 +78,24 @@ trait LoggingMemoriser {
 
   def thisTraceId(implicit loggingAdapter: LoggingAdapter): Option[String] = {
     val result = loggingAdapter.getMDCvalue(LoggingMemoriser.key)
-    println(s"thisTraceId is $result")
+    println(s"thisTraceId(TraceId is $result. LoggingAdapter is $loggingAdapter loggingMemorizer is $this")
+
     result
   }
 
   private val lock = new Object
 
   def memorise(level: LogLevel, msg: Any, throwable: Throwable)(implicit loggingAdapter: LoggingAdapter): SpanId = {
-   println(s"Memorise($level, $msg, $throwable) thisTraceId is $thisTraceId")
+    println(s"Memorise($level, $msg, $throwable)   LoggingAdapter is $loggingAdapter loggingMemorizer is $this")
     useTraceId(lr => lr.copy(records = lr.records :+ LoggingRecord(nanoTimeService(), level, msg, Option(throwable))))
   }
-  def useTraceId(fn: LoggingRecords => LoggingRecords)(implicit loggingAdapter: LoggingAdapter): SpanId =
+
+  def useTraceId(fn: LoggingRecords => LoggingRecords)(implicit loggingAdapter: LoggingAdapter): SpanId ={
+    println(s"useTraceId( LoggingAdapter is $loggingAdapter loggingMemorizer is $this")
     lock.synchronized {
       thisTraceId match {
         case Some(traceId) =>
+          println(s"useTraceId(thisTraceId is $traceId)   LoggingAdapter is $loggingAdapter loggingMemorizer is $this")
           map.get(traceId) match {
             case Some(lr@LoggingRecords(vector, spans)) =>
               map.put(traceId, fn(lr))
@@ -95,5 +104,7 @@ trait LoggingMemoriser {
           }
         case _ => SpanId(0)
       }
-    }
+    }}
+
+  override def toString: String = s"${getClass.getSimpleName}($map)"
 }

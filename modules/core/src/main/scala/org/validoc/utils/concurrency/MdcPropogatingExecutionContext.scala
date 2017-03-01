@@ -11,7 +11,6 @@ class MDCPropagatingExecutionContext(wrapped: ExecutionContext)(implicit logging
     // Save the call-site MDC state
     val context = loggingAdapter.copyMDC
 
-    println(s"In MDCPropagatingExecutionContext.prepare. MDC is $context")
     protected def wrap(r: Runnable) = new Runnable {
       def run(): Unit = {
         val oldContext = loggingAdapter.copyMDC

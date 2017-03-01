@@ -3,7 +3,7 @@ package org.validoc.utils.caching
 import java.util.concurrent.{CountDownLatch, Executors}
 
 import org.scalatest.concurrent.Eventually
-import org.validoc.utils.UtilsSpec
+import org.validoc.utils.UtilsWithLoggingSpec
 import org.validoc.utils.concurrency.{Async, MDCPropagatingExecutionContext}
 import org.validoc.utils.map.{MapSizeStrategy, MaxMapSizeStrategy, NoMapSizeStrategy}
 import org.validoc.utils.time.NanoTimeService
@@ -41,7 +41,7 @@ class DelegateService[M[_] : Async] extends (DelegateRequest => M[String]) {
 }
 
 
-class CachingServiceTests extends UtilsSpec with Eventually {
+class CachingServiceTests extends UtilsWithLoggingSpec with Eventually {
 
 
 

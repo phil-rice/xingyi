@@ -4,7 +4,7 @@ import org.validoc.utils.parser.ParserFinder
 import org.validoc.utils.{NotFoundException, _}
 
 
-class ResponseProcessorTests extends UtilsSpec {
+class ResponseProcessorTests extends UtilsWithLoggingSpec {
 
   case class Result(s: String)
 

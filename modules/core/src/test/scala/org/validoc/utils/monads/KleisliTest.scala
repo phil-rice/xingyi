@@ -1,11 +1,11 @@
 package org.validoc.utils.monads
 
-import org.validoc.utils.UtilsSpec
+import org.validoc.utils.UtilsWithLoggingSpec
 import org.validoc.utils.concurrency.{Async, MDCPropagatingExecutionContext}
 
 import scala.concurrent.Future
 
-abstract class AbstractKleisliTest[M[_]] extends UtilsSpec {
+abstract class AbstractKleisliTest[M[_]] extends UtilsWithLoggingSpec {
   implicit val async: Async[M]
   behavior of "Kleisli"
 

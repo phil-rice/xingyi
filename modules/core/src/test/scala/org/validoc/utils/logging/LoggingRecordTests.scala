@@ -1,11 +1,11 @@
 package org.validoc.utils.logging
 
-import org.validoc.utils.UtilsSpec
+import org.validoc.utils.UtilsWithLoggingSpec
 
 import scala.util.Success
 
 
-class LoggingRecordTests extends UtilsSpec {
+class LoggingRecordTests extends UtilsWithLoggingSpec {
 
 
   private val runtimeException: RuntimeException = new RuntimeException("someMessage")
