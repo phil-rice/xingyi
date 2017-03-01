@@ -31,10 +31,8 @@ object LoggingStrings {
 
 class LoggingService[M[_] : Async, Req, Res: Succeeded](delegate: Service[M, Req, Res], pattern: String)(implicit loggingStrings: LoggingStrings[Res], loggingAdapter: LoggingAdapter) extends Service[M, Req, Res] with Logging {
   def toRequestDetails = RequestDetails[Req](MessageFormat.format(pattern)) _
-  println(s"LoggingService ($loggingAdapter)")
 
   override def apply(req: Req): M[Res] = {
-    println(s"LoggingService.apply ($loggingAdapter)")
     lazy val requestDetails: RequestDetails[Req] = toRequestDetails(req)
     trace(s"Requesting $requestDetails")
     delegate(req).registerSideEffectWhenComplete(log[Req, Res](requestDetails, _))

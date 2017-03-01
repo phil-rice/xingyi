@@ -41,7 +41,6 @@ class LoggingMemoriserTests extends UtilsWithLoggingSpec with LoggingFixture {
 
   it should "have a result of Failure(exception) if an exception is thrown" in {
     val memoriser = new LoggingMemoriseForTests
-    println(" a result of Failure(exception) if an exception is thrown")
     val LoggingReport(result, records) = memoriser.traceNow {
       memoriser.memorise(Debug, "msg1", null)
       throw e2

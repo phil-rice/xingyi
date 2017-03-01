@@ -89,10 +89,7 @@ object Async {
     }
 
     override def async[T](t: => T): Future[T] = {
-      println(s"LoggingAdapter: $loggingAdapter MDC ${loggingAdapter.copyMDC} EC: $executionContext")
-      Future{
-        println(s"In Async:  MDC ${loggingAdapter.copyMDC}")
-        t}
+      Future{t}
     }
 
     override def flatMap[T, T2](m: Future[T], fn: (T) => Future[T2]): Future[T2] = m.flatMap[T2](fn)

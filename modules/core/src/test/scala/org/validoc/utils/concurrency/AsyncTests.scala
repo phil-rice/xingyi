@@ -122,7 +122,6 @@ class FutureAsyncTests extends AbstractAsyncTests[Future] with BeforeAndAfter {
 
 
   it should "propogate the MDC with async, restoring MDC at end" in {
-    println(s"Starting Test LoggingAdapter: $loggingAdapter")
     loggingAdapter.setMDCvalue("someKey", "someValue")
     await(async.async {
       loggingAdapter.getMDCvalue("someKey") shouldBe Some("someValue")

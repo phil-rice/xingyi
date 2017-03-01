@@ -113,8 +113,7 @@ trait LoggingAdapter {
 
 object LoggingAdapter {
   implicit lazy val adapter = {
-    println("Using default println logging")
-    PrintlnLoggingAdapter
+    NullLoggingAdapterWithMdc
   }
 }
 

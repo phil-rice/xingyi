@@ -41,7 +41,6 @@ class LoggingServiceTests extends UtilsWithLoggingSpec with LoggingFixture {
     setup { service =>
       loggingMemoriser =>
         implicit loggingAdapter =>
-          println(s"log at trace at the start logging adapter is $loggingAdapter")
           val LoggingReport(Success("success_result"), records) = await(loggingMemoriser.traceFuture(service("success")))
           records shouldBe "LoggingRecorda"
     }
