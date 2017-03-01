@@ -1,4 +1,4 @@
-package strings
+package org.validoc.utils.strings
 
 import org.validoc.utils.UtilsSpec
 import org.validoc.utils.strings.Strings

@@ -37,7 +37,7 @@ class ResponseProcessorTests extends UtilsSpec {
   }
 
   it should "have a exception method that throws a unexpected exception" in {
-    intercept[UnexpectedException](ResponseProcessor.parsed(parserFinder).exception(requestDetails,runtimeException)) shouldBe UnexpectedException(requestDetails, runtimeException)
+    intercept[UnexpectedException](ResponseProcessor.parsed(parserFinder).exception(requestDetails)(runtimeException)) shouldBe UnexpectedException(requestDetails, runtimeException)
   }
   behavior of "ResponseProcessorForOption"
 
@@ -57,6 +57,6 @@ class ResponseProcessorTests extends UtilsSpec {
   }
 
   it should "have a exception method that returns a failure" in {
-    intercept[UnexpectedException](ResponseProcessor.optionalParsed(parserFinder).exception(requestDetails, runtimeException)) shouldBe UnexpectedException(requestDetails, runtimeException)
+    intercept[UnexpectedException](ResponseProcessor.optionalParsed(parserFinder).exception(requestDetails)(runtimeException)) shouldBe UnexpectedException(requestDetails, runtimeException)
   }
 }

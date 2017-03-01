@@ -39,25 +39,23 @@ Before:
   }
 ```
 
-After (and I'd like to 'pipeline' this a little more even)
-```$
-  def requestDetails(req: Req) = RequestDetails(req, s"Calling $name with $req")
-
-  def processServiceResponse(req: Req) = { serviceResponse: ServiceResponse =>
-    serviceResponse.status match {
-      case Status.Ok => responseProcessor.statusOk(serviceResponse)
-      case Status.NotFound => responseProcessor.statusNotFound(requestDetails(req), serviceResponse)
-      case _ => responseProcessor.statusUnexpected(requestDetails(req), serviceResponse)
-    }
-  }
-
-  override def apply(req: Req): M[Res] = {
-    (toRequest andThen toHttpReq andThen rawClient andTransformAndLift(
-      responseProcessor.exception(requestDetails(req), _),
-      toServiceResponse andThen processServiceResponse(req)
-    )) (req)
-  }
+After (and I'd like to find an arrow notation for transformAndList and get rid of the `(req)` at the end)
 ```
+  override def apply(req: Req): M[Res] = {
+    (toRequest ~> toHttpReq ~> rawClient transformAndLift(
+      responseProcessor.exception(req),
+      toServiceResponse ~> processServiceResponse(req))
+      ) (req)
+  }
+
+```
+The notation `~>` is just 'andThen'
+
+Both bits of code do the following.  'turn req into a request' andThen 'turn that into whatever real world HttpRequest we have' 
+then send that real HttpRequest (from 'some framework') to the raw framework client. The result that comes
+back could be an exception or a value. If it's an exception send the exception to the response processor. If it's
+a result turn the framework HttpResponse to our http response and then process it
+
 
 # Goal
 So to demonstrate this I'm working on recreating (approximately) a real world microservice. Expressing what it does

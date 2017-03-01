@@ -11,10 +11,11 @@ class HttpObjectService[M[_] : Async, HttpReq, Req: ToServiceRequest, HttpRes, R
                                                                                     toHttpReq: ServiceRequest => HttpReq) extends Service[M, Req, Res] {
 
   import Async._
+  import org.validoc.utils.functions.Functions._
 
   val toRequest = implicitly[ToServiceRequest[Req]]
 
-  def requestDetails = RequestDetails[Req](name) _
+  implicit def requestDetails = RequestDetails[Req](name) _
 
   def processServiceResponse(req: Req) = { serviceResponse: ServiceResponse =>
     serviceResponse.status match {
@@ -25,10 +26,10 @@ class HttpObjectService[M[_] : Async, HttpReq, Req: ToServiceRequest, HttpRes, R
   }
 
   override def apply(req: Req): M[Res] = {
-    (toRequest andThen toHttpReq andThen rawClient andTransformAndLift(
-      responseProcessor.exception(requestDetails(req), _),
-      toServiceResponse andThen processServiceResponse(req)
-    )) (req)
+    (toRequest ~> toHttpReq ~> rawClient transformAndLift(
+      responseProcessor.exception(req),
+      toServiceResponse ~> processServiceResponse(req))
+      ) (req)
   }
 
 }

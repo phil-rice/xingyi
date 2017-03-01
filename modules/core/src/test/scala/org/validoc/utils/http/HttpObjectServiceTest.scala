@@ -76,7 +76,7 @@ class HttpObjectServiceTest extends UtilsSpec {
       val exception = new RuntimeException
 
       when(service.apply(someHttpReq)) thenReturn Future.failed(exception)
-      when(responseProcessor.exception(httpObjectService.requestDetails(someHttpReq.s), exception)) thenReturn "result"
+      when(responseProcessor.exception(httpObjectService.requestDetails(someHttpReq.s))( exception)) thenReturn "result"
 
       await(httpObjectService(someHttpReq.s)) shouldBe "result"
     }

@@ -56,7 +56,7 @@ object Async {
       })
     }
 
-    def andTransformAndLift[R2](fail: Throwable => R2, succeed: R => R2) = { p: P =>
+    def transformAndLift[R2](fail: Throwable => R2, succeed: R => R2) = { p: P =>
       async.transform(fn(p), { tryR: Try[R] =>
         tryR match {
           case Success(s) => succeed(s).lift

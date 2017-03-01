@@ -24,7 +24,7 @@ trait ResponseProcessor[Req, T] {
     throw GatewayException(requestDetails, serviceResponse)
 
 
-  def exception(requestDetails: RequestDetails[Req], t: Throwable): T = throw new UnexpectedException(requestDetails, t)
+  def exception(requestDetails: RequestDetails[Req])( t: Throwable): T = throw new UnexpectedException(requestDetails, t)
 
   protected def process[T](parserFinder: ParserFinder[T], serviceResponse: ServiceResponse) =
     try {
