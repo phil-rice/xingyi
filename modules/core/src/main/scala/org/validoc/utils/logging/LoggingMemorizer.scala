@@ -17,6 +17,7 @@ object LoggingMemoriser extends LoggingMemoriser {
   private val nextId = new AtomicInteger()
 
   def nextTraceId = nextId.incrementAndGet().toString
+
 }
 
 
@@ -73,8 +74,7 @@ trait LoggingMemoriser  {
   }
 
   def thisTraceId(implicit loggingAdapter: LoggingAdapter): Option[String] = {
-    val result = loggingAdapter.getMDCvalue(LoggingMemoriser.key)
-    result
+    loggingAdapter.getMDCvalue(LoggingMemoriser.key)
   }
 
   private val lock = new Object

@@ -1,13 +1,16 @@
 package org.validoc.utils.logging
 
 import org.validoc.utils.http.RequestDetails
+import org.validoc.utils.strings.Strings
 import org.validoc.utils.success.{ExceptionState, FailedState, Succeeded, SuccessState}
 
 import scala.collection.concurrent.TrieMap
 import scala.util.Try
 
 
-sealed trait LogLevel
+sealed trait LogLevel {
+  override def toString: String = Strings.classNameOfObject(this)
+}
 
 trait LogLevelThatHasError extends LogLevel
 
@@ -151,6 +154,9 @@ trait LoggingAdapterWithDefaults extends LoggingAdapter {
 
   override def trace(sender: Any, msg: => String): Unit = log(sender, "TRACE", msg)
 }
+
+
+
 
 object PrintlnLoggingAdapter extends LoggingAdapterWithMdc with LoggingAdapterWithDefaults {
   protected def log(sender: Any, level: String, msg: => String): Unit = println(s"[$level] $msg")
