@@ -29,7 +29,7 @@ trait LoggingMemoriser {
 
   def removeSecrets(msg: String) = secretMap.foldLeft(msg) { case (acc, (secret, replacement)) => acc.replaceAllLiterally(secret, replacement) }
 
-  def addSpan(purpose: String, startId: SpanId, midTime: Long, endId: SpanId, result: Any): Unit = useTraceId { lr =>
+  def addSpan(purpose: String, startId: SpanId, midTime: Long, endId: SpanId, result: Any)(implicit loggingAdapter: LoggingAdapter): Unit = useTraceId { lr =>
     val startTime = lr.records(startId.id).time
     val startMessage = lr.records(startId.id).msg.toString
     val endTime = lr.records(endId.id).time
@@ -39,8 +39,10 @@ trait LoggingMemoriser {
 
   def traceNow[X](block: => X)(implicit loggingAdapter: LoggingAdapter): LoggingReport[X] = {
     val traceId = setup
+    println(s"traceNow(traceId is $traceId, in loggingAdapter it is ${loggingAdapter.getMDCvalue(LoggingMemoriser.key)}, thisTraceId is ${thisTraceId}")
     try {
       val result = block
+      println(s"after block(traceId is $traceId, in loggingAdapter it is ${loggingAdapter.getMDCvalue(LoggingMemoriser.key)}")
       LoggingReport(Success(result), map(traceId))
     } catch {
       case e: Exception => LoggingReport(Failure(e), map(traceId))
@@ -70,15 +72,18 @@ trait LoggingMemoriser {
   }
 
   def thisTraceId(implicit loggingAdapter: LoggingAdapter): Option[String] = {
-    loggingAdapter.getMDCvalue(LoggingMemoriser.key)
+    val result = loggingAdapter.getMDCvalue(LoggingMemoriser.key)
+    println(s"thisTraceId is $result")
+    result
   }
 
   private val lock = new Object
 
-  def memorise(level: LogLevel, msg: Any, throwable: Throwable): SpanId =
+  def memorise(level: LogLevel, msg: Any, throwable: Throwable)(implicit loggingAdapter: LoggingAdapter): SpanId = {
+   println(s"Memorise($level, $msg, $throwable) thisTraceId is $thisTraceId")
     useTraceId(lr => lr.copy(records = lr.records :+ LoggingRecord(nanoTimeService(), level, msg, Option(throwable))))
-
-  def useTraceId(fn: LoggingRecords => LoggingRecords): SpanId =
+  }
+  def useTraceId(fn: LoggingRecords => LoggingRecords)(implicit loggingAdapter: LoggingAdapter): SpanId =
     lock.synchronized {
       thisTraceId match {
         case Some(traceId) =>

@@ -16,7 +16,6 @@ trait LoggingFixture {
 
   class LoggingMemoriseForTests extends LoggingMemoriser {
 
-
     override val nanoTimeService: NanoTimeService = new NanoTimeService {
       var x: Long = 0
 
@@ -34,6 +33,7 @@ class LoggingMemoriserTests extends UtilsSpec with LoggingFixture {
 
   "LoggingMemoriser for non future blocks" should "return the result of the trace" in {
     val memoriser = new LoggingMemoriseForTests
+
     val LoggingReport(result, records) = memoriser.traceNow("result")
     result shouldBe Success("result")
     records shouldBe LoggingRecords(Vector())
@@ -41,6 +41,7 @@ class LoggingMemoriserTests extends UtilsSpec with LoggingFixture {
 
   it should "have a result of Failure(exception) if an exception is thrown" in {
     val memoriser = new LoggingMemoriseForTests
+    println(" a result of Failure(exception) if an exception is thrown")
     val LoggingReport(result, records) = memoriser.traceNow {
       memoriser.memorise(Debug, "msg1", null)
       throw e2
