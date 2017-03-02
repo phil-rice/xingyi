@@ -187,6 +187,7 @@ class CachingServiceTests extends UtilsWithLoggingSpec with Eventually {
           val request3 = DelegateRequest("sameKey", Success("result3"))
 
           val future1 = cachingService(request1)
+          checkMetrics("after future 1 started ", requests = 1, delegateRequests = 1, delegateSuccesses = 0)
           request1.countDownLatch.countDown()
           await(future1) shouldBe "result1"
           checkMetrics("after future 1 finished ", requests = 1, delegateRequests = 1, delegateSuccesses = 1)
@@ -201,7 +202,10 @@ class CachingServiceTests extends UtilsWithLoggingSpec with Eventually {
           checkMetrics("after future2 finished ", requests = 2, delegateRequests = 2, delegateSuccesses = 2, staleRequests = 1)
 
           val future3 = cachingService(request3)
-          //Has failed here intermittantly. StapeRequest 2 was not equal to 1
+          //Has failed here intermittantly. "staleRequests 2 was not equal to 1'. It's an 'OK' failure mode (if it's even a failure mode).
+          // Very short time window, and the only consequence is an extra stale data serve
+          //This sleep should stop it. I can't easily see a 'data driven' way to work this out without exposing a lot of the inards
+          Thread.sleep(10)
           checkMetrics("after future3 started ", requests = 3, delegateRequests = 2, delegateSuccesses = 2, staleRequests = 1)
           request3.countDownLatch.countDown()
           await(future2) shouldBe "result1" //this was served while stale
