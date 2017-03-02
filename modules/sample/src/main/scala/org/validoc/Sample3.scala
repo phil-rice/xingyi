@@ -7,6 +7,7 @@ import org.validoc.utils.metrics.{MetricValue, PutMetrics}
 import org.validoc.utils.success.{Succeeded, SucceededFromFn, SucceededState}
 import org.validoc.utils.time.{NanoTimeService, SystemClockNanoTimeService}
 
+import scala.language.postfixOps
 import scala.concurrent.duration._
 import scala.util.Try
 
@@ -15,21 +16,21 @@ class PromotionSetup[Tag[M[_], _, _], M[_], HttpReq, HttpRes: ToServiceResponse]
 
   type Setup = IHttpSetup[Tag, M, HttpReq, HttpRes]
 
-  val mostPopularHttp = s.rawService("mostPopular")
+  val mostPopularHttp: Tag[M, HttpReq, HttpRes] = s.rawService("mostPopular")
 
-  val promotionHttp = s.rawService("promotion")
+  val promotionHttp: Tag[M, HttpReq, HttpRes] = s.rawService("promotion")
 
-  val programmeAndProductionsHttp = s.rawService("programmeAndProductions")
+  val programmeAndProductionsHttp: Tag[M, HttpReq, HttpRes] = s.rawService("programmeAndProductions")
 
-  val enrichedMostPopularService = {
+  val enrichedMostPopularService: Tag[M, MostPopularQuery, EnrichedMostPopular] = {
     import s._
-    (aggregate(
+    aggregate(
       getCachedProfiledObject[MostPopularQuery, MostPopular]("client.mostPopular", 2 minutes, 10 hours, 20, mostPopularHttp),
       getCachedProfiledObject[ProgrammeId, Programme]("client.programme", 2 minutes, 10 hours, 2000, programmeAndProductionsHttp)).
-      enrich[EnrichedMostPopular])
+      enrich[EnrichedMostPopular]
   }
 
-  val enrichedPromotionService = {
+  val enrichedPromotionService: Tag[M, PromotionQuery, EnrichedPromotion] = {
     import s._
     import org.validoc.utils.functions.Functions._
     aggregate(
@@ -38,7 +39,7 @@ class PromotionSetup[Tag[M[_], _, _], M[_], HttpReq, HttpRes: ToServiceResponse]
       enrich[EnrichedPromotion]
   }
 
-  val homePageService = {
+  val homePageService: Tag[M, ServiceRequest, ServiceResponse] = {
     import s._
     endpoint0("/endpoint")(
       aggregate(
@@ -73,7 +74,7 @@ trait SampleForStrings {
   implicit object SucceededForString extends SucceededFromFn[String](_ => true)
 
   implicit object PutMetricsForString extends PutMetrics {
-    override def apply(v1: Map[String, MetricValue]): Unit = Map()
+    override def apply(v1: Map[String, MetricValue]): Unit = {}
   }
 
 }
