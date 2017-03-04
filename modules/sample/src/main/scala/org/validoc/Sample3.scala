@@ -2,18 +2,20 @@ package org.validoc
 
 import org.validoc.domain._
 import org.validoc.language.{IHttpSetup, MakeHttpService, ServiceInterpreters, StringServiceTag}
-import org.validoc.utils.{FromServiceRequest, ToServiceResponse}
+import org.validoc.utils._
 import org.validoc.utils.http._
 import org.validoc.utils.metrics.{MetricValue, PutMetrics}
-import org.validoc.utils.success.{Succeeded, SucceededFromFn, SucceededState}
-import org.validoc.utils.time.{NanoTimeService, SystemClockNanoTimeService}
+import org.validoc.utils.service.ServerContext
+import org.validoc.utils.success.SucceededFromFn
+import org.validoc.utils.time.SystemClockNanoTimeService
 
-import scala.language.postfixOps
 import scala.concurrent.duration._
-import scala.util.Try
+import scala.language.postfixOps
 
 
-class PromotionSetup[Tag[M[_], _, _], M[_], HttpReq, HttpRes: ToServiceResponse](implicit fromServiceRequest: FromServiceRequest[HttpReq], nanoTimeService: NanoTimeService, makeHttpService: MakeHttpService[M, HttpReq, HttpRes], putMetrics: PutMetrics, succeeded: Succeeded[HttpRes], s: IHttpSetup[Tag, M, HttpReq, HttpRes]) {
+class PromotionSetup[Tag[M[_], _, _], M[_], HttpReq, HttpRes](s: IHttpSetup[Tag, M, HttpReq, HttpRes])(implicit
+                                                                                                       makeHttpService: MakeHttpService[M, HttpReq, HttpRes],
+                                                                                                       serverContext: ServerContext[HttpReq, HttpRes]) {
 
   type Setup = IHttpSetup[Tag, M, HttpReq, HttpRes]
 
@@ -32,8 +34,8 @@ class PromotionSetup[Tag[M[_], _, _], M[_], HttpReq, HttpRes: ToServiceResponse]
   }
 
   val enrichedPromotionService: Tag[M, PromotionQuery, EnrichedPromotion] = {
-    import s._
     import org.validoc.utils.functions.Functions._
+    import s._
     aggregate(
       (httpCallout[PromotionQuery, Promotion] _ ~> profiled[PromotionQuery, Promotion] ~> cached(2 minutes, 10 hours, 20)) (promotionHttp),
       getCachedProfiledObject[ProductionId, Production]("client.production", 2 minutes, 10 hours, 2000, programmeAndProductionsHttp)).
@@ -52,13 +54,13 @@ class PromotionSetup[Tag[M[_], _, _], M[_], HttpReq, HttpRes: ToServiceResponse]
 
 trait SampleForStrings {
 
-  implicit def serviceResponseForString (v1: String) = ServiceResponse(Status.Ok, Body(v1), ContentType("text/plain"))
+  implicit def serviceResponseForString(v1: String) = ServiceResponse(Status.Ok, Body(v1), ContentType("text/plain"))
 
 
-  implicit def stringToServiceRequest (v1: String) = ServiceRequest(Get, Uri(v1))
+  implicit def stringToServiceRequest(v1: String) = ServiceRequest(Get, Uri(v1))
 
 
-  implicit def serviceRequestToString (v1: ServiceRequest): String = v1.uri.asUriString
+  implicit def serviceRequestToString(v1: ServiceRequest): String = v1.uri.asUriString
 
   implicit val printer = new ServiceInterpreters.ServiceToString[Option, String, String]
 
@@ -74,12 +76,14 @@ trait SampleForStrings {
     override def apply(v1: Map[String, MetricValue]): Unit = {}
   }
 
+  implicit val serverContext = new ServerContext[String, String]()
+
 }
 
 
 object Sample3 extends App with SampleForStrings {
 
-  val setup = new PromotionSetup[StringServiceTag, Option, String, String]()
+  val setup = new PromotionSetup[StringServiceTag, Option, String, String](new ServiceInterpreters.ServiceToString)
 
   import setup._
 

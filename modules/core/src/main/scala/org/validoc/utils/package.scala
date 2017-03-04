@@ -19,6 +19,6 @@ package object utils {
 
   implicit def fromServiceRequestFrom[T](implicit serverContext: ServerContext[T, _]) = serverContext.fromServiceRequest
 
-  implicit def toServiceResponseFrom[T](implicit serverContext: ServerContext[T, _]) = serverContext.toServiceResponse
+  implicit def toServiceResponseFrom[T](implicit serverContext: ServerContext[_, T]) = serverContext.toServiceResponse
 
 }
