@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 import scala.util.Try
 
 
-class PromotionSetup[Tag[M[_], _, _], M[_], HttpReq, HttpRes: ToServiceResponse](implicit toHttpReq: (ServiceRequest) => HttpReq, nanoTimeService: NanoTimeService, makeHttpService: MakeHttpService[M, HttpReq, HttpRes], putMetrics: PutMetrics, succeeded: Succeeded[HttpRes], s: IHttpSetup[Tag, M, HttpReq, HttpRes]) {
+class PromotionSetup[Tag[M[_], _, _], M[_], HttpReq, HttpRes: ToServiceResponse](implicit fromServiceRequest: FromServiceRequest[HttpReq], nanoTimeService: NanoTimeService, makeHttpService: MakeHttpService[M, HttpReq, HttpRes], putMetrics: PutMetrics, succeeded: Succeeded[HttpRes], s: IHttpSetup[Tag, M, HttpReq, HttpRes]) {
 
   type Setup = IHttpSetup[Tag, M, HttpReq, HttpRes]
 
@@ -59,7 +59,7 @@ trait SampleForStrings {
     override def apply(v1: String): ServiceRequest = ServiceRequest(Get, Uri(v1))
   }
 
-  implicit object ServiceRequestToString extends (ServiceRequest => String) {
+  implicit object ServiceRequestToString extends FromServiceRequest[String] {
     override def apply(v1: ServiceRequest): String = v1.uri.asUriString
   }
 

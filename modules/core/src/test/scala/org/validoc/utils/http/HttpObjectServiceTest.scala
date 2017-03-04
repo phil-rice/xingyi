@@ -19,13 +19,16 @@ class HttpObjectServiceTest extends UtilsWithLoggingSpec {
 
   type Req = String
   type Res = String
+
   //    override def toSummary(req: Req): String = s"summary_$req"
 
   implicit object ToHttpRequestForReq extends ToServiceRequest[Req] {
     override def apply(req: Req): ServiceRequest = ServiceRequest(Get, Uri(req))
   }
 
-  implicit def convert(s: ServiceRequest): HttpReq = HttpReq(s.uri.asUriString)
+  implicit object FromServiceRequestForHttpReq extends FromServiceRequest[HttpReq] {
+    override def apply(s: ServiceRequest): HttpReq = HttpReq(s.uri.asUriString)
+  }
 
   def setup(serviceResponse: => ServiceResponse)(fn: (HttpObjectService[Future, HttpReq, Req, HttpRes, Res], Service[Future, HttpReq, HttpRes], ResponseProcessor[Req, Res], ServiceResponse) => Unit) = {
     val httpService = mock[Service[Future, HttpReq, HttpRes]]
@@ -76,7 +79,7 @@ class HttpObjectServiceTest extends UtilsWithLoggingSpec {
       val exception = new RuntimeException
 
       when(service.apply(someHttpReq)) thenReturn Future.failed(exception)
-      when(responseProcessor.exception(httpObjectService.requestDetails(someHttpReq.s))( exception)) thenReturn "result"
+      when(responseProcessor.exception(httpObjectService.requestDetails(someHttpReq.s))(exception)) thenReturn "result"
 
       await(httpObjectService(someHttpReq.s)) shouldBe "result"
     }

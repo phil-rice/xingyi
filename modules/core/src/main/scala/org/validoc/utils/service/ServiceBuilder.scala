@@ -26,13 +26,13 @@ trait WrappedTypes[M[_]] {
 trait ParserServiceBuilder[M[_], HttpReq, HttpRes] extends WrappedTypes[M] {
   protected implicit def async: Async[M]
 
-  def parse[Req: ToServiceRequest, Res: ParserFinder](implicit toServiceResponse: ToServiceResponse[HttpRes], toHttpReq: ServiceRequest => HttpReq): Modify[HttpReq, HttpRes, Req, Res] =
+  def parse[Req: ToServiceRequest, Res: ParserFinder](implicit toServiceResponse: ToServiceResponse[HttpRes], toHttpReq: FromServiceRequest[HttpReq]): Modify[HttpReq, HttpRes, Req, Res] =
     service => new HttpObjectService[M, HttpReq, Req, HttpRes, Res]("someName", service, ResponseProcessor.parsed(implicitly[ParserFinder[Res]]))
 
-  def parseOption[Req: ToServiceRequest, Res: ParserFinder](implicit toServiceResponse: ToServiceResponse[HttpRes], toHttpReq: ServiceRequest => HttpReq): Modify[HttpReq, HttpRes, Req, Option[Res]] =
+  def parseOption[Req: ToServiceRequest, Res: ParserFinder](implicit toServiceResponse: ToServiceResponse[HttpRes],  toHttpReq: FromServiceRequest[HttpReq]): Modify[HttpReq, HttpRes, Req, Option[Res]] =
     service => new HttpObjectService[M, HttpReq, Req, HttpRes, Option[Res]]("someName", service, ResponseProcessor.optionalParsed[Req, Res](implicitly[ParserFinder[Res]]))
 
-  def parseDefaultIfNotFound[Req: ToServiceRequest, Res: ParserFinder](default: Res)(implicit toServiceResponse: ToServiceResponse[HttpRes], toHttpReq: ServiceRequest => HttpReq): Modify[HttpReq, HttpRes, Req, Option[Res]] =
+  def parseDefaultIfNotFound[Req: ToServiceRequest, Res: ParserFinder](default: Res)(implicit toServiceResponse: ToServiceResponse[HttpRes],  toHttpReq: FromServiceRequest[HttpReq]): Modify[HttpReq, HttpRes, Req, Option[Res]] =
     service => new HttpObjectService[M, HttpReq, Req, HttpRes, Option[Res]]("someName", service, ResponseProcessor.optionalParsed[Req, Res](implicitly[ParserFinder[Res]]))
 }
 
@@ -51,9 +51,9 @@ trait ServiceBuilder[M[_], HttpReq, HttpRes] extends ParserServiceBuilder[M, Htt
   def profile[Req, Res]: Wrapped[Req, Res] = service => new ProfilingService("someName", service)
 
 
-  def metrics[Req, Res: ReportData](prefix: String)(implicit timeService: NanoTimeService, putMetrics: PutMetrics, reportData: ReportData[Res]): Wrapped[Req, Res] = {
+  def metrics[Req, Res: ReportData](prefix: String)(implicit timeService: NanoTimeService, putMetrics: PutMetrics, reportData: ReportData[Res]): Wrapped[Req, Res] =
     service => new MetricsService[M, Req, Res](prefix, service)(async, timeService, putMetrics, reportData)
-  }
+
 
   def aggregate[P, C](serviceP: P, serviceC: C) = (serviceP, serviceC)
 

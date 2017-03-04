@@ -4,18 +4,19 @@ import org.validoc.domain._
 import org.validoc.utils.caching.{CachableKey, CachableResult}
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.functions.Functions._
-import org.validoc.utils.http.{ServiceRequest, ToServiceRequest, ToServiceResponse}
+import org.validoc.utils.http.{FromServiceRequest, ServiceRequest, ToServiceRequest, ToServiceResponse}
 import org.validoc.utils.parser.ParserFinder
 import org.validoc.utils.service.ServiceBuilder
 import org.validoc.utils.time.NanoTimeService
 import org.validoc.utils.monads.Kleisli._
+
 import scala.concurrent.duration._
 
 abstract class Sample2[M[_] : Async, HttpReq, HttpRes](mostPopularHttp: Service[M, HttpReq, HttpRes],
                                                        promotionHttp: Service[M, HttpReq, HttpRes],
                                                        programmeAndProductionHttp: Service[M, HttpReq, HttpRes])
                                                       (implicit toServiceResponse: ToServiceResponse[HttpRes],
-                                                       toHttpReq: ServiceRequest => HttpReq,
+                                                       fromServiceRequest: FromServiceRequest[HttpReq],
                                                        timeService: NanoTimeService)
   extends ServiceBuilder[M, HttpReq, HttpRes] {
 

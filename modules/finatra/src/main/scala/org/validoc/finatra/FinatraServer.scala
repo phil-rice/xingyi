@@ -24,9 +24,10 @@ trait FinatraPlayground {
 
   implicit def toServiceRequest(request: Request) = ServiceRequest(Get, Uri(request.path), request.headerMap.get("Accept").map(AcceptHeader(_)))
 
-  implicit def toRequest(serviceRequest: ServiceRequest) = {
-    Request(Method(serviceRequest.method.toString.toUpperCase), serviceRequest.uri.asUriString)
+  implicit object FromServiceRequestToFinatraRequest extends FromServiceRequest[Request] {
+    override def apply(serviceRequest: ServiceRequest): Request = Request(Method(serviceRequest.method.toString.toUpperCase), serviceRequest.uri.asUriString)
   }
+
 
 
   implicit def asyncForTwitterFuture(implicit futurePool: FuturePool) = new Async[TFuture] {
