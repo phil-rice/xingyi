@@ -1,8 +1,9 @@
 package org.validoc.finatra
 
 import com.twitter.finagle.http.{Method, Request, Response}
-import com.twitter.util._
-import org.validoc.language.{MakeHttpService, ServiceInterpreters}
+import com.twitter.finatra.utils.FuturePools
+import com.twitter.util.{Await, FuturePool, Return, Throw, Duration => TDuration, Future => TFuture, Try => TTry, _}
+import org.validoc.language.ServiceInterpreters
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.http._
 import org.validoc.utils.metrics.NullPutMetrics
@@ -13,12 +14,9 @@ import org.validoc.utils.time.SystemClockNanoTimeService
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.{Failure, Success, Try}
 
-import com.twitter.util.{Await, FuturePool, Return, Throw, Duration => TDuration, Future => TFuture, Try => TTry}
+object FinatraAdapter extends FinatraAdapter()(FuturePools.fixedPool("pool", 20))
 
-object FinatraAdapter extends FinatraAdapter
-
-trait FinatraAdapter {
-
+class FinatraAdapter(implicit val futurePool: FuturePool) {
 
   implicit def asyncForTwitterFuture(implicit futurePool: FuturePool) = new Async[TFuture] {
     override def async[T](t: => T): TFuture[T] = futurePool(t)
@@ -59,8 +57,7 @@ trait FinatraAdapter {
     implicit def fromServiceRequestToFinatraRequest(serviceRequest: ServiceRequest) = Request(Method(serviceRequest.method.toString.toUpperCase), serviceRequest.uri.asUriString)
 
     implicit val nanoTimeService = SystemClockNanoTimeService
-    implicit val futurePool = FuturePool.unboundedPool
-    implicit val serviceData = new ServiceInterpreters.ServicesGroupedForAsync[Future, Request, Response]
+    implicit val serviceData = new ServiceInterpreters.ServicesGroupedForAsync[TFuture, Request, Response]
     implicit val putMetrics = NullPutMetrics
     implicit val succeeded = new SucceededFromFn[Response](_.getStatusCode() / 100 == 2)
     new ServerContext[Request, Response]

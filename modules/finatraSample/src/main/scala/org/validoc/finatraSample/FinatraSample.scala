@@ -8,13 +8,9 @@ import org.validoc.finatra._
 import org.validoc.language.{MakeHttpService, ServiceData}
 import org.validoc.language.{MakeHttpService, ServiceData, ServiceInterpreters}
 
-object FinatraSample extends App with FinatraAdapter {
-
-  import ServiceInterpreters._
+object FinatraSample extends FinatraAdapter()(FuturePools.fixedPool("pool", 20)) with App  {
 
   implicit val makeHttpService = MakeHttpService(MockFinatraService("mostPopular", "promotion", "programmeAndProductions"))
-
-  implicit val futurePool = FuturePools.fixedPool("pool", 20)
 
   val setup = new PromotionSetup[ServiceData, Future, Request, Response](new ServiceInterpreters.ServicesGroupedForAsync)
 

@@ -4,7 +4,7 @@ import org.validoc.domain._
 import org.validoc.language.{IHttpSetup, MakeHttpService, ServiceInterpreters, StringServiceTag}
 import org.validoc.utils._
 import org.validoc.utils.http._
-import org.validoc.utils.metrics.{MetricValue, PutMetrics}
+import org.validoc.utils.metrics.{MetricValue, NullPutMetrics, PutMetrics}
 import org.validoc.utils.service.ServerContext
 import org.validoc.utils.success.SucceededFromFn
 import org.validoc.utils.time.SystemClockNanoTimeService
@@ -56,9 +56,7 @@ trait SampleForStrings {
 
   implicit def serviceResponseForString(v1: String) = ServiceResponse(Status.Ok, Body(v1), ContentType("text/plain"))
 
-
   implicit def stringToServiceRequest(v1: String) = ServiceRequest(Get, Uri(v1))
-
 
   implicit def serviceRequestToString(v1: ServiceRequest): String = v1.uri.asUriString
 
@@ -72,14 +70,10 @@ trait SampleForStrings {
 
   implicit object SucceededForString extends SucceededFromFn[String](_ => true)
 
-  implicit object PutMetricsForString extends PutMetrics {
-    override def apply(v1: Map[String, MetricValue]): Unit = {}
-  }
+  implicit val putMetrics = NullPutMetrics
 
   implicit val serverContext = new ServerContext[String, String]()
-
 }
-
 
 object Sample3 extends App with SampleForStrings {
 
