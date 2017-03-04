@@ -9,15 +9,14 @@ import org.validoc.utils.parser.ParserFinder
 trait PromotionQuery
 
 object PromotionQuery extends PromotionQuery {
-  implicit object ToRequestForPromotionQuery extends ToServiceRequest[PromotionQuery] {
-    override def apply(req: PromotionQuery): ServiceRequest =
-      ServiceRequest(Get, Uri("http://someUri"))
-  }
+  implicit def toRequestForPromotionQuery(req: PromotionQuery) = ServiceRequest(Get, Uri("http://someUri"))
+
   implicit object CachableKeyForPromotionQuery extends CachableKey[PromotionQuery] {
     override def id(req: PromotionQuery): Id = UnitId
 
     override def bypassCache(req: PromotionQuery): Boolean = false
   }
+
   implicit def fromHomePageQuery(h: HomePageQuery) = PromotionQuery
 }
 

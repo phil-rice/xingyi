@@ -52,17 +52,13 @@ class PromotionSetup[Tag[M[_], _, _], M[_], HttpReq, HttpRes: ToServiceResponse]
 
 trait SampleForStrings {
 
-  implicit object ServiceResponseForString extends ToServiceResponse[String] {
-    override def apply(v1: String): ServiceResponse = ServiceResponse(Status.Ok, Body(v1), ContentType("text/plain"))
-  }
+  implicit def serviceResponseForString (v1: String) = ServiceResponse(Status.Ok, Body(v1), ContentType("text/plain"))
 
-  implicit object StringToServiceRequest extends (String => ServiceRequest) {
-    override def apply(v1: String): ServiceRequest = ServiceRequest(Get, Uri(v1))
-  }
 
-  implicit object ServiceRequestToString extends FromServiceRequest[String] {
-    override def apply(v1: ServiceRequest): String = v1.uri.asUriString
-  }
+  implicit def stringToServiceRequest (v1: String) = ServiceRequest(Get, Uri(v1))
+
+
+  implicit def serviceRequestToString (v1: ServiceRequest): String = v1.uri.asUriString
 
   implicit val printer = new ServiceInterpreters.ServiceToString[Option, String, String]
 

@@ -11,9 +11,7 @@ object HomePage {
 
   implicit object CachableResultForHomePage extends CachableResultUsingSucesses[HomePage]
 
-  implicit object ToServiceResponseForHomePage extends ToServiceResponse[HomePage] {
-    override def apply(v1: HomePage): ServiceResponse = ServiceResponse(Status.Ok, Body(v1.toString), ContentType("text/plain"))
-  }
+  implicit def toServiceResponseForHomePage(v1: HomePage) = ServiceResponse(Status.Ok, Body(v1.toString), ContentType("text/plain"))
 
 }
 
@@ -28,14 +26,9 @@ object HomePageQuery extends HomePageQuery {
     override def bypassCache(req: HomePageQuery): Boolean = false
   }
 
-  implicit object ToRequestForHomePageQuery extends ToServiceRequest[HomePageQuery] {
-    override def apply(req: HomePageQuery): ServiceRequest =
-      ServiceRequest(Get, Uri("someUri"))
-  }
+  implicit def toRequestForHomePageQuery(req: HomePageQuery) = ServiceRequest(Get, Uri("someUri"))
 
-  implicit object FromServiceRequestForHomePageQuery extends FromServiceRequest[HomePageQuery] {
-    override def apply(v1: ServiceRequest): HomePageQuery = HomePageQuery
-  }
+  implicit def fromServiceRequestForHomePageQuery(v1: ServiceRequest): HomePageQuery = HomePageQuery
 
 }
 

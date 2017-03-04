@@ -17,14 +17,11 @@ object MostPopularQuery extends MostPopularQuery {
     override def bypassCache(req: MostPopularQuery): Boolean = false
   }
 
-  implicit object ToRequestForMostPopularQuery extends ToServiceRequest[MostPopularQuery] {
-    override def apply(req: MostPopularQuery): ServiceRequest =
-      ServiceRequest(Get, Uri("http://someUri"))
-  }
+  implicit def toRequestForMostPopularQuery(req: MostPopularQuery) = ServiceRequest(Get, Uri("http://someUri"))
 
-  implicit object FromServiceRequestForMostPopularQuery extends FromServiceRequest[MostPopularQuery] {
-    override def apply(v1: ServiceRequest): MostPopularQuery = MostPopularQuery
-  }
+
+  implicit def fromServiceRequestForMostPopularQuery(v1: ServiceRequest) = MostPopularQuery
+
 
   implicit def fromHomePageQuery(h: HomePageQuery) = MostPopularQuery
 
@@ -55,7 +52,6 @@ object EnrichedMostPopular {
   }
 
   def apply(p: MostPopular, children: Seq[Programme]): EnrichedMostPopular = EnrichedMostPopular(children)
-
 
   implicit object CachableResultForEnrichedMostPopular extends CachableResultUsingSucesses[EnrichedMostPopular]
 

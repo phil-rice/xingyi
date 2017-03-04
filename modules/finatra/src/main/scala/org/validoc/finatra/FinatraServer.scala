@@ -14,21 +14,16 @@ import org.validoc.utils.http._
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.{Failure, Success, Try}
 
-object FinatraPlayground  extends FinatraPlayground
+object FinatraPlayground extends FinatraPlayground
 
 trait FinatraPlayground {
 
-  implicit object toServiceResponseForFinatraResponse extends ToServiceResponse[Response] {
-    override def apply(response: Response): ServiceResponse =
-      ServiceResponse(Status(response.statusCode), Body(response.contentString), ContentType(response.mediaType.getOrElse("")))
-  }
+  implicit def toServiceResponseForFinatraResponse(response: Response) = ServiceResponse(Status(response.statusCode), Body(response.contentString), ContentType(response.mediaType.getOrElse("")))
+
 
   implicit def toServiceRequest(request: Request) = ServiceRequest(Get, Uri(request.path), request.headerMap.get("Accept").map(AcceptHeader(_)))
 
-  implicit object FromServiceRequestToFinatraRequest extends FromServiceRequest[Request] {
-    override def apply(serviceRequest: ServiceRequest): Request = Request(Method(serviceRequest.method.toString.toUpperCase), serviceRequest.uri.asUriString)
-  }
-
+  implicit def fromServiceRequestToFinatraRequest(serviceRequest: ServiceRequest) = Request(Method(serviceRequest.method.toString.toUpperCase), serviceRequest.uri.asUriString)
 
 
   implicit def asyncForTwitterFuture(implicit futurePool: FuturePool) = new Async[TFuture] {
@@ -83,7 +78,7 @@ class EndpointController(serviceData: ServiceData[TFuture, _, _]) extends Contro
   }
 }
 
-class StatusController(serviceData: ServiceData[TFuture, _, _]) extends Controller{
+class StatusController(serviceData: ServiceData[TFuture, _, _]) extends Controller {
 }
 
 class PingController extends Controller {

@@ -9,10 +9,7 @@ case class ProgrammeId(id: String) extends AnyVal
 
 object ProgrammeId {
 
-  implicit object ToRequestForProgrammeId extends ToServiceRequest[ProgrammeId] {
-    override def apply(req: ProgrammeId): ServiceRequest =
-      ServiceRequest(Get, Uri(s"someUri/${req.id}"))
-  }
+  implicit def toRequestForProgrammeId (req: ProgrammeId)=     ServiceRequest(Get, Uri(s"someUri/${req.id}"))
 
   implicit object CachableKeyForProgrammeId extends CachableKey[ProgrammeId] {
     override def id(req: ProgrammeId): Id = StringId(req.id)
