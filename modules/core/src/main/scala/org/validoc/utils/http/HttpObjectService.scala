@@ -1,6 +1,6 @@
 package org.validoc.utils.http
 
-import org.validoc.utils.Service
+import org.validoc.utils.{FromServiceRequest, Service, ToServiceRequest, ToServiceResponse}
 import org.validoc.utils.concurrency.Async
 
 

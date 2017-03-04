@@ -2,6 +2,7 @@ package org.validoc
 
 import org.validoc.domain._
 import org.validoc.language.{IHttpSetup, MakeHttpService, ServiceInterpreters, StringServiceTag}
+import org.validoc.utils.{FromServiceRequest, ToServiceResponse}
 import org.validoc.utils.http._
 import org.validoc.utils.metrics.{MetricValue, PutMetrics}
 import org.validoc.utils.success.{Succeeded, SucceededFromFn, SucceededState}

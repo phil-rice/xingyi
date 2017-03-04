@@ -1,5 +1,6 @@
 package org.validoc.domain
 
+import org.validoc.utils.{FromServiceRequest, ToServiceRequest, ToServiceResponse}
 import org.validoc.utils.caching.{CachableKey, CachableResultUsingSucesses, Id, UnitId}
 import org.validoc.utils.http._
 

@@ -1,19 +1,17 @@
 package org.validoc.utils.service
 
-import java.util.concurrent.Future
-
-import org.validoc.utils.Service
 import org.validoc.utils.aggregate._
 import org.validoc.utils.caching.{CachableKey, CachableResult, CachingService, DurationStaleCacheStategy}
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.http._
-import org.validoc.utils.logging.{Logging, LoggingAdapter, LoggingService, LoggingStrings}
+import org.validoc.utils.logging.LoggingService
 import org.validoc.utils.map.MaxMapSizeStrategy
 import org.validoc.utils.metrics._
 import org.validoc.utils.parser.ParserFinder
 import org.validoc.utils.profiling.ProfilingService
 import org.validoc.utils.success.Succeeded
 import org.validoc.utils.time.NanoTimeService
+import org.validoc.utils.{FromServiceRequest, Service, ToServiceRequest, ToServiceResponse}
 
 import scala.concurrent.duration.Duration
 

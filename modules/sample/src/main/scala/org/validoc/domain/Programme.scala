@@ -1,7 +1,8 @@
 package org.validoc.domain
 
+import org.validoc.utils.ToServiceRequest
 import org.validoc.utils.caching.{CachableKey, CachableResultUsingSucesses, Id, StringId}
-import org.validoc.utils.http.{Get, ServiceRequest, ToServiceRequest, Uri}
+import org.validoc.utils.http.{Get, ServiceRequest, Uri}
 import org.validoc.utils.parser.ParserFinder
 
 case class ProgrammeId(id: String) extends AnyVal

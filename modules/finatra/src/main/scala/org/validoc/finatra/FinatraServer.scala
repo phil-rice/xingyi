@@ -7,6 +7,7 @@ import com.twitter.finatra.http.routing.HttpRouter
 import com.twitter.finatra.http.{Controller, HttpServer}
 import com.twitter.util.{Await, FuturePool, Return, Throw, Duration => TDuration, Future => TFuture, Try => TTry}
 import org.validoc.language.ServiceData
+import org.validoc.utils.{FromServiceRequest, ToServiceResponse}
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.http._
 

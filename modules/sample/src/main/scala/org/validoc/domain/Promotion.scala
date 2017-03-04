@@ -1,8 +1,9 @@
 package org.validoc.domain
 
+import org.validoc.utils.ToServiceRequest
 import org.validoc.utils.aggregate.{Enricher, HasChildren}
 import org.validoc.utils.caching.{CachableKey, CachableResultUsingSucesses, Id, UnitId}
-import org.validoc.utils.http.{Get, ServiceRequest, ToServiceRequest, Uri}
+import org.validoc.utils.http.{Get, ServiceRequest, Uri}
 import org.validoc.utils.parser.ParserFinder
 
 trait PromotionQuery

@@ -1,6 +1,6 @@
 package org.validoc.language
 
-import org.validoc.utils.Service
+import org.validoc.utils.{FromServiceRequest, Service, ToServiceRequest, ToServiceResponse}
 import org.validoc.utils.aggregate.{EnrichParentChildService, Enricher, HasChildren, MergeService}
 import org.validoc.utils.caching._
 import org.validoc.utils.concurrency.Async
@@ -17,6 +17,7 @@ import scala.reflect.ClassTag
 import org.validoc.utils.functions.Functions._
 import org.validoc.utils.metrics.{MetricsService, PutMetrics, ReportData}
 import org.validoc.utils.success.Succeeded
+
 import scala.language.higherKinds
 
 case class StringServiceTag[M[_], Req, Res](t: String)

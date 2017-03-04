@@ -4,11 +4,10 @@ import org.validoc.domain._
 import org.validoc.utils.caching.{CachableKey, CachableResult}
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.functions.Functions._
-import org.validoc.utils.http.{FromServiceRequest, ServiceRequest, ToServiceRequest, ToServiceResponse}
 import org.validoc.utils.parser.ParserFinder
 import org.validoc.utils.service.ServiceBuilder
 import org.validoc.utils.time.NanoTimeService
-import org.validoc.utils.monads.Kleisli._
+import org.validoc.utils.{FromServiceRequest, ToServiceRequest, ToServiceResponse}
 
 import scala.concurrent.duration._
 
