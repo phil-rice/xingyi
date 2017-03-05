@@ -1,10 +1,7 @@
-package org.validoc
+package org.validoc.sample
 
-import org.validoc.domain._
+import org.validoc.sample.domain._
 import org.validoc.utils.concurrency.Async
-import org.validoc.utils.concurrency.Async._
-import org.validoc.utils.http.HttpObjectService
-import org.validoc.utils.monads.Kleisli._
 
 
 class Sample1[M[_] : Async, HttpReq, HttpRes](mostPopularHttp: Service[M, HttpReq, HttpRes],

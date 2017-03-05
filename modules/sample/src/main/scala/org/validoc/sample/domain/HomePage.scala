@@ -1,19 +1,19 @@
-package org.validoc.domain
+package org.validoc.sample.domain
 
-import org.validoc.utils.{FromServiceRequest, ToServiceRequest, ToServiceResponse}
-import org.validoc.utils.caching.{CachableKey, CachableResultUsingSucesses, Id, UnitId}
+import org.validoc.playJson.PlayJsonDomainObject
+import play.api.libs.json.{Json, OFormat}
+//import io.circe.syntax._
+
+// need this, but it may be removed by 'organise imports' import io.circe.generic.auto._
+import org.validoc.utils.caching.{CachableKey, Id, UnitId}
 import org.validoc.utils.http._
 
 case class HomePage(mostPopular: EnrichedMostPopular, promotions: EnrichedPromotion)
 
-
-object HomePage {
-
-  implicit object CachableResultForHomePage extends CachableResultUsingSucesses[HomePage]
-
-  implicit def toServiceResponseForHomePage(v1: HomePage) = ServiceResponse(Status.Ok, Body(v1.toString), ContentType("text/plain"))
-
+object HomePage extends PlayJsonDomainObject[HomePage] {
+  implicit val modelFormat: OFormat[HomePage] = Json.format[HomePage]
 }
+
 
 trait HomePageQuery
 

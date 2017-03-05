@@ -1,7 +1,7 @@
-package org.validoc
+package org.validoc.sample
 
-import org.validoc.domain._
 import org.validoc.language._
+import org.validoc.sample.domain._
 import org.validoc.utils._
 import org.validoc.utils.http._
 import org.validoc.utils.metrics.NullPutMetrics

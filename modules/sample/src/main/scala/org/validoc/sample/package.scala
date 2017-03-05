@@ -1,8 +1,8 @@
-package org
+package org.validoc
 
-import org.validoc.domain._
+import org.validoc.sample.domain._
 
-package object validoc {
+package object sample {
 
   type Service[M[_], Req, Res] = Req => M[Res]
 

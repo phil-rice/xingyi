@@ -3,9 +3,9 @@ package org.validoc.finatraSample
 import com.twitter.finagle.http.{Request, Response}
 import com.twitter.finatra.utils.FuturePools
 import com.twitter.util.Future
-import org.validoc.PromotionSetup
 import org.validoc.finatra._
 import org.validoc.language.{AggregatedServicesInterpreter, MakeHttpService, ServiceData}
+import org.validoc.sample.PromotionSetup
 
 object FinatraSample extends FinatraAdapter()(FuturePools.fixedPool("pool", 20)) with App  {
 

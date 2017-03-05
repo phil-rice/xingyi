@@ -1,6 +1,6 @@
-package org.validoc
+package org.validoc.sample
 
-import org.validoc.domain._
+import org.validoc.sample.domain._
 import org.validoc.utils.caching.{CachableKey, CachableResult}
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.functions.Functions._

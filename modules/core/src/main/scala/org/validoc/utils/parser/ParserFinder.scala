@@ -3,6 +3,8 @@ package org.validoc.utils.parser
 import org.validoc.utils.{Parser, ParserException}
 import org.validoc.utils.http.ContentType
 
+import scala.annotation.implicitNotFound
+
 
 sealed trait ParserResult[Result] {
   def map[Result2](fn: Result => Result2): ParserResult[Result2]
@@ -36,6 +38,12 @@ case class ErrorResult[Result](contentType: ContentType, e: Throwable) extends F
 }
 
 
+@implicitNotFound(
+  """ ParserFinder of type [T] not found. Is it because you need another implicit in scope. if using Circe it might need the following adding to T's companion object
+    import io.circe.generic.semiauto.deriveEncoder
+    implicit val encoder: Encoder[<T>] = deriveEncoder[<T>]
+    import io.circe.generic.auto._
+  """)
 trait ParserFinder[T] extends ((ContentType, String) => ParserResult[T]) {
 
   def find(contentType: ContentType): ParserResult[Parser[T]]

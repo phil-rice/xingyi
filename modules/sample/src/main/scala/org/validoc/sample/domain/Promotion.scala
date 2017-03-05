@@ -1,10 +1,10 @@
-package org.validoc.domain
+package org.validoc.sample.domain
 
-import org.validoc.utils.ToServiceRequest
+import org.validoc.playJson.PlayJsonDomainObject
 import org.validoc.utils.aggregate.{Enricher, HasChildren}
-import org.validoc.utils.caching.{CachableKey, CachableResultUsingSucesses, Id, UnitId}
+import org.validoc.utils.caching.{CachableKey, Id, UnitId}
 import org.validoc.utils.http.{Get, ServiceRequest, Uri}
-import org.validoc.utils.parser.ParserFinder
+import play.api.libs.json.{Json, OFormat}
 
 trait PromotionQuery
 
@@ -22,21 +22,20 @@ object PromotionQuery extends PromotionQuery {
 
 case class Promotion(name: String, productionIds: List[ProductionId])
 
-object Promotion {
+object Promotion extends PlayJsonDomainObject[Promotion] {
+  implicit val modelFormat: OFormat[Promotion] = Json.format[Promotion]
 
   implicit object HasChildrenForPromotion extends HasChildren[Promotion, ProductionId] {
     override def apply(p: Promotion): Seq[ProductionId] = p.productionIds
   }
 
-  implicit object CachableResultForPromotion extends CachableResultUsingSucesses[Promotion]
-
-  implicit val ParserFinderForPromotion = ParserFinder.always(_ => Promotion("someName", List()))
 
 }
 
 case class EnrichedPromotion(name: String, productions: Seq[Production])
 
-object EnrichedPromotion {
+object EnrichedPromotion extends PlayJsonDomainObject[EnrichedPromotion] {
+  implicit val modelFormat: OFormat[EnrichedPromotion] = Json.format[EnrichedPromotion]
 
   implicit object EnricherForPromotion extends Enricher[EnrichedPromotion, Promotion, Production] {
     override def apply(p: Promotion)(children: Seq[Production]): EnrichedPromotion =
