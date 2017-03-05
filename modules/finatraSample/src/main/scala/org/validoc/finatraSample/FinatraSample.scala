@@ -5,14 +5,13 @@ import com.twitter.finatra.utils.FuturePools
 import com.twitter.util.Future
 import org.validoc.PromotionSetup
 import org.validoc.finatra._
-import org.validoc.language.{MakeHttpService, ServiceData}
-import org.validoc.language.{MakeHttpService, ServiceData, ServiceInterpreters}
+import org.validoc.language.{AggregatedServicesInterpreter, MakeHttpService, ServiceData}
 
 object FinatraSample extends FinatraAdapter()(FuturePools.fixedPool("pool", 20)) with App  {
 
   implicit val makeHttpService = MakeHttpService(MockFinatraService("mostPopular", "promotion", "programmeAndProductions"))
 
-  val setup = new PromotionSetup[ServiceData, Future, Request, Response](new ServiceInterpreters.ServicesGroupedForAsync)
+  val setup = new PromotionSetup[ServiceData, Future, Request, Response](new AggregatedServicesInterpreter)
 
   val sd = setup.homePageService
   println(sd)

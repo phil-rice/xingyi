@@ -1,10 +1,10 @@
 package org.validoc
 
 import org.validoc.domain._
-import org.validoc.language.{IHttpSetup, MakeHttpService, ServiceInterpreters, StringServiceTag}
+import org.validoc.language._
 import org.validoc.utils._
 import org.validoc.utils.http._
-import org.validoc.utils.metrics.{MetricValue, NullPutMetrics, PutMetrics}
+import org.validoc.utils.metrics.NullPutMetrics
 import org.validoc.utils.service.ServerContext
 import org.validoc.utils.success.SucceededFromFn
 import org.validoc.utils.time.SystemClockNanoTimeService
@@ -60,7 +60,7 @@ trait SampleForStrings {
 
   implicit def serviceRequestToString(v1: ServiceRequest): String = v1.uri.asUriString
 
-  implicit val printer = new ServiceInterpreters.ServiceToString[Option, String, String]
+  implicit val printer = ToStringInterpreter.apply[Option, String, String]()
 
   implicit val nanoTimeService = SystemClockNanoTimeService
 
@@ -77,7 +77,7 @@ trait SampleForStrings {
 
 object Sample3 extends App with SampleForStrings {
 
-  val setup = new PromotionSetup[StringServiceTag, Option, String, String](new ServiceInterpreters.ServiceToString)
+  val setup = new PromotionSetup[StringServiceTag, Option, String, String]( ToStringInterpreter())
 
   import setup._
 
