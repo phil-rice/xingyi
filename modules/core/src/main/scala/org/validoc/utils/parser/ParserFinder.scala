@@ -1,6 +1,6 @@
 package org.validoc.utils.parser
 
-import org.validoc.utils.{Parser, ParserException}
+import org.validoc.utils.{Parser, ParserException, ParserNotFoundException}
 import org.validoc.utils.http.ContentType
 
 import scala.annotation.implicitNotFound
@@ -53,6 +53,7 @@ trait ParserFinder[T] extends ((ContentType, String) => ParserResult[T]) {
   def findAndParse(v1: ContentType, v2: String) = {
     apply(v1, v2) match {
       case FoundResult(_, result) => result
+      case nf: FailedParserResult[T] => throw new ParserNotFoundException(nf)
     }
   }
 }

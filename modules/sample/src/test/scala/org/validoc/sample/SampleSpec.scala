@@ -1,4 +1,4 @@
-package org.validoc.sample.domain
+package org.validoc.sample
 
 import org.validoc.utils.UtilsSpec
 

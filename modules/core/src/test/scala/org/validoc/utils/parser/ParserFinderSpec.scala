@@ -2,7 +2,7 @@ package org.validoc.utils.parser
 
 import org.mockito.Mockito._
 import org.validoc.utils.http.ContentType
-import org.validoc.utils.{Parser, UtilsWithLoggingSpec}
+import org.validoc.utils.{Parser, ParserNotFoundException, UtilsWithLoggingSpec}
 
 abstract class AbstractParserSpec[T <: ParserFinder[String]] extends UtilsWithLoggingSpec {
 
@@ -32,8 +32,8 @@ abstract class AbstractParserSpec[T <: ParserFinder[String]] extends UtilsWithLo
       when(parser.apply("someString")) thenReturn ("someResult")
       finder(ctMain, "someString") shouldBe FoundResult(ctMain, "someResult")
     }
-
   }
+
 }
 
 class AlwaysParserFinderTest extends AbstractParserSpec[AlwaysParserFinder[String]] {
@@ -68,4 +68,11 @@ class FromMapParserFinderTest extends AbstractParserSpec[MapParserFinder[String]
       finder.find(ct2) shouldBe NotFoundResult(ct2, Set(ctMain, ct1))
     }
   }
+
+  it should "throw a ParserNotFoundException if the parser isn't found" in {
+    setup { (finder, parser) =>
+      intercept[ParserNotFoundException](finder.findAndParse(ct2, "some string")).parserResult shouldBe NotFoundResult(ct2, Set(ctMain, ct1))
+    }
+  }
+
 }
