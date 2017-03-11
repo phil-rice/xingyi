@@ -4,14 +4,10 @@ import org.validoc.language._
 import org.validoc.sample.domain._
 import org.validoc.utils._
 import org.validoc.utils.http._
-import org.validoc.utils.metrics.NullPutMetrics
 import org.validoc.utils.service.ServerContext
-import org.validoc.utils.success.SucceededFromFn
-import org.validoc.utils.time.SystemClockNanoTimeService
-import scala.language.higherKinds
-import scala.language.postfixOps
+
 import scala.concurrent.duration._
-import scala.language.postfixOps
+import scala.language.{higherKinds, postfixOps}
 
 
 class PromotionSetup[Tag[M[_], _, _], M[_], HttpReq, HttpRes](s: IHttpSetup[Tag, M, HttpReq, HttpRes])(implicit

@@ -4,6 +4,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.time.{NanoTimeService, SystemClockNanoTimeService}
+
 import scala.language.higherKinds
 import scala.util.{Failure, Success}
 

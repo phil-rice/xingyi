@@ -4,6 +4,7 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.function.UnaryOperator
 
 import org.validoc.utils.concurrency.DoubleCheckLock
+
 import scala.language.higherKinds
 
 trait ThreadSafeDataManips[M[_], K, V] {

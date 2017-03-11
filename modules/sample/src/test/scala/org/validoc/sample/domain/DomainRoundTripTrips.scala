@@ -1,6 +1,6 @@
 package org.validoc.sample.domain
 
-import org.validoc.utils.domain.{RoundTripTests, ServiceRequestResponseRoundTripTests, ToServiceResponseAndParserFinderRoundTripTests}
+import org.validoc.utils.domain.RoundTripTests
 import org.validoc.utils.http.ContentType
 
 trait DomainFixture {

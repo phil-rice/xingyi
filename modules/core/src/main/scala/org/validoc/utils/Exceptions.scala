@@ -1,7 +1,7 @@
 package org.validoc.utils
 
-import org.validoc.utils.http.{HostName, RequestDetails, ServiceResponse, Status}
-import org.validoc.utils.parser.{FailedParserResult, NotFoundResult, ParserResult}
+import org.validoc.utils.http.{RequestDetails, ServiceResponse}
+import org.validoc.utils.parser.{FailedParserResult, ParserResult}
 
 case class GatewayException(requestDetails: RequestDetails[_], serviceResponse: ServiceResponse) extends
   Exception(s" RequestDetails $requestDetails\nResponse $serviceResponse")

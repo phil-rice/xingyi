@@ -10,7 +10,7 @@ import org.validoc.utils.map.{MapSizeStrategy, SafeMap}
 import org.validoc.utils.time.NanoTimeService
 
 import scala.language.higherKinds
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 trait Id
 
@@ -70,8 +70,6 @@ class CachingService[M[_] : Async, Req: CachableKey, Res: CachableResult](val na
   val async = implicitly[Async[M]]
   val cachableKey = implicitly[CachableKey[Req]]
   val cachableResult = implicitly[CachableResult[Res]]
-
-  import cachingStrategy._
 
   private val nextId = new AtomicLong()
   protected val metrics = CachingMetrics()

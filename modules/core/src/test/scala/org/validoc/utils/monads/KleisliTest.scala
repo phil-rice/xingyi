@@ -1,7 +1,7 @@
 package org.validoc.utils.monads
 
 import org.validoc.utils.UtilsWithLoggingSpec
-import org.validoc.utils.concurrency.{Async, MDCPropagatingExecutionContext}
+import org.validoc.utils.concurrency.Async
 
 import scala.concurrent.Future
 import scala.language.higherKinds

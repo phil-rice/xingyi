@@ -1,9 +1,9 @@
 package org.validoc.utils.profiling
 
 import org.validoc.utils.UtilsWithLoggingSpec
-import scala.language.postfixOps
-import scala.language.implicitConversions
+
 import scala.concurrent.duration._
+import scala.language.{implicitConversions, postfixOps}
 import scala.util.{Failure, Success}
 
 class TryProfileDataTest extends UtilsWithLoggingSpec {

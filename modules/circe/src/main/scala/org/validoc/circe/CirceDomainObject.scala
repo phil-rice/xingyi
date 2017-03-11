@@ -1,13 +1,12 @@
 package org.validoc.circe
 
-import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
 import org.validoc.utils.caching.CachableResultUsingSucesses
 import org.validoc.utils.http.{Body, ContentType, ServiceResponse, Status}
 
-import scala.reflect.ClassTag
 import scala.language.implicitConversions
+import scala.reflect.ClassTag
 abstract class CirceDomainObject[T: ClassTag : Manifest] {
 
   //Sadly this code

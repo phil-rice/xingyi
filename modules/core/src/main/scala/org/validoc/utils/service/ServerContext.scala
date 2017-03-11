@@ -2,9 +2,10 @@ package org.validoc.utils.service
 
 import org.validoc.utils.http._
 import org.validoc.utils.metrics.{NullPutMetrics, PutMetrics}
-import org.validoc.utils.success.{Succeeded, SucceededFromFn}
+import org.validoc.utils.success.Succeeded
 import org.validoc.utils.time.{NanoTimeService, SystemClockNanoTimeService}
 import org.validoc.utils.{FromServiceRequest, ToServiceRequest, ToServiceResponse}
+
 import scala.language.implicitConversions
 
 class ServerContext[HttpReq, HttpRes](implicit val timeService: NanoTimeService,

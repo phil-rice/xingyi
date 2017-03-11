@@ -1,6 +1,5 @@
 package org.validoc.language
 
-import org.validoc.utils.{FromServiceRequest, ToServiceRequest, ToServiceResponse}
 import org.validoc.utils.aggregate.{Enricher, HasChildren}
 import org.validoc.utils.caching.{CachableKey, CachableResult}
 import org.validoc.utils.http.{ServiceRequest, ServiceResponse}
@@ -8,10 +7,11 @@ import org.validoc.utils.metrics.{PutMetrics, ReportData}
 import org.validoc.utils.parser.ParserFinder
 import org.validoc.utils.retry.NeedsRetry
 import org.validoc.utils.time.{Delay, NanoTimeService}
+import org.validoc.utils.{FromServiceRequest, ToServiceRequest, ToServiceResponse}
 
 import scala.concurrent.duration.Duration
-import scala.reflect.ClassTag
 import scala.language.higherKinds
+import scala.reflect.ClassTag
 
 object ToStringInterpreter {
   def apply[M[_], HttpReq, HttpRes]() = new ToStringInterpreter[M, HttpReq, HttpRes]

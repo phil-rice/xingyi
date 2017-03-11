@@ -6,6 +6,7 @@ import play.api.libs.json.{Json, OFormat}
 import org.validoc.utils.aggregate.{Enricher, HasChildren}
 import org.validoc.utils.caching.{CachableKey, Id, UnitId}
 import org.validoc.utils.http._
+
 import scala.language.implicitConversions
 
 trait MostPopularQuery

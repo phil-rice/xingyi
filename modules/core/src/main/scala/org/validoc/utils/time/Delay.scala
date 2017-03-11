@@ -1,8 +1,8 @@
 package org.validoc.utils.time
 
 import scala.concurrent.duration._
-import scala.util.Random
 import scala.language.postfixOps
+import scala.util.Random
 trait Delay {
   def apply(): FiniteDuration
 }

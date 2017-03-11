@@ -2,7 +2,7 @@ package org.validoc.utils.metrics
 
 import org.validoc.utils.success.Succeeded
 
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 sealed trait MetricValue
 

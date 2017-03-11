@@ -1,11 +1,9 @@
 package org.validoc.utils.caching
 
 import org.validoc.utils.logging.Logging
-import org.validoc.utils.time.{NanoTimeService, SystemClockNanoTimeService}
+import org.validoc.utils.time.NanoTimeService
 
-import scala.concurrent.duration.Duration
 import scala.language.higherKinds
-import scala.util.Try
 
 
 

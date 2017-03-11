@@ -1,24 +1,19 @@
 package org.validoc.language
 
-import org.validoc.utils.{FromServiceRequest, Service, ToServiceRequest, ToServiceResponse}
-import org.validoc.utils.aggregate.{EnrichParentChildService, Enricher, HasChildren, MergeService}
+import org.validoc.utils.aggregate.{Enricher, HasChildren}
 import org.validoc.utils.caching._
-import org.validoc.utils.concurrency.Async
+import org.validoc.utils.functions.Functions._
 import org.validoc.utils.http._
-import org.validoc.utils.map.MaxMapSizeStrategy
+import org.validoc.utils.metrics.{PutMetrics, ReportData}
 import org.validoc.utils.parser.ParserFinder
-import org.validoc.utils.profiling.{ProfileOps, ProfilingService}
-import org.validoc.utils.retry.{NeedsRetry, RetryOps, RetryService}
-import org.validoc.utils.service.{EndPointOps, EndPointService}
+import org.validoc.utils.retry.NeedsRetry
+import org.validoc.utils.success.Succeeded
 import org.validoc.utils.time.{Delay, NanoTimeService}
+import org.validoc.utils.{FromServiceRequest, ToServiceRequest, ToServiceResponse}
 
 import scala.concurrent.duration.Duration
-import scala.reflect.ClassTag
-import org.validoc.utils.functions.Functions._
-import org.validoc.utils.metrics.{MetricsService, PutMetrics, ReportData}
-import org.validoc.utils.success.Succeeded
-
 import scala.language.higherKinds
+import scala.reflect.ClassTag
 
 case class StringServiceTag[M[_], Req, Res](t: String)
 

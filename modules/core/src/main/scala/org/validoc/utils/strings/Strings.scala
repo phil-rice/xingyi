@@ -1,7 +1,5 @@
 package org.validoc.utils.strings
 
-import org.validoc.utils.logging.LogLevel
-
 object Strings {
   def classNameOfObject(obj: Object) = obj.getClass.getSimpleName.dropRight(1)
 

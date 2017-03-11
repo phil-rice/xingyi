@@ -1,7 +1,7 @@
 package org.validoc.utils.functions
 
 import org.validoc.utils.monads.FlatMap
-import org.validoc.utils.service.WrappedTypes
+
 import scala.language.higherKinds
 
 object Functions {

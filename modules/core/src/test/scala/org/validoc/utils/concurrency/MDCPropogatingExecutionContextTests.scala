@@ -3,7 +3,6 @@ package org.validoc.utils.concurrency
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicReference
 
-import org.scalatest.{FlatSpec, Matchers}
 import org.validoc.utils.UtilsWithLoggingSpec
 import org.validoc.utils.logging.Logging
 

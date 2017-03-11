@@ -2,12 +2,11 @@ package org.validoc.utils.concurrency
 
 import org.validoc.utils.logging.LoggingAdapter
 import org.validoc.utils.monads.{FlatMap, Monad}
-import sun.security.pkcs11.wrapper.Functions
 
 import scala.concurrent.duration.{FiniteDuration, _}
-import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.{Await, Future}
 import scala.language.higherKinds
+import scala.util.{Failure, Success, Try}
 
 /** M[_] is typically Future[_], or Task[_], or FutureEitherT or some other concurrency thing that does things in the future
   * Uses of M[_] are quite likely to make the assumption that Async.async fires things off in another thread.

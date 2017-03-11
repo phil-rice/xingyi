@@ -5,13 +5,12 @@ import java.util.UUID
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.Eventually
 import org.validoc.utils.UtilsWithLoggingSpec
-import org.validoc.utils.concurrency.MDCPropagatingExecutionContext
 import org.validoc.utils.time.NanoTimeService
 
-import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.util.{Failure, Success}
 import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
+import scala.util.{Failure, Success}
 
 trait LoggingFixture {
 

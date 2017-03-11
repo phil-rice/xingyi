@@ -2,9 +2,9 @@ package org.validoc.utils.aggregate
 
 import org.validoc.utils.Service
 import org.validoc.utils.concurrency.Async
-import scala.language.higherKinds
+import org.validoc.utils.concurrency.Async._
 
-import Async._
+import scala.language.higherKinds
 
 trait HasChildren[Parent, Child] {
   def apply(p: Parent): Seq[Child]

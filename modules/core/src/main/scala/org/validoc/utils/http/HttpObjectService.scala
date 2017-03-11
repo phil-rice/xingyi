@@ -1,7 +1,8 @@
 package org.validoc.utils.http
 
-import org.validoc.utils.{FromServiceRequest, Service, ToServiceRequest, ToServiceResponse}
 import org.validoc.utils.concurrency.Async
+import org.validoc.utils.{FromServiceRequest, Service, ToServiceRequest, ToServiceResponse}
+
 import scala.language.higherKinds
 
 class HttpObjectService[M[_] : Async, HttpReq, Req, HttpRes, Res](name: String,

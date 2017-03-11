@@ -1,19 +1,15 @@
 package org.validoc.utils.concurrency
 
-import java.util.concurrent.Executors
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
 import org.scalatest.BeforeAndAfter
 import org.validoc.utils.UtilsWithLoggingSpec
-import org.validoc.utils.concurrency.Async.AsyncPimper
-import org.validoc.utils.logging.NullLoggingAdapterWithMdc
 
-import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
+import scala.language.{higherKinds, postfixOps}
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
-import scala.language.higherKinds
-import scala.language.postfixOps
 
 abstract class AbstractAsyncTests[A[_]] extends UtilsWithLoggingSpec {
 

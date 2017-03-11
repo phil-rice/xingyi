@@ -1,12 +1,9 @@
 package org.validoc.utils.http
 
-import java.util.concurrent.Executors
-
 import org.mockito.Mockito._
-import org.validoc.utils.concurrency.MDCPropagatingExecutionContext
-import org.validoc.utils.{FromServiceRequest, Service, ToServiceRequest, ToServiceResponse, UtilsWithLoggingSpec}
+import org.validoc.utils.{FromServiceRequest, Service, ToServiceRequest, UtilsWithLoggingSpec}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 
 class HttpObjectServiceTest extends UtilsWithLoggingSpec {

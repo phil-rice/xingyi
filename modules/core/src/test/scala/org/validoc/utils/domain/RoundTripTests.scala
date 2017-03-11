@@ -2,7 +2,7 @@ package org.validoc.utils.domain
 
 import org.validoc.utils.http.ContentType
 import org.validoc.utils.parser.{FoundResult, ParserFinder}
-import org.validoc.utils.{FromServiceResponse, ToServiceRequest, ToServiceResponse, UtilsSpec}
+import org.validoc.utils.{FromServiceResponse, ToServiceResponse, UtilsSpec}
 
 import scala.reflect.ClassTag
 

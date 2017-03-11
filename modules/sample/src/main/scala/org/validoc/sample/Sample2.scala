@@ -10,8 +10,7 @@ import org.validoc.utils.time.NanoTimeService
 import org.validoc.utils.{FromServiceRequest, ToServiceRequest, ToServiceResponse}
 
 import scala.concurrent.duration._
-import scala.language.postfixOps
-import scala.language.higherKinds
+import scala.language.{higherKinds, postfixOps}
 abstract class Sample2[M[_] : Async, HttpReq, HttpRes](mostPopularHttp: Service[M, HttpReq, HttpRes],
                                                        promotionHttp: Service[M, HttpReq, HttpRes],
                                                        programmeAndProductionHttp: Service[M, HttpReq, HttpRes])

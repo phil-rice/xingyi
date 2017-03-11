@@ -2,8 +2,8 @@ package org.validoc.utils.concurrency
 
 object DelayedFuture {
 
-  import java.util.{Timer, TimerTask}
-  import java.util.Date
+  import java.util.{Date, Timer, TimerTask}
+
   import scala.concurrent._
   import scala.concurrent.duration.FiniteDuration
   import scala.util.Try

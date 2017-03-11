@@ -3,14 +3,12 @@ package org.validoc.utils.profiling
 import org.mockito.Mockito._
 import org.validoc.utils.UtilsWithLoggingSpec
 import org.validoc.utils.concurrency.Async._
-import org.validoc.utils.concurrency.MDCPropagatingExecutionContext
 import org.validoc.utils.time.NanoTimeService
 
 import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, _}
+import scala.language.{implicitConversions, postfixOps}
 import scala.util.Success
-import scala.language.postfixOps
-import scala.language.implicitConversions
 
 class ProfilingServiceTest extends UtilsWithLoggingSpec {
 

@@ -1,12 +1,12 @@
 package org.validoc.utils.concurrency
 
-import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
+import java.util.concurrent.atomic.AtomicReference
 
 import org.validoc.utils.UtilsWithLoggingSpec
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
 import scala.language.higherKinds
+import scala.util.{Failure, Success, Try}
 
 abstract class AbstractAsyncPimperTests[M[_]] extends UtilsWithLoggingSpec {
 

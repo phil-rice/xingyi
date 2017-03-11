@@ -5,6 +5,7 @@ import org.validoc.utils.aggregate.{Enricher, HasChildren}
 import org.validoc.utils.caching.{CachableKey, Id, UnitId}
 import org.validoc.utils.http.{Get, ServiceRequest, Uri}
 import play.api.libs.json.{Json, OFormat}
+
 import scala.language.implicitConversions
 
 trait PromotionQuery

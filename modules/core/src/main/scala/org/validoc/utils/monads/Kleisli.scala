@@ -1,6 +1,7 @@
 package org.validoc.utils.monads
 
 import org.validoc.utils.concurrency.Async._
+
 import scala.language.higherKinds
 
 object Kleisli {

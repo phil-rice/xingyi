@@ -11,8 +11,8 @@ import org.validoc.utils.time.{Delay, NanoTimeService}
 import org.validoc.utils.{FromServiceRequest, Service, ToServiceRequest, ToServiceResponse}
 
 import scala.concurrent.duration.Duration
-import scala.reflect.ClassTag
 import scala.language.higherKinds
+import scala.reflect.ClassTag
 
 
 class MakeServiceInterpreter[M[_] : Async, HttpReq, HttpRes] extends MakeServices[Service, M, HttpReq, HttpRes] {

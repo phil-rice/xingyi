@@ -1,7 +1,7 @@
 package org.validoc.utils.parser
 
-import org.validoc.utils.{Parser, ParserException, ParserNotFoundException}
 import org.validoc.utils.http.ContentType
+import org.validoc.utils.{Parser, ParserException, ParserNotFoundException}
 
 import scala.annotation.implicitNotFound
 

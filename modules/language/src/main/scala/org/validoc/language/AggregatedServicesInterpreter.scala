@@ -13,8 +13,8 @@ import org.validoc.utils.time.{Delay, NanoTimeService}
 import org.validoc.utils.{FromServiceRequest, ToServiceRequest, ToServiceResponse}
 
 import scala.concurrent.duration.Duration
-import scala.reflect.ClassTag
 import scala.language.higherKinds
+import scala.reflect.ClassTag
 
 case class ServiceData[M[_], Req, Res](service: Req => M[Res],
                                        endPoints: List[EndPointOps[M]] = List(),

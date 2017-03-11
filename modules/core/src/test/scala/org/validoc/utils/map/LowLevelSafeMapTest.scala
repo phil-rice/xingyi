@@ -4,8 +4,6 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import org.validoc.utils.UtilsWithLoggingSpec
 
-import scala.reflect.ClassTag
-
 
 abstract class AbstractLowLevelSafeMapTest extends UtilsWithLoggingSpec {
 

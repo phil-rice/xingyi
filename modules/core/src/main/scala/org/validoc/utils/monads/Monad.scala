@@ -1,7 +1,7 @@
 package org.validoc.utils.monads
 
-import scala.util.Try
 import scala.language.higherKinds
+import scala.util.Try
 
 trait FlatMap[M[_]] {
   def flatMap[T, T2](m: M[T], fn: T => M[T2]): M[T2]

@@ -3,7 +3,7 @@ package org.validoc.language
 import org.validoc.utils.aggregate.{EnrichParentChildService, Enricher, HasChildren, MergeService}
 import org.validoc.utils.caching.{CachableKey, CachableResult, CachingService, DurationStaleCacheStategy}
 import org.validoc.utils.concurrency.Async
-import org.validoc.utils.http.{HttpObjectService, ResponseProcessor, ServiceRequest, ServiceResponse}
+import org.validoc.utils.http.{HttpObjectService, ResponseProcessor}
 import org.validoc.utils.map.MaxMapSizeStrategy
 import org.validoc.utils.metrics.{MetricsService, PutMetrics, ReportData}
 import org.validoc.utils.parser.ParserFinder
@@ -14,8 +14,8 @@ import org.validoc.utils.time.{Delay, NanoTimeService}
 import org.validoc.utils.{FromServiceRequest, Service, ToServiceRequest, ToServiceResponse}
 
 import scala.concurrent.duration.Duration
-import scala.reflect.ClassTag
 import scala.language.higherKinds
+import scala.reflect.ClassTag
 
 abstract class MakeServices[Tag[M[_], _, _], M[_] : Async, HttpReq, HttpRes] extends IHttpSetup[Tag, M, HttpReq, HttpRes] {
   type AsyncService[Req, Res] = Req => M[Res]

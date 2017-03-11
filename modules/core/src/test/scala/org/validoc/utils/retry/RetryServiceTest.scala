@@ -1,15 +1,12 @@
 package org.validoc.utils.retry
 
-import java.util.concurrent.Executors
-
+import org.mockito.Mockito._
 import org.validoc.utils.time.Delay
 import org.validoc.utils.{Service, UtilsWithLoggingSpec}
 
-import scala.concurrent.{ExecutionContext, Future}
-import org.mockito.Mockito._
-import org.validoc.utils.concurrency.MDCPropagatingExecutionContext
-import scala.language.postfixOps
+import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.language.postfixOps
 import scala.util.Success
 
 class RetryServiceTest extends UtilsWithLoggingSpec {

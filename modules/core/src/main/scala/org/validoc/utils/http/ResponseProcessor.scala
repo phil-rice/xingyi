@@ -1,8 +1,8 @@
 package org.validoc.utils.http
 
-import org.validoc.utils.{GatewayException, NotFoundException, UnexpectedException, UnexpectedParserException}
 import org.validoc.utils.logging.Logging
-import org.validoc.utils.parser.{ErrorResult, FoundResult, ParserFinder, ParserResult}
+import org.validoc.utils.parser.{FoundResult, ParserFinder}
+import org.validoc.utils.{GatewayException, NotFoundException, UnexpectedException, UnexpectedParserException}
 
 object ResponseProcessor {
   def parsed[Query, T](parserFinder: ParserFinder[T]) = new ResponseProcessorExpectingResult[Query, T](parserFinder)

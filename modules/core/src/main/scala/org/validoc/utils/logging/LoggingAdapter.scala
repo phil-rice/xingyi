@@ -4,7 +4,6 @@ import org.validoc.utils.http.RequestDetails
 import org.validoc.utils.strings.Strings
 import org.validoc.utils.success.{ExceptionState, FailedState, Succeeded, SuccessState}
 
-import scala.collection.concurrent.TrieMap
 import scala.util.Try
 
 

@@ -1,13 +1,13 @@
 package org.validoc.utils.logging
 
 import java.text.MessageFormat
-import java.util.logging.Level
 
 import org.validoc.utils.Service
 import org.validoc.utils.concurrency.Async
-import Async._
+import org.validoc.utils.concurrency.Async._
 import org.validoc.utils.http.RequestDetails
-import org.validoc.utils.success.{ExceptionState, FailedState, Succeeded, SuccessState}
+import org.validoc.utils.success.Succeeded
+
 import scala.language.higherKinds
 
 trait LoggingStrings[Res] {

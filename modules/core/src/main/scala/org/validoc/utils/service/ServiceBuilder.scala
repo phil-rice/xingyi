@@ -12,9 +12,9 @@ import org.validoc.utils.profiling.ProfilingService
 import org.validoc.utils.success.Succeeded
 import org.validoc.utils.time.NanoTimeService
 import org.validoc.utils.{FromServiceRequest, Service, ToServiceRequest, ToServiceResponse}
-import scala.language.higherKinds
 
 import scala.concurrent.duration.Duration
+import scala.language.higherKinds
 
 trait WrappedTypes[M[_]] {
 
