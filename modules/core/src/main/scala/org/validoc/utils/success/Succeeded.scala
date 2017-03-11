@@ -25,8 +25,12 @@ class SucceededFromFn[T](ok: T => Boolean) extends Succeeded[T] {
 }
 
 object Succeeded {
+
+  implicit object SucceededForString extends SucceededFromFn[String](_ => true)
+
   implicit def succeededFromEither[L, R] = new SucceededFromEither[L, R]
-  implicit def succededIfTheresAServiceContextInScope[HttpRes](implicit serverContext: ServerContext[_,HttpRes]): Succeeded[HttpRes] = serverContext.succeeded
+
+  implicit def succededIfTheresAServiceContextInScope[HttpRes](implicit serverContext: ServerContext[_, HttpRes]): Succeeded[HttpRes] = serverContext.succeeded
 }
 
 class SucceededFromEither[L, R] extends Succeeded[Either[L, R]] {

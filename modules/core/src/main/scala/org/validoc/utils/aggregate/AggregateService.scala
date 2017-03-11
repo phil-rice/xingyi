@@ -2,6 +2,8 @@ package org.validoc.utils.aggregate
 
 import org.validoc.utils.Service
 import org.validoc.utils.concurrency.Async
+import scala.language.higherKinds
+
 import Async._
 
 trait HasChildren[Parent, Child] {

@@ -12,7 +12,7 @@ sealed trait LogLevel {
   override def toString: String = Strings.classNameOfObject(this)
 }
 
-trait LogLevelThatHasError extends LogLevel
+sealed trait LogLevelThatHasError extends LogLevel
 
 object Info extends LogLevel
 
@@ -39,7 +39,7 @@ trait Logging {
     case Trace => trace(levelAndMessage._2)
   }
 
-  protected def logException(levelAndMessage: (LogLevel, String), throwable: Throwable)(implicit actualLogging: LoggingAdapter): Unit = levelAndMessage._1 match {
+  protected def logException(levelAndMessage: (LogLevelThatHasError, String), throwable: Throwable)(implicit actualLogging: LoggingAdapter): Unit = levelAndMessage._1 match {
     case Debug => debug(levelAndMessage._2, throwable)
     case Error => error(levelAndMessage._2, throwable)
   }

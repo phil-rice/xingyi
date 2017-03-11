@@ -4,7 +4,7 @@ import org.validoc.utils.UtilsWithLoggingSpec
 import org.validoc.utils.concurrency.{Async, MDCPropagatingExecutionContext}
 
 import scala.concurrent.Future
-
+import scala.language.higherKinds
 abstract class AbstractKleisliTest[M[_]] extends UtilsWithLoggingSpec {
   implicit val async: Async[M]
   behavior of "Kleisli"

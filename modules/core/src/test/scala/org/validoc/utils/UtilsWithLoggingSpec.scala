@@ -12,6 +12,8 @@ import org.validoc.utils.logging.NullLoggingAdapterWithMdc
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.reflect.ClassTag
+import scala.language.postfixOps
+import scala.language.higherKinds
 
 class UtilsSpec extends FlatSpec with Matchers with MockitoSugar with Eventually {
   implicit lazy val ec: MDCPropagatingExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))

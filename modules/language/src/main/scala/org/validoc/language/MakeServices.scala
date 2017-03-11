@@ -15,7 +15,7 @@ import org.validoc.utils.{FromServiceRequest, Service, ToServiceRequest, ToServi
 
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
-
+import scala.language.higherKinds
 
 abstract class MakeServices[Tag[M[_], _, _], M[_] : Async, HttpReq, HttpRes] extends IHttpSetup[Tag, M, HttpReq, HttpRes] {
   type AsyncService[Req, Res] = Req => M[Res]

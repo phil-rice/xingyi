@@ -11,6 +11,7 @@ import org.validoc.utils.concurrency.MDCPropagatingExecutionContext
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success, Try}
+import scala.language.postfixOps
 class MockTimeService extends NanoTimeService {
   val i = new AtomicLong(1000)
 

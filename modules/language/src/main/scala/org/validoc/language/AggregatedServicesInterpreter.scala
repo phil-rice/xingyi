@@ -14,7 +14,7 @@ import org.validoc.utils.{FromServiceRequest, ToServiceRequest, ToServiceRespons
 
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
-
+import scala.language.higherKinds
 
 case class ServiceData[M[_], Req, Res](service: Req => M[Res],
                                        endPoints: List[EndPointOps[M]] = List(),

@@ -4,7 +4,7 @@ import org.validoc.utils.concurrency.Async
 import org.validoc.utils.concurrency.Async._
 import org.validoc.utils.http.{ServiceRequest, ServiceResponse}
 import org.validoc.utils.{FromServiceRequest, ToServiceResponse}
-
+import scala.language.higherKinds
 class MockHttpService[M[_] : Async, Req, Res](pf: PartialFunction[Req, M[Res]])
                                              (implicit fromServiceRequest: FromServiceRequest[Req],
                                               toServiceResponse: ToServiceResponse[Res]) extends PartialFunction[ServiceRequest, M[ServiceResponse]] {

@@ -8,7 +8,8 @@ import org.validoc.utils.metrics.NullPutMetrics
 import org.validoc.utils.service.ServerContext
 import org.validoc.utils.success.SucceededFromFn
 import org.validoc.utils.time.SystemClockNanoTimeService
-
+import scala.language.higherKinds
+import scala.language.postfixOps
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -52,31 +53,8 @@ class PromotionSetup[Tag[M[_], _, _], M[_], HttpReq, HttpRes](s: IHttpSetup[Tag,
   }
 }
 
-trait SampleForStrings {
 
-  implicit def serviceResponseForString(v1: String) = ServiceResponse(Status.Ok, Body(v1), ContentType("text/plain"))
-
-  implicit def stringToServiceRequest(v1: String) = ServiceRequest(Get, Uri(v1))
-
-  implicit def serviceRequestToString(v1: ServiceRequest): String = v1.uri.asUriString
-
-  implicit val printer = ToStringInterpreter.apply[Option, String, String]()
-
-  implicit val nanoTimeService = SystemClockNanoTimeService
-
-  implicit object MakeHttpServiceForString extends MakeHttpService[Option, String, String] {
-    override def create(name: String): (String) => Option[String] = req => Some(s"HttpService($req)")
-  }
-
-  implicit object SucceededForString extends SucceededFromFn[String](_ => true)
-
-  implicit val putMetrics = NullPutMetrics
-
-  implicit val serverContext = new ServerContext[String, String]()
-}
-
-object Sample3 extends App with SampleForStrings {
-
+object Sample3 extends App  {
   val setup = new PromotionSetup[StringServiceTag, Option, String, String]( ToStringInterpreter())
 
   import setup._

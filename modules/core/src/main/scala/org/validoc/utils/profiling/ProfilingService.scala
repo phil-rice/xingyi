@@ -6,7 +6,7 @@ import org.validoc.utils.time.{NanoTimeService, SystemClockNanoTimeService}
 
 import scala.util.{Failure, Success, Try}
 import org.validoc.utils.concurrency.Async._
-
+import scala.language.higherKinds
 
 class TryProfileData {
   def clearData = {

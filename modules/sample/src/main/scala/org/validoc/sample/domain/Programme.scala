@@ -4,6 +4,8 @@ import org.validoc.playJson.PlayJsonDomainObject
 import org.validoc.utils.caching.{CachableKey, Id, StringId}
 import org.validoc.utils.http.{Get, ServiceRequest, Uri}
 import play.api.libs.json.{Json, OFormat}
+import scala.language.implicitConversions
+
 case class ProgrammeId(id: String) extends AnyVal
 
 object ProgrammeId {

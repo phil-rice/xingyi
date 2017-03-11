@@ -11,6 +11,7 @@ object JsonParserFinder {
     ParserFinder.always(s =>
       Json.fromJson[T](Json.parse(s)) match {
         case JsSuccess(value, _) => value
+        case _ => throw new RuntimeException("the 'always' parser finder should never let this exception be thrown")
       })
 
     //      .asJson.as[T].getOrException(MalformedJson(entityName, s)))

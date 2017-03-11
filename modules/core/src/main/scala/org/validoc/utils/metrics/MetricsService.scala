@@ -3,7 +3,7 @@ package org.validoc.utils.metrics
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.service.ServerContext
 import org.validoc.utils.time.NanoTimeService
-
+import scala.language.higherKinds
 
 trait PutMetrics extends (Map[String, MetricValue] => Unit)
 

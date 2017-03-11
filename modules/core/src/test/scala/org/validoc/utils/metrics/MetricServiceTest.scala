@@ -13,6 +13,7 @@ import org.validoc.utils.time.MockTimeService
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success}
+import scala.language.postfixOps
 
 class MetricServiceTest extends FlatSpec with Matchers with MockitoSugar with Eventually {
   implicit val ec: MDCPropagatingExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))

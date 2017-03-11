@@ -11,6 +11,7 @@ import org.validoc.utils.time.NanoTimeService
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success}
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 trait LoggingFixture {
 

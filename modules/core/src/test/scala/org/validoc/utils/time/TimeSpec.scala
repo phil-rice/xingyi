@@ -3,7 +3,7 @@ package org.validoc.utils.time
 import org.validoc.utils.UtilsWithLoggingSpec
 
 import scala.concurrent.duration._
-
+import scala.language.postfixOps
 class TimeSpec extends UtilsWithLoggingSpec {
   behavior of "Delay"
 

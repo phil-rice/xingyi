@@ -6,7 +6,7 @@ import org.validoc.utils.UtilsWithLoggingSpec
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
-
+import scala.language.higherKinds
 
 abstract class AbstractAsyncPimperTests[M[_]] extends UtilsWithLoggingSpec {
 

@@ -5,7 +5,7 @@ import org.validoc.utils.http.{Body, ContentType, ServiceResponse, Status}
 import play.api.libs.json.{Json, OFormat}
 
 import scala.reflect.ClassTag
-
+import scala.language.implicitConversions
 
 abstract class PlayJsonDomainObject[T: ClassTag : Manifest] {
 

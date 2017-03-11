@@ -12,6 +12,8 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
+import scala.language.higherKinds
+import scala.language.postfixOps
 
 abstract class AbstractAsyncTests[A[_]] extends UtilsWithLoggingSpec {
 
@@ -97,7 +99,7 @@ abstract class AbstractAsyncTests[A[_]] extends UtilsWithLoggingSpec {
   }
 
   it should "transform successes" in {
-    awaitFor(async.transform[String, String](async.lift("one"), _ match { case Success("one") => async.lift("two") })) shouldBe "two"
+    awaitFor(async.transform[String, String](async.lift("one"), _ match { case Success("one") => async.lift("two") ; case _ => fail})) shouldBe "two"
   }
   it should "transform failures" in {
     val runtimeException = new RuntimeException

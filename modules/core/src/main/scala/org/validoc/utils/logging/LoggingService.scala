@@ -8,6 +8,7 @@ import org.validoc.utils.concurrency.Async
 import Async._
 import org.validoc.utils.http.RequestDetails
 import org.validoc.utils.success.{ExceptionState, FailedState, Succeeded, SuccessState}
+import scala.language.higherKinds
 
 trait LoggingStrings[Res] {
   def succeeded(req: RequestDetails[_], res: Res): (LogLevel, String)

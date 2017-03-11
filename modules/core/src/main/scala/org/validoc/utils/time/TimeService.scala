@@ -2,6 +2,7 @@ package org.validoc.utils.time
 
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.service.ServerContext
+import scala.language.higherKinds
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try

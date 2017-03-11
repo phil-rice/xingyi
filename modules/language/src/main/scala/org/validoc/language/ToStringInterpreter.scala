@@ -11,6 +11,7 @@ import org.validoc.utils.time.{Delay, NanoTimeService}
 
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
+import scala.language.higherKinds
 
 object ToStringInterpreter {
   def apply[M[_], HttpReq, HttpRes]() = new ToStringInterpreter[M, HttpReq, HttpRes]

@@ -1,4 +1,5 @@
 package org.validoc.utils.caching
+import scala.language.higherKinds
 
 case class CachedId(id: Long)
 

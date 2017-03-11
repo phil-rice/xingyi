@@ -13,7 +13,7 @@ import org.validoc.utils.time.SystemClockNanoTimeService
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.{Failure, Success, Try}
-
+import scala.language.implicitConversions
 object FinatraAdapter extends FinatraAdapter()(FuturePools.fixedPool("pool", 20))
 
 class FinatraAdapter(implicit val futurePool: FuturePool) {

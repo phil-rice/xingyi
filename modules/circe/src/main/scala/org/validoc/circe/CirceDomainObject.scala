@@ -7,7 +7,7 @@ import org.validoc.utils.caching.CachableResultUsingSucesses
 import org.validoc.utils.http.{Body, ContentType, ServiceResponse, Status}
 
 import scala.reflect.ClassTag
-
+import scala.language.implicitConversions
 abstract class CirceDomainObject[T: ClassTag : Manifest] {
 
   //Sadly this code

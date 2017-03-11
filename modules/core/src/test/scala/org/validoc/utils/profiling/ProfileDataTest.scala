@@ -4,6 +4,8 @@ import org.validoc.utils.UtilsWithLoggingSpec
 import scala.concurrent.duration._
 
 import scala.concurrent.duration.Duration
+import scala.language.postfixOps
+import scala.language.implicitConversions
 
 class ProfileDataTest extends UtilsWithLoggingSpec {
   behavior of "ProfileData"

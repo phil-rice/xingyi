@@ -12,6 +12,7 @@ import org.validoc.utils.{FromServiceRequest, Service, ToServiceRequest, ToServi
 
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
+import scala.language.higherKinds
 
 
 class MakeServiceInterpreter[M[_] : Async, HttpReq, HttpRes] extends MakeServices[Service, M, HttpReq, HttpRes] {

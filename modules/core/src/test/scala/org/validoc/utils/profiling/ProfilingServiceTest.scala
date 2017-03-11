@@ -9,6 +9,8 @@ import org.validoc.utils.time.NanoTimeService
 import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, _}
 import scala.util.Success
+import scala.language.postfixOps
+import scala.language.implicitConversions
 
 class ProfilingServiceTest extends UtilsWithLoggingSpec {
 

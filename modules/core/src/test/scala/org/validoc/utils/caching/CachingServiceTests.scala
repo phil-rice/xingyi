@@ -11,7 +11,7 @@ import org.validoc.utils.time.NanoTimeService
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
-
+import scala.language.higherKinds
 
 case class DelegateRequest(key: String, result: Try[String], bypassCache: Boolean = false, countDownLatch: CountDownLatch = new CountDownLatch(1)) {
   override def hashCode(): Int = key.hashCode

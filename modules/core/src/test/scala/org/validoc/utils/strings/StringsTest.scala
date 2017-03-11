@@ -1,7 +1,6 @@
 package org.validoc.utils.strings
 
 import org.validoc.utils.UtilsWithLoggingSpec
-import org.validoc.utils.strings.Strings
 
 
 class StringsTest extends UtilsWithLoggingSpec {

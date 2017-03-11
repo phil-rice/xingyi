@@ -7,7 +7,7 @@ import org.validoc.utils.concurrency.Async
 import org.validoc.utils.time.Delay
 
 import scala.util.Try
-
+import scala.language.higherKinds
 trait NeedsRetry[T] {
   def apply(t: Try[T]): Boolean
 }

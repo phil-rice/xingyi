@@ -31,6 +31,11 @@ object MakeHttpService {
   def apply[M[_], HttpReq, HttpRes](map: Map[String, (HttpReq => M[HttpRes])]) = new MakeHttpService[M, HttpReq, HttpRes] {
     override def create(name: String): (HttpReq) => M[HttpRes] = map(name)
   }
+
+  /** This exists  to allow the 'to string' interpreter to work */
+  implicit object MakeHttpServiceForString extends MakeHttpService[Option, String, String] {
+    override def create(name: String): (String) => Option[String] = req => Some(s"HttpService($req)")
+  }
 }
 
 trait EndPoints[Tag[M[_], _, _], M[_]] {

@@ -1,6 +1,9 @@
 package org.validoc
 
 import org.validoc.sample.domain._
+import scala.language.higherKinds
+import scala.language.postfixOps
+
 
 package object sample {
 

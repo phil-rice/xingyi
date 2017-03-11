@@ -4,6 +4,7 @@ import org.validoc.utils.concurrency.Async
 import org.validoc.utils.http._
 import org.validoc.utils.monads.CanMap._
 import org.validoc.utils.{FromServiceRequest, Service, ToServiceResponse}
+import scala.language.higherKinds
 
 trait OriginalReq[Req] {
   def acceptHeader(req: Req): AcceptHeader

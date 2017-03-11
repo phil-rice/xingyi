@@ -16,6 +16,7 @@ lazy val commonSettings = Seq(
   organization := "org.validoc",
   publishMavenStyle := true,
   scalaVersion := versions.scala,
+  scalacOptions ++= Seq( "-feature"),
   libraryDependencies += "org.mockito" % "mockito-all" % versions.mockito % "test",
   libraryDependencies += "org.scalatest" %% "scalatest" % versions.scalatest % "test"
 )
