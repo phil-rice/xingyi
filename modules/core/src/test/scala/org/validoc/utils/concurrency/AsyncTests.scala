@@ -105,8 +105,6 @@ abstract class AbstractAsyncTests[A[_]] extends UtilsWithLoggingSpec {
 
 class FutureAsyncTests extends AbstractAsyncTests[Future] with BeforeAndAfter {
 
-
-
   before(loggingAdapter.clearMdc)
 
   override def awaitFor(a: Future[String]): String = Await.result(a, 5 seconds)

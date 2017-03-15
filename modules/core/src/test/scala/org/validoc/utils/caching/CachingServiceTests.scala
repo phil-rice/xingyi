@@ -42,8 +42,6 @@ class DelegateService[M[_] : Async] extends (DelegateRequest => M[String]) {
 
 class CachingServiceTests extends UtilsWithLoggingSpec with Eventually {
 
-
-
   import org.mockito.Mockito._
 
   val lock = new Object
@@ -52,12 +50,14 @@ class CachingServiceTests extends UtilsWithLoggingSpec with Eventually {
 
   def withServices(fn: CService => DelegateService[Future] => NanoTimeService => Unit, cacheSizeStrategy: MapSizeStrategy = NoMapSizeStrategy): Unit =
     lock.synchronized {
-      implicit val ec: MDCPropagatingExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
+      val threadPool = Executors.newFixedThreadPool(10)
+      implicit val ec: MDCPropagatingExecutionContext = ExecutionContext.fromExecutor(threadPool)
       val delegateService = new DelegateService[Future]()
       implicit val timeService = mock[NanoTimeService]
       val cachingStrategy = DurationStaleCacheStategy(100, 1000)
       val cachingService = new CachingService[Future, DelegateRequest, String]("someName", delegateService, cachingStrategy, cacheSizeStrategy)
       fn(cachingService)(delegateService)(timeService)
+      threadPool.shutdown()
     }
 
   def checkMetrics(prefix: String, bypassedRequest: Long = 0,
@@ -201,10 +201,6 @@ class CachingServiceTests extends UtilsWithLoggingSpec with Eventually {
           checkMetrics("after future2 finished ", requests = 2, delegateRequests = 2, delegateSuccesses = 2, staleRequests = 1)
 
           val future3 = cachingService(request3)
-          //Has failed here intermittantly. "staleRequests 2 was not equal to 1'. It's an 'OK' failure mode (if it's even a failure mode).
-          // Very short time window, and the only consequence is an extra stale data serve
-          //This sleep should stop it. I can't easily see a 'data driven' way to work this out without exposing a lot of the inards
-          Thread.sleep(10)
           checkMetrics("after future3 started ", requests = 3, delegateRequests = 2, delegateSuccesses = 2, staleRequests = 1)
           request3.countDownLatch.countDown()
           await(future2) shouldBe "result1" //this was served while stale

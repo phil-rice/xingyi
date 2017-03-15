@@ -87,10 +87,13 @@ class CachingService[M[_] : Async, Req: CachableKey, Res: CachableResult](val na
   private def recordResult(req: Req, c: CachedValue[M, Res])(tryRes: Try[Res]): CachedValue[M, Res] = {
     trace(s"recordResult($req, $c)($tryRes)")
     map(cachableKey.id(req)) { cNew =>
-      (if (tryRes.isFailure) metrics.delegateFailures else metrics.delegateSuccesses).incrementAndGet()
-      if (cNew.inFlightId != c.inFlightId) cNew
-      else if (cachableResult.shouldCacheStrategy(tryRes)) cNew.copy(time = timeService(), inFlight = None, value = Some(async.liftTry(tryRes)))
-      else cNew.copy(inFlight = None)
+      try {
+        if (cNew.inFlightId != c.inFlightId) cNew
+        else if (cachableResult.shouldCacheStrategy(tryRes)) cNew.copy(time = timeService(), inFlight = None, value = Some(async.liftTry(tryRes)))
+        else cNew.copy(inFlight = None)
+      } finally {
+        (if (tryRes.isFailure) metrics.delegateFailures else metrics.delegateSuccesses).incrementAndGet()
+      }
     }
   }
 
