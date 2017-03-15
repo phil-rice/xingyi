@@ -2,6 +2,7 @@ package org.validoc.utils.map
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import org.scalatest.time.{Seconds, Span}
 import org.validoc.utils.UtilsWithLoggingSpec
 
 
@@ -52,7 +53,7 @@ abstract class AbstractLowLevelSafeMapTest extends UtilsWithLoggingSpec {
       }
       threads.foreach(_.setDaemon(true))
       threads.foreach(_.start)
-      eventually {
+      eventually (timeout(Span(5, Seconds))) {
         threads.forall(!_.isAlive)
         withClue("one")(map.get("one") shouldBe 1000)
         withClue("two")( map.get("two") shouldBe 1001)
