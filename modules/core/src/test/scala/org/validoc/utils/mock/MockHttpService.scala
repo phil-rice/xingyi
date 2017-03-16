@@ -3,21 +3,26 @@ package org.validoc.utils.mock
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.concurrency.Async._
 import org.validoc.utils.http.{ServiceRequest, ServiceResponse}
-import org.validoc.utils.{FromServiceRequest, ToServiceResponse}
+import org.validoc.utils.{FromServiceRequest, Service, ToServiceRequest, ToServiceResponse}
 
 import scala.language.higherKinds
-class MockHttpService[M[_] : Async, Req, Res](pf: PartialFunction[Req, M[Res]])
-                                             (implicit fromServiceRequest: FromServiceRequest[Req],
-                                              toServiceResponse: ToServiceResponse[Res]) extends PartialFunction[ServiceRequest, M[ServiceResponse]] {
 
-  override def isDefinedAt(x: ServiceRequest): Boolean = pf.isDefinedAt(fromServiceRequest(x))
+class MockHttpService[M[_], Req, Res](mocks: Map[Req, Res])
+                                     (implicit toServiceRequest: ToServiceRequest[Req],
+                                      toServiceResponse: ToServiceResponse[Res],
+                                      async: Async[M]) extends PartialFunction[ServiceRequest, M[ServiceResponse]] {
+  val map = mocks.map { case (k, v) => (toServiceRequest(k), v) }
 
-  override def apply(sr: ServiceRequest): M[ServiceResponse] = pf(fromServiceRequest(sr)).map(toServiceResponse)
+
+  override def apply(sr: ServiceRequest): M[ServiceResponse] = (map andThen toServiceResponse) (sr).lift
+
+  override def isDefinedAt(x: ServiceRequest): Boolean = ???
 }
 
 object MockHttpService {
-  def apply[M[_] : Async, Req: FromServiceRequest, Res: ToServiceResponse](pfs: PartialFunction[Req, M[Res]]*): PartialFunction[ServiceRequest, M[ServiceResponse]] =
-    pfs.map(new MockHttpService[M, Req, Res](_)) reduce[PartialFunction[ServiceRequest, M[ServiceResponse]]] { case (acc, pf) => acc orElse pf }
+  def apply[M[_] : Async, Req: ToServiceRequest, Res: ToServiceResponse](tuples: (Req, Res)*): MockHttpService[M, Req, Res] =
+    new MockHttpService[M, Req, Res](Map(tuples: _*))
+
+  def apply[M[_]](services: MockHttpService[M, _, _]*) = services.reduce[PartialFunction[ServiceRequest, M[ServiceResponse]]]((acc, s) => acc orElse s)
 
 }
-
