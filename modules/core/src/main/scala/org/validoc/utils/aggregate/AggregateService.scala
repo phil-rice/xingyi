@@ -3,6 +3,9 @@ package org.validoc.utils.aggregate
 import org.validoc.utils.Service
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.concurrency.Async._
+import org.validoc.utils.profiling.ProfilingService
+import org.validoc.utils.service.{MakeServiceMakerForClass, MakeServiceMakerForTwoServices}
+import org.validoc.utils.time.NanoTimeService
 
 import scala.language.higherKinds
 
@@ -21,6 +24,18 @@ class EnrichParentChildService[M[_] : Async, ReqP, ResP, ReqC, ResC, ResE](paren
                                                                            enricher: Enricher[ResE, ResP, ResC]) extends Service[M, ReqP, ResE] {
   override def apply(reqP: ReqP): M[ResE] = parentService(reqP).flatMap(resP => children(resP).map(childService).join.map(enricher(resP)))
 
+}
+
+object EnrichParentChildService {
+  implicit def makeEnrichParentChildService[M[_] : Async, ReqP, ResP, ReqC, ResC, ResE](implicit
+                                                                                        children: HasChildren[ResP, ReqC],
+                                                                                        enricher: Enricher[ResE, ResP, ResC]) =
+    new MakeServiceMakerForTwoServices[ReqP => M[ResP], ReqC => M[ResC], EnrichParentChildService[M, ReqP, ResP, ReqC, ResC, ResE]] {
+      override def apply(old1: (ReqP) => M[ResP], old2: (ReqC) => M[ResC]): EnrichParentChildService[M, ReqP, ResP, ReqC, ResC, ResE] =
+        new EnrichParentChildService[M, ReqP, ResP, ReqC, ResC, ResE](old1, old2)
+    }
+
+//  EnrichParentChildService[M, Req1, Res1, Req2, Res2, ResE]]
 }
 
 class MergeService[M[_] : Async, ReqM, ResM, Req1, Res1, Req2, Res2](firstService: Service[M, Req1, Res1],

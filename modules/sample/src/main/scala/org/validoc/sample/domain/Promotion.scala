@@ -4,9 +4,11 @@ import org.validoc.playJson.PlayJsonDomainObject
 import org.validoc.utils.aggregate.{Enricher, HasChildren}
 import org.validoc.utils.caching.{CachableKey, Id, UnitId}
 import org.validoc.utils.http.{Get, ServiceRequest, Uri}
+import org.validoc.utils.metrics.{MetricValue, ReportData}
 import play.api.libs.json.{Json, OFormat}
 
 import scala.language.implicitConversions
+import scala.util.Try
 
 trait PromotionQuery
 
@@ -26,6 +28,10 @@ case class Promotion(name: String, productionIds: List[ProductionId])
 
 object Promotion extends PlayJsonDomainObject[Promotion] {
   implicit val modelFormat: OFormat[Promotion] = Json.format[Promotion]
+
+  implicit object ReportDataForPromotion extends ReportData[Promotion] {
+    override def apply(v1: String, v2: Try[Promotion], v3: Long): Map[String, MetricValue] = Map()
+  }
 
   implicit object HasChildrenForPromotion extends HasChildren[Promotion, ProductionId] {
     override def apply(p: Promotion): Seq[ProductionId] = p.productionIds

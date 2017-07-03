@@ -1,6 +1,7 @@
 package org.validoc.sample.domain
 
 import org.validoc.playJson.PlayJsonDomainObject
+import org.validoc.utils.gash.{FindId, Merger}
 import play.api.libs.json.{Json, OFormat}
 //import io.circe.syntax._
 
@@ -14,6 +15,11 @@ case class HomePage(mostPopular: EnrichedMostPopular, promotions: EnrichedPromot
 
 object HomePage extends PlayJsonDomainObject[HomePage] {
   implicit val modelFormat: OFormat[HomePage] = Json.format[HomePage]
+
+  implicit object MergerForHomePage extends Merger[EnrichedPromotion, EnrichedMostPopular, HomePage] {
+    override def apply(v1: EnrichedPromotion, v2: EnrichedMostPopular): HomePage = HomePage(v2, v1)
+  }
+
 }
 
 
@@ -21,6 +27,13 @@ trait HomePageQuery
 
 object HomePageQuery extends HomePageQuery {
 
+  implicit object FindPromotionQuery extends FindId[HomePageQuery, PromotionQuery] {
+    override def apply(v1: HomePageQuery): PromotionQuery = PromotionQuery
+  }
+
+  implicit object FindMostPopularQuery extends FindId[HomePageQuery, MostPopularQuery] {
+    override def apply(v1: HomePageQuery): MostPopularQuery = MostPopularQuery
+  }
 
   implicit object CachableKeyForHomePage extends CachableKey[HomePageQuery] {
     override def id(req: HomePageQuery): Id = UnitId

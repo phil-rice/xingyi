@@ -1,6 +1,9 @@
 package org.validoc.utils.service
 
 
+import org.validoc.utils.Service
+import org.validoc.utils.aggregate.{EnrichParentChildService, MergeService}
+import org.validoc.utils.concurrency.Async
 import org.validoc.utils.http.{HostName, MakeHttpService, Port}
 
 import scala.reflect.ClassTag
@@ -60,6 +63,38 @@ case class ParamDelegateServiceDescription[M[_], Param, OldReq, OldRes, Req, Res
   override def fold[T](folder: ServiceDescriptionFolder[M, T])(initial: T): T = delegate.fold(folder)(folder.serviceWithParam(initial, this))
 
   override def description = s"${serviceClass.getSimpleName}($param)"
+}
+
+
+case class MergingTwoServicesDescription[M[_] : Async, Req1, Res1, Req2, Res2, Req, Res, Service <: Req => M[Res]](service1: ServiceDescription[M, Req1, Res1],
+                                                                                                                   service2: ServiceDescription[M, Req2, Res2])
+                                                                                                                  (implicit makeServiceMakerForTwoServices:
+                                                                                                                  MakeServiceMakerForTwoServices[Req1 => M[Res1],
+                                                                                                                    Req2 => M[Res2],
+                                                                                                                    Service])
+
+  extends ServiceDescription[M, Req, Res] {
+
+  override lazy val service: (Req) => M[Res] = makeServiceMakerForTwoServices(service1.service, service2.service)
+
+  override def fold[T](folder: ServiceDescriptionFolder[M, T])(initial: T): T = ???
+
+  override def description: String = ???
+}
+
+
+case class MergeServiceDescription[M[_] : Async, ReqM, ResM, Req1, Res1, Req2, Res2]
+(firstService: ServiceDescription[M, Req1, Res1],
+ secondService: ServiceDescription[M, Req2, Res2])
+(implicit makeServiceMakerForTwoServices: MakeServiceMakerForTwoServices[Req1 => M[Res1], Req2 => M[Res2], MergeService[M, ReqM, ResM, Req1, Res1, Req2, Res2]])
+
+  extends ServiceDescription[M, ReqM, ResM] {
+
+  override lazy val service: (ReqM) => M[ResM] = makeServiceMakerForTwoServices(firstService.service, secondService.service)
+
+  override def fold[T](folder: ServiceDescriptionFolder[M, T])(initial: T): T = ???
+
+  override def description: String = ???
 }
 
 trait MakeServiceDescription[M[_], OldReq, OldRes, Req, Res] {

@@ -14,6 +14,7 @@ import org.validoc.utils.time.SystemClockNanoTimeService
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
+
 object FinatraAdapter extends FinatraAdapter()(FuturePools.fixedPool("pool", 20))
 
 class FinatraAdapter(implicit val futurePool: FuturePool) {
@@ -49,7 +50,7 @@ class FinatraAdapter(implicit val futurePool: FuturePool) {
     override def flatMap[T, T2](m: TFuture[T], fn: (T) => TFuture[T2]): TFuture[T2] = m.flatMap(fn)
   }
 
-  implicit val serverContext = {
+  implicit val serverContext: ServerContext[Request, Response] = {
     implicit def toServiceResponseForFinatraResponse(response: Response) = ServiceResponse(Status(response.statusCode), Body(response.contentString), ContentType(response.mediaType.getOrElse("")))
 
     implicit def toServiceRequest(request: Request) = ServiceRequest(Get, Uri(request.path), request.headerMap.get("Accept").map(AcceptHeader(_)))

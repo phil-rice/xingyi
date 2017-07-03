@@ -3,9 +3,11 @@ package org.validoc.sample.domain
 import org.validoc.playJson.PlayJsonDomainObject
 import org.validoc.utils.caching.{CachableKey, Id, StringId}
 import org.validoc.utils.http.{Get, ServiceRequest, Uri}
+import org.validoc.utils.metrics.{MetricValue, ReportData}
 import play.api.libs.json.{Json, OFormat}
 
 import scala.language.implicitConversions
+import scala.util.Try
 
 case class ProgrammeId(id: String) extends AnyVal
 
@@ -25,8 +27,11 @@ object ProgrammeId {
 case class Programme(id: ProgrammeId, info: String)
 
 
-object Programme extends PlayJsonDomainObject[Programme]{
+object Programme extends PlayJsonDomainObject[Programme] {
   implicit val modelFormat: OFormat[Programme] = Json.format[Programme]
 
+  implicit object ReportDataForProgramme extends ReportData[Programme] {
+    override def apply(v1: String, v2: Try[Programme], v3: Long): Map[String, MetricValue] = Map()
+  }
 
 }

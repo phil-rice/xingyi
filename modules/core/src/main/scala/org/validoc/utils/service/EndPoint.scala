@@ -32,3 +32,9 @@ class EndPointService[M[_] : Async, Req: FromServiceRequest, Res: ToServiceRespo
     (fromServiceRequest andThen delegate >>> toServiceResponse) (serviceRequest)
 
 }
+
+object EndPointService {
+  implicit def makeEndPointService[M[_] : Async, Req: FromServiceRequest, Res: ToServiceResponse] = new MakeServiceMakerForClassWithParam[String, Req => M[Res], EndPointService[M, Req, Res]] {
+    override def apply(path: String, delegate: (Req) => M[Res]): EndPointService[M, Req, Res] = new EndPointService(path, delegate)
+  }
+}

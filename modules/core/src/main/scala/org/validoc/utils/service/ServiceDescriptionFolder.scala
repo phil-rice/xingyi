@@ -9,6 +9,8 @@ trait ServiceDescriptionFolder[M[_], T] {
   def service(initial: T, serviceDescription: DelegateServiceDescription[M, _, _, _, _, _]): T
 
   def serviceWithParam(initial: T, serviceDescription: ParamDelegateServiceDescription[M, _, _, _, _, _, _]): T
+
+  def serviceWithEnrich(initial: T, serviceDescription: MergingTwoServicesDescription[M, _, _, _, _, _, _, _]): T
 }
 
 object ServiceDescriptionFolder {
@@ -25,6 +27,10 @@ object ServiceDescriptionFolder {
     override def serviceWithParam(initial: IndentAndString, serviceDescription: ParamDelegateServiceDescription[M, _, _, _, _, _, _]): IndentAndString = {
       initial.addLineAndIndent(s"${serviceDescription.description}(${serviceDescription.param}) ${serviceDescription.report}")
     }
+
+    override def serviceWithEnrich(initial: IndentAndString, serviceDescription: MergingTwoServicesDescription[M, _, _, _, _, _,_,_]): IndentAndString = {
+      initial.addLineAndIndent(s"${serviceDescription.description}() ${serviceDescription.report}")
+    }
   }
 
   class ServiceDescriptionFolderGetAll[M[_]] extends ServiceDescriptionFolder[M, List[ServiceDescription[M, _, _]]] {
@@ -35,6 +41,9 @@ object ServiceDescriptionFolder {
       serviceDescription :: initial
 
     override def serviceWithParam(initial: List[ServiceDescription[M, _, _]], serviceDescription: ParamDelegateServiceDescription[M, _, _, _, _, _, _]): List[ServiceDescription[M, _, _]] =
+      serviceDescription :: initial
+
+    override def serviceWithEnrich(initial: List[ServiceDescription[M, _, _]], serviceDescription: MergingTwoServicesDescription[M, _, _, _, _, _,_,_]): List[ServiceDescription[M, _, _]] =
       serviceDescription :: initial
   }
 
