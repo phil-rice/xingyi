@@ -16,11 +16,11 @@ class PromotionSetup[Tag[M[_], _, _], M[_], HttpReq, HttpRes](s: IHttpSetup[Tag,
 
   type Setup = IHttpSetup[Tag, M, HttpReq, HttpRes]
 
-  val mostPopularHttp: Tag[M, HttpReq, HttpRes] = s.rawService("mostPopular")
+  val mostPopularHttp: Tag[M, HttpReq, HttpRes] = s.rawService(HostName("mostPopular"), Port(80))
 
-  val promotionHttp: Tag[M, HttpReq, HttpRes] = s.rawService("promotion")
+  val promotionHttp: Tag[M, HttpReq, HttpRes] = s.rawService(HostName("promotion"), Port(80))
 
-  val programmeAndProductionsHttp: Tag[M, HttpReq, HttpRes] = s.rawService("programmeAndProductions")
+  val programmeAndProductionsHttp: Tag[M, HttpReq, HttpRes] = s.rawService(HostName("programmeAndProductions"), Port(80))
 
   val enrichedMostPopularService: Tag[M, MostPopularQuery, EnrichedMostPopular] = {
     import s._

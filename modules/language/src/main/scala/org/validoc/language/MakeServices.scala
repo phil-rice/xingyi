@@ -8,7 +8,7 @@ import org.validoc.utils.map.MaxMapSizeStrategy
 import org.validoc.utils.metrics.{MetricsService, PutMetrics, ReportData}
 import org.validoc.utils.parser.ParserFinder
 import org.validoc.utils.profiling.ProfilingService
-import org.validoc.utils.retry.{NeedsRetry, RetryService}
+import org.validoc.utils.retry.{NeedsRetry, RetryConfig, RetryService}
 import org.validoc.utils.service.{EndPointOps, EndPointService}
 import org.validoc.utils.time.{Delay, NanoTimeService}
 import org.validoc.utils.{FromServiceRequest, Service, ToServiceRequest, ToServiceResponse}
@@ -23,8 +23,10 @@ abstract class MakeServices[Tag[M[_], _, _], M[_] : Async, HttpReq, HttpRes] ext
   def makeCache[Req: CachableKey, Res: CachableResult](timeToStale: Duration, timeToDead: Duration, maxSize: Int)(delegate: Req => M[Res])(implicit timeService: NanoTimeService) =
     new CachingService[M, Req, Res]("someName", delegate, DurationStaleCacheStategy(timeToStale.toNanos, timeToDead.toNanos), MaxMapSizeStrategy(maxSize, maxSize / 4))
 
-  def makeRetry[Req, Res](delegate: AsyncService[Req, Res], resRetry: NeedsRetry[Res], retries: Int, delay: Delay)(implicit timeService: NanoTimeService) =
-    new RetryService[M, Req, Res](delegate, resRetry, retries, delay)
+  def makeRetry[Req, Res](delegate: AsyncService[Req, Res], resRetry: NeedsRetry[Res], retries: Int, delay: Delay)(implicit timeService: NanoTimeService) = {
+   implicit val x = resRetry
+    new RetryService[M, Req, Res](delegate, RetryConfig(retries, delay))
+  }
 
   def makeProfile[Req, Res](delegate: Req => M[Res])(implicit timeService: NanoTimeService) =
     new ProfilingService[M, Req, Res]("someName", delegate, timeService)

@@ -6,6 +6,7 @@ import org.validoc.utils.Service
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.concurrency.Async._
 import org.validoc.utils.http.RequestDetails
+import org.validoc.utils.service.MakeServiceMakerForClassWithParam
 import org.validoc.utils.success.Succeeded
 
 import scala.language.higherKinds
@@ -29,9 +30,14 @@ object LoggingStrings {
 
 }
 
+object LoggingService {
+  implicit def makeLoggingService[OldService <: Req => M[Res], M[_] : Async, Req, Res: Succeeded] = new MakeServiceMakerForClassWithParam[String, OldService, LoggingService[M, Req, Res]] {
+    override def apply(prefix: String, delegate: OldService): LoggingService[M, Req, Res] = new LoggingService[M, Req, Res](delegate, prefix)
+  }
+}
 
 class LoggingService[M[_] : Async, Req, Res: Succeeded](delegate: Service[M, Req, Res], pattern: String)(implicit loggingStrings: LoggingStrings[Res], loggingAdapter: LoggingAdapter) extends Service[M, Req, Res] with Logging {
-  def toRequestDetails(req: Req) = RequestDetails[Req](MessageFormat.format(pattern, req.toString)) (req)
+  def toRequestDetails(req: Req) = RequestDetails[Req](MessageFormat.format(pattern, req.toString))(req)
 
   override def apply(req: Req): M[Res] = {
     lazy val requestDetails: RequestDetails[Req] = toRequestDetails(req)

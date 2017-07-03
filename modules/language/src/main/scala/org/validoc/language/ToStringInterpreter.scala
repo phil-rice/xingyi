@@ -2,7 +2,7 @@ package org.validoc.language
 
 import org.validoc.utils.aggregate.{Enricher, HasChildren}
 import org.validoc.utils.caching.{CachableKey, CachableResult}
-import org.validoc.utils.http.{ServiceRequest, ServiceResponse}
+import org.validoc.utils.http._
 import org.validoc.utils.metrics.{PutMetrics, ReportData}
 import org.validoc.utils.parser.ParserFinder
 import org.validoc.utils.retry.NeedsRetry
@@ -31,7 +31,7 @@ class ToStringInterpreter[M[_], HttpReq, HttpRes] extends IHttpSetup[StringServi
   override def profiled[Req, Res](delegate: StringServiceTag[M, Req, Res])(implicit timeService: NanoTimeService): StringServiceTag[M, Req, Res] =
     StringServiceTag(s"Profile ~~> ${delegate.t}")
 
-  override def rawService(name: String)(implicit makeHttpService: MakeHttpService[M, HttpReq, HttpRes]): StringServiceTag[M, HttpReq, HttpRes] = StringServiceTag(s"RawService($name)")
+  override def rawService(hostName: HostName, port: Port)(implicit makeHttpService: MakeHttpService[M, HttpReq, HttpRes]): StringServiceTag[M, HttpReq, HttpRes] = StringServiceTag(s"RawService($hostName, $port)")
 
   override def enrich[Req, Res, ResE, ReqC, ResC](parent: StringServiceTag[M, Req, Res], child: StringServiceTag[M, ReqC, ResC])(implicit enricher: Enricher[ResE, Res, ResC], children: HasChildren[Res, ReqC]): StringServiceTag[M, Req, ResE] =
     StringServiceTag(s"Enrich(${parent.t}), ${child.t})")

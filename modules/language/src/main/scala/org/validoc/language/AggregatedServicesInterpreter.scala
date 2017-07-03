@@ -3,7 +3,7 @@ package org.validoc.language
 import org.validoc.utils.aggregate.{Enricher, HasChildren}
 import org.validoc.utils.caching.{CachableKey, CachableResult, CachingOps}
 import org.validoc.utils.concurrency.Async
-import org.validoc.utils.http.{ServiceRequest, ServiceResponse}
+import org.validoc.utils.http._
 import org.validoc.utils.metrics.{PutMetrics, ReportData}
 import org.validoc.utils.parser.ParserFinder
 import org.validoc.utils.profiling.ProfileOps
@@ -33,8 +33,8 @@ case class ServiceData[M[_], Req, Res](service: Req => M[Res],
 
 class AggregatedServicesInterpreter[M[_] : Async, HttpReq, HttpRes] extends MakeServices[ServiceData, M, HttpReq, HttpRes] {
 
-  override def rawService(name: String)(implicit makeHttpService: MakeHttpService[M, HttpReq, HttpRes]): ServiceData[M, HttpReq, HttpRes] =
-    ServiceData(makeHttpService.create(name))
+  override def rawService(hostName: HostName, port: Port)(implicit makeHttpService: MakeHttpService[M, HttpReq, HttpRes]): ServiceData[M, HttpReq, HttpRes] =
+    ServiceData(makeHttpService.create(hostName, port))
 
   override def cached[Req: CachableKey, Res: CachableResult](timeToStale: Duration, timeToDead: Duration, maxSize: Int)(delegate: ServiceData[M, Req, Res])(implicit timeService: NanoTimeService): ServiceData[M, Req, Res] = {
     val newService = makeCache(timeToStale, timeToDead, maxSize)(delegate.service)

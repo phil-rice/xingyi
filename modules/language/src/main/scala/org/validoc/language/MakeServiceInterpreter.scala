@@ -3,7 +3,7 @@ package org.validoc.language
 import org.validoc.utils.aggregate.{Enricher, HasChildren}
 import org.validoc.utils.caching.{CachableKey, CachableResult}
 import org.validoc.utils.concurrency.Async
-import org.validoc.utils.http.{ServiceRequest, ServiceResponse}
+import org.validoc.utils.http._
 import org.validoc.utils.metrics.{PutMetrics, ReportData}
 import org.validoc.utils.parser.ParserFinder
 import org.validoc.utils.retry.NeedsRetry
@@ -17,8 +17,8 @@ import scala.reflect.ClassTag
 
 class MakeServiceInterpreter[M[_] : Async, HttpReq, HttpRes] extends MakeServices[Service, M, HttpReq, HttpRes] {
 
-  override def rawService(name: String)(implicit makeHttpService: MakeHttpService[M, HttpReq, HttpRes]): AsyncService[HttpReq, HttpRes] =
-    makeHttpService.create(name)
+  override def rawService(hostName: HostName, port: Port)(implicit makeHttpService: MakeHttpService[M, HttpReq, HttpRes]): AsyncService[HttpReq, HttpRes] =
+    makeHttpService.create(hostName, port)
 
   override def cached[Req: CachableKey, Res: CachableResult](timeToStale: Duration, timeToDead: Duration, maxSize: Int)(delegate: Req => M[Res])(implicit timeService: NanoTimeService): AsyncService[Req, Res] =
     makeCache(timeToStale, timeToDead, maxSize)(delegate)

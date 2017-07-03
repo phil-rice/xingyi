@@ -2,6 +2,7 @@ package org.validoc.utils
 
 import org.validoc.utils.http.{RequestDetails, ServiceResponse}
 import org.validoc.utils.parser.{FailedParserResult, ParserResult}
+import scala.language.existentials
 
 case class GatewayException(requestDetails: RequestDetails[_], serviceResponse: ServiceResponse) extends
   Exception(s" RequestDetails $requestDetails\nResponse $serviceResponse")

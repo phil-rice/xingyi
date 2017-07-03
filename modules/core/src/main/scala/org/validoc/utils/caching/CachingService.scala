@@ -6,7 +6,8 @@ import org.validoc.utils.Service
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.functions.Functions
 import org.validoc.utils.logging.Logging
-import org.validoc.utils.map.{MapSizeStrategy, SafeMap}
+import org.validoc.utils.map.{MapSizeStrategy, NoMapSizeStrategy, SafeMap}
+import org.validoc.utils.service.MakeServiceMakerForClass
 import org.validoc.utils.time.NanoTimeService
 
 import scala.language.higherKinds
@@ -17,6 +18,8 @@ trait Id
 case class StringId(id: String) extends Id
 
 case class IntId(id: String) extends Id
+
+case class ObjectId[T](t: T) extends Id
 
 case object UnitId extends Id
 
@@ -42,6 +45,11 @@ trait CachableKey[Req] {
 }
 
 object CachableKey {
+  implicit def cachableKeyDefault[T] = new CachableKey[T] {
+    override def id(req: T): Id = ObjectId(req)
+
+    override def bypassCache(req: T): Boolean = false
+  }
 
   implicit object CachableKeyForUnit extends CachableKey[Unit] {
     override def id(req: Unit): Id = UnitId
@@ -58,6 +66,13 @@ trait CachingOps {
   def clearCache
 
   def cachingMetrics: CachingMetricSnapShot
+}
+
+object CachingService {
+  implicit def makeCachingService[OldService <: Req => M[Res], M[_] : Async, Req: CachableKey, Res: CachableResult] = new MakeServiceMakerForClass[OldService, CachingService[M, Req, Res]] {
+    override def apply(delegate: OldService): CachingService[M, Req, Res] = new CachingService[M, Req, Res]("some", delegate, DurationStaleCacheStategy(100, 1000), NoMapSizeStrategy)
+  }
+
 }
 
 class CachingService[M[_] : Async, Req: CachableKey, Res: CachableResult](val name: String,

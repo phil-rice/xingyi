@@ -16,11 +16,11 @@ class RetryServiceTest extends UtilsWithLoggingSpec {
   behavior of "RetryService"
 
   def setup(fn: (RetryService[Future, Req, Res], Service[Future, Req, Res], NeedsRetry[Res], Delay) => Unit) = {
-    val retry = mock[NeedsRetry[Res]]
+   implicit  val retry = mock[NeedsRetry[Res]]
     val delay = mock[Delay]
     when(delay.apply()) thenReturn (1 milli)
     val delegate = mock[Service[Future, Req, Res]]
-    fn(new RetryService[Future, Req, Res](delegate, retry, 2, delay), delegate, retry, delay)
+    fn(new RetryService[Future, Req, Res](delegate, RetryConfig(2, delay)), delegate, retry, delay)
   }
 
 
