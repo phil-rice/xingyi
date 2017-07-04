@@ -1,19 +1,21 @@
 package org.validoc.sample.domain
 
-import org.validoc.playJson.PlayJsonDomainObject
 import org.validoc.utils.aggregate.{Enricher, HasChildren}
 import org.validoc.utils.caching.{CachableKey, Id, UnitId}
-import org.validoc.utils.http.{Get, ServiceRequest, Uri}
+import org.validoc.utils.http.{Get, ServiceRequest, ToServiceRequest, Uri}
 import org.validoc.utils.metrics.{MetricValue, ReportData}
-import play.api.libs.json.{Json, OFormat}
 
 import scala.language.implicitConversions
 import scala.util.Try
 
 trait PromotionQuery
 
-object PromotionQuery extends PromotionQuery {
-  implicit def toRequestForPromotionQuery(req: PromotionQuery) = ServiceRequest(Get, Uri("http://someUri"))
+object PromotionQuery extends DomainCompanionObject[PromotionQuery] with PromotionQuery {
+
+  implicit object ToServiceRquestForPromotionQuery extends ToServiceRequest[PromotionQuery] {
+    override def apply(v1: PromotionQuery): ServiceRequest = ServiceRequest(Get, Uri("http://someUri"))
+  }
+
 
   implicit object CachableKeyForPromotionQuery extends CachableKey[PromotionQuery] {
     override def id(req: PromotionQuery): Id = UnitId
@@ -26,8 +28,7 @@ object PromotionQuery extends PromotionQuery {
 
 case class Promotion(name: String, productionIds: List[ProductionId])
 
-object Promotion extends PlayJsonDomainObject[Promotion] {
-  implicit val modelFormat: OFormat[Promotion] = Json.format[Promotion]
+object Promotion extends DomainCompanionObject[Promotion] {
 
   implicit object ReportDataForPromotion extends ReportData[Promotion] {
     override def apply(v1: String, v2: Try[Promotion], v3: Long): Map[String, MetricValue] = Map()
@@ -42,8 +43,7 @@ object Promotion extends PlayJsonDomainObject[Promotion] {
 
 case class EnrichedPromotion(name: String, productions: Seq[Production])
 
-object EnrichedPromotion extends PlayJsonDomainObject[EnrichedPromotion] {
-  implicit val modelFormat: OFormat[EnrichedPromotion] = Json.format[EnrichedPromotion]
+object EnrichedPromotion extends DomainCompanionObject[EnrichedPromotion] {
 
   implicit object EnricherForPromotion extends Enricher[EnrichedPromotion, Promotion, Production] {
     override def apply(p: Promotion)(children: Seq[Production]): EnrichedPromotion =

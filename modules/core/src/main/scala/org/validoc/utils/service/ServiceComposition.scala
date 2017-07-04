@@ -1,13 +1,12 @@
 package org.validoc.utils.service
 
+import org.validoc.utils.Parser
 import org.validoc.utils.aggregate.{EnrichParentChildService, Enricher, HasChildren}
-import org.validoc.utils.{FromServiceRequest, Parser, Service, ToServiceRequest, ToServiceResponse}
-import org.validoc.utils.caching.{CachableKey, CachableResult, CachingService, DurationStaleCacheStategy}
+import org.validoc.utils.caching.{CachableKey, CachableResult, CachingService}
 import org.validoc.utils.concurrency.{Async, MDCPropagatingExecutionContext}
 import org.validoc.utils.gash._
 import org.validoc.utils.http._
 import org.validoc.utils.logging.{LoggingService, NullLoggingAdapterWithMdc}
-import org.validoc.utils.map.NoMapSizeStrategy
 import org.validoc.utils.metrics.{MetricValue, MetricsService, PutMetrics, ReportData}
 import org.validoc.utils.parser.{ParserFinder, ParserResult}
 import org.validoc.utils.profiling.ProfilingService
@@ -15,11 +14,10 @@ import org.validoc.utils.retry.{NeedsRetry, RetryConfig, RetryService}
 import org.validoc.utils.success.Succeeded
 import org.validoc.utils.time.{NanoTimeService, RandomDelay}
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.language.higherKinds
-import scala.reflect.ClassTag
 import scala.concurrent.duration._
-import scala.language.postfixOps
+import scala.concurrent.{ExecutionContext, Future}
+import scala.language.{higherKinds, postfixOps}
+import scala.reflect.ClassTag
 import scala.util.Try
 
 trait ServiceComposition {
@@ -27,7 +25,7 @@ trait ServiceComposition {
   implicit class ComposePimper[M[_], OldReq, OldRes](baseDescription: ServiceDescription[M, OldReq, OldRes]) {
     type OldService = OldReq => M[OldRes]
 
-    def -->[Req, Res](maker: MakeServiceDescription[M, OldReq, OldRes, Req, Res]): ServiceDescription[M, Req, Res] = {
+    def >-<[Req, Res](maker: MakeServiceDescription[M, OldReq, OldRes, Req, Res]): ServiceDescription[M, Req, Res] = {
       maker(baseDescription)
     }
 
@@ -114,12 +112,16 @@ object ExampleComposition {
     override def find(contentType: ContentType): ParserResult[Parser[String]] = ???
   }
 
+  implicit object ToServiceResponseForString extends ToServiceResponse[String] {
+    override def apply(v1: String): ServiceResponse = ServiceResponse(Status.Ok, Body(v1), ContentType("text/plain"))
+  }
+
   implicit val makeHttpService: MakeHttpService[Future, Int, String] = ???
 
   class ExampleComposition extends HttpServiceCompositionLanguage[Future, Int, String] {
 
 
-    val z = http(HostName("localhost"), Port(9000)) --> asObject[String, String] --> cache --> log("somepattern{0}") --> profile --> metrics("somePrefix") --> retry(RetryConfig(1, new RandomDelay(1 second)))
+    val z = http(HostName("localhost"), Port(9000)) >-< asObject[Int, String] >-< cache >-< log("somepattern{0}") >-< profile >-< metrics("somePrefix") >-< retry(RetryConfig(1, new RandomDelay(1 second)))
 
   }
 

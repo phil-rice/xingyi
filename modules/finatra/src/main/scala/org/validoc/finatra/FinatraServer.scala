@@ -1,8 +1,7 @@
 package org.validoc.finatra
 
 import com.twitter.finagle.http
-import com.twitter.finagle.http.{Request, Response}
-import com.twitter.finatra.http.filters.{CommonFilters, LoggingMDCFilter, TraceIdMDCFilter}
+import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.routing.HttpRouter
 import com.twitter.finatra.http.{Controller, HttpServer}
 import com.twitter.util.{Duration => TDuration, Future => TFuture, Try => TTry}
@@ -45,9 +44,9 @@ class FinatraServer(port: Int, controllers: Controller*) extends HttpServer {
 
   override def configureHttp(router: HttpRouter): Unit = {
     val raw = router
-      .filter[LoggingMDCFilter[Request, Response]]
-      .filter[TraceIdMDCFilter[Request, Response]]
-      .filter[CommonFilters]
+//      .filter[LoggingMDCFilter[Request, Response]]
+//      .filter[TraceIdMDCFilter[Request, Response]]
+//      .filter[CommonFilters]
     controllers.foldLeft(raw)((acc, c) => acc.add(c))
   }
 }

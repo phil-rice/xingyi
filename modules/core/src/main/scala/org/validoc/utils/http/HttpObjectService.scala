@@ -1,11 +1,9 @@
 package org.validoc.utils.http
 
+import org.validoc.utils.Service
 import org.validoc.utils.concurrency.Async
-import org.validoc.utils.logging.LoggingService
 import org.validoc.utils.parser.ParserFinder
-import org.validoc.utils.service.{MakeServiceMakerForClass, MakeServiceMakerForClassWithParam}
-import org.validoc.utils.success.Succeeded
-import org.validoc.utils.{FromServiceRequest, Service, ToServiceRequest, ToServiceResponse}
+import org.validoc.utils.service.MakeServiceMakerForClass
 
 import scala.language.higherKinds
 

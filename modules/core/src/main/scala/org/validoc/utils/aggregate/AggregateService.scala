@@ -3,9 +3,7 @@ package org.validoc.utils.aggregate
 import org.validoc.utils.Service
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.concurrency.Async._
-import org.validoc.utils.profiling.ProfilingService
-import org.validoc.utils.service.{MakeServiceMakerForClass, MakeServiceMakerForTwoServices}
-import org.validoc.utils.time.NanoTimeService
+import org.validoc.utils.service.MakeServiceMakerForTwoServices
 
 import scala.language.higherKinds
 

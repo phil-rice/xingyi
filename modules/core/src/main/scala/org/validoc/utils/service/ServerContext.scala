@@ -1,14 +1,14 @@
 package org.validoc.utils.service
 
 import org.validoc.utils.http._
+import org.validoc.utils.json.ToJson
 import org.validoc.utils.metrics.{NullPutMetrics, PutMetrics}
 import org.validoc.utils.success.Succeeded
 import org.validoc.utils.time.{NanoTimeService, SystemClockNanoTimeService}
-import org.validoc.utils.{FromServiceRequest, ToServiceRequest, ToServiceResponse}
 
 import scala.language.implicitConversions
 
-class ServerContext[HttpReq, HttpRes](implicit val timeService: NanoTimeService,
+class ServerContext[HttpReq:FromServiceRequest, HttpRes:ToServiceResponse](implicit val timeService: NanoTimeService,
                                       val putMetrics: PutMetrics,
                                       val succeeded: Succeeded[HttpRes],
                                       val toServiceRequest: ToServiceRequest[HttpReq],
@@ -16,13 +16,24 @@ class ServerContext[HttpReq, HttpRes](implicit val timeService: NanoTimeService,
                                       val fromServiceRequest: FromServiceRequest[HttpReq]) {
 }
 
-object ServerContext{
-  implicit val  serverContextForStrings ={
-    implicit def serviceResponseForString(v1: String) = ServiceResponse(Status.Ok, Body(v1), ContentType("text/plain"))
+object ServerContext {
+  implicit val serverContextForStrings = {
+    implicit def toJsonForString = new ToJson[String] {
+      override def apply(v1: String): String = v1
+    }
 
-    implicit def stringToServiceRequest(v1: String) = ServiceRequest(Get, Uri(v1))
+    implicit def toServiceResponceForString = new ToServiceResponse[String] {
+      override def apply(v1: String): ServiceResponse = ServiceResponse(Status.Ok, Body(v1), ContentType("text/plain"))
+    }
 
-    implicit def serviceRequestToString(v1: ServiceRequest): String = v1.uri.asUriString
+    implicit def toServiceRequestforString = new ToServiceRequest[String] {
+      override def apply(v1: String): ServiceRequest = ServiceRequest(Get, Uri(v1))
+    }
+
+    implicit def fromServiceRequestorString = new FromServiceRequest[String] {
+      override def apply(v1: ServiceRequest): String = v1.uri.asUriString
+    }
+
 
     implicit val nanoTimeService = SystemClockNanoTimeService
 
@@ -33,8 +44,7 @@ object ServerContext{
 }
 
 
-
-class ServerContextForMocks(timeService: NanoTimeService, succeeded: Succeeded[ServiceResponse])
-  extends ServerContext[ServiceRequest, ServiceResponse]()(timeService, NullPutMetrics, succeeded, identity[ServiceRequest], identity[ServiceResponse], identity[ServiceRequest])
+class ServerContextForMocks(implicit timeService: NanoTimeService, succeeded: Succeeded[ServiceResponse], putMetrics: PutMetrics = NullPutMetrics)
+  extends ServerContext[ServiceRequest, ServiceResponse]
 
 

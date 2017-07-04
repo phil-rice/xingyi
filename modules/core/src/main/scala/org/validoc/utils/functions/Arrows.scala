@@ -1,8 +1,5 @@
 package org.validoc.utils.functions
 
-import org.validoc.utils.concurrency.Async
-
-import scala.util.{Failure, Success, Try}
 import scala.language.higherKinds
 
 trait Arrows {

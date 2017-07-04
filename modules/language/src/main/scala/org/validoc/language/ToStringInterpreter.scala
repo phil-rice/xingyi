@@ -7,7 +7,6 @@ import org.validoc.utils.metrics.{PutMetrics, ReportData}
 import org.validoc.utils.parser.ParserFinder
 import org.validoc.utils.retry.NeedsRetry
 import org.validoc.utils.time.{Delay, NanoTimeService}
-import org.validoc.utils.{FromServiceRequest, ToServiceRequest, ToServiceResponse}
 
 import scala.concurrent.duration.Duration
 import scala.language.higherKinds

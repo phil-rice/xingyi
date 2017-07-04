@@ -1,6 +1,7 @@
 package org.validoc.utils.parser
 
 import org.validoc.utils.http.ContentType
+import org.validoc.utils.json.FromJson
 import org.validoc.utils.{Parser, ParserException, ParserNotFoundException}
 
 import scala.annotation.implicitNotFound
@@ -38,12 +39,7 @@ case class ErrorResult[Result](contentType: ContentType, e: Throwable) extends F
 }
 
 
-@implicitNotFound(
-  """ ParserFinder of type [T] not found. Is it because you need another implicit in scope. if using Circe it might need the following adding to T's companion object
-    import io.circe.generic.semiauto.deriveEncoder
-    implicit val encoder: Encoder[<T>] = deriveEncoder[<T>]
-    import io.circe.generic.auto._
-  """)
+@implicitNotFound("ParserFinder of type [${T}] not found. Is it because you need another implicit in scope? The simplest way to get one in scope if there is only one JSON representation is to implement FromJson[T]" )
 trait ParserFinder[T] extends ((ContentType, String) => ParserResult[T]) {
 
   def find(contentType: ContentType): ParserResult[Parser[T]]
@@ -70,6 +66,8 @@ case class MapParserFinder[T](map: Map[ContentType, Parser[T]]) extends ParserFi
 }
 
 object ParserFinder {
+  implicit def alwaysSameParser[T](implicit fromJson: FromJson[T]): ParserFinder[T] = always(fromJson)
+
   def always[T](parser: Parser[T]) = AlwaysParserFinder(parser)
 
   def fromMap[T](map: Map[ContentType, Parser[T]]) = MapParserFinder(map)

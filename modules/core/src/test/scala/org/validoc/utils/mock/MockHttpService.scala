@@ -1,11 +1,10 @@
 package org.validoc.utils.mock
 
 import org.validoc.utils.concurrency.Async
-import org.validoc.utils.concurrency.Async._
-import org.validoc.utils.http.{ServiceRequest, ServiceResponse}
-import org.validoc.utils.{FromServiceRequest, Service, ToServiceRequest, ToServiceResponse}
+import org.validoc.utils.http.{ServiceRequest, ServiceResponse, ToServiceRequest, ToServiceResponse}
 
 import scala.language.higherKinds
+import Async._
 
 class MockHttpService[M[_], Req, Res](mocks: Map[Req, Res])
                                      (implicit toServiceRequest: ToServiceRequest[Req],

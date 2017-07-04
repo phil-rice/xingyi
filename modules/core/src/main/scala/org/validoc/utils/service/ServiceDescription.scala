@@ -1,13 +1,12 @@
 package org.validoc.utils.service
 
 
-import org.validoc.utils.Service
-import org.validoc.utils.aggregate.{EnrichParentChildService, MergeService}
+import org.validoc.utils.aggregate.MergeService
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.http.{HostName, MakeHttpService, Port}
 
-import scala.reflect.ClassTag
 import scala.language.higherKinds
+import scala.reflect.ClassTag
 
 trait ServiceReporter[Service] extends (Service => Option[String])
 

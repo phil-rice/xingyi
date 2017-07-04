@@ -33,9 +33,7 @@ trait CachableResultUsingSucesses[Res] extends CachableResult[Res] {
 }
 
 object CachableResult {
-
   implicit object CachableResultForString extends CachableResultUsingSucesses[String]
-
 }
 
 trait CachableKey[Req] {

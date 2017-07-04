@@ -1,8 +1,6 @@
 package org.validoc.sample.domain
 
-import org.validoc.playJson.PlayJsonDomainObject
 import org.validoc.utils.gash.{FindId, Merger}
-import play.api.libs.json.{Json, OFormat}
 //import io.circe.syntax._
 
 // need this, but it may be removed by 'organise imports' import io.circe.generic.auto._
@@ -13,8 +11,7 @@ import scala.language.implicitConversions
 
 case class HomePage(mostPopular: EnrichedMostPopular, promotions: EnrichedPromotion)
 
-object HomePage extends PlayJsonDomainObject[HomePage] {
-  implicit val modelFormat: OFormat[HomePage] = Json.format[HomePage]
+object HomePage extends DomainCompanionObject[HomePage] {
 
   implicit object MergerForHomePage extends Merger[EnrichedPromotion, EnrichedMostPopular, HomePage] {
     override def apply(v1: EnrichedPromotion, v2: EnrichedMostPopular): HomePage = HomePage(v2, v1)
@@ -25,7 +22,7 @@ object HomePage extends PlayJsonDomainObject[HomePage] {
 
 trait HomePageQuery
 
-object HomePageQuery extends HomePageQuery {
+object HomePageQuery extends DomainCompanionObject[HomePageQuery] with HomePageQuery {
 
   implicit object FindPromotionQuery extends FindId[HomePageQuery, PromotionQuery] {
     override def apply(v1: HomePageQuery): PromotionQuery = PromotionQuery
@@ -43,7 +40,9 @@ object HomePageQuery extends HomePageQuery {
 
   implicit def toRequestForHomePageQuery(req: HomePageQuery) = ServiceRequest(Get, Uri("someUri"))
 
-  implicit def fromServiceRequestForHomePageQuery(v1: ServiceRequest): HomePageQuery = HomePageQuery
+  implicit object FromServiceRequestForHomPageQuery extends FromServiceRequest[HomePageQuery] {
+    override def apply(v1: ServiceRequest): HomePageQuery = HomePageQuery
+  }
 
 }
 

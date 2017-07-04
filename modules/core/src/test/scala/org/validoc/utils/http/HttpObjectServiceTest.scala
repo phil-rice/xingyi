@@ -1,7 +1,7 @@
 package org.validoc.utils.http
 
 import org.mockito.Mockito._
-import org.validoc.utils.{FromServiceRequest, Service, ToServiceRequest, UtilsWithLoggingSpec}
+import org.validoc.utils.{Service, UtilsWithLoggingSpec}
 
 import scala.concurrent.Future
 
@@ -30,7 +30,9 @@ class HttpObjectServiceTest extends UtilsWithLoggingSpec {
   def setup(serviceResponse: => ServiceResponse)(fn: (HttpObjectService[Future, HttpReq, Req, HttpRes, Res], Service[Future, HttpReq, HttpRes], ResponseProcessor[Req, Res], ServiceResponse) => Unit) = {
     val httpService = mock[Service[Future, HttpReq, HttpRes]]
     val responseProcessor = mock[ResponseProcessor[Req, Res]]
-    implicit val toServiceResponse = { v1: HttpRes => serviceResponse }
+    implicit val toServiceResponse = new ToServiceResponse[HttpRes] {
+      override def apply(v1: HttpRes): ServiceResponse = serviceResponse
+    }
     fn(new HttpObjectService("someName", httpService, responseProcessor), httpService, responseProcessor, serviceResponse)
   }
 

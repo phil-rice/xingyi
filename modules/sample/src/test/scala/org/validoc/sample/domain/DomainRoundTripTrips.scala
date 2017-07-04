@@ -1,12 +1,8 @@
 package org.validoc.sample.domain
 
 import org.validoc.utils.concurrency.Async
-import org.validoc.utils.domain.{RoundTripTests, ServiceRequestResponseRoundTripTests, ToServiceResponseAndParserFinderRoundTripTests}
-import org.validoc.utils.http.ContentType
 import org.validoc.utils.mock.MockHttpService
 
-import scala.concurrent.Future
-import Async._
 import scala.language.higherKinds
 
 trait DomainFixture {
@@ -27,43 +23,13 @@ trait DomainFixture {
   val homePage = HomePage(enrichedMostPopular, enrichedPromotion)
 }
 
-class DomainMockServers[M[_] : Async] extends DomainFixture {
-  val mockProgrammeService = MockHttpService[M, ProgrammeId, Programme] ((programmeId1, programme1), (programmeId2, programme2))
-  val mockProductionService = MockHttpService[M, ProductionId, Production]((ProductionId("2"), production2))
-  val mockPromotionService = MockHttpService[M, PromotionQuery, Promotion] ((PromotionQuery, promotion))
-
-  val mockMostPopularService = MockHttpService[M, MostPopularQuery, MostPopular] ((MostPopularQuery, mostPopular))
-
-  val mockProductionOrProgrammeService = MockHttpService(mockProductionService, mockProgrammeService)
-}
-
-
-class HomePageServiceRequestParserFinderRoundTripTrips extends RoundTripTests[HomePage] with DomainFixture {
-  override def makeSample = homePage
-
-  override def contentTypes: Seq[ContentType] = Seq(ContentType("don't care"))
-
-}
-
-class EnrichedMostPopularServiceRequestParserFinderRoundTripTrips extends RoundTripTests[EnrichedMostPopular] with DomainFixture {
-  override def makeSample = enrichedMostPopular
-
-  override def contentTypes: Seq[ContentType] = Seq(ContentType("don't care"))
-}
-class MostPopularServiceRequestParserFinderRoundTripTrips extends RoundTripTests[MostPopular] with DomainFixture {
-  override def makeSample = mostPopular
-
-  override def contentTypes: Seq[ContentType] = Seq(ContentType("don't care"))
-}
-
-class EnrichedPromotionServiceRequestParserFinderRoundTripTrips extends RoundTripTests[EnrichedPromotion] with DomainFixture {
-  override def makeSample = enrichedPromotion
-
-  override def contentTypes: Seq[ContentType] = Seq(ContentType("don't care"))
-}
-class PromotionServiceRequestParserFinderRoundTripTrips extends RoundTripTests[Promotion] with DomainFixture {
-  override def makeSample = promotion
-
-  override def contentTypes: Seq[ContentType] = Seq(ContentType("don't care"))
-}
-
+//class DomainMockServers[M[_] : Async] extends DomainFixture {
+//  val mockProgrammeService = MockHttpService[M, ProgrammeId, Programme] ((programmeId1, programme1), (programmeId2, programme2))
+//  val mockProductionService = MockHttpService[M, ProductionId, Production]((ProductionId("2"), production2))
+//  val mockPromotionService = MockHttpService[M, PromotionQuery, Promotion] ((PromotionQuery, promotion))
+//
+//  val mockMostPopularService = MockHttpService[M, MostPopularQuery, MostPopular] ((MostPopularQuery, mostPopular))
+//
+//  val mockProductionOrProgrammeService = MockHttpService(mockProductionService, mockProgrammeService)
+//}
+//

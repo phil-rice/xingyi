@@ -50,12 +50,20 @@ class FinatraAdapter(implicit val futurePool: FuturePool) {
     override def flatMap[T, T2](m: TFuture[T], fn: (T) => TFuture[T2]): TFuture[T2] = m.flatMap(fn)
   }
 
+  implicit object ToServiceResponseForFinatraResponse extends ToServiceResponse[Response] {
+    override def apply(response: Response): ServiceResponse = ServiceResponse(Status(response.statusCode), Body(response.contentString), ContentType(response.mediaType.getOrElse("")))
+  }
+
+  implicit object ToServiceRequest extends ToServiceRequest[Request] {
+    override def apply(request: Request): ServiceRequest = ServiceRequest(Get, Uri(request.path), request.headerMap.get("Accept").map(AcceptHeader(_)))
+  }
+
+  implicit object FromServiceRequestForFinatraRequest extends FromServiceRequest[Request] {
+    override def apply(serviceRequest: ServiceRequest): Request = Request(Method(serviceRequest.method.toString.toUpperCase), serviceRequest.uri.asUriString)
+  }
+
   implicit val serverContext: ServerContext[Request, Response] = {
-    implicit def toServiceResponseForFinatraResponse(response: Response) = ServiceResponse(Status(response.statusCode), Body(response.contentString), ContentType(response.mediaType.getOrElse("")))
 
-    implicit def toServiceRequest(request: Request) = ServiceRequest(Get, Uri(request.path), request.headerMap.get("Accept").map(AcceptHeader(_)))
-
-    implicit def fromServiceRequestToFinatraRequest(serviceRequest: ServiceRequest) = Request(Method(serviceRequest.method.toString.toUpperCase), serviceRequest.uri.asUriString)
 
     implicit val nanoTimeService = SystemClockNanoTimeService
     implicit val serviceData = new AggregatedServicesInterpreter[TFuture, Request, Response]

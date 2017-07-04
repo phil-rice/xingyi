@@ -10,7 +10,6 @@ import org.validoc.utils.profiling.ProfileOps
 import org.validoc.utils.retry.{NeedsRetry, RetryOps, RetryService}
 import org.validoc.utils.service.EndPointOps
 import org.validoc.utils.time.{Delay, NanoTimeService}
-import org.validoc.utils.{FromServiceRequest, ToServiceRequest, ToServiceResponse}
 
 import scala.concurrent.duration.Duration
 import scala.language.higherKinds

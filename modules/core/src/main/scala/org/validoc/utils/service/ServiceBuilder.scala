@@ -1,5 +1,6 @@
 package org.validoc.utils.service
 
+import org.validoc.utils.Service
 import org.validoc.utils.aggregate._
 import org.validoc.utils.caching.{CachableKey, CachableResult, CachingService, DurationStaleCacheStategy}
 import org.validoc.utils.concurrency.Async
@@ -11,7 +12,6 @@ import org.validoc.utils.parser.ParserFinder
 import org.validoc.utils.profiling.ProfilingService
 import org.validoc.utils.success.Succeeded
 import org.validoc.utils.time.NanoTimeService
-import org.validoc.utils.{FromServiceRequest, Service, ToServiceRequest, ToServiceResponse}
 
 import scala.concurrent.duration.Duration
 import scala.language.higherKinds

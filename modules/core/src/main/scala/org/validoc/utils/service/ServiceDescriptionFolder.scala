@@ -1,6 +1,7 @@
 package org.validoc.utils.service
 
 import org.validoc.utils.strings.IndentAndString
+
 import scala.language.higherKinds
 
 trait ServiceDescriptionFolder[M[_], T] {

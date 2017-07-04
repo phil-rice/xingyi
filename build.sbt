@@ -8,7 +8,6 @@ val versions = new {
   val scalatest = "3.0.1"
   val mockito = "1.10.19"
   val guice = "4.0"
-  val circeVersion = "0.7.0"
   val play = "2.5.12"
 }
 lazy val commonSettings = Seq(
@@ -40,14 +39,6 @@ lazy val finatraSettings = commonSettings ++ Seq(
   libraryDependencies += "com.google.inject.extensions" % "guice-testlib" % versions.guice % "test" classifier "tests",
   libraryDependencies += "com.twitter" %% "finatra-jackson" % versions.finatra % "test" classifier "tests"
 )
-lazy val circeSettings = commonSettings ++ Seq(
-  libraryDependencies ++= Seq(
-    "io.circe" %% "circe-core",
-    "io.circe" %% "circe-java8",
-    "io.circe" %% "circe-parser",
-    "io.circe" %% "circe-generic-extras"
-  ).map(_ % versions.circeVersion)
-)
 
 lazy val playJsonSetting = commonSettings ++ Seq(
   libraryDependencies += "com.typesafe.play" %% "play-json" % versions.play
@@ -60,9 +51,6 @@ lazy val language = (project in file("modules/language")).
   settings(commonSettings: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core)
 
-lazy val circe = (project in file("modules/circe")).
-  dependsOn(core).aggregate(core).
-  settings(circeSettings: _*)
 
 lazy val playJson = (project in file("modules/playJson")).
   dependsOn(core).aggregate(core).
@@ -73,7 +61,7 @@ lazy val finatra = (project in file("modules/finatra")).
   dependsOn(language)
 
 lazy val sample = (project in file("modules/sample")).
-  dependsOn(language % "test->test;compile->compile").aggregate(language).dependsOn(playJson).aggregate(playJson).
+  dependsOn(language % "test->test;compile->compile").aggregate(language).
   settings(commonSettings: _*)
 
 lazy val finatraSample = (project in file("modules/finatraSample")).

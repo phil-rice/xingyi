@@ -2,10 +2,10 @@ package org.validoc.playJson
 
 import org.validoc.utils.caching.CachableResultUsingSucesses
 import org.validoc.utils.http.{Body, ContentType, ServiceResponse, Status}
-import play.api.libs.json.{Json, OFormat, Reads, Writes}
+import play.api.libs.json.{Json, OFormat}
 
+import scala.language.implicitConversions
 import scala.reflect.ClassTag
-
 
 trait PlayJsonDomainItem[T]
 
