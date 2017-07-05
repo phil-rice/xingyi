@@ -6,7 +6,7 @@ import org.validoc.utils.Service
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.concurrency.Async._
 import org.validoc.utils.http.RequestDetails
-import org.validoc.utils.service.{MakeServiceDescription, MakeServiceMakerForClassWithParam, ServiceComposition}
+import org.validoc.utils.service.{MakeServiceDescription, ServiceComposition}
 import org.validoc.utils.success.Succeeded
 
 import scala.language.higherKinds
@@ -33,7 +33,7 @@ object LoggingStrings {
 
 trait LoggingServiceLanguage[M[_]] extends ServiceComposition[M] {
   def log[ Req, Res: Succeeded](pattern: String)(implicit async: Async[M]): MakeServiceDescription[M, Req, Res, Req, Res] =
-    serviceDescriptionWithParam2[String, Req, Res, Req, Res, LoggingService[M, Req, Res]](pattern, { (prefix, delegate) =>
+    serviceWithParam[String, Req, Res, Req, Res, LoggingService[M, Req, Res]](pattern, { (prefix, delegate) =>
       new LoggingService[M, Req, Res](delegate, prefix)
     })
 

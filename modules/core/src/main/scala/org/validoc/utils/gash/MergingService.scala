@@ -22,13 +22,3 @@ class MergingService[M[_] : Async, ReqO, ResO, Req1, Res1, Req2, Res2](service1:
   }
 
 }
-
-object MergingService {
-
-  implicit def mergingServiceMaker[M[_]:Async, ReqO, ResO, Req1, Res1, Req2, Res2](implicit merger: Merger[Res1, Res2, ResO],
-                                                                             id1: FindId[ReqO, Req1],
-                                                                             id2: FindId[ReqO, Req2]) = new MakeServiceMakerForTwoServices[Req1 => M[Res1], Req2 => M[Res2], MergingService[M, ReqO, ResO, Req1, Res1, Req2, Res2]] {
-    override def apply(old1: (Req1) => M[Res1], old2: (Req2) => M[Res2]): MergingService[M, ReqO, ResO, Req1, Res1, Req2, Res2] =
-      new MergingService[M, ReqO, ResO, Req1, Res1, Req2, Res2](old1, old2)
-  }
-}

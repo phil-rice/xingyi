@@ -24,17 +24,6 @@ class EnrichParentChildService[M[_] : Async, ReqP, ResP, ReqC, ResC, ResE](paren
 
 }
 
-object EnrichParentChildService {
-  implicit def makeEnrichParentChildService[M[_] : Async, ReqP, ResP, ReqC, ResC, ResE](implicit
-                                                                                        children: HasChildren[ResP, ReqC],
-                                                                                        enricher: Enricher[ResE, ResP, ResC]) =
-    new MakeServiceMakerForTwoServices[ReqP => M[ResP], ReqC => M[ResC], EnrichParentChildService[M, ReqP, ResP, ReqC, ResC, ResE]] {
-      override def apply(old1: (ReqP) => M[ResP], old2: (ReqC) => M[ResC]): EnrichParentChildService[M, ReqP, ResP, ReqC, ResC, ResE] =
-        new EnrichParentChildService[M, ReqP, ResP, ReqC, ResC, ResE](old1, old2)
-    }
-
-//  EnrichParentChildService[M, Req1, Res1, Req2, Res2, ResE]]
-}
 
 class MergeService[M[_] : Async, ReqM, ResM, Req1, Res1, Req2, Res2](firstService: Service[M, Req1, Res1],
                                                                      secondService: Service[M, Req2, Res2],

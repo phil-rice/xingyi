@@ -42,7 +42,7 @@ case class RetryConfig(retries: Int, delay: Delay)
 
 trait RetryServiceLanguage[M[_]] extends ServiceComposition[M] {
   def retry[ Req, Res: NeedsRetry](retryConfig: RetryConfig)(implicit aysnc: Async[M]): MakeServiceDescription[M, Req, Res, Req, Res] =
-    serviceDescriptionWithParam2(retryConfig, { (retryConfig: RetryConfig, delegate: (Req => M[Res])) =>
+    serviceWithParam(retryConfig, { (retryConfig: RetryConfig, delegate: (Req => M[Res])) =>
       new RetryService[M, Req, Res](delegate, retryConfig)
     })
 }

@@ -7,7 +7,7 @@ import org.validoc.utils.concurrency.Async
 import org.validoc.utils.functions.Functions
 import org.validoc.utils.logging.Logging
 import org.validoc.utils.map.{MapSizeStrategy, NoMapSizeStrategy, SafeMap}
-import org.validoc.utils.service.{MakeServiceDescription, MakeServiceMakerForClass, ServiceComposition, ServiceCompositionLanguage}
+import org.validoc.utils.service.{MakeServiceDescription, ServiceComposition}
 import org.validoc.utils.time.NanoTimeService
 
 import scala.language.higherKinds
@@ -69,8 +69,8 @@ trait CachingOps {
 }
 
 trait CachingServiceLanguage[M[_]] extends ServiceComposition[M] {
-  def cache[ Req: CachableKey, Res: CachableResult](implicit async: Async[M]): MakeServiceDescription[M, Req, Res, Req, Res] =
-    serviceDescription2[ Req, Res, Req, Res, CachingService[M, Req, Res]] { delegate: (Req => M[Res]) => new CachingService[M, Req, Res]("some", delegate, DurationStaleCacheStategy(100, 1000), NoMapSizeStrategy)
+  def cache[Req: CachableKey, Res: CachableResult](implicit async: Async[M]): MakeServiceDescription[M, Req, Res, Req, Res] =
+    service { delegate => new CachingService[M, Req, Res]("some", delegate, DurationStaleCacheStategy(100, 1000), NoMapSizeStrategy)
     }
 }
 
