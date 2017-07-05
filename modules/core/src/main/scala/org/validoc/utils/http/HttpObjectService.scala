@@ -3,16 +3,17 @@ package org.validoc.utils.http
 import org.validoc.utils.Service
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.parser.ParserFinder
-import org.validoc.utils.service.MakeServiceMakerForClass
+import org.validoc.utils.service.{MakeServiceMakerForClass, ServiceComposition}
 
 import scala.language.higherKinds
 
-object HttpObjectService {
-  implicit def makeHttpObjectService[OldService <: HttpReq => M[HttpRes], M[_] : Async, HttpReq: FromServiceRequest, HttpRes: ToServiceResponse, Req: ToServiceRequest, Res: ParserFinder] =
-    new MakeServiceMakerForClass[OldService, HttpObjectService[M, HttpReq, Req, HttpRes, Res]] {
-      override def apply(delegate: OldService): HttpObjectService[M, HttpReq, Req, HttpRes, Res] =
-        new HttpObjectService[M, HttpReq, Req, HttpRes, Res]("someName", delegate, ResponseProcessor.parsed[Req, Res])
-    }
+
+trait HttpObjectServiceLanguage[M[_], HttpReq, HttpRes] extends ServiceComposition[M] {
+  def asObject[Req: ToServiceRequest, Res: ParserFinder]
+  (implicit async: Async[M],
+   toServiceResponse: ToServiceResponse[HttpRes],
+   fromServiceRequest: FromServiceRequest[HttpReq]) =
+    serviceDescription2[ HttpReq, HttpRes, Req, Res, HttpObjectService[M, HttpReq, Req, HttpRes, Res]] { delegate => new HttpObjectService[M, HttpReq, Req, HttpRes, Res]("someName", delegate, ResponseProcessor.parsed[Req, Res]) }
 }
 
 class HttpObjectService[M[_] : Async, HttpReq, Req, HttpRes, Res](name: String,

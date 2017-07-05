@@ -17,9 +17,9 @@ object NullPutMetrics extends PutMetrics {
 }
 
 
-trait MetricsServiceLanguage extends ServiceComposition {
-  def metrics[M[_] : Async, Req, Res: ReportData](prefix: String)(implicit timeService: NanoTimeService, putMetrics: PutMetrics): MakeServiceDescription[M, Req, Res, Req, Res] =
-    serviceDescriptionWithParam2[M, String, Req, Res, Req, Res, MetricsService[M, Req, Res]](prefix, {
+trait MetricsServiceLanguage[M[_]] extends ServiceComposition[M] {
+  def metrics[Req, Res: ReportData](prefix: String)(implicit timeService: NanoTimeService, putMetrics: PutMetrics, async: Async[M]): MakeServiceDescription[M, Req, Res, Req, Res] =
+    serviceDescriptionWithParam2[ String, Req, Res, Req, Res, MetricsService[M, Req, Res]](prefix, {
       (prefix: String, delegate: Req => M[Res]) =>
         new MetricsService[M, Req, Res](prefix, delegate)
     })

@@ -23,9 +23,9 @@ trait EndPointOps[M[_]] extends Service[M, ServiceRequest, ServiceResponse] {
   def path: String
 }
 
-trait EndPointServiceLanguage extends ServiceComposition {
-  def endpoint[M[_] : Async, Req: FromServiceRequest, Res: ToServiceResponse](path: String) =
-    serviceDescriptionWithParam2[M, String, Req, Res, ServiceRequest, ServiceResponse, EndPointService[M, Req, Res]](path,
+trait EndPointServiceLanguage[M[_]] extends ServiceComposition [M]{
+  def endpoint[ Req: FromServiceRequest, Res: ToServiceResponse](path: String)(implicit async: Async[M]) =
+    serviceDescriptionWithParam2[ String, Req, Res, ServiceRequest, ServiceResponse, EndPointService[M, Req, Res]](path,
       { (path: String, delegate: (Req) => M[Res]) => new EndPointService(path, delegate) })
 }
 

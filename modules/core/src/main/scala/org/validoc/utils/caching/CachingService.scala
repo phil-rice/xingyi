@@ -68,9 +68,9 @@ trait CachingOps {
   def cachingMetrics: CachingMetricSnapShot
 }
 
-trait CachingServiceLanguage extends ServiceComposition {
-  def cache[M[_] : Async, Req: CachableKey, Res: CachableResult]: MakeServiceDescription[M, Req, Res, Req, Res] =
-    serviceDescription2[M, Req, Res, Req, Res, CachingService[M, Req, Res]] { delegate: (Req => M[Res]) => new CachingService[M, Req, Res]("some", delegate, DurationStaleCacheStategy(100, 1000), NoMapSizeStrategy)
+trait CachingServiceLanguage[M[_]] extends ServiceComposition[M] {
+  def cache[ Req: CachableKey, Res: CachableResult](implicit async: Async[M]): MakeServiceDescription[M, Req, Res, Req, Res] =
+    serviceDescription2[ Req, Res, Req, Res, CachingService[M, Req, Res]] { delegate: (Req => M[Res]) => new CachingService[M, Req, Res]("some", delegate, DurationStaleCacheStategy(100, 1000), NoMapSizeStrategy)
     }
 }
 

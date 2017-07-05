@@ -31,9 +31,9 @@ trait ProfileOps {
 }
 
 
-trait ProfilingServiceLanguage extends ServiceComposition {
-  def profile[M[_] : Async, Req, Res](implicit timeService: NanoTimeService): MakeServiceDescription[M, Req, Res, Req, Res] =
-    serviceDescription2[M, Req, Res, Req, Res, ProfilingService[M, Req, Res]](new ProfilingService("someName", _))
+trait ProfilingServiceLanguage[M[_]] extends ServiceComposition[M] {
+  def profile[Req, Res](implicit timeService: NanoTimeService, async: Async[M]): MakeServiceDescription[M, Req, Res, Req, Res] =
+    serviceDescription2[ Req, Res, Req, Res, ProfilingService[M, Req, Res]](new ProfilingService("someName", _))
 
 }
 

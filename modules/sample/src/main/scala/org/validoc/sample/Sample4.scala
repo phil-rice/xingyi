@@ -50,9 +50,9 @@ class Sample4[M[_] : Async, HttpReq: FromServiceRequest : CachableKey, HttpRes: 
 
   val homePageService: ServiceDescription[M, HomePageQuery, HomePage] = (enrichPromotionService aggregate enrichMostPopularService).merge[HomePageQuery, HomePage]
 
-  val homePageEndpoint = homePageService >-< endpoint[M, HomePageQuery, HomePage]("/homepage")
+  val homePageEndpoint = homePageService >-< endpoint[ HomePageQuery, HomePage]("/homepage")
 
-  val enrichMostPopularEndpoint = enrichMostPopularService >-< endpoint[M, MostPopularQuery, EnrichedMostPopular]("/mostPopular")
+  val enrichMostPopularEndpoint = enrichMostPopularService >-< endpoint[ MostPopularQuery, EnrichedMostPopular]("/mostPopular")
 }
 
 import Async._
