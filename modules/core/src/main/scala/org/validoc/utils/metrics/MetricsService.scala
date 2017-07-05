@@ -16,7 +16,6 @@ object NullPutMetrics extends PutMetrics {
   override def apply(v1: Map[String, MetricValue]): Unit = ()
 }
 
-
 trait MetricsServiceLanguage[M[_]] extends ServiceComposition[M] {
   def metrics[Req, Res: ReportData](prefix: String)(implicit timeService: NanoTimeService, putMetrics: PutMetrics, async: Async[M]): MakeServiceDescription[M, Req, Res, Req, Res] =
     serviceWithParam[ String, Req, Res, Req, Res, MetricsService[M, Req, Res]](prefix, {

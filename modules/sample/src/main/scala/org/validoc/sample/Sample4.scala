@@ -6,12 +6,12 @@ import org.validoc.utils.concurrency.{Async, MDCPropagatingExecutionContext}
 import org.validoc.utils.http._
 import org.validoc.utils.json.{FromJson, ToJson}
 import org.validoc.utils.retry.RetryConfig
-import org.validoc.utils.service.{HttpServiceCompositionLanguage, ServiceDescription, ServiceDescriptionFolder}
+import org.validoc.utils.service.{HttpServiceCompositionLanguage, ServiceDescription}
 import org.validoc.utils.strings.IndentAndString
 import org.validoc.utils.time.RandomDelay
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
 import scala.language.{higherKinds, postfixOps}
 import scala.util.Try
 
@@ -50,27 +50,29 @@ class Sample4[M[_] : Async, HttpReq: FromServiceRequest : CachableKey, HttpRes: 
 
   val homePageService: ServiceDescription[M, HomePageQuery, HomePage] = (enrichPromotionService aggregate enrichMostPopularService).merge[HomePageQuery, HomePage]
 
-  val homePageEndpoint = homePageService >-< endpoint[ HomePageQuery, HomePage]("/homepage")
+  val homePageEndpoint = homePageService >-< endpoint[HomePageQuery, HomePage]("/homepage")
 
-  val enrichMostPopularEndpoint = enrichMostPopularService >-< endpoint[ MostPopularQuery, EnrichedMostPopular]("/mostPopular")
+  val enrichMostPopularEndpoint = enrichMostPopularService >-< endpoint[MostPopularQuery, EnrichedMostPopular]("/mostPopular")
 }
 
-import Async._
+import org.validoc.utils.concurrency.Async._
 
 object Sample4 extends App with SampleJsonsForCompilation {
 
   implicit val ec: MDCPropagatingExecutionContext = ExecutionContext.global
   implicit val httpServiceMaker = new MakeHttpService[Future, ServiceRequest, ServiceResponse] {
-    override def create(hostName: HostName, port: Port): (ServiceRequest) => Future[ServiceResponse] = sr => ???
+    override def create(hostName: HostName, port: Port): (ServiceRequest) => Future[ServiceResponse] = { sr => Future.successful(ServiceResponse(Status(200), Body(sr.toString), ContentType("someContentType"))) }
   }
 
   implicit object CachableResultForServiceResponse extends CachableResult[ServiceResponse] {
     override def shouldCacheStrategy(req: Try[ServiceResponse]): Boolean = req.isSuccess
   }
 
-  object Setup extends Sample4[Future, ServiceRequest, ServiceResponse] {
+  object Setup extends Sample4[Future, ServiceRequest, ServiceResponse]
 
-  }
-
-  println(Setup.homePageEndpoint.fold(new ServiceDescriptionFolder.ServiceDescriptionFolderForPrintln)(IndentAndString(0, List())))
+  println(Setup.homePageEndpoint.fold[IndentAndString]({ (sd, d) => IndentAndString(d, List((d, sd.description))) }, 0))
+  println
+  println
+  println
+  Setup.homePageEndpoint.fold[List[ServiceDescription[Future, _, _]]]({ (sd, d) => List(sd) }, 0).foreach(println)
 }
