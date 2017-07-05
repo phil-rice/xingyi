@@ -1,7 +1,6 @@
 package org.validoc.utils.gash
 
 import org.validoc.utils.concurrency.Async
-import org.validoc.utils.service.MakeServiceMakerForTwoServices
 
 import scala.language.higherKinds
 

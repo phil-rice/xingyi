@@ -18,14 +18,14 @@ trait ServiceComposition[M[_]] {
   protected def service[OldReq, OldRes, Req, Res, Service <: Req => M[Res] : ClassTag](serviceMakerForClass: (OldReq => M[OldRes]) => Service)
                                                                                       (implicit serviceReporter: ServiceReporter[Service]) =
     new MakeServiceDescription[M, OldReq, OldRes, Req, Res] {
-      override def apply(delegate: ServiceDescription[M, OldReq, OldRes]): ServiceDescription[M, Req, Res] =
+      override def apply(delegate: AbstractServiceDescription[M, OldReq, OldRes]): AbstractServiceDescription[M, Req, Res] =
         DelegateServiceDescription[M, OldReq, OldRes, Req, Res, Service](delegate, serviceMakerForClass)
     }
 
 
   protected def serviceWithParam[Param, OldReq, OldRes, Req, Res, Service <: Req => M[Res] : ClassTag]
   (param: Param, serviceMakerForClass: (Param, OldReq => M[OldRes]) => Service)(implicit serviceReporter: ServiceReporter[Service]) = new MakeServiceDescription[M, OldReq, OldRes, Req, Res] {
-    override def apply(delegate: ServiceDescription[M, OldReq, OldRes]): ServiceDescription[M, Req, Res] =
+    override def apply(delegate: AbstractServiceDescription[M, OldReq, OldRes]): AbstractServiceDescription[M, Req, Res] =
       ParamDelegateServiceDescription[M, Param, OldReq, OldRes, Req, Res, Service](param, delegate, serviceMakerForClass)
 
   }
@@ -34,18 +34,18 @@ trait ServiceComposition[M[_]] {
 
 trait AggregateServiceLanguage[M[_]] {
 
-  implicit class ComposePimper[OldReq, OldRes](baseDescription: ServiceDescription[M, OldReq, OldRes]) {
+  implicit class ComposePimper[OldReq, OldRes](baseDescription: AbstractServiceDescription[M, OldReq, OldRes]) {
     type OldService = OldReq => M[OldRes]
 
-    def >-<[Req, Res](maker: MakeServiceDescription[M, OldReq, OldRes, Req, Res]): ServiceDescription[M, Req, Res] = {
+    def >-<[Req, Res](maker: MakeServiceDescription[M, OldReq, OldRes, Req, Res]): AbstractServiceDescription[M, Req, Res] = {
       maker(baseDescription)
     }
 
-    def aggregate[ReqC, ResC, ResE](secondDescription: ServiceDescription[M, ReqC, ResC]) = (baseDescription, secondDescription)
+    def aggregate[ReqC, ResC, ResE](secondDescription: AbstractServiceDescription[M, ReqC, ResC]) = (baseDescription, secondDescription)
 
   }
 
-  implicit class ComposeTuplePimper[Req1: ClassTag, Res1, Req2, Res2](tuple: (ServiceDescription[M, Req1, Res1], ServiceDescription[M, Req2, Res2])) {
+  implicit class ComposeTuplePimper[Req1: ClassTag, Res1, Req2, Res2](tuple: (AbstractServiceDescription[M, Req1, Res1], AbstractServiceDescription[M, Req2, Res2])) {
     def enrich[ResE: ClassTag](implicit children: HasChildren[Res1, Req2], enricher: Enricher[ResE, Res1, Res2], async: Async[M]) =
       new MergingTwoServicesDescription[M, Req1, Res1, Req2, Res2, Req1, ResE, EnrichParentChildService[M, Req1, Res1, Req2, Res2, ResE]](tuple._1, tuple._2, {
         (old1, old2) => new EnrichParentChildService[M, Req1, Res1, Req2, Res2, ResE](old1, old2)
@@ -70,6 +70,7 @@ trait ServiceCompositionLanguage[M[_]]
     with ProfilingServiceLanguage[M]
     with MetricsServiceLanguage[M]
     with EndPointServiceLanguage[M]
+    with DebugEndPointServiceLanguage[M]
 
 abstract class HttpServiceCompositionLanguage[M[_] : Async, HttpReq: FromServiceRequest, HttpRes: ToServiceResponse]
 (implicit makeHttpService: MakeHttpService[M, HttpReq, HttpRes])

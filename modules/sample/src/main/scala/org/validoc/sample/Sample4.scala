@@ -6,7 +6,7 @@ import org.validoc.utils.concurrency.{Async, MDCPropagatingExecutionContext}
 import org.validoc.utils.http._
 import org.validoc.utils.json.{FromJson, ToJson}
 import org.validoc.utils.retry.RetryConfig
-import org.validoc.utils.service.{HttpServiceCompositionLanguage, ServiceDescription}
+import org.validoc.utils.service.{AbstractServiceDescription, DebugBasePath, DebugEndPointResOps1, HttpServiceCompositionLanguage}
 import org.validoc.utils.strings.IndentAndString
 import org.validoc.utils.time.RandomDelay
 
@@ -23,11 +23,13 @@ class Sample4[M[_] : Async, HttpReq: FromServiceRequest : CachableKey, HttpRes: 
  fromJsonForMostPopular: FromJson[MostPopular],
  fromJsonForPromotion: FromJson[Promotion],
  fromJsonForProgramme: FromJson[Programme],
- fromJsonForProduction: FromJson[Production]
+ fromJsonForProduction: FromJson[Production],
+ toJsonForProduction: ToJson[Production]
 
 )
   extends HttpServiceCompositionLanguage[M, HttpReq, HttpRes] {
   // Note that >-< means 'wrap with'
+  implicit val d = DebugBasePath("/debug")
 
   val retryConfig = RetryConfig(1, new RandomDelay(1 second))
   val mostPopularService = http(HostName("mostPopular"), Port(80)) >-< asObject[MostPopularQuery, MostPopular] >-< cache >-< profile >-< metrics("mostPopular")
@@ -42,13 +44,13 @@ class Sample4[M[_] : Async, HttpReq: FromServiceRequest : CachableKey, HttpRes: 
   val programmeService = programmeAndProductionsHttp >-< asObject[ProgrammeId, Programme] >-< metrics("programme")
 
 
-  val productionService = programmeAndProductionsHttp >-< asObject[ProductionId, Production] >-< metrics("production")
+  val productionService = programmeAndProductionsHttp >-< asObject[ProductionId, Production] >-< debug >-< metrics("production")
 
   val enrichMostPopularService = (mostPopularService aggregate programmeService).enrich[EnrichedMostPopular]
 
   val enrichPromotionService = (promotionService aggregate productionService).enrich[EnrichedPromotion]
 
-  val homePageService: ServiceDescription[M, HomePageQuery, HomePage] = (enrichPromotionService aggregate enrichMostPopularService).merge[HomePageQuery, HomePage]
+  val homePageService: AbstractServiceDescription[M, HomePageQuery, HomePage] = (enrichPromotionService aggregate enrichMostPopularService).merge[HomePageQuery, HomePage]
 
   val homePageEndpoint = homePageService >-< endpoint[HomePageQuery, HomePage]("/homepage")
 
@@ -70,9 +72,9 @@ object Sample4 extends App with SampleJsonsForCompilation {
 
   object Setup extends Sample4[Future, ServiceRequest, ServiceResponse]
 
-  println(Setup.homePageEndpoint.fold[IndentAndString]({ (sd, d) => IndentAndString(d, List((d, sd.description))) }, 0))
+  println(Setup.homePageEndpoint.fold[IndentAndString]({ (sd, d) => IndentAndString(d, List((d, sd.shortToString))) }, 0))
   println
   println
   println
-  Setup.homePageEndpoint.fold[List[ServiceDescription[Future, _, _]]]({ (sd, d) => List(sd) }, 0).foreach(println)
+  Setup.homePageEndpoint.fold[List[AbstractServiceDescription[Future, _, _]]]({ (sd, d) => List(sd) }, 0).foreach(println)
 }

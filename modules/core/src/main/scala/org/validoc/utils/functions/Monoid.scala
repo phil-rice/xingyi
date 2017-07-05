@@ -2,6 +2,8 @@ package org.validoc.utils.functions
 
 trait SemiGroup[T] {
   def add(one: T, two: T): T
+
+  def add(head: T, tail: List[T]): T = tail.foldLeft(head)(add)
 }
 
 object SemiGroup {
@@ -26,9 +28,7 @@ object Zero {
   }
 }
 
-trait Monoid[T] extends SemiGroup[T] {
-  def zero: T
-}
+trait Monoid[T] extends SemiGroup[T] with Zero[T]
 
 object Monoid {
 

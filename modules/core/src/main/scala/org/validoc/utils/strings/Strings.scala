@@ -7,6 +7,8 @@ object Strings {
   def removeWhiteSpace(s: String): String = s.replaceAll("\\s+", "")
 
   def ellipses(maxLength: Int)(s: String): String = if (s.length > maxLength) s.take(maxLength) + ".." else s
+
+  def lastSection(marker: String)(s: String) = s.split(marker).last
 }
 
 

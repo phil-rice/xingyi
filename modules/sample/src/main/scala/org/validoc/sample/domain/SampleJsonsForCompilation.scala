@@ -25,5 +25,8 @@ trait SampleJsonsForCompilation {
   implicit val fromJsonForProduction = new FromJson[Production] {
     override def apply(v1: String): Production = Production(ProductionId(v1), "")
   }
+  implicit val toJsonForProduction = new ToJson[Production] {
+    override def apply(v1: Production): String = v1.toString
+  }
 
 }

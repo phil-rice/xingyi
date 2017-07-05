@@ -1,5 +1,6 @@
 package org.validoc.utils.http
 
+import org.validoc.utils.json.ToJson
 import org.validoc.utils.success._
 
 import scala.annotation.implicitNotFound
@@ -7,6 +8,7 @@ import scala.util.{Failure, Success, Try}
 
 object ServiceResponse {
 
+  def fromJson[T](t: T)(implicit toJson: ToJson[T]) = ServiceResponse(Status(200), Body(toJson(t)), ContentType("application/json"))
   implicit object SucceededForTryServiceResponse extends Succeeded[ServiceResponse] {
     def is200Code(status: Status) = (status.code / 100) == 2
 
