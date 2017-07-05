@@ -1,7 +1,7 @@
 package org.validoc.utils.metrics
 
 import org.validoc.utils.concurrency.Async
-import org.validoc.utils.service.{MakeServiceMakerForClassWithParam, ServerContext}
+import org.validoc.utils.service.{MakeServiceDescription, MakeServiceMakerForClassWithParam, ServerContext, ServiceComposition}
 import org.validoc.utils.time.NanoTimeService
 
 import scala.language.higherKinds
@@ -17,11 +17,12 @@ object NullPutMetrics extends PutMetrics {
 }
 
 
-object MetricsService {
-  implicit def makeMetricService[OldService <: Req => M[Res], M[_] : Async, Req, Res: ReportData](implicit timeService: NanoTimeService, putMetrics: PutMetrics) =
-    new MakeServiceMakerForClassWithParam[String, OldService, MetricsService[M, Req, Res]] {
-      override def apply(prefix: String, delegate: OldService): MetricsService[M, Req, Res] = new MetricsService[M, Req, Res](prefix, delegate)
-    }
+trait MetricsServiceLanguage extends ServiceComposition {
+  def metrics[M[_] : Async, Req, Res: ReportData](prefix: String)(implicit timeService: NanoTimeService, putMetrics: PutMetrics): MakeServiceDescription[M, Req, Res, Req, Res] =
+    serviceDescriptionWithParam2[M, String, Req, Res, Req, Res, MetricsService[M, Req, Res]](prefix, {
+      (prefix: String, delegate: Req => M[Res]) =>
+        new MetricsService[M, Req, Res](prefix, delegate)
+    })
 
 }
 

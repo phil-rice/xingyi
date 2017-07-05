@@ -2,15 +2,15 @@ package org.validoc.utils.service
 
 import org.validoc.utils.Parser
 import org.validoc.utils.aggregate.{EnrichParentChildService, Enricher, HasChildren}
-import org.validoc.utils.caching.{CachableKey, CachableResult, CachingService}
+import org.validoc.utils.caching.{CachableKey, CachableResult, CachingService, CachingServiceLanguage}
 import org.validoc.utils.concurrency.{Async, MDCPropagatingExecutionContext}
 import org.validoc.utils.gash._
 import org.validoc.utils.http._
-import org.validoc.utils.logging.{LoggingService, NullLoggingAdapterWithMdc}
-import org.validoc.utils.metrics.{MetricValue, MetricsService, PutMetrics, ReportData}
+import org.validoc.utils.logging.{LoggingService, LoggingServiceLanguage, NullLoggingAdapterWithMdc}
+import org.validoc.utils.metrics._
 import org.validoc.utils.parser.{ParserFinder, ParserResult}
-import org.validoc.utils.profiling.ProfilingService
-import org.validoc.utils.retry.{NeedsRetry, RetryConfig, RetryService}
+import org.validoc.utils.profiling.{ProfilingService, ProfilingServiceLanguage}
+import org.validoc.utils.retry.{NeedsRetry, RetryConfig, RetryService, RetryServiceLanguage}
 import org.validoc.utils.success.Succeeded
 import org.validoc.utils.time.{NanoTimeService, RandomDelay}
 
@@ -55,6 +55,13 @@ trait ServiceComposition {
         DelegateServiceDescription[M, OldReq, OldRes, Req, Res, Service](delegate, serviceMakerForClass)
     }
 
+  protected def serviceDescription2[M[_], OldReq, OldRes, Req, Res, Service <: Req => M[Res] : ClassTag](serviceMakerForClass: (OldReq => M[OldRes]) => Service)
+                                                                                                        (implicit serviceReporter: ServiceReporter[Service]) =
+    new MakeServiceDescription[M, OldReq, OldRes, Req, Res] {
+      override def apply(delegate: ServiceDescription[M, OldReq, OldRes]): ServiceDescription[M, Req, Res] =
+        DelegateServiceDescription[M, OldReq, OldRes, Req, Res, Service](delegate, serviceMakerForClass)
+    }
+
   protected def serviceDescriptionWithParam[M[_], Param, OldReq, OldRes, Req, Res, Service <: Req => M[Res] : ClassTag]
   (param: Param)
   (implicit serviceMakerForClass: MakeServiceMakerForClassWithParam[Param, OldReq => M[OldRes], Service], serviceReporter: ServiceReporter[Service])
@@ -63,24 +70,23 @@ trait ServiceComposition {
       ParamDelegateServiceDescription[M, Param, OldReq, OldRes, Req, Res, Service](param, delegate, serviceMakerForClass)
 
   }
+
+  protected def serviceDescriptionWithParam2[M[_], Param, OldReq, OldRes, Req, Res, Service <: Req => M[Res] : ClassTag]
+  (param: Param, serviceMakerForClass: (Param, OldReq => M[OldRes]) => Service)(implicit serviceReporter: ServiceReporter[Service])
+  = new MakeServiceDescription[M, OldReq, OldRes, Req, Res] {
+    override def apply(delegate: ServiceDescription[M, OldReq, OldRes]): ServiceDescription[M, Req, Res] =
+      ParamDelegateServiceDescription[M, Param, OldReq, OldRes, Req, Res, Service](param, delegate, serviceMakerForClass)
+
+  }
 }
 
-trait ServiceCompositionLanguage extends ServiceComposition {
-  def cache[M[_] : Async, Req: CachableKey, Res: CachableResult]: MakeServiceDescription[M, Req, Res, Req, Res] = serviceDescription[M, Req, Res, Req, Res, CachingService[M, Req, Res]]
-
-  def log[M[_] : Async, Req, Res: Succeeded](pattern: String): MakeServiceDescription[M, Req, Res, Req, Res] = serviceDescriptionWithParam[M, String, Req, Res, Req, Res, LoggingService[M, Req, Res]](pattern)
-
-  def profile[M[_] : Async, Req, Res](implicit timeService: NanoTimeService): MakeServiceDescription[M, Req, Res, Req, Res] = serviceDescription[M, Req, Res, Req, Res, ProfilingService[M, Req, Res]]
-
-  def retry[M[_] : Async, Req, Res: NeedsRetry](retryConfig: RetryConfig): MakeServiceDescription[M, Req, Res, Req, Res] = serviceDescriptionWithParam[M, RetryConfig, Req, Res, Req, Res, RetryService[M, Req, Res]](retryConfig)
-
-
-  def metrics[M[_] : Async, Req, Res: ReportData](prefix: String)(implicit timeService: NanoTimeService, putMetrics: PutMetrics): MakeServiceDescription[M, Req, Res, Req, Res] =
-    serviceDescriptionWithParam[M, String, Req, Res, Req, Res, MetricsService[M, Req, Res]](prefix)
-
-  def endpoint[M[_] : Async, Req: FromServiceRequest, Res: ToServiceResponse](path: String) =
-    serviceDescriptionWithParam[M, String, Req, Res, ServiceRequest, ServiceResponse, EndPointService[M, Req, Res]](path)
-}
+trait ServiceCompositionLanguage extends ServiceComposition
+  with RetryServiceLanguage
+  with CachingServiceLanguage
+  with LoggingServiceLanguage
+  with ProfilingServiceLanguage
+  with MetricsServiceLanguage
+  with EndPointServiceLanguage
 
 abstract class HttpServiceCompositionLanguage[M[_] : Async, HttpReq: FromServiceRequest, HttpRes: ToServiceResponse](implicit makeHttpService: MakeHttpService[M, HttpReq, HttpRes])
   extends ServiceComposition with ServiceCompositionLanguage {

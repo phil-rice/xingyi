@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 import org.validoc.utils.Service
 import org.validoc.utils.concurrency.Async
-import org.validoc.utils.service.MakeServiceMakerForClassWithParam
+import org.validoc.utils.service._
 import org.validoc.utils.time.Delay
 
 import scala.language.higherKinds
@@ -14,7 +14,7 @@ trait NeedsRetry[T] {
   def apply(t: Try[T]): Boolean
 }
 
-object NeedsRetry{
+object NeedsRetry {
   implicit def default[T] = new NeedsRetry[T] {
     override def apply(t: Try[T]): Boolean = t.isFailure
   }
@@ -40,12 +40,11 @@ trait RetryOps {
 
 case class RetryConfig(retries: Int, delay: Delay)
 
-object RetryService{
-  implicit def makeRetryService[OldService <: Req => M[Res], M[_] : Async, Req, Res: NeedsRetry] =
-    new MakeServiceMakerForClassWithParam[RetryConfig, OldService, RetryService[M, Req, Res]] {
-      override def apply(retryConfig: RetryConfig, delegate: OldService): RetryService[M, Req, Res] = new RetryService[M, Req, Res](delegate, retryConfig)
-    }
-
+trait RetryServiceLanguage extends ServiceComposition {
+  def retry[M[_] : Async, Req, Res: NeedsRetry](retryConfig: RetryConfig): MakeServiceDescription[M, Req, Res, Req, Res] =
+    serviceDescriptionWithParam2(retryConfig, { (retryConfig: RetryConfig, delegate: (Req => M[Res])) =>
+      new RetryService[M, Req, Res](delegate, retryConfig)
+    })
 }
 
 class RetryService[M[_] : Async, Req, Res](delegate: Service[M, Req, Res], retryConfig: RetryConfig)(implicit resRetry: NeedsRetry[Res]) extends Service[M, Req, Res] with RetryOps {

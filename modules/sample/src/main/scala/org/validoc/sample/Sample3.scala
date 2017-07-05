@@ -58,7 +58,7 @@ class PromotionSetup[Tag[M[_], _, _], M[_], HttpReq:FromServiceRequest, HttpRes:
 }
 
 
-object Sample3 extends App {
+object Sample3 {
   implicit val toJsonForHomePage = new ToJson[HomePage] {
     override def apply(v1: HomePage): String = ???
   }

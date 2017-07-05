@@ -23,6 +23,12 @@ trait EndPointOps[M[_]] extends Service[M, ServiceRequest, ServiceResponse] {
   def path: String
 }
 
+trait EndPointServiceLanguage extends ServiceComposition {
+  def endpoint[M[_] : Async, Req: FromServiceRequest, Res: ToServiceResponse](path: String) =
+    serviceDescriptionWithParam2[M, String, Req, Res, ServiceRequest, ServiceResponse, EndPointService[M, Req, Res]](path,
+      { (path: String, delegate: (Req) => M[Res]) => new EndPointService(path, delegate) })
+}
+
 class EndPointService[M[_] : Async, Req: FromServiceRequest, Res: ToServiceResponse](val path: String, delegate: Service[M, Req, Res]) extends EndPointOps[M] {
   val fromServiceRequest = implicitly[FromServiceRequest[Req]]
   val toServiceResponse = implicitly[ToServiceResponse[Res]]
@@ -33,8 +39,3 @@ class EndPointService[M[_] : Async, Req: FromServiceRequest, Res: ToServiceRespo
 
 }
 
-object EndPointService {
-  implicit def makeEndPointService[M[_] : Async, Req: FromServiceRequest, Res: ToServiceResponse] = new MakeServiceMakerForClassWithParam[String, Req => M[Res], EndPointService[M, Req, Res]] {
-    override def apply(path: String, delegate: (Req) => M[Res]): EndPointService[M, Req, Res] = new EndPointService(path, delegate)
-  }
-}

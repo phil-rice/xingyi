@@ -3,7 +3,7 @@ package org.validoc.utils.profiling
 import org.validoc.utils.Service
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.concurrency.Async._
-import org.validoc.utils.service.MakeServiceMakerForClass
+import org.validoc.utils.service.{MakeServiceDescription, MakeServiceMakerForClass, ServiceComposition}
 import org.validoc.utils.time.{NanoTimeService, SystemClockNanoTimeService}
 
 import scala.language.higherKinds
@@ -30,11 +30,10 @@ trait ProfileOps {
   def tryProfileData: TryProfileData
 }
 
-object ProfilingService {
-  implicit def makeProfileService[OldService <: Req => M[Res], M[_] : Async, Req, Res](implicit timeService: NanoTimeService) =
-    new MakeServiceMakerForClass[OldService, ProfilingService[M, Req, Res]] {
-      override def apply(delegate: OldService): ProfilingService[M, Req, Res] = new ProfilingService[M, Req, Res]("someName", delegate)
-    }
+
+trait ProfilingServiceLanguage extends ServiceComposition {
+  def profile[M[_] : Async, Req, Res](implicit timeService: NanoTimeService): MakeServiceDescription[M, Req, Res, Req, Res] =
+    serviceDescription2[M, Req, Res, Req, Res, ProfilingService[M, Req, Res]](new ProfilingService("someName", _))
 
 }
 

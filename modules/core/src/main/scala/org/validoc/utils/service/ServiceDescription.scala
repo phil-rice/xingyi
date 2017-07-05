@@ -39,7 +39,7 @@ case class RootHttpServiceDescription[M[_], HttpReq, HttpRes](hostName: HostName
 }
 
 case class DelegateServiceDescription[M[_], OldReq, OldRes, Req, Res, Service <: Req => M[Res] : ClassTag]
-(delegate: ServiceDescription[M, OldReq, OldRes], serviceMaker: MakeServiceMakerForClass[OldReq => M[OldRes], Service])
+(delegate: ServiceDescription[M, OldReq, OldRes], serviceMaker: (OldReq => M[OldRes]) => Service)
 (implicit serviceReporter: ServiceReporter[Service]) extends ServiceDescription[M, Req, Res] {
 
   val serviceClass = implicitly[ClassTag[Service]].runtimeClass
@@ -52,7 +52,7 @@ case class DelegateServiceDescription[M[_], OldReq, OldRes, Req, Res, Service <:
 }
 
 case class ParamDelegateServiceDescription[M[_], Param, OldReq, OldRes, Req, Res, Service <: Req => M[Res] : ClassTag]
-(param: Param, delegate: ServiceDescription[M, OldReq, OldRes], serviceMaker: MakeServiceMakerForClassWithParam[Param, OldReq => M[OldRes], Service])
+(param: Param, delegate: ServiceDescription[M, OldReq, OldRes], serviceMaker: (Param, OldReq => M[OldRes]) => Service)
 (implicit serviceReporter: ServiceReporter[Service]) extends ServiceDescription[M, Req, Res] {
 
   val serviceClass = implicitly[ClassTag[Service]].runtimeClass
