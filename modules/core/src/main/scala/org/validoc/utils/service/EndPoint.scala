@@ -6,6 +6,7 @@ import org.validoc.utils.http._
 import org.validoc.utils.monads.CanMap._
 
 import scala.language.higherKinds
+import scala.reflect.ClassTag
 
 trait OriginalReq[Req] {
   def acceptHeader(req: Req): AcceptHeader
@@ -23,10 +24,9 @@ trait EndPointOps[M[_]] extends Service[M, ServiceRequest, ServiceResponse] {
   def path: String
 }
 
-trait EndPointServiceLanguage[M[_]] extends ServiceComposition [M]{
-  def endpoint[ Req: FromServiceRequest, Res: ToServiceResponse](path: String)(implicit async: Async[M]) =
-    serviceWithParam[ String, Req, Res, ServiceRequest, ServiceResponse, EndPointService[M, Req, Res]](path,
-      { (path: String, delegate: (Req) => M[Res]) => new EndPointService(path, delegate) })
+trait EndPointServiceLanguage[M[_]] extends ServiceComposition[M] {
+  def endpoint[Req: FromServiceRequest : ClassTag, Res: ToServiceResponse : ClassTag](path: String)(implicit async: Async[M]) =
+    serviceWithParam[String, Req, Res, ServiceRequest, ServiceResponse, EndPointService[M, Req, Res]](path, { (path: String, delegate: (Req) => M[Res]) => new EndPointService(path, delegate) })
 }
 
 class EndPointService[M[_] : Async, Req: FromServiceRequest, Res: ToServiceResponse](val path: String, delegate: Service[M, Req, Res]) extends EndPointOps[M] {

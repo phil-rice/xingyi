@@ -8,6 +8,7 @@ import org.validoc.utils.service._
 import org.validoc.utils.time.Delay
 
 import scala.language.higherKinds
+import scala.reflect.ClassTag
 import scala.util.Try
 
 trait NeedsRetry[T] {
@@ -41,7 +42,7 @@ trait RetryOps {
 case class RetryConfig(retries: Int, delay: Delay)
 
 trait RetryServiceLanguage[M[_]] extends ServiceComposition[M] {
-  def retry[ Req, Res: NeedsRetry](retryConfig: RetryConfig)(implicit aysnc: Async[M]): MakeServiceDescription[M, Req, Res, Req, Res] =
+  def retry[ Req:ClassTag, Res: NeedsRetry:ClassTag](retryConfig: RetryConfig)(implicit aysnc: Async[M]): MakeServiceDescription[M, Req, Res, Req, Res] =
     serviceWithParam(retryConfig, { (retryConfig: RetryConfig, delegate: (Req => M[Res])) =>
       new RetryService[M, Req, Res](delegate, retryConfig)
     })

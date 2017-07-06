@@ -7,6 +7,7 @@ import org.validoc.utils.service.{MakeServiceDescription, ServiceComposition}
 import org.validoc.utils.time.{NanoTimeService, SystemClockNanoTimeService}
 
 import scala.language.higherKinds
+import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
 class TryProfileData {
@@ -32,8 +33,8 @@ trait ProfileOps {
 
 
 trait ProfilingServiceLanguage[M[_]] extends ServiceComposition[M] {
-  def profile[Req, Res](implicit timeService: NanoTimeService, async: Async[M]): MakeServiceDescription[M, Req, Res, Req, Res] =
-    service[ Req, Res, Req, Res, ProfilingService[M, Req, Res]](new ProfilingService("someName", _))
+  def profile[Req: ClassTag, Res: ClassTag](implicit timeService: NanoTimeService, async: Async[M]): MakeServiceDescription[M, Req, Res, Req, Res] =
+    service[Req, Res, Req, Res, ProfilingService[M, Req, Res]](new ProfilingService("someName", _))
 
 }
 

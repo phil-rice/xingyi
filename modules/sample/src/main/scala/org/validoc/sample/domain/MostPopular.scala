@@ -1,6 +1,8 @@
 package org.validoc.sample.domain
 
 import org.validoc.utils.metrics.{MetricValue, ReportData}
+import org.validoc.utils.service.{DebugBasePath, DebugEndPointReqOps, SamplePathOps}
+import org.validoc.utils.strings.Strings
 
 import scala.util.Try
 //needs to be here import io.circe.generic.auto._
@@ -14,18 +16,22 @@ trait MostPopularQuery
 
 object MostPopularQuery extends DomainCompanionObject[MostPopularQuery] with MostPopularQuery {
 
+  implicit object SamplePathOpsForMostPopularQuery extends SamplePathOps[MostPopularQuery] {
+    override def samplePath(serviceId: Int)(implicit debugBasePath: DebugBasePath): String = debugBasePath.withService(serviceId)
+  }
+
   implicit object CachableKeyForMostPopularQuery extends CachableKey[MostPopularQuery] {
     override def id(req: MostPopularQuery): Id = UnitId
 
     override def bypassCache(req: MostPopularQuery): Boolean = false
   }
 
-  implicit def toRequestForMostPopularQuery= new ToServiceRequest[MostPopularQuery] {
+  implicit def toRequestForMostPopularQuery = new ToServiceRequest[MostPopularQuery] {
     override def apply(v1: MostPopularQuery): ServiceRequest = ServiceRequest(Get, Uri("http://someUri"))
   }
 
 
-  implicit object fromServiceRequestForMostPopularQuery extends  FromServiceRequest[MostPopularQuery] {
+  implicit object fromServiceRequestForMostPopularQuery extends FromServiceRequest[MostPopularQuery] {
     override def apply(v1: ServiceRequest): MostPopularQuery = MostPopularQuery
   }
 

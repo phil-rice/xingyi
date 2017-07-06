@@ -6,16 +6,17 @@ import org.validoc.utils.concurrency.{Async, MDCPropagatingExecutionContext}
 import org.validoc.utils.http._
 import org.validoc.utils.json.{FromJson, ToJson}
 import org.validoc.utils.retry.RetryConfig
-import org.validoc.utils.service.{AbstractServiceDescription, DebugBasePath, DebugEndPointResOps1, HttpServiceCompositionLanguage}
+import org.validoc.utils.service._
 import org.validoc.utils.strings.IndentAndString
 import org.validoc.utils.time.RandomDelay
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.{higherKinds, postfixOps}
+import scala.reflect.ClassTag
 import scala.util.Try
 
-class Sample4[M[_] : Async, HttpReq: FromServiceRequest : CachableKey, HttpRes: ToServiceResponse : CachableResult]
+class Sample4[M[_] : Async, HttpReq: FromServiceRequest : CachableKey : ClassTag, HttpRes: ToServiceResponse : CachableResult : ClassTag]
 (implicit makeHttpService: MakeHttpService[M, HttpReq, HttpRes],
  fromJsonForHomePageQuery: FromJson[HomePageQuery],
  toJsonForHomePage: ToJson[HomePage],
@@ -54,7 +55,7 @@ class Sample4[M[_] : Async, HttpReq: FromServiceRequest : CachableKey, HttpRes: 
 
   val homePageEndpoint = homePageService >-< endpoint[HomePageQuery, HomePage]("/homepage")
 
-  val enrichMostPopularEndpoint = enrichMostPopularService >-< endpoint[MostPopularQuery, EnrichedMostPopular]("/mostPopular")
+  val enrichMostPopularEndpoint = enrichMostPopularService >-< debug[MostPopularQuery, EnrichedMostPopular] >-< endpoint[MostPopularQuery, EnrichedMostPopular]("/mostPopular")
 }
 
 import org.validoc.utils.concurrency.Async._
@@ -77,4 +78,8 @@ object Sample4 extends App with SampleJsonsForCompilation {
   println
   println
   Setup.homePageEndpoint.fold[List[AbstractServiceDescription[Future, _, _]]]({ (sd, d) => List(sd) }, 0).foreach(println)
+
+  println
+  println
+  ServiceDescription.all[Future, DebugEndPointService[Future, _, _]].map(_.shortToString).foreach(println)
 }

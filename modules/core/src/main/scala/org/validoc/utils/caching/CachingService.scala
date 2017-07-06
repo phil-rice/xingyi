@@ -11,6 +11,7 @@ import org.validoc.utils.service.{MakeServiceDescription, ServiceComposition}
 import org.validoc.utils.time.NanoTimeService
 
 import scala.language.higherKinds
+import scala.reflect.ClassTag
 import scala.util.Try
 
 trait Id
@@ -69,7 +70,7 @@ trait CachingOps {
 }
 
 trait CachingServiceLanguage[M[_]] extends ServiceComposition[M] {
-  def cache[Req: CachableKey, Res: CachableResult](implicit async: Async[M]): MakeServiceDescription[M, Req, Res, Req, Res] =
+  def cache[Req: CachableKey:ClassTag, Res: CachableResult:ClassTag](implicit async: Async[M]): MakeServiceDescription[M, Req, Res, Req, Res] =
     service { delegate => new CachingService[M, Req, Res]("some", delegate, DurationStaleCacheStategy(100, 1000), NoMapSizeStrategy)
     }
 }

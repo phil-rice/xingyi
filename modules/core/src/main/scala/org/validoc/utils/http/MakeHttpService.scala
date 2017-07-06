@@ -3,13 +3,14 @@ package org.validoc.utils.http
 import org.validoc.utils.service.RootHttpServiceDescription
 
 import scala.language.higherKinds
+import scala.reflect.ClassTag
 
 trait MakeHttpService[M[_], HttpReq, HttRes] {
   def create(hostName: HostName, port: Port): (HttpReq => M[HttRes])
 }
 
 trait MakeHttpServiceLanguage[M[_], HttpReq, HttpRes] {
-  def http(hostName: HostName, port: Port)(implicit makeHttpService: MakeHttpService[M, HttpReq, HttpRes]) =
+  def http(hostName: HostName, port: Port)(implicit makeHttpService: MakeHttpService[M, HttpReq, HttpRes], httpReqClassTag: ClassTag[HttpReq], httpResClassTag: ClassTag[HttpRes]) =
     new RootHttpServiceDescription(hostName, port, makeHttpService)
 }
 

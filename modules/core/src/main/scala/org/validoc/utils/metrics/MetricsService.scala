@@ -5,6 +5,7 @@ import org.validoc.utils.service.{MakeServiceDescription, ServerContext, Service
 import org.validoc.utils.time.NanoTimeService
 
 import scala.language.higherKinds
+import scala.reflect.ClassTag
 
 trait PutMetrics extends (Map[String, MetricValue] => Unit)
 
@@ -17,8 +18,8 @@ object NullPutMetrics extends PutMetrics {
 }
 
 trait MetricsServiceLanguage[M[_]] extends ServiceComposition[M] {
-  def metrics[Req, Res: ReportData](prefix: String)(implicit timeService: NanoTimeService, putMetrics: PutMetrics, async: Async[M]): MakeServiceDescription[M, Req, Res, Req, Res] =
-    serviceWithParam[ String, Req, Res, Req, Res, MetricsService[M, Req, Res]](prefix, {
+  def metrics[Req: ClassTag, Res: ReportData : ClassTag](prefix: String)(implicit timeService: NanoTimeService, putMetrics: PutMetrics, async: Async[M]): MakeServiceDescription[M, Req, Res, Req, Res] =
+    serviceWithParam[String, Req, Res, Req, Res, MetricsService[M, Req, Res]](prefix, {
       (prefix: String, delegate: Req => M[Res]) =>
         new MetricsService[M, Req, Res](prefix, delegate)
     })

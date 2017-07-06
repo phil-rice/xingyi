@@ -6,14 +6,17 @@ import org.validoc.utils.parser.ParserFinder
 import org.validoc.utils.service.ServiceComposition
 
 import scala.language.higherKinds
+import scala.reflect.ClassTag
 
 
 trait HttpObjectServiceLanguage[M[_], HttpReq, HttpRes] extends ServiceComposition[M] {
-  def asObject[Req: ToServiceRequest, Res: ParserFinder]
+  def asObject[Req: ToServiceRequest: ClassTag, Res: ParserFinder:ClassTag]
   (implicit async: Async[M],
+   classTagHttpReq: ClassTag[HttpReq],
+   classTagHttpRes: ClassTag[HttpRes],
    toServiceResponse: ToServiceResponse[HttpRes],
    fromServiceRequest: FromServiceRequest[HttpReq]) =
-    service[ HttpReq, HttpRes, Req, Res, HttpObjectService[M, HttpReq, Req, HttpRes, Res]] { delegate => new HttpObjectService[M, HttpReq, Req, HttpRes, Res]("someName", delegate, ResponseProcessor.parsed[Req, Res]) }
+    service[HttpReq, HttpRes, Req, Res, HttpObjectService[M, HttpReq, Req, HttpRes, Res]] { delegate => new HttpObjectService[M, HttpReq, Req, HttpRes, Res]("someName", delegate, ResponseProcessor.parsed[Req, Res]) }
 }
 
 class HttpObjectService[M[_] : Async, HttpReq, Req, HttpRes, Res](name: String,

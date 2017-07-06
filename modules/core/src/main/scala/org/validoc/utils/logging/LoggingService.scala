@@ -10,6 +10,7 @@ import org.validoc.utils.service.{MakeServiceDescription, ServiceComposition}
 import org.validoc.utils.success.Succeeded
 
 import scala.language.higherKinds
+import scala.reflect.ClassTag
 
 trait LoggingStrings[Res] {
   def succeeded(req: RequestDetails[_], res: Res): (LogLevel, String)
@@ -32,7 +33,7 @@ object LoggingStrings {
 
 
 trait LoggingServiceLanguage[M[_]] extends ServiceComposition[M] {
-  def log[ Req, Res: Succeeded](pattern: String)(implicit async: Async[M]): MakeServiceDescription[M, Req, Res, Req, Res] =
+  def log[Req: ClassTag, Res: Succeeded : ClassTag](pattern: String)(implicit async: Async[M]): MakeServiceDescription[M, Req, Res, Req, Res] =
     serviceWithParam[String, Req, Res, Req, Res, LoggingService[M, Req, Res]](pattern, { (prefix, delegate) =>
       new LoggingService[M, Req, Res](delegate, prefix)
     })

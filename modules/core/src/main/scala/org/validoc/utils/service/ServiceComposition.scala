@@ -16,16 +16,17 @@ import scala.reflect.ClassTag
 trait ServiceComposition[M[_]] {
 
   protected def service[OldReq, OldRes, Req, Res, Service <: Req => M[Res] : ClassTag](serviceMakerForClass: (OldReq => M[OldRes]) => Service)
-                                                                                      (implicit serviceReporter: ServiceReporter[Service]) =
+                                                                                                                              (implicit serviceReporter: ServiceReporter[Service]) =
     new MakeServiceDescription[M, OldReq, OldRes, Req, Res] {
-      override def apply(delegate: AbstractServiceDescription[M, OldReq, OldRes]): AbstractServiceDescription[M, Req, Res] =
-        DelegateServiceDescription[M, OldReq, OldRes, Req, Res, Service](delegate, serviceMakerForClass)
+      override def apply(delegate: AbstractServiceDescription[M, OldReq, OldRes])
+                        (implicit classTagOldReq: ClassTag[OldReq], classTagOldRes: ClassTag[OldRes], classTagReq: ClassTag[Req], classTagRes: ClassTag[Res]):
+      AbstractServiceDescription[M, Req, Res] = DelegateServiceDescription[M, OldReq, OldRes, Req, Res, Service](delegate, serviceMakerForClass)
     }
 
 
   protected def serviceWithParam[Param, OldReq, OldRes, Req, Res, Service <: Req => M[Res] : ClassTag]
   (param: Param, serviceMakerForClass: (Param, OldReq => M[OldRes]) => Service)(implicit serviceReporter: ServiceReporter[Service]) = new MakeServiceDescription[M, OldReq, OldRes, Req, Res] {
-    override def apply(delegate: AbstractServiceDescription[M, OldReq, OldRes]): AbstractServiceDescription[M, Req, Res] =
+    override def apply(delegate: AbstractServiceDescription[M, OldReq, OldRes]) (implicit classTagOldReq: ClassTag[OldReq], classTagOldRes: ClassTag[OldRes], classTagReq: ClassTag[Req], classTagRes: ClassTag[Res]): AbstractServiceDescription[M, Req, Res] =
       ParamDelegateServiceDescription[M, Param, OldReq, OldRes, Req, Res, Service](param, delegate, serviceMakerForClass)
 
   }
@@ -34,10 +35,10 @@ trait ServiceComposition[M[_]] {
 
 trait AggregateServiceLanguage[M[_]] {
 
-  implicit class ComposePimper[OldReq, OldRes](baseDescription: AbstractServiceDescription[M, OldReq, OldRes]) {
+  implicit class ComposePimper[OldReq: ClassTag, OldRes: ClassTag](baseDescription: AbstractServiceDescription[M, OldReq, OldRes]) {
     type OldService = OldReq => M[OldRes]
 
-    def >-<[Req, Res](maker: MakeServiceDescription[M, OldReq, OldRes, Req, Res]): AbstractServiceDescription[M, Req, Res] = {
+    def >-<[Req: ClassTag, Res: ClassTag](maker: MakeServiceDescription[M, OldReq, OldRes, Req, Res]): AbstractServiceDescription[M, Req, Res] = {
       maker(baseDescription)
     }
 
@@ -72,7 +73,7 @@ trait ServiceCompositionLanguage[M[_]]
     with EndPointServiceLanguage[M]
     with DebugEndPointServiceLanguage[M]
 
-abstract class HttpServiceCompositionLanguage[M[_] : Async, HttpReq: FromServiceRequest, HttpRes: ToServiceResponse]
+abstract class HttpServiceCompositionLanguage[M[_] : Async, HttpReq: FromServiceRequest:ClassTag, HttpRes: ToServiceResponse:ClassTag]
 (implicit makeHttpService: MakeHttpService[M, HttpReq, HttpRes])
   extends ServiceCompositionLanguage[M] with HttpObjectServiceLanguage[M, HttpReq, HttpRes] with MakeHttpServiceLanguage[M, HttpReq, HttpRes] {
 
