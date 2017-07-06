@@ -35,7 +35,7 @@ class RetryMetrics {
 
 }
 
-trait RetryOps {
+trait RetryInfo {
   def metrics: RetryMetrics
 }
 
@@ -48,7 +48,7 @@ trait RetryServiceLanguage[M[_]] extends ServiceComposition[M] {
     })
 }
 
-class RetryService[M[_] : Async, Req, Res](delegate: Service[M, Req, Res], retryConfig: RetryConfig)(implicit resRetry: NeedsRetry[Res]) extends Service[M, Req, Res] with RetryOps {
+class RetryService[M[_] : Async, Req, Res](delegate: Service[M, Req, Res], retryConfig: RetryConfig)(implicit resRetry: NeedsRetry[Res]) extends Service[M, Req, Res] with RetryInfo {
 
   import retryConfig._
 

@@ -61,7 +61,7 @@ object CachableKey {
 }
 
 
-trait CachingOps {
+trait CachingInfoAndOps {
   def name: String
 
   def clearCache
@@ -80,7 +80,7 @@ class CachingService[M[_] : Async, Req: CachableKey, Res: CachableResult](val na
                                                                           protected val cachingStrategy: StaleCacheStrategy,
                                                                           sizeStrategy: MapSizeStrategy)
                                                                          (implicit timeService: NanoTimeService)
-  extends HasCachingCommands[M, Req, Res] with Service[M, Req, Res] with CachingOps with Logging {
+  extends HasCachingCommands[M, Req, Res] with Service[M, Req, Res] with CachingInfoAndOps with Logging {
 
   val async = implicitly[Async[M]]
   val cachableKey = implicitly[CachableKey[Req]]

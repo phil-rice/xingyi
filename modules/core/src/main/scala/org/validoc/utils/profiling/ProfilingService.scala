@@ -25,7 +25,7 @@ class TryProfileData {
   }
 }
 
-trait ProfileOps {
+trait ProfileInfo {
   def name: String
 
   def tryProfileData: TryProfileData
@@ -39,7 +39,7 @@ trait ProfilingServiceLanguage[M[_]] extends ServiceComposition[M] {
 }
 
 class ProfilingService[M[_] : Async, Req, Res](val name: String, delegate: Req => M[Res], timeService: NanoTimeService = SystemClockNanoTimeService, val tryProfileData: TryProfileData = new TryProfileData)
-  extends Service[M, Req, Res] with ProfileOps {
+  extends Service[M, Req, Res] with ProfileInfo {
 
   override def apply(request: Req): M[Res] = {
     val start = timeService()

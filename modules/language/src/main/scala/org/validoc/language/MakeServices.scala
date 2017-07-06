@@ -10,7 +10,7 @@ import org.validoc.utils.metrics.{MetricsService, PutMetrics, ReportData}
 import org.validoc.utils.parser.ParserFinder
 import org.validoc.utils.profiling.ProfilingService
 import org.validoc.utils.retry.{NeedsRetry, RetryConfig, RetryService}
-import org.validoc.utils.service.{EndPointOps, EndPointService}
+import org.validoc.utils.service.{EndPointInfo, EndPointService}
 import org.validoc.utils.time.{Delay, NanoTimeService}
 
 import scala.concurrent.duration.Duration
@@ -40,13 +40,13 @@ abstract class MakeServices[Tag[M[_], _, _], M[_] : Async, HttpReq, HttpRes] ext
   def makeMerge[ReqF, ResF, Req1, Res1, Req2, Res2](first: AsyncService[Req1, Res1], second: AsyncService[Req2, Res2], merger: (Res1, Res2) => ResF)(implicit reqMtoReq1: (ReqF) => Req1, reqMtoReq2: (ReqF) => Req2): AsyncService[ReqF, ResF] =
     new MergeService[M, ReqF, ResF, Req1, Res1, Req2, Res2](first, second, merger)
 
-  def makeEndpoint0[Req: FromServiceRequest, Res: ToServiceResponse](path: String)(delegate: AsyncService[Req, Res]): EndPointOps[M] =
+  def makeEndpoint0[Req: FromServiceRequest, Res: ToServiceResponse](path: String)(delegate: AsyncService[Req, Res]): EndPointInfo[M] =
     new EndPointService[M, Req, Res](path, delegate)
 
-  def makeEndpoint1[Req: FromServiceRequest, Res: ToServiceResponse](path: String)(delegate: AsyncService[Req, Res]): EndPointOps[M] =
+  def makeEndpoint1[Req: FromServiceRequest, Res: ToServiceResponse](path: String)(delegate: AsyncService[Req, Res]): EndPointInfo[M] =
     new EndPointService[M, Req, Res](path, delegate)
 
-  def makeEndpoint2[Req: FromServiceRequest, Res: ToServiceResponse](path: String)(delegate: AsyncService[Req, Res]): EndPointOps[M] =
+  def makeEndpoint2[Req: FromServiceRequest, Res: ToServiceResponse](path: String)(delegate: AsyncService[Req, Res]): EndPointInfo[M] =
     new EndPointService[M, Req, Res](path, delegate)
 
   def makeMetrics[Req, Res: ReportData](prefix: String)(delegate: Service[M, Req, Res])(implicit timeService: NanoTimeService, putMetrics: PutMetrics): Service[M, Req, Res] =

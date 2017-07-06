@@ -56,6 +56,7 @@ class Sample4[M[_] : Async, HttpReq: FromServiceRequest : CachableKey : ClassTag
   val homePageEndpoint = homePageService >-< endpoint[HomePageQuery, HomePage]("/homepage")
 
   val enrichMostPopularEndpoint = enrichMostPopularService >-< debug[MostPopularQuery, EnrichedMostPopular] >-< endpoint[MostPopularQuery, EnrichedMostPopular]("/mostPopular")
+
 }
 
 import org.validoc.utils.concurrency.Async._

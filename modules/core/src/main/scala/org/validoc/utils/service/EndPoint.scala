@@ -20,7 +20,7 @@ trait OriginalReq[Req] {
   def path(req: Req): Path
 }
 
-trait EndPointOps[M[_]] extends Service[M, ServiceRequest, ServiceResponse] {
+trait EndPointInfo[M[_]] extends Service[M, ServiceRequest, ServiceResponse] {
   def path: String
 }
 
@@ -29,7 +29,7 @@ trait EndPointServiceLanguage[M[_]] extends ServiceComposition[M] {
     serviceWithParam[String, Req, Res, ServiceRequest, ServiceResponse, EndPointService[M, Req, Res]](path, { (path: String, delegate: (Req) => M[Res]) => new EndPointService(path, delegate) })
 }
 
-class EndPointService[M[_] : Async, Req: FromServiceRequest, Res: ToServiceResponse](val path: String, delegate: Service[M, Req, Res]) extends EndPointOps[M] {
+class EndPointService[M[_] : Async, Req: FromServiceRequest, Res: ToServiceResponse](val path: String, delegate: Service[M, Req, Res]) extends EndPointInfo[M] {
   val fromServiceRequest = implicitly[FromServiceRequest[Req]]
   val toServiceResponse = implicitly[ToServiceResponse[Res]]
 

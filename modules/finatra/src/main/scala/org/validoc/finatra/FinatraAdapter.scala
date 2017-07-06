@@ -4,6 +4,7 @@ import com.twitter.finagle.http.{Method, Request, Response}
 import com.twitter.finatra.utils.FuturePools
 import com.twitter.util.{Await, FuturePool, Return, Throw, Duration => TDuration, Future => TFuture, Try => TTry}
 import org.validoc.language.AggregatedServicesInterpreter
+import org.validoc.utils.caching.CachableResult
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.http._
 import org.validoc.utils.metrics.NullPutMetrics
@@ -60,6 +61,10 @@ class FinatraAdapter(implicit val futurePool: FuturePool) {
 
   implicit object FromServiceRequestForFinatraRequest extends FromServiceRequest[Request] {
     override def apply(serviceRequest: ServiceRequest): Request = Request(Method(serviceRequest.method.toString.toUpperCase), serviceRequest.uri.asUriString)
+  }
+
+  implicit  object CachableResultForResponse extends CachableResult[Response] {
+    override def shouldCacheStrategy(req: Try[Response]): Boolean = req.isSuccess
   }
 
   implicit val serverContext: ServerContext[Request, Response] = {

@@ -1,14 +1,14 @@
 package org.validoc.language
 
 import org.validoc.utils.aggregate.{Enricher, HasChildren}
-import org.validoc.utils.caching.{CachableKey, CachableResult, CachingOps}
+import org.validoc.utils.caching.{CachableKey, CachableResult, CachingInfoAndOps}
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.http._
 import org.validoc.utils.metrics.{PutMetrics, ReportData}
 import org.validoc.utils.parser.ParserFinder
-import org.validoc.utils.profiling.ProfileOps
-import org.validoc.utils.retry.{NeedsRetry, RetryOps, RetryService}
-import org.validoc.utils.service.EndPointOps
+import org.validoc.utils.profiling.ProfileInfo
+import org.validoc.utils.retry.{NeedsRetry, RetryInfo, RetryService}
+import org.validoc.utils.service.{EndPointInfo, ServicesSummary}
 import org.validoc.utils.time.{Delay, NanoTimeService}
 
 import scala.concurrent.duration.Duration
@@ -16,10 +16,10 @@ import scala.language.higherKinds
 import scala.reflect.ClassTag
 
 case class ServiceData[M[_], Req, Res](service: Req => M[Res],
-                                       endPoints: List[EndPointOps[M]] = List(),
-                                       cachedServices: List[CachingOps] = List(),
-                                       profileServices: List[ProfileOps] = List(),
-                                       retryServices: List[RetryOps] = List()) {
+                                       endPoints: List[EndPointInfo[M]] = List(),
+                                       cachedServices: List[CachingInfoAndOps] = List(),
+                                       profileServices: List[ProfileInfo] = List(),
+                                       retryServices: List[RetryInfo] = List()) {
   def withService[ReqN, ResN](newService: ReqN => M[ResN]): ServiceData[M, ReqN, ResN] =
     ServiceData(newService, endPoints, cachedServices, profileServices, retryServices)
 
@@ -28,6 +28,8 @@ case class ServiceData[M[_], Req, Res](service: Req => M[Res],
       cachedServices ++ otherServiceData.cachedServices,
       profileServices ++ otherServiceData.profileServices,
       retryServices ++ otherServiceData.retryServices)
+
+  def asSummary = ServicesSummary[M](endPoints, List(), cachedServices, profileServices, retryServices)
 }
 
 class AggregatedServicesInterpreter[M[_] : Async, HttpReq, HttpRes] extends MakeServices[ServiceData, M, HttpReq, HttpRes] {

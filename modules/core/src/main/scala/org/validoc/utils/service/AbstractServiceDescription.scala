@@ -62,7 +62,8 @@ case class RootHttpServiceDescription[M[_], HttpReq: ClassTag, HttpRes: ClassTag
 }
 
 abstract class NamedServiceDescription[M[_], Req: ClassTag, Res: ClassTag, Service <: Req => M[Res] : ClassTag] extends AbstractServiceDescription[M, Req, Res] {
-  def nameOf[T](implicit classTag: ClassTag[T]) = classTag.runtimeClass.getSimpleName
+
+  import org.validoc.utils.reflection.ClassTags._
 
   val serviceClass = implicitly[ClassTag[Service]].runtimeClass
 
