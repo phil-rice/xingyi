@@ -57,6 +57,8 @@ class Sample4[M[_] : Async, HttpReq: FromServiceRequest : CachableKey : ClassTag
 
   val enrichMostPopularEndpoint = enrichMostPopularService >-< debug[MostPopularQuery, EnrichedMostPopular] >-< endpoint[MostPopularQuery, EnrichedMostPopular]("/mostPopular")
 
+  val endPoints = List(homePageEndpoint, enrichMostPopularEndpoint)
+
 }
 
 import org.validoc.utils.concurrency.Async._
@@ -65,7 +67,7 @@ object Sample4 extends App with SampleJsonsForCompilation {
 
   implicit val ec: MDCPropagatingExecutionContext = ExecutionContext.global
   implicit val httpServiceMaker = new MakeHttpService[Future, ServiceRequest, ServiceResponse] {
-    override def create(hostName: HostName, port: Port): (ServiceRequest) => Future[ServiceResponse] = { sr => Future.successful(ServiceResponse(Status(200), Body(sr.toString), ContentType("someContentType"))) }
+    override def apply(protocolHostAndPort: ProtocolHostAndPort): (ServiceRequest) => Future[ServiceResponse] = { sr => Future.successful(ServiceResponse(Status(200), Body(sr.toString), ContentType("someContentType"))) }
   }
 
   implicit object CachableResultForServiceResponse extends CachableResult[ServiceResponse] {

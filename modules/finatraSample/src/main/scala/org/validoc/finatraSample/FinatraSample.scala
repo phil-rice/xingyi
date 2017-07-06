@@ -16,10 +16,11 @@ object FinatraSample extends FinatraAdapter()(FuturePools.fixedPool("pool", 20))
   implicit val makeHttpService = MakeHttpService(MockFinatraService("mostPopular", "promotion", "programmeAndProductions"))
 
   val sample = new Sample4[Future, Request, Response]
-  val setup = new PromotionSetup[ServiceData, Future, Request, Response](new AggregatedServicesInterpreter)
+  //  val setup = new PromotionSetup[ServiceData, Future, Request, Response](new AggregatedServicesInterpreter)
+  //  val sd = setup.homePageService
 
-  val sd = sample.homePageEndpoint // setup.homePageService
-  println(sd)
-  new FinatraServer(8080, new PingController, new EndpointController(ServicesSummary(sd))).main(args)
+  val sd = sample.endPoints // setup.homePageService
+  val summary = ServicesSummary(sd)
+  new FinatraServer(8080, new PingController, new ConfigController("debug", summary, sd), new EndpointController(summary)).main(args)
 
 }

@@ -17,8 +17,8 @@ case class ServicesSummary[M[_]](endPoints: Seq[EndPointInfo[M]],
                                 )
 
 object ServicesSummary {
-  def apply[M[_]](sd: AbstractServiceDescription[M, _, _]): ServicesSummary[M] = {
-    val allServices = sd.fold[List[AbstractServiceDescription[M, _, _]]]((sd, depth) => List(sd), 0).map(_.service)
+  def apply[M[_]](sds: Seq[AbstractServiceDescription[M, _, _]]): ServicesSummary[M] = {
+    val allServices = sds.flatMap(_.fold[List[AbstractServiceDescription[M, _, _]]]((sd, depth) => List(sd), 0).map(_.service))
     val debugEndPoints = allServices.collectAs[DebugEndPointInfo]
     val endPoints = allServices.collectAs[EndPointInfo[M]]
     val cachedServices = allServices.collectAs[CachingInfoAndOps]

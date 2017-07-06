@@ -50,13 +50,13 @@ abstract class AbstractServiceDescription[M[_], Req: ClassTag, Res: ClassTag](im
   }
 }
 
-case class RootHttpServiceDescription[M[_], HttpReq: ClassTag, HttpRes: ClassTag](hostName: HostName, port: Port, makeHttpService: MakeHttpService[M, HttpReq, HttpRes])
-                                                                                 (implicit serviceReporter: ServiceReporter[HttpReq => M[HttpRes]])
+case class RootServiceDescription[M[_], Param, HttpReq: ClassTag, HttpRes: ClassTag](param: Param, makeHttpService: Param => HttpReq => M[HttpRes])
+                                                                                    (implicit serviceReporter: ServiceReporter[HttpReq => M[HttpRes]])
   extends AbstractServiceDescription[M, HttpReq, HttpRes] {
 
-  lazy val service = makeHttpService.create(hostName, port)
+  lazy val service = makeHttpService(param)
 
-  override def shortToString = s"${registryId}:RootHttp(${hostName},$port)"
+  override def shortToString = s"${registryId}:RootHttp($param)"
 
   override def children: List[AbstractServiceDescription[M, _, _]] = List()
 }

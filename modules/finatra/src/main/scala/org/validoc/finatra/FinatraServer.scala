@@ -48,7 +48,7 @@ class FinatraServer(port: Int, controllers: Controller*) extends HttpServer {
     //      .filter[LoggingMDCFilter[Request, Response]]
     //      .filter[TraceIdMDCFilter[Request, Response]]
     //      .filter[CommonFilters]
-    controllers.foldLeft(raw)((acc, c) => acc.add(c))
+    controllers.foreach(raw.add)
   }
 }
 

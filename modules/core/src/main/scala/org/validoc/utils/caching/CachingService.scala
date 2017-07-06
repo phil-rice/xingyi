@@ -7,7 +7,7 @@ import org.validoc.utils.concurrency.Async
 import org.validoc.utils.functions.Functions
 import org.validoc.utils.logging.Logging
 import org.validoc.utils.map.{MapSizeStrategy, NoMapSizeStrategy, SafeMap}
-import org.validoc.utils.service.{MakeServiceDescription, ServiceComposition}
+import org.validoc.utils.service.{MakeServiceDescription, ServiceComposition, ServiceReporter}
 import org.validoc.utils.time.NanoTimeService
 
 import scala.language.higherKinds
@@ -69,14 +69,23 @@ trait CachingInfoAndOps {
   def cachingMetrics: CachingMetricSnapShot
 }
 
+object CachingInfoAndOps {
+
+  implicit object ServiceReporterForCachingInfoAndOps extends ServiceReporter[CachingInfoAndOps] {
+    override def apply(v1: CachingInfoAndOps): Option[String] = Some(v1.cachingMetrics.toString)
+  }
+
+}
+
 trait CachingServiceLanguage[M[_]] extends ServiceComposition[M] {
-  def cache[Req: CachableKey:ClassTag, Res: CachableResult:ClassTag](implicit async: Async[M]): MakeServiceDescription[M, Req, Res, Req, Res] =
-    service { delegate => new CachingService[M, Req, Res]("some", delegate, DurationStaleCacheStategy(100, 1000), NoMapSizeStrategy)
-    }
+  def cache[Req: CachableKey : ClassTag, Res: CachableResult : ClassTag](implicit async: Async[M], serviceReporter: ServiceReporter[CachingService[M, Req, Res]]): MakeServiceDescription[M, Req, Res, Req, Res] = {
+    println(s"ServiceReporter is $serviceReporter")
+    service { delegate => new CachingService[M, Req, Res]("some", delegate, DurationStaleCacheStategy(100, 1000), NoMapSizeStrategy) }
+  }
 }
 
 class CachingService[M[_] : Async, Req: CachableKey, Res: CachableResult](val name: String,
-                                                                          protected val delegate: Service[M, Req, Res],
+                                                                          val delegate: Service[M, Req, Res],
                                                                           protected val cachingStrategy: StaleCacheStrategy,
                                                                           sizeStrategy: MapSizeStrategy)
                                                                          (implicit timeService: NanoTimeService)

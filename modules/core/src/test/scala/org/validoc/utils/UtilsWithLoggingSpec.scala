@@ -37,3 +37,7 @@ class UtilsSpec extends FlatSpec with Matchers with MockitoSugar with Eventually
 class UtilsWithLoggingSpec extends UtilsSpec {
   implicit val loggingAdapter = NullLoggingAdapterWithMdc
 }
+
+class UtilsWithExecutionContextSpec extends UtilsSpec{
+  implicit  val mdc: MDCPropagatingExecutionContext = ExecutionContext.global
+}

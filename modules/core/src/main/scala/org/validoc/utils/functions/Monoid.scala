@@ -28,9 +28,15 @@ object Zero {
   }
 }
 
-trait Monoid[T] extends SemiGroup[T] with Zero[T]
+trait Monoid[T] extends SemiGroup[T] with Zero[T] {
+  def addAll(seq: Iterable[T]) = seq.foldLeft(zero)(add)
+}
 
 object Monoid {
+
+  implicit class MonoidSeqPimper[T](t: Iterable[T])(implicit monoid: Monoid[T]) {
+    def addAll = monoid.addAll(t)
+  }
 
   implicit def monoidFromSemiGroupAndZero[T: Zero : SemiGroup] = new Monoid[T] {
     override def zero: T = implicitly[Zero[T]].zero

@@ -15,26 +15,6 @@ import scala.reflect.ClassTag
 
 trait ServiceComposition[M[_]] {
 
-  protected def service[OldReq, OldRes, Req, Res, Service <: Req => M[Res] : ClassTag](serviceMakerForClass: (OldReq => M[OldRes]) => Service)
-                                                                                                                              (implicit serviceReporter: ServiceReporter[Service]) =
-    new MakeServiceDescription[M, OldReq, OldRes, Req, Res] {
-      override def apply(delegate: AbstractServiceDescription[M, OldReq, OldRes])
-                        (implicit classTagOldReq: ClassTag[OldReq], classTagOldRes: ClassTag[OldRes], classTagReq: ClassTag[Req], classTagRes: ClassTag[Res]):
-      AbstractServiceDescription[M, Req, Res] = DelegateServiceDescription[M, OldReq, OldRes, Req, Res, Service](delegate, serviceMakerForClass)
-    }
-
-
-  protected def serviceWithParam[Param, OldReq, OldRes, Req, Res, Service <: Req => M[Res] : ClassTag]
-  (param: Param, serviceMakerForClass: (Param, OldReq => M[OldRes]) => Service)(implicit serviceReporter: ServiceReporter[Service]) = new MakeServiceDescription[M, OldReq, OldRes, Req, Res] {
-    override def apply(delegate: AbstractServiceDescription[M, OldReq, OldRes]) (implicit classTagOldReq: ClassTag[OldReq], classTagOldRes: ClassTag[OldRes], classTagReq: ClassTag[Req], classTagRes: ClassTag[Res]): AbstractServiceDescription[M, Req, Res] =
-      ParamDelegateServiceDescription[M, Param, OldReq, OldRes, Req, Res, Service](param, delegate, serviceMakerForClass)
-
-  }
-}
-
-
-trait AggregateServiceLanguage[M[_]] {
-
   implicit class ComposePimper[OldReq: ClassTag, OldRes: ClassTag](baseDescription: AbstractServiceDescription[M, OldReq, OldRes]) {
     type OldService = OldReq => M[OldRes]
 
@@ -45,6 +25,29 @@ trait AggregateServiceLanguage[M[_]] {
     def aggregate[ReqC, ResC, ResE](secondDescription: AbstractServiceDescription[M, ReqC, ResC]) = (baseDescription, secondDescription)
 
   }
+
+  protected def service[OldReq, OldRes, Req, Res, Service <: Req => M[Res] : ClassTag](serviceMakerForClass: (OldReq => M[OldRes]) => Service)
+                                                                                      (implicit serviceReporter: ServiceReporter[Service]) = {
+    println(s"in service $serviceReporter")
+    new MakeServiceDescription[M, OldReq, OldRes, Req, Res] {
+      override def apply(delegate: AbstractServiceDescription[M, OldReq, OldRes])
+                        (implicit classTagOldReq: ClassTag[OldReq], classTagOldRes: ClassTag[OldRes], classTagReq: ClassTag[Req], classTagRes: ClassTag[Res]):
+      AbstractServiceDescription[M, Req, Res] = DelegateServiceDescription[M, OldReq, OldRes, Req, Res, Service](delegate, serviceMakerForClass)
+    }
+  }
+
+
+  protected def serviceWithParam[Param, OldReq, OldRes, Req, Res, Service <: Req => M[Res] : ClassTag]
+  (param: Param, serviceMakerForClass: (Param, OldReq => M[OldRes]) => Service)(implicit serviceReporter: ServiceReporter[Service]) = new MakeServiceDescription[M, OldReq, OldRes, Req, Res] {
+    override def apply(delegate: AbstractServiceDescription[M, OldReq, OldRes])(implicit classTagOldReq: ClassTag[OldReq], classTagOldRes: ClassTag[OldRes], classTagReq: ClassTag[Req], classTagRes: ClassTag[Res]): AbstractServiceDescription[M, Req, Res] =
+      ParamDelegateServiceDescription[M, Param, OldReq, OldRes, Req, Res, Service](param, delegate, serviceMakerForClass)
+
+  }
+}
+
+
+trait AggregateServiceLanguage[M[_]] {
+
 
   implicit class ComposeTuplePimper[Req1: ClassTag, Res1, Req2, Res2](tuple: (AbstractServiceDescription[M, Req1, Res1], AbstractServiceDescription[M, Req2, Res2])) {
     def enrich[ResE: ClassTag](implicit children: HasChildren[Res1, Req2], enricher: Enricher[ResE, Res1, Res2], async: Async[M]) =
@@ -73,9 +76,10 @@ trait ServiceCompositionLanguage[M[_]]
     with EndPointServiceLanguage[M]
     with DebugEndPointServiceLanguage[M]
 
-abstract class HttpServiceCompositionLanguage[M[_] : Async, HttpReq: FromServiceRequest:ClassTag, HttpRes: ToServiceResponse:ClassTag]
+abstract class HttpServiceCompositionLanguage[M[_] : Async, HttpReq: FromServiceRequest : ClassTag, HttpRes: ToServiceResponse : ClassTag]
 (implicit makeHttpService: MakeHttpService[M, HttpReq, HttpRes])
   extends ServiceCompositionLanguage[M] with HttpObjectServiceLanguage[M, HttpReq, HttpRes] with MakeHttpServiceLanguage[M, HttpReq, HttpRes] {
 
-  def http(hostName: HostName, port: Port) = new RootHttpServiceDescription(hostName, port, makeHttpService)
+  def http(protocolHostAndPort: ProtocolHostAndPort) = new RootServiceDescription(protocolHostAndPort, makeHttpService)
 }
+

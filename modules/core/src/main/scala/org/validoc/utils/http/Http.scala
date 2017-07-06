@@ -2,7 +2,7 @@ package org.validoc.utils.http
 
 import java.net.{URL, URLEncoder}
 
-sealed trait Method{
+sealed trait Method {
   override def toString: String = getClass.getSimpleName.dropRight(1)
 }
 
@@ -26,6 +26,7 @@ case class Body(s: String) extends AnyVal
 case class ContentType(s: String) extends AnyVal
 
 case class AcceptHeader(s: String) extends AnyVal
+
 case class Header(s: String) extends AnyVal
 
 
@@ -33,6 +34,13 @@ trait UriFragment {
   protected def encode(s: String) = URLEncoder.encode(s, "UTF-8")
 
   def asUriString: String
+}
+
+case class ProtocolHostAndPort(protocol: Protocol, hostName: HostName, port: Port)
+
+object ProtocolHostAndPort {
+  def apply(hostName: HostName, port: Port): ProtocolHostAndPort = ProtocolHostAndPort(Protocol("http"), hostName, port)
+  def apply(hostName: String, port: Int): ProtocolHostAndPort = ProtocolHostAndPort(Protocol("http"), HostName(hostName), Port(port))
 }
 
 case class HostName(host: String) extends UriFragment {
@@ -51,7 +59,7 @@ case class Port(port: Int) extends UriFragment {
 }
 
 case class Path(path: String) extends UriFragment {
-  require(path.startsWith("/") ||path == "", s"Path should start with / was ${path}")
+  require(path.startsWith("/") || path == "", s"Path should start with / was ${path}")
 
   override def asUriString: String = path
 }
@@ -71,7 +79,7 @@ object QueryParam {
     val withoutQuestionMark = if (paramString.startsWith("?")) paramString.substring(1) else paramString
     withoutQuestionMark match {
       case "" => Seq()
-      case s  =>
+      case s =>
         val parts = s.split("&")
         parts.toSeq.map {
           part =>
@@ -95,6 +103,7 @@ case class QueryParam(name: QueryParamName, value: QueryParamValue) extends UriF
 }
 
 class ProtocolException(msg: String) extends Exception(msg)
+
 object Uri {
   def apply(s: String): Uri = {
     val url = new URL(s)
@@ -104,7 +113,9 @@ object Uri {
       case -1 => throw new ProtocolException("A port must be specified if the protocol isn't http or https")
       case x => x
     }
-    def str(x: String) =if (x==null) "" else x
+
+    def str(x: String) = if (x == null) "" else x
+
     Uri(Protocol(url.getProtocol), HostName(url.getHost), Port(port), Path(str(url.getPath)), QueryParam(str(url.getQuery)): _*)
   }
 }
