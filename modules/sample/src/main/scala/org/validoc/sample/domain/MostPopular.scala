@@ -61,7 +61,7 @@ case class EnrichedMostPopular(programmes: Seq[Programme])
 object EnrichedMostPopular extends DomainCompanionObject[EnrichedMostPopular] {
 
   implicit object EnricherForMostPopular extends Enricher[EnrichedMostPopular, MostPopular, Programme] {
-    override def apply(p: MostPopular)(children: Seq[Programme]): EnrichedMostPopular =
+    override def apply(p: MostPopular, children: Seq[Programme]): EnrichedMostPopular =
       EnrichedMostPopular(children)
   }
 

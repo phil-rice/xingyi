@@ -69,17 +69,18 @@ trait CachingInfoAndOps {
   def cachingMetrics: CachingMetricSnapShot
 }
 
-object CachingInfoAndOps {
+class CachingServiceReporter[M[_], Req, Res] extends ServiceReporter[CachingService[M, Req, Res]] {
+  override def apply(v1: CachingService[M, Req, Res]): Option[String] = Some(v1.cachingMetrics.toString)
+}
 
-  implicit object ServiceReporterForCachingInfoAndOps extends ServiceReporter[CachingInfoAndOps] {
-    override def apply(v1: CachingInfoAndOps): Option[String] = Some(v1.cachingMetrics.toString)
-  }
+object CachingService {
+
+  implicit def serviceReporterForCachingService[M[_], Req, Res] = new CachingServiceReporter[M, Req, Res]
 
 }
 
 trait CachingServiceLanguage[M[_]] extends ServiceComposition[M] {
   def cache[Req: CachableKey : ClassTag, Res: CachableResult : ClassTag](implicit async: Async[M], serviceReporter: ServiceReporter[CachingService[M, Req, Res]]): MakeServiceDescription[M, Req, Res, Req, Res] = {
-    println(s"ServiceReporter is $serviceReporter")
     service { delegate => new CachingService[M, Req, Res]("some", delegate, DurationStaleCacheStategy(100, 1000), NoMapSizeStrategy) }
   }
 }

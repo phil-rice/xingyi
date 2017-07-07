@@ -16,26 +16,24 @@ class CachingLanguageSpec extends UtilsWithExecutionContextSpec with CachingServ
   type CS = CachingService[Future, Int, String]
   type RAW = Int => Future[String]
 
-  def withMocks(fn: SD => CS => RAW => ServiceReporter[CS] => Unit): Unit = {
+  def withMocks(fn: SD => CS => RAW => Unit): Unit = {
     val delegate = mock[Int => Future[String]]
     val root = RootServiceDescription[Future, String, Int, String]("ignored", _ => delegate)
-    implicit val serviceReporter = mock[ServiceReporter[CachingService[Future, Int, String]]]
+    //    implicit val serviceReporter = mock[ServiceReporter[CachingService[Future, Int, String]]]
     val sd = root >-< cache
     val cachingService = sd.service.asInstanceOf[CachingService[Future, Int, String]]
-    fn(sd)(cachingService)(delegate)(serviceReporter)
+    fn(sd)(cachingService)(delegate)
   }
 
   it should "allow a cache to be created with the delegate" in {
-    withMocks { serviceDescription: SD => cachingService: CS => delegate: RAW => serviceReporter => cachingService.delegate shouldBe delegate }
+    withMocks { serviceDescription: SD => cachingService: CS => delegate: RAW => cachingService.delegate shouldBe delegate }
   }
   it should "pull in a serviceReporter if one exist" in {
     withMocks { serviceDescription: SD =>
       cachingService: CS =>
         delegate: RAW =>
-          serviceReporter =>
-            val captor = captorFor[CachingService[Future, Int, String]]
-            when(serviceReporter.apply(captor.capture())) thenReturn (Some("value"))
-            serviceDescription.report shouldBe Some("value")
+          serviceDescription.report shouldBe Some(cachingService.cachingMetrics.toString)
+
     }
   }
 }

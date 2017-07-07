@@ -3,24 +3,23 @@ package org.validoc.utils.aggregate
 import org.validoc.utils.Service
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.concurrency.Async._
+import org.validoc.utils.arrows.Arrows._
 
 import scala.language.higherKinds
 
-trait HasChildren[Parent, Child] {
-  def apply(p: Parent): Seq[Child]
-}
+trait HasChildren[Parent, Child] extends (Parent => Seq[Child])
 
-trait Enricher[Enriched, Parent, Child] {
-  def apply(p: Parent)(children: Seq[Child]): Enriched
-}
+trait Enricher[Enriched, Parent, Child] extends ((Parent, Seq[Child]) => Enriched)
 
 
 class EnrichParentChildService[M[_] : Async, ReqP, ResP, ReqC, ResC, ResE](parentService: Service[M, ReqP, ResP],
                                                                            childService: Service[M, ReqC, ResC])
-                                                                          (implicit children: HasChildren[ResP, ReqC],
+                                                                          (implicit findChildIds: HasChildren[ResP, ReqC],
                                                                            enricher: Enricher[ResE, ResP, ResC]) extends Service[M, ReqP, ResE] {
-  override def apply(reqP: ReqP): M[ResE] = parentService(reqP).flatMap(resP => children(resP).map(childService).join.map(enricher(resP)))
 
+  val pipe = parentService.split[ResP, Seq[ResC]](_.liftValue, findChildIds ~~> childService) ~~> enricher.tupled
+
+  override def apply(reqP: ReqP): M[ResE] = pipe(reqP)
 }
 
 
@@ -30,7 +29,9 @@ class MergeService[M[_] : Async, ReqM, ResM, Req1, Res1, Req2, Res2](firstServic
                                                                     (implicit reqMtoReq1: ReqM => Req1,
                                                                      reqMtoReq2: ReqM => Req2)
   extends Service[M, ReqM, ResM] {
-  override def apply(req: ReqM): M[ResM] = {
-    firstService(req) join secondService(req) map { case (r1, r2) => merger(r1, r2) }
-  }
+
+  val pipe = (reqMtoReq1 ~> firstService, reqMtoReq2 ~> secondService).join(merger)
+
+  override def apply(req: ReqM): M[ResM] = pipe(req)
+
 }

@@ -13,6 +13,15 @@ import scala.reflect.ClassTag
 trait ServiceReporter[Service] extends (Service => Option[String])
 
 object ServiceReporter {
+
+  class TypeProblemBreader[T](serviceReporter: ServiceReporter[T]) extends (Any => Option[String]) {
+    def apply(t: Any) = serviceReporter(t.asInstanceOf[T])
+
+    override def toString(): String = s"TypeProblemBreaderxx(${serviceReporter})"
+  }
+
+  def typeProblemBreaker[T](serviceReporter: ServiceReporter[T]): Any => Option[String] = new TypeProblemBreader[T](serviceReporter)
+
   implicit def defaultServiceReporter[Service] = new ServiceReporter[Service] {
     override def apply(v1: Service): Option[String] = None
   }
@@ -34,7 +43,7 @@ trait ServiceDescription[M[_]] extends ObjectRegistry[ServiceDescription[M]] wit
   def children: List[AbstractServiceDescription[M, _, _]]
 }
 
-abstract class AbstractServiceDescription[M[_], Req: ClassTag, Res: ClassTag](implicit serviceReporter: ServiceReporter[Req => M[Res]]) extends ServiceDescription[M] {
+abstract class AbstractServiceDescription[M[_], Req: ClassTag, Res: ClassTag](val serviceReporter: Any => Option[String]) extends ServiceDescription[M] { //I had to make the service report Any => String here. I would like it more strong typed but I couldn't make that work
   def service: (Req => M[Res])
 
   def report: Option[String] = serviceReporter(service)
@@ -52,7 +61,7 @@ abstract class AbstractServiceDescription[M[_], Req: ClassTag, Res: ClassTag](im
 
 case class RootServiceDescription[M[_], Param, HttpReq: ClassTag, HttpRes: ClassTag](param: Param, makeHttpService: Param => HttpReq => M[HttpRes])
                                                                                     (implicit serviceReporter: ServiceReporter[HttpReq => M[HttpRes]])
-  extends AbstractServiceDescription[M, HttpReq, HttpRes] {
+  extends AbstractServiceDescription[M, HttpReq, HttpRes](ServiceReporter.typeProblemBreaker(serviceReporter)) {
 
   lazy val service = makeHttpService(param)
 
@@ -61,7 +70,8 @@ case class RootServiceDescription[M[_], Param, HttpReq: ClassTag, HttpRes: Class
   override def children: List[AbstractServiceDescription[M, _, _]] = List()
 }
 
-abstract class NamedServiceDescription[M[_], Req: ClassTag, Res: ClassTag, Service <: Req => M[Res] : ClassTag] extends AbstractServiceDescription[M, Req, Res] {
+abstract class NamedServiceDescription[M[_], Req: ClassTag, Res: ClassTag, Service <: Req => M[Res] : ClassTag](implicit serviceReporter: ServiceReporter[Service])
+  extends AbstractServiceDescription[M, Req, Res](ServiceReporter.typeProblemBreaker(serviceReporter)) {
 
   import org.validoc.utils.reflection.ClassTags._
 

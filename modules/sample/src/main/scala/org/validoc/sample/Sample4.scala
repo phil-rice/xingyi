@@ -55,7 +55,7 @@ class Sample4[M[_] : Async, HttpReq: FromServiceRequest : CachableKey : ClassTag
 
   val homePageEndpoint = homePageService >-< endpoint[HomePageQuery, HomePage]("/homepage")
 
-  val enrichMostPopularEndpoint = enrichMostPopularService >-< debug[MostPopularQuery, EnrichedMostPopular] >-< endpoint[MostPopularQuery, EnrichedMostPopular]("/mostPopular")
+  val enrichMostPopularEndpoint = enrichMostPopularService >-< debug >-< endpoint[MostPopularQuery, EnrichedMostPopular]("/mostPopular")
 
   val endPoints = List(homePageEndpoint, enrichMostPopularEndpoint)
 
