@@ -36,6 +36,12 @@ trait Arrows {
       async.join2(res1, res2)
     }
 
+    def tee[Res1](mapFn2: Res => M[Res1]): (Req => M[(Res, Res1)]) = { req =>
+      val res = fn(req)
+      val res2 = async.flatMap(res, mapFn2)
+      async.join2(res, res2)
+    }
+
 
   }
 

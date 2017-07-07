@@ -16,10 +16,7 @@ class EnrichParentChildService[M[_] : Async, ReqP, ResP, ReqC, ResC, ResE](paren
                                                                            childService: Service[M, ReqC, ResC])
                                                                           (implicit findChildIds: HasChildren[ResP, ReqC],
                                                                            enricher: Enricher[ResE, ResP, ResC]) extends Service[M, ReqP, ResE] {
-
-  val pipe = parentService.split[ResP, Seq[ResC]](_.liftValue, findChildIds ~~> childService) ~~> enricher.tupled
-
-  override def apply(reqP: ReqP): M[ResE] = pipe(reqP)
+  override def apply(reqP: ReqP): M[ResE] = (parentService.tee(findChildIds ~~> childService) ~~> enricher.tupled) (reqP)
 }
 
 
@@ -29,9 +26,5 @@ class MergeService[M[_] : Async, ReqM, ResM, Req1, Res1, Req2, Res2](firstServic
                                                                     (implicit reqMtoReq1: ReqM => Req1,
                                                                      reqMtoReq2: ReqM => Req2)
   extends Service[M, ReqM, ResM] {
-
-  val pipe = (reqMtoReq1 ~> firstService, reqMtoReq2 ~> secondService).join(merger)
-
-  override def apply(req: ReqM): M[ResM] = pipe(req)
-
+  override def apply(req: ReqM): M[ResM] = (reqMtoReq1 ~> firstService, reqMtoReq2 ~> secondService).join(merger)(req)
 }
