@@ -6,8 +6,8 @@ import org.validoc.utils.Service
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.functions.Functions
 import org.validoc.utils.logging.Logging
-import org.validoc.utils.map.{MapSizeStrategy, NoMapSizeStrategy, SafeMap}
-import org.validoc.utils.service.{MakeServiceDescription, ServiceComposition, ServiceReporter}
+import org.validoc.utils.map.{MapSizeStrategy, SafeMap}
+import org.validoc.utils.serviceTree.ServiceLanguageExtension
 import org.validoc.utils.time.NanoTimeService
 
 import scala.language.higherKinds
@@ -69,21 +69,6 @@ trait CachingInfoAndOps {
   def cachingMetrics: CachingMetricSnapShot
 }
 
-class CachingServiceReporter[M[_], Req, Res] extends ServiceReporter[CachingService[M, Req, Res]] {
-  override def apply(v1: CachingService[M, Req, Res]): Option[String] = Some(v1.cachingMetrics.toString)
-}
-
-object CachingService {
-
-  implicit def serviceReporterForCachingService[M[_], Req, Res] = new CachingServiceReporter[M, Req, Res]
-
-}
-
-trait CachingServiceLanguage[M[_]] extends ServiceComposition[M] {
-  def cache[Req: CachableKey : ClassTag, Res: CachableResult : ClassTag](implicit async: Async[M], serviceReporter: ServiceReporter[CachingService[M, Req, Res]]): MakeServiceDescription[M, Req, Res, Req, Res] = {
-    service { delegate => new CachingService[M, Req, Res]("some", delegate, DurationStaleCacheStategy(100, 1000), NoMapSizeStrategy) }
-  }
-}
 
 class CachingService[M[_] : Async, Req: CachableKey, Res: CachableResult](val name: String,
                                                                           val delegate: Service[M, Req, Res],
@@ -206,5 +191,12 @@ trait HasCachingCommands[M[_], Req, Res] extends Logging {
 
   case class DeadSomethingInTransit(req: Req, cachedValue: CachedValue[M, Res]) extends CacheCommand
 
+}
 
+trait CacheServiceLanguage[M[_]] extends ServiceLanguageExtension[M] {
+  def caching[Req: ClassTag : CachableKey, Res: ClassTag : CachableResult](name: String, cachingStrategy: StaleCacheStrategy, sizeStrategy: MapSizeStrategy)
+                                                                          (implicit timeService: NanoTimeService): ServiceDelegator[Req, Res] = { childTree =>
+
+    delegate(s"CachingService($name)", childTree, new CachingService[M, Req, Res](name, _, cachingStrategy, sizeStrategy))
+  }
 }

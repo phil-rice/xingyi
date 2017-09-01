@@ -13,17 +13,20 @@ trait SampleJsonsForCompilation {
   implicit val toJsonForEnrichedMostPopular = new ToJson[EnrichedMostPopular] {
     override def apply(v1: EnrichedMostPopular): String = v1.toString
   }
+
+  def listOfInts(v1: String) = v1.drop(1).dropRight(1).split(",").toList
+
   implicit val fromJsonForMostPopular = new FromJson[MostPopular] {
-    override def apply(v1: String): MostPopular = MostPopular(List(ProgrammeId(v1)))
+    override def apply(v1: String): MostPopular = MostPopular(listOfInts(v1).map(ProgrammeId(_)))
   }
   implicit val fromJsonForPromotion = new FromJson[Promotion] {
-    override def apply(v1: String): Promotion = Promotion(v1, List())
+    override def apply(v1: String): Promotion = Promotion(listOfInts(v1).map(ProductionId(_)))
   }
   implicit val fromJsonForProgramme = new FromJson[Programme] {
-    override def apply(v1: String): Programme = Programme(ProgrammeId(v1), "")
+    override def apply(v1: String): Programme = Programme(v1)
   }
   implicit val fromJsonForProduction = new FromJson[Production] {
-    override def apply(v1: String): Production = Production(ProductionId(v1), "")
+    override def apply(v1: String): Production = Production(v1)
   }
   implicit val toJsonForProduction = new ToJson[Production] {
     override def apply(v1: Production): String = v1.toString

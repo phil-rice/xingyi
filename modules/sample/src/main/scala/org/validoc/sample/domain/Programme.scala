@@ -12,7 +12,7 @@ case class ProgrammeId(id: String) extends AnyVal
 object ProgrammeId extends DomainCompanionObject[ProgrammeId] {
 
   implicit object toRequestForProgrammeId extends ToServiceRequest[ProgrammeId] {
-    override def apply(req: ProgrammeId): ServiceRequest = ServiceRequest(Get, Uri(s"someUri/${req.id}"))
+    override def apply(req: ProgrammeId): ServiceRequest = ServiceRequest(Get, Uri(s"/programme/${req.id}"))
   }
 
   implicit object CachableKeyForProgrammeId extends CachableKey[ProgrammeId] {
@@ -23,7 +23,7 @@ object ProgrammeId extends DomainCompanionObject[ProgrammeId] {
 
 }
 
-case class Programme(id: ProgrammeId, info: String)
+case class Programme(info: String)
 
 
 object Programme extends DomainCompanionObject[Programme] {

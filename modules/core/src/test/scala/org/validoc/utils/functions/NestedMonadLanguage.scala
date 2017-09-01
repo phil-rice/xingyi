@@ -1,6 +1,32 @@
 package org.validoc.utils.functions
 
 import org.validoc.utils.monads.Monad
+import scala.language.higherKinds
+import scala.concurrent.{ExecutionContext, Future}
+
+trait MonadCleaner[M1[_], M2[_]] {
+  def clean[T](value: M2[M1[M2[T]]]): M1[M2[T]]
+}
+
+object MonadCleaner {
+
+  implicit object MonadCleanerForFutureOption extends MonadCleaner[Future, Option] {
+    override def clean[T](value: Option[Future[Option[T]]]): Future[Option[T]] = {
+      value match {
+        case Some(x) => x
+        case None => Future.successful(None)
+      }
+    }
+  }
+
+  implicit def MonadCleanerForFutureSeq(implicit ex: ExecutionContext) = new MonadCleaner[Future, Seq] {
+    override def clean[T](value: Seq[Future[Seq[T]]]) = Future.sequence(value).map(_.flatten)
+  }
+  implicit def MonadCleanerForFutureList(implicit ex: ExecutionContext) = new MonadCleaner[Future, List] {
+    override def clean[T](value: List [Future[List[T]]]) = Future.sequence(value).map(_.flatten)
+  }
+
+}
 
 trait NestedMonadLanguage {
 
@@ -8,6 +34,12 @@ trait NestedMonadLanguage {
 
   implicit class NestedValuePimper[M1[_], M2[_], T](t: M1[M2[T]])(implicit m1: Monad[M1], m2: Monad[M2]) {
     def ~~>[T1](fn: T => T1): M1[M2[T1]] = t.map(_.map(fn))
+
+    def ~=>[T1](fn: T => M2[T1]): M1[M2[T1]] = t.map(_.flatMap(fn))
+
+    def ~==>[T1](fn: T => M1[M2[T1]])(implicit monadCleaner: MonadCleaner[M1, M2]): M1[M2[T1]] = {
+      t.flatMap { m2t => monadCleaner.clean(m2t.map(fn)) }
+    }
 
     def aggregate[T2](t2: M1[M2[T2]]): (M1[M2[T]], M1[M2[T2]]) = (t, t2)
   }

@@ -1,7 +1,5 @@
 package org.validoc.utils.success
 
-import org.validoc.utils.service.ServerContext
-
 import scala.util.{Failure, Success, Try}
 
 trait Succeeded[T] {
@@ -30,7 +28,6 @@ object Succeeded {
 
   implicit def succeededFromEither[L, R] = new SucceededFromEither[L, R]
 
-  implicit def succededIfTheresAServiceContextInScope[HttpRes](implicit serverContext: ServerContext[_, HttpRes]): Succeeded[HttpRes] = serverContext.succeeded
 }
 
 class SucceededFromEither[L, R] extends Succeeded[Either[L, R]] {

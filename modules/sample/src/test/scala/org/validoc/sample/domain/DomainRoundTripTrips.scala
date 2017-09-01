@@ -9,16 +9,16 @@ trait DomainFixture {
   val programmeId1 = ProgrammeId("1")
   val programmeId2 = ProgrammeId("2")
 
-  val programme1 = Programme(programmeId1, "this is programme1")
-  val programme2 = Programme(programmeId2, "this is programme2")
+  val programme1 = Programme("this is programme1")
+  val programme2 = Programme("this is programme2")
 
   val mostPopular = MostPopular(Seq(programmeId1, programmeId2))
   val enrichedMostPopular = EnrichedMostPopular(Seq(programme1, programme2))
 
   private val productionId2 = ProductionId("2")
-  val production2 = Production(productionId2, "someProduction")
-  val promotion = Promotion("somePromotion", List(productionId2))
-  val enrichedPromotion = EnrichedPromotion("somePromotion", Seq(production2))
+  val production2 = Production("someProduction")
+  val promotion = Promotion(List(productionId2))
+  val enrichedPromotion = EnrichedPromotion(Seq(production2))
 
   val homePage = HomePage(enrichedMostPopular, enrichedPromotion)
 }

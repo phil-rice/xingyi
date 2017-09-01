@@ -1,6 +1,8 @@
 package org.validoc.utils.http
 
-import org.validoc.utils.service.RootServiceDescription
+import org.validoc.utils.concurrency.Async
+import org.validoc.utils.endpoint.EndPointService
+import org.validoc.utils.serviceTree.{RootServiceTree, ServiceDescription, ServiceLanguageExtension}
 
 import scala.language.higherKinds
 import scala.reflect.ClassTag
@@ -10,10 +12,12 @@ trait MakeHttpService[M[_], HttpReq, HttRes] extends (ProtocolHostAndPort => (Ht
   def create(hostName: HostName, port: Port) = apply(ProtocolHostAndPort(hostName, port))
 }
 
-trait MakeHttpServiceLanguage[M[_], HttpReq, HttpRes] {
-  def http(hostName: HostName, port: Port)(implicit makeHttpService: MakeHttpService[M, HttpReq, HttpRes], httpReqClassTag: ClassTag[HttpReq], httpResClassTag: ClassTag[HttpRes]) =
-    new RootServiceDescription(ProtocolHostAndPort(hostName, port), makeHttpService)
+
+trait HttpServiceLanguageExtension[M[_], HttpReq, HttpRes] extends ServiceLanguageExtension[M] {
+  def http(hostName: HostName, port: Port)(implicit makeHttpService: MakeHttpService[M, HttpReq, HttpRes], httpReqClassTag: ClassTag[HttpReq], httpResClassTag: ClassTag[HttpRes]): RootServiceTree[M, HttpReq, HttpRes, ServiceDescription] =
+    root[HttpReq, HttpRes](s"Http($hostName, $port)", () => makeHttpService.create(hostName, port))
 }
+
 
 object MakeHttpService {
   def apply[M[_], HttpReq, HttpRes](map: Map[String, (HttpReq => M[HttpRes])]) = new MakeHttpService[M, HttpReq, HttpRes] {

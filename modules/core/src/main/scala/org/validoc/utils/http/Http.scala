@@ -40,6 +40,7 @@ case class ProtocolHostAndPort(protocol: Protocol, hostName: HostName, port: Por
 
 object ProtocolHostAndPort {
   def apply(hostName: HostName, port: Port): ProtocolHostAndPort = ProtocolHostAndPort(Protocol("http"), hostName, port)
+
   def apply(hostName: String, port: Int): ProtocolHostAndPort = ProtocolHostAndPort(Protocol("http"), HostName(hostName), Port(port))
 }
 
@@ -106,24 +107,39 @@ class ProtocolException(msg: String) extends Exception(msg)
 
 object Uri {
   def apply(s: String): Uri = {
-    val url = new URL(s)
-    val port = url.getPort match {
-      case -1 if url.getProtocol == "http" => 80
-      case -1 if url.getProtocol == "https" => 443
-      case -1 => throw new ProtocolException("A port must be specified if the protocol isn't http or https")
-      case x => x
+    if (s.contains("//")) {
+      val url = new URL(s)
+      val port = url.getPort match {
+        case -1 if url.getProtocol == "http" => 80
+        case -1 if url.getProtocol == "https" => 443
+        case -1 => throw new ProtocolException("A port must be specified if the protocol isn't http or https")
+        case x => x
+      }
+
+      def str(x: String) = if (x == null) "" else x
+
+      Uri(Some(Domain(Protocol(url.getProtocol), HostName(url.getHost), Port(port))), Path(str(url.getPath)), QueryParam(str(url.getQuery)): _*)
+    } else {
+      s.split("\\?") match {
+        case Array(path) => Uri(None, Path(path))
+        case Array(path, queries) => Uri(None, Path(path), QueryParam(queries): _*)
+
+      }
     }
-
-    def str(x: String) = if (x == null) "" else x
-
-    Uri(Protocol(url.getProtocol), HostName(url.getHost), Port(port), Path(str(url.getPath)), QueryParam(str(url.getQuery)): _*)
   }
 }
 
-case class Uri(protocol: Protocol, host: HostName, port: Port, path: Path, params: QueryParam*) extends UriFragment {
+case class Domain(protocol: Protocol, host: HostName, port: Port) {
+  def asUriString: String =
+    s"${protocol.asUriString}://${host.asUriString}:${port.port}"
+}
+
+case class Uri(domain: Option[Domain], path: Path, params: QueryParam*) extends UriFragment {
   override def toString = s"Uri($asUriString)"
 
-  override def asUriString: String =
-    s"${protocol.asUriString}://${host.asUriString}:${port.port}${path.asUriString}${QueryParam.encoded(params)}"
+  override def asUriString: String = {
+    val domainStr = domain.fold("")(_.asUriString)
+    s"${domainStr}${path.asUriString}${QueryParam.encoded(params)}"
+  }
 }
 

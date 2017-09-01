@@ -4,13 +4,14 @@ import org.validoc.utils.Service
 import org.validoc.utils.aggregate.{EnrichParentChildService, Enricher, HasChildren, MergeService}
 import org.validoc.utils.caching.{CachableKey, CachableResult, CachingService, DurationStaleCacheStategy}
 import org.validoc.utils.concurrency.Async
+import org.validoc.utils.endpoint.{EndPointInfo, EndPointService}
 import org.validoc.utils.http._
 import org.validoc.utils.map.MaxMapSizeStrategy
 import org.validoc.utils.metrics.{MetricsService, PutMetrics, ReportData}
 import org.validoc.utils.parser.ParserFinder
 import org.validoc.utils.profiling.ProfilingService
 import org.validoc.utils.retry.{NeedsRetry, RetryConfig, RetryService}
-import org.validoc.utils.service.{EndPointInfo, EndPointService}
+import org.validoc.utils.service.EndPointService
 import org.validoc.utils.time.{Delay, NanoTimeService}
 
 import scala.concurrent.duration.Duration

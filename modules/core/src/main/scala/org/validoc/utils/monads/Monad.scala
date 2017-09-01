@@ -59,6 +59,17 @@ object Monad {
     override def flatMap[T, T2](m: Option[T], fn: (T) => Option[T2]): Option[T2] = m.flatMap(fn)
   }
 
+  implicit object MonadForList extends Monad[List] {
+    override def lift[T](t: => T): List[T] = List(t)
+
+    /** This may just throw the exception if it's not meaningfull to lift it. Meaningful monads include Try, Future ... */
+    override def liftTry[T](tryT: Try[T]): List[T] = tryT.toOption.toList
+
+    override def flatMap[T, T2](m: List[T], fn: (T) => List[T2]): List[T2] =m.flatMap(fn)
+
+    override def map[T, T2](m: List[T], fn: (T) => T2): List[T2] = m.map(fn)
+  }
+
 }
 
 

@@ -11,6 +11,8 @@ object Kleisli {
 
     def andThen[C](newFn: B => M[C]): A => M[C] = fn(_).flatMap(newFn)
 
+
+
   }
 
 }

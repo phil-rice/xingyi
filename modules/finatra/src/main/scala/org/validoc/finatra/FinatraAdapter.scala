@@ -3,12 +3,10 @@ package org.validoc.finatra
 import com.twitter.finagle.http.{Method, Request, Response}
 import com.twitter.finatra.utils.FuturePools
 import com.twitter.util.{Await, FuturePool, Return, Throw, Duration => TDuration, Future => TFuture, Try => TTry}
-import org.validoc.language.AggregatedServicesInterpreter
 import org.validoc.utils.caching.CachableResult
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.http._
 import org.validoc.utils.metrics.NullPutMetrics
-import org.validoc.utils.service.ServerContext
 import org.validoc.utils.success.SucceededFromFn
 import org.validoc.utils.time.SystemClockNanoTimeService
 
@@ -16,9 +14,11 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
-object FinatraAdapter extends FinatraAdapter()(FuturePools.fixedPool("pool", 20))
+object FinatraAdapter extends FinatraAdapter(FuturePools.fixedPool("pool", 20))
 
-class FinatraAdapter(implicit val futurePool: FuturePool) {
+class FinatraAdapter(futurePool: FuturePool) {
+
+  implicit val fp = futurePool
 
   implicit def asyncForTwitterFuture(implicit futurePool: FuturePool) = new Async[TFuture] {
     override def async[T](t: => T): TFuture[T] = futurePool(t)
@@ -63,17 +63,11 @@ class FinatraAdapter(implicit val futurePool: FuturePool) {
     override def apply(serviceRequest: ServiceRequest): Request = Request(Method(serviceRequest.method.toString.toUpperCase), serviceRequest.uri.asUriString)
   }
 
-  implicit  object CachableResultForResponse extends CachableResult[Response] {
+  implicit object CachableResultForResponse extends CachableResult[Response] {
     override def shouldCacheStrategy(req: Try[Response]): Boolean = req.isSuccess
   }
 
-  implicit val serverContext: ServerContext[Request, Response] = {
-
-
-    implicit val nanoTimeService = SystemClockNanoTimeService
-    implicit val serviceData = new AggregatedServicesInterpreter[TFuture, Request, Response]
-    implicit val putMetrics = NullPutMetrics
-    implicit val succeeded = new SucceededFromFn[Response](_.getStatusCode() / 100 == 2)
-    new ServerContext[Request, Response]
-  }
+  implicit val nanoTimeService = SystemClockNanoTimeService
+  implicit val putMetrics = NullPutMetrics
+  implicit val succeeded = new SucceededFromFn[Response](_.getStatusCode() / 100 == 2)
 }

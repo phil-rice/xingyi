@@ -1,9 +1,11 @@
 package org.validoc.utils.profiling
 
 import org.validoc.utils.Service
+import org.validoc.utils.caching.{CachableKey, CachableResult, CachingService, StaleCacheStrategy}
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.concurrency.Async._
-import org.validoc.utils.service.{MakeServiceDescription, ServiceComposition}
+import org.validoc.utils.map.MapSizeStrategy
+import org.validoc.utils.serviceTree.ServiceLanguageExtension
 import org.validoc.utils.time.{NanoTimeService, SystemClockNanoTimeService}
 
 import scala.language.higherKinds
@@ -32,17 +34,19 @@ trait ProfileInfo {
 }
 
 
-trait ProfilingServiceLanguage[M[_]] extends ServiceComposition[M] {
-  def profile[Req: ClassTag, Res: ClassTag](implicit timeService: NanoTimeService, async: Async[M]): MakeServiceDescription[M, Req, Res, Req, Res] =
-    service[Req, Res, Req, Res, ProfilingService[M, Req, Res]](new ProfilingService("someName", _))
-
-}
-
-class ProfilingService[M[_] : Async, Req, Res](val name: String, delegate: Req => M[Res], timeService: NanoTimeService = SystemClockNanoTimeService, val tryProfileData: TryProfileData = new TryProfileData)
+class ProfilingService[M[_] : Async, Req, Res](val name: String, delegate: Req => M[Res],
+                                               val tryProfileData: TryProfileData = new TryProfileData)(implicit timeService: NanoTimeService = SystemClockNanoTimeService)
   extends Service[M, Req, Res] with ProfileInfo {
 
   override def apply(request: Req): M[Res] = {
     val start = timeService()
     delegate(request).registerSideEffectWhenComplete(tryProfileData.event(timeService() - start))
+  }
+}
+
+trait ProfilingServiceLanguageExtension[M[_]] extends ServiceLanguageExtension[M] {
+  def profile[Req: ClassTag : CachableKey, Res: ClassTag : CachableResult](name: String, tryProfileData: TryProfileData = new TryProfileData)
+                                                                          (implicit timeService: NanoTimeService): ServiceDelegator[Req, Res] = { childTree =>
+    delegate(s"Profile($name)", childTree, new ProfilingService[M, Req, Res](name, _, tryProfileData))
   }
 }

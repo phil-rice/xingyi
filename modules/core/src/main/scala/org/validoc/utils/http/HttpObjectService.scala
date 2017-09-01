@@ -2,22 +2,11 @@ package org.validoc.utils.http
 
 import org.validoc.utils.Service
 import org.validoc.utils.concurrency.Async
-import org.validoc.utils.parser.ParserFinder
-import org.validoc.utils.service.ServiceComposition
+import org.validoc.utils.serviceTree.{HttpReqHttpResServiceLanguageExtension, ServiceLanguageExtension}
 
 import scala.language.higherKinds
 import scala.reflect.ClassTag
 
-
-trait HttpObjectServiceLanguage[M[_], HttpReq, HttpRes] extends ServiceComposition[M] {
-  def asObject[Req: ToServiceRequest: ClassTag, Res: ParserFinder:ClassTag]
-  (implicit async: Async[M],
-   classTagHttpReq: ClassTag[HttpReq],
-   classTagHttpRes: ClassTag[HttpRes],
-   toServiceResponse: ToServiceResponse[HttpRes],
-   fromServiceRequest: FromServiceRequest[HttpReq]) =
-    service[HttpReq, HttpRes, Req, Res, HttpObjectService[M, HttpReq, Req, HttpRes, Res]] { delegate => new HttpObjectService[M, HttpReq, Req, HttpRes, Res]("someName", delegate, ResponseProcessor.parsed[Req, Res]) }
-}
 
 class HttpObjectService[M[_] : Async, HttpReq, Req, HttpRes, Res](name: String,
                                                                   rawClient: Service[M, HttpReq, HttpRes],
@@ -47,3 +36,18 @@ class HttpObjectService[M[_] : Async, HttpReq, Req, HttpRes, Res](name: String,
   }
 
 }
+
+
+trait HttpObjectServiceLanguageExtension[M[_], HttpReq, HttpRes] extends ServiceLanguageExtension[M] {
+  def objectify[Req: ClassTag, Res: ClassTag]
+  (name: String, responseProcessor: ResponseProcessor[Req, Res])
+  (implicit toServiceResponse: ToServiceResponse[HttpRes],
+   toRequest: ToServiceRequest[Req],
+   fromServiceRequest: FromServiceRequest[HttpReq],
+   httpReqClassTag: ClassTag[HttpReq],
+   httpResClassTag: ClassTag[HttpRes]): ServiceTransformer[HttpReq, HttpRes, Req, Res] = {
+    childTree =>
+      transform[HttpReq, HttpRes, Req, Res](s"GenericCustomClient", childTree, delegate => new HttpObjectService[M, HttpReq, Req, HttpRes, Res](name, delegate, responseProcessor))
+  }
+}
+

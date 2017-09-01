@@ -17,11 +17,11 @@ class ProfilingServiceTest extends UtilsWithLoggingSpec {
   behavior of "ProfilingService"
 
   it should "time the delegate and report the duration to the TryProfileData" in {
-    val timeService = mock[NanoTimeService]
+    implicit val timeService = mock[NanoTimeService]
     val tryProfileData = mock[TryProfileData]
 
 
-    val ps = new ProfilingService[Future, String, String]("name", Future.successful(_), timeService, tryProfileData)
+    val ps = new ProfilingService[Future, String, String]("name", Future.successful(_), tryProfileData)
 
     when(timeService.apply()) thenReturn(1 second, 3 second)
     ps("1").await shouldBe "1"

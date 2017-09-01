@@ -3,12 +3,12 @@ package org.validoc.language
 import org.validoc.utils.aggregate.{Enricher, HasChildren}
 import org.validoc.utils.caching.{CachableKey, CachableResult, CachingInfoAndOps}
 import org.validoc.utils.concurrency.Async
+import org.validoc.utils.endpoint.EndPointInfo
 import org.validoc.utils.http._
 import org.validoc.utils.metrics.{PutMetrics, ReportData}
 import org.validoc.utils.parser.ParserFinder
 import org.validoc.utils.profiling.ProfileInfo
 import org.validoc.utils.retry.{NeedsRetry, RetryInfo, RetryService}
-import org.validoc.utils.service.{EndPointInfo, ServicesSummary}
 import org.validoc.utils.time.{Delay, NanoTimeService}
 
 import scala.concurrent.duration.Duration

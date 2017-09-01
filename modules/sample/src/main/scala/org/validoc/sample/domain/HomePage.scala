@@ -1,5 +1,6 @@
 package org.validoc.sample.domain
 
+import org.validoc.utils.aggregate.AggregateTransform
 import org.validoc.utils.gash.{FindId, Merger}
 //import io.circe.syntax._
 
@@ -24,11 +25,11 @@ trait HomePageQuery
 
 object HomePageQuery extends DomainCompanionObject[HomePageQuery] with HomePageQuery {
 
-  implicit object FindPromotionQuery extends FindId[HomePageQuery, PromotionQuery] {
+  implicit object FindPromotionQuery extends AggregateTransform[HomePageQuery, PromotionQuery] {
     override def apply(v1: HomePageQuery): PromotionQuery = PromotionQuery
   }
 
-  implicit object FindMostPopularQuery extends FindId[HomePageQuery, MostPopularQuery] {
+  implicit object FindMostPopularQuery extends AggregateTransform[HomePageQuery, MostPopularQuery] {
     override def apply(v1: HomePageQuery): MostPopularQuery = MostPopularQuery
   }
 

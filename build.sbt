@@ -9,13 +9,14 @@ val versions = new {
   val mockito = "1.10.19"
   val guice = "4.0"
   val play = "2.5.12"
+  val scalapact = "2.1.3"
 }
 lazy val commonSettings = Seq(
   version := "1.0",
   organization := "org.validoc",
   publishMavenStyle := true,
   scalaVersion := versions.scala,
-  scalacOptions ++= Seq( "-feature"),
+  scalacOptions ++= Seq("-feature"),
   libraryDependencies += "org.mockito" % "mockito-all" % versions.mockito % "test",
   libraryDependencies += "org.scalatest" %% "scalatest" % versions.scalatest % "test"
 )
@@ -40,6 +41,11 @@ lazy val finatraSettings = commonSettings ++ Seq(
   libraryDependencies += "com.twitter" %% "finatra-jackson" % versions.finatra % "test" classifier "tests"
 )
 
+lazy val pactSettings = commonSettings ++ Seq(
+  libraryDependencies += "com.itv" %% "scalapact-scalatest" % versions.scalapact % "test",
+  libraryDependencies += "junit" % "junit" % "4.12" % "test"
+)
+
 lazy val playJsonSetting = commonSettings ++ Seq(
   libraryDependencies += "com.typesafe.play" %% "play-json" % versions.play
 )
@@ -47,24 +53,26 @@ lazy val playJsonSetting = commonSettings ++ Seq(
 lazy val core = (project in file("modules/core")).
   settings(commonSettings: _*)
 
-lazy val language = (project in file("modules/language")).
-  settings(commonSettings: _*).
-  dependsOn(core % "test->test;compile->compile").aggregate(core)
+//lazy val language = (project in file("modules/language")).
+//  settings(commonSettings: _*).
+//  dependsOn(core % "test->test;compile->compile").aggregate(core)
 
 
 lazy val playJson = (project in file("modules/playJson")).
-  dependsOn(core).aggregate(core).
+  dependsOn(core % "test->test;compile->compile").aggregate(core).
   settings(playJsonSetting: _*)
 
 lazy val finatra = (project in file("modules/finatra")).
-  settings(finatraSettings: _*).
-  dependsOn(language)
+  dependsOn(core % "test->test;compile->compile").aggregate(core).
+  settings(finatraSettings: _*)
 
 lazy val sample = (project in file("modules/sample")).
-  dependsOn(language % "test->test;compile->compile").aggregate(language).
+  dependsOn(core % "test->test;compile->compile").aggregate(core).
   settings(commonSettings: _*)
 
 lazy val finatraSample = (project in file("modules/finatraSample")).
-  dependsOn(finatra).aggregate(finatra).
+  dependsOn(core % "test->test;compile->compile").aggregate(core).
+  dependsOn(finatra % "test->test;compile->compile").aggregate(finatra).
   dependsOn(sample).aggregate(sample).
-  settings(commonSettings: _*)
+  settings(commonSettings: _*).
+  settings(pactSettings: _*)

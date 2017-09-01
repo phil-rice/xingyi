@@ -1,6 +1,6 @@
 package org.validoc.sample.domain
 
-import org.validoc.utils.aggregate.{Enricher, HasChildren}
+import org.validoc.utils.aggregate.{AggregateTransform, Enricher, HasChildren}
 import org.validoc.utils.caching.{CachableKey, Id, UnitId}
 import org.validoc.utils.http.{Get, ServiceRequest, ToServiceRequest, Uri}
 import org.validoc.utils.metrics.{MetricValue, ReportData}
@@ -13,7 +13,7 @@ trait PromotionQuery
 object PromotionQuery extends DomainCompanionObject[PromotionQuery] with PromotionQuery {
 
   implicit object ToServiceRquestForPromotionQuery extends ToServiceRequest[PromotionQuery] {
-    override def apply(v1: PromotionQuery): ServiceRequest = ServiceRequest(Get, Uri("http://someUri"))
+    override def apply(v1: PromotionQuery): ServiceRequest = ServiceRequest(Get, Uri("/promotion"))
   }
 
 
@@ -23,10 +23,10 @@ object PromotionQuery extends DomainCompanionObject[PromotionQuery] with Promoti
     override def bypassCache(req: PromotionQuery): Boolean = false
   }
 
-  implicit def fromHomePageQuery(h: HomePageQuery) = PromotionQuery
+
 }
 
-case class Promotion(name: String, productionIds: List[ProductionId])
+case class Promotion(productionIds: List[ProductionId])
 
 object Promotion extends DomainCompanionObject[Promotion] {
 
@@ -41,13 +41,13 @@ object Promotion extends DomainCompanionObject[Promotion] {
 
 }
 
-case class EnrichedPromotion(name: String, productions: Seq[Production])
+case class EnrichedPromotion(productions: Seq[Production])
 
 object EnrichedPromotion extends DomainCompanionObject[EnrichedPromotion] {
 
   implicit object EnricherForPromotion extends Enricher[EnrichedPromotion, Promotion, Production] {
     override def apply(p: Promotion, children: Seq[Production]): EnrichedPromotion =
-      EnrichedPromotion(p.name, children)
+      EnrichedPromotion(children)
   }
 
 }

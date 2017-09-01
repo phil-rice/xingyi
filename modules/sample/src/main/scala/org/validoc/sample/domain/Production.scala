@@ -1,9 +1,9 @@
 package org.validoc.sample.domain
 
 import org.validoc.utils.caching.{CachableKey, CachableResultUsingSucesses, Id, StringId}
+import org.validoc.utils.endpoint.{DebugBasePath, DebugEndPointReqOps}
 import org.validoc.utils.http._
 import org.validoc.utils.metrics.{MetricValue, ReportData}
-import org.validoc.utils.service.{DebugBasePath, DebugEndPointReqOps, DebugEndPointResOps}
 import org.validoc.utils.strings.Strings
 
 import scala.language.implicitConversions
@@ -21,7 +21,7 @@ object ProductionId extends DomainCompanionObject[ProductionId] {
   }
 
   implicit object ToServiceRequestForProductionId extends ToServiceRequest[ProductionId] {
-    override def apply(req: ProductionId): ServiceRequest = ServiceRequest(Get, Uri(s"someId/${req.id}"))
+    override def apply(req: ProductionId): ServiceRequest = ServiceRequest(Get, Uri(s"/production/${req.id}"))
   }
 
   implicit object CachableKeyForProductionId extends CachableKey[ProductionId] {
@@ -32,10 +32,9 @@ object ProductionId extends DomainCompanionObject[ProductionId] {
 
 }
 
-case class Production(id: ProductionId, info: String)
+case class Production(info: String)
 
 object Production extends DomainCompanionObject[Production] {
-
 
   implicit object CachableResultForProduction extends CachableResultUsingSucesses[Production]
 

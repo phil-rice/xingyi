@@ -1,8 +1,7 @@
 package org.validoc.sample.domain
 
+import org.validoc.utils.endpoint.{DebugBasePath, SamplePathOps}
 import org.validoc.utils.metrics.{MetricValue, ReportData}
-import org.validoc.utils.service.{DebugBasePath, DebugEndPointReqOps, SamplePathOps}
-import org.validoc.utils.strings.Strings
 
 import scala.util.Try
 //needs to be here import io.circe.generic.auto._
@@ -27,7 +26,7 @@ object MostPopularQuery extends DomainCompanionObject[MostPopularQuery] with Mos
   }
 
   implicit def toRequestForMostPopularQuery = new ToServiceRequest[MostPopularQuery] {
-    override def apply(v1: MostPopularQuery): ServiceRequest = ServiceRequest(Get, Uri("http://someUri"))
+    override def apply(v1: MostPopularQuery): ServiceRequest = ServiceRequest(Get, Uri("/mostpopular"))
   }
 
 

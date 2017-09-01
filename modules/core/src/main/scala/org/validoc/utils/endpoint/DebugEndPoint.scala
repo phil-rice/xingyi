@@ -1,10 +1,11 @@
-package org.validoc.utils.service
+package org.validoc.utils.endpoint
 
 import org.validoc.utils.Service
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.http._
 import org.validoc.utils.json.ToJson
 import org.validoc.utils.monads.CanMap._
+import org.validoc.utils.serviceTree.ServiceLanguageExtension
 
 import scala.language.higherKinds
 import scala.reflect.ClassTag
@@ -39,11 +40,6 @@ object DebugEndPointResOps {
 
 }
 
-trait DebugEndPointServiceLanguage[M[_]] extends ServiceComposition[M] {
-  /** If you get compilation using this a useful debugging tool is to specificy the Req and Res. Then the compiler will tell you what is missing */
-  def debug[Req: FromServiceRequest : DebugEndPointReqOps : ClassTag, Res: DebugEndPointResOps : ClassTag](implicit async: Async[M], debugBasePath: DebugBasePath) =
-    service[Req, Res, Req, Res, DebugEndPointService[M, Req, Res]] { (delegate: (Req) => M[Res]) => new DebugEndPointService(delegate) }
-}
 
 trait DebugEndPointInfo {
   def descriptionOfDebugEndpoint
@@ -64,3 +60,10 @@ class DebugEndPointService[M[_] : Async, Req: ClassTag, Res: ClassTag](delegate:
   override def samplePath: String = ???
 }
 
+
+trait DebugEndPointServiceLanguageExtension[M[_]] extends ServiceLanguageExtension[M] {
+  def debugEndpoint[Req: ClassTag : DebugEndPointReqOps, Res: ClassTag : DebugEndPointResOps](implicit debugBasePath: DebugBasePath): ServiceDelegator[Req, Res] = { childTree =>
+
+    delegate(s"DebugEndPoint", childTree, new DebugEndPointService[M, Req, Res](_))
+  }
+}
