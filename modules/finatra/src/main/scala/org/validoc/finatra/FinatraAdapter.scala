@@ -1,8 +1,10 @@
 package org.validoc.finatra
 
+import com.twitter.finagle.Service
 import com.twitter.finagle.http.{Method, Request, Response}
 import com.twitter.finatra.utils.FuturePools
 import com.twitter.util.{Await, FuturePool, Return, Throw, Duration => TDuration, Future => TFuture, Try => TTry}
+import org.validoc.utils.Closable
 import org.validoc.utils.caching.CachableResult
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.http._
@@ -19,6 +21,10 @@ object FinatraAdapter extends FinatraAdapter(FuturePools.fixedPool("pool", 20))
 class FinatraAdapter(futurePool: FuturePool) {
 
   implicit val fp = futurePool
+
+  implicit val closable = new Closable[Service[Request, Response]] {
+    override def close(t: Service[Request, Response]): Unit = t.close()
+  }
 
   implicit def asyncForTwitterFuture(implicit futurePool: FuturePool) = new Async[TFuture] {
     override def async[T](t: => T): TFuture[T] = futurePool(t)

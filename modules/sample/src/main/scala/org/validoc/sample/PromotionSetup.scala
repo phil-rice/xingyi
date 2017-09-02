@@ -21,7 +21,7 @@ trait PromotionServiceNames {
 
 class PromotionSetup[M[_], HttpReq: FromServiceRequest : CachableKey : ClassTag, HttpRes: ToServiceResponse : CachableResult : ClassTag]
 (implicit
- val async: Async[M],
+ protected val async: Async[M],
  timeService: NanoTimeService,
  makeHttpService: MakeHttpService[M, HttpReq, HttpRes],
  toJsonForHomePage: ToJson[HomePage],

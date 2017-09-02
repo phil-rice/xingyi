@@ -1,42 +1,48 @@
-package org.validoc.pact
+package org.validoc.sample.pact
 
-import com.itv.scalapact.ScalaPactForger._
-import com.twitter.util.Await
-import org.scalatest.BeforeAndAfterAll
 import org.validoc.sample.PromotionServiceNames
 import org.validoc.sample.domain._
-import org.validoc.utils.http.ServiceName
+import org.validoc.utils.Closable
+import org.validoc.utils.caching.{CachableKey, CachableResult}
+import org.validoc.utils.concurrency.Async
+import org.validoc.utils.concurrency.Async._
+import org.validoc.utils.http.{FromServiceRequest, ToServiceResponse}
 
-class PromotionPactSpec extends PactSpec with PromotionServiceNames {
+import scala.reflect.ClassTag
+import scala.language.higherKinds
 
-  import promotionSetup.sample._
+abstract class PromotionPactSpec[
+M[_] : Async,
+HttpReq: FromServiceRequest : CachableKey : ClassTag,
+HttpRes: ToServiceResponse : CachableResult : ClassTag,
+S <: HttpReq => M[HttpRes] : Closable] extends PactSpec[M, HttpReq, HttpRes, S] with PromotionServiceNames {
 
+  import promotionSetup._
 
   behavior of "HomePage Service"
 
-
   it should "return programmes when a programme id is sent" in {
     makePact(programmeAndProductionServiceName, programInteraction(1)) {
-      Await.result(rawProgrammeService.service(ProgrammeId("1"))) shouldBe Programme("someProgramme1Info")
+      new AsyncPimper(rawProgrammeService.service(ProgrammeId("1"))).await5s shouldBe Programme("someProgramme1Info")
     }
   }
 
   it should "return productions when a production id is sent" in {
     makePact(programmeAndProductionServiceName, productionInteraction(1)) {
-      Await.result(rawProductionService.service(ProductionId("1"))) shouldBe Production("""someProduction1Info""")
+      rawProductionService.service(ProductionId("1")).await5s shouldBe Production("""someProduction1Info""")
     }
   }
 
   it should "return the most popular list" in {
     makePact(mostPopularServiceName, mostPopular(2, 3)) {
-      Await.result(rawMostPopularService.service(MostPopularQuery)) shouldBe MostPopular(List(ProgrammeId("2"), ProgrammeId("3")))
+      rawMostPopularService.service(MostPopularQuery).await5s shouldBe MostPopular(List(ProgrammeId("2"), ProgrammeId("3")))
     }
   }
 
   it should "enrich the most popular with programme data " in {
     makePact(mostPopularServiceName, mostPopular(2, 3)) {
       makePact(programmeAndProductionServiceName, programInteraction(2), programInteraction(3)) {
-        Await.result(enrichedMostPopular.service(MostPopularQuery)) shouldBe EnrichedMostPopular(List(Programme("someProgramme2Info"), Programme("someProgramme3Info")))
+        enrichedMostPopular.service(MostPopularQuery).await5s shouldBe EnrichedMostPopular(List(Programme("someProgramme2Info"), Programme("someProgramme3Info")))
       }
     }
   }
@@ -44,14 +50,14 @@ class PromotionPactSpec extends PactSpec with PromotionServiceNames {
 
   it should "return promotions" in {
     makePact(promotionServiceName, promotion(2, 3)) {
-      Await.result(rawPromotionService.service(PromotionQuery)) shouldBe Promotion(List(ProductionId("2"), ProductionId("3")))
+      rawPromotionService.service(PromotionQuery).await5s shouldBe Promotion(List(ProductionId("2"), ProductionId("3")))
     }
   }
 
   it should "return enriched promotions" in {
     makePact(promotionServiceName, promotion(2, 3)) {
       makePact(programmeAndProductionServiceName, productionInteraction(2), productionInteraction(3)) {
-        Await.result(enrichedPromotion.service(PromotionQuery)) shouldBe EnrichedPromotion(List(Production("someProduction2Info"), Production("someProduction3Info")))
+        enrichedPromotion.service(PromotionQuery).await5s shouldBe EnrichedPromotion(List(Production("someProduction2Info"), Production("someProduction3Info")))
 
       }
     }
@@ -61,7 +67,7 @@ class PromotionPactSpec extends PactSpec with PromotionServiceNames {
     makePact(promotionServiceName, promotion(4, 5)) {
       makePact(mostPopularServiceName, mostPopular(6, 7)) {
         makePact(programmeAndProductionServiceName, productionInteraction(4), productionInteraction(5), programInteraction(6), programInteraction(7)) {
-          Await.result(homePage.service(HomePageQuery)) shouldBe
+          homePage.service(HomePageQuery).await5s shouldBe
             HomePage(
               EnrichedMostPopular(List(Programme("someProgramme6Info"), Programme("someProgramme7Info"))),
               EnrichedPromotion(List(Production("someProduction4Info"), Production("someProduction5Info"))))
@@ -69,5 +75,4 @@ class PromotionPactSpec extends PactSpec with PromotionServiceNames {
       }
     }
   }
-
 }

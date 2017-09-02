@@ -7,6 +7,7 @@ import scala.concurrent.duration.{FiniteDuration, _}
 import scala.concurrent.{Await, Future}
 import scala.language.higherKinds
 import scala.util.{Failure, Success, Try}
+import scala.language.postfixOps
 
 /** M[_] is typically Future[_], or Task[_], or FutureEitherT or some other concurrency thing that does things in the future
   * Uses of M[_] are quite likely to make the assumption that Async.async fires things off in another thread.
@@ -40,6 +41,8 @@ object Async {
     def transform[T2](fn: Try[T] => M[T2]) = async.transform(mt, fn)
 
     def registerSideEffectWhenComplete[T2](sideEffect: Try[T] => Unit) = async.registerSideEffectWhenComplete(mt, sideEffect)
+
+    def await5s = async.await(mt, 5 seconds)
   }
 
   implicit class SeqOfMsPimper[M[_] : Async, T](seq: Seq[M[T]]) {
