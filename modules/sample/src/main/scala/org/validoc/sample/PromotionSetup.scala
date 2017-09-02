@@ -55,17 +55,17 @@ class PromotionSetup[M[_], HttpReq: FromServiceRequest : CachableKey : ClassTag,
   val homePage = (enrichedPromotion, enrichedMostPopular).merge[HomePageQuery, HomePage]
 
   //
-  //  val homePage2 = (
-  //    (
-  //      promotionHttp >--< caching("Promotion", cachingStrategy, maxSize) >--< profile("Promotion") >--< objectify[PromotionQuery, Promotion]("Promotion", ResponseProcessor.parsed),
-  //      programmeAndProductionsHttp >--< objectify[ProductionId, Production]("Production", ResponseProcessor.parsed)
-  //    ).enrich[EnrichedPromotion],
-  //    (
-  //      mostPopularHttp >--< profile("Most Popular") >--< objectify[MostPopularQuery, MostPopular]("mostPopular", ResponseProcessor.parsed) >--< caching[MostPopularQuery, MostPopular]("Most Popular", cachingStrategy, maxSize),
-  //      programmeAndProductionsHttp >--< objectify[ProgrammeId, Programme]("Programme", ResponseProcessor.parsed)
-  //    ).enrich[EnrichedMostPopular]
-  //  ).merge[HomePageQuery, HomePage]
-
+//    val homePage2 = (
+//      (
+//        promotionHttp >--< caching("Promotion", cachingStrategy, maxSize) >--< profile("Promotion") >--< objectify[PromotionQuery, Promotion]("Promotion", ResponseProcessor.parsed),
+//        programmeAndProductionsHttp >--< objectify[ProductionId, Production]("Production", ResponseProcessor.parsed)
+//      ).enrich[EnrichedPromotion],
+//      (
+//        mostPopularHttp >--< profile("Most Popular") >--< objectify[MostPopularQuery, MostPopular]("mostPopular", ResponseProcessor.parsed) >--< caching[MostPopularQuery, MostPopular]("Most Popular", cachingStrategy, maxSize),
+//        programmeAndProductionsHttp >--< objectify[ProgrammeId, Programme]("Programme", ResponseProcessor.parsed)
+//      ).enrich[EnrichedMostPopular]
+//    ).merge[HomePageQuery, HomePage]
+//
   val enrichedMostPopularEndPoint = enrichedMostPopular >--< endpoint("/mostPopular")
   val homePageEndPoint = homePage >--< endpoint("/homepage")
 
