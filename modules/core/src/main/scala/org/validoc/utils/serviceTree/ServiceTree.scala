@@ -34,6 +34,7 @@ object ServiceTree {
     def collect[X](acceptor: PartialFunction[ServiceTree[M, _, _, Payload], X]) = foldToListOfTrees.collect(acceptor)
 
     def findAll[X](implicit classTag: ClassTag[X]) = filter(x => classTag.runtimeClass.isAssignableFrom(x.service.getClass))
+    def findAllServices[X](implicit classTag: ClassTag[X]) = filter(x => classTag.runtimeClass.isAssignableFrom(x.service.getClass)).map(_.service.asInstanceOf[X])
 
     def findAllWithReqRes[NewReq, NewRes](implicit reqTag: ClassTag[NewReq], resTag: ClassTag[NewRes]) = filter(st => st.reqClassTag == reqTag && st.resClassTag == resTag).map(_.asInstanceOf[ServiceTree[M, NewReq, NewRes, Payload]])
 

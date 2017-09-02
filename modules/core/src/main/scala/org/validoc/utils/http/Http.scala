@@ -36,7 +36,10 @@ trait UriFragment {
   def asUriString: String
 }
 
+case class ServiceName(name: String) extends AnyVal
+
 case class ProtocolHostAndPort(protocol: Protocol, hostName: HostName, port: Port)
+
 
 object ProtocolHostAndPort {
   def apply(hostName: HostName, port: Port): ProtocolHostAndPort = ProtocolHostAndPort(Protocol("http"), hostName, port)

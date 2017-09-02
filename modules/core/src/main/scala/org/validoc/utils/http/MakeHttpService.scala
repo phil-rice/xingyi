@@ -8,25 +8,18 @@ import scala.language.higherKinds
 import scala.reflect.ClassTag
 
 
-trait MakeHttpService[M[_], HttpReq, HttRes] extends (ProtocolHostAndPort => (HttpReq => M[HttRes])) {
-  def create(hostName: HostName, port: Port) = apply(ProtocolHostAndPort(hostName, port))
-}
+trait MakeHttpService[M[_], HttpReq, HttRes] extends (ServiceName => (HttpReq => M[HttRes]))
 
 
 trait HttpServiceLanguageExtension[M[_], HttpReq, HttpRes] extends ServiceLanguageExtension[M] {
-  def http(hostName: HostName, port: Port)(implicit makeHttpService: MakeHttpService[M, HttpReq, HttpRes], httpReqClassTag: ClassTag[HttpReq], httpResClassTag: ClassTag[HttpRes]): RootServiceTree[M, HttpReq, HttpRes, ServiceDescription] =
-    root[HttpReq, HttpRes](s"Http($hostName, $port)", () => makeHttpService.create(hostName, port))
+  def http(serviceName: ServiceName)(implicit makeHttpService: MakeHttpService[M, HttpReq, HttpRes], httpReqClassTag: ClassTag[HttpReq], httpResClassTag: ClassTag[HttpRes]): RootServiceTree[M, HttpReq, HttpRes, ServiceDescription] =
+    root[HttpReq, HttpRes](s"Http($serviceName)", () => makeHttpService(serviceName))
 }
 
 
 object MakeHttpService {
-  def apply[M[_], HttpReq, HttpRes](map: Map[String, (HttpReq => M[HttpRes])]) = new MakeHttpService[M, HttpReq, HttpRes] {
-    override def apply(protocolHostAndPort: ProtocolHostAndPort): (HttpReq) => M[HttpRes] = map(protocolHostAndPort.hostName.host)
-  }
-
-  /** This exists  to allow the 'to string' interpreter to work */
-  implicit object MakeHttpServiceForString extends MakeHttpService[Option, String, String] {
-    override def apply(protocolHostAndPort: ProtocolHostAndPort): (String) => Option[String] = req => Some(s"HttpService($protocolHostAndPort)($req)")
+  def apply[M[_], HttpReq, HttpRes](map: Map[ServiceName, (HttpReq => M[HttpRes])]) = new MakeHttpService[M, HttpReq, HttpRes] {
+    override def apply(v1: ServiceName) = map(v1)
   }
 
 }

@@ -13,28 +13,35 @@ import scala.language.{higherKinds, postfixOps}
 import scala.reflect.ClassTag
 
 
-class PromotionSetup[M[_],
-HttpReq: FromServiceRequest : CachableKey : ClassTag,
-HttpRes: ToServiceResponse : CachableResult : ClassTag](implicit
-                                                        val async: Async[M],
-                                                        timeService: NanoTimeService,
-                                                        makeHttpService: MakeHttpService[M, HttpReq, HttpRes],
-                                                        toJsonForHomePage: ToJson[HomePage],
-                                                        toJsonForEnrichedMostPopular: ToJson[EnrichedMostPopular],
-                                                        fromJsonForMostPopular: FromJson[MostPopular],
-                                                        fromJsonForPromotion: FromJson[Promotion],
-                                                        fromJsonForProgramme: FromJson[Programme],
-                                                        fromJsonForProduction: FromJson[Production]
-                                                       ) extends HttpReqHttpResServiceLanguageExtension[M, HttpReq, HttpRes] {
+trait PromotionServiceNames {
+  val mostPopularServiceName = ServiceName("mostPopular")
+  val promotionServiceName = ServiceName("promotion")
+  val programmeAndProductionServiceName = ServiceName("programmeAndProduction")
+}
+
+class PromotionSetup[M[_], HttpReq: FromServiceRequest : CachableKey : ClassTag, HttpRes: ToServiceResponse : CachableResult : ClassTag]
+(implicit
+ val async: Async[M],
+ timeService: NanoTimeService,
+ makeHttpService: MakeHttpService[M, HttpReq, HttpRes],
+ toJsonForHomePage: ToJson[HomePage],
+ toJsonForEnrichedMostPopular: ToJson[EnrichedMostPopular],
+ fromJsonForMostPopular: FromJson[MostPopular],
+ fromJsonForPromotion: FromJson[Promotion],
+ fromJsonForProgramme: FromJson[Programme],
+ fromJsonForProduction: FromJson[Production]
+) extends HttpReqHttpResServiceLanguageExtension[M, HttpReq, HttpRes] with PromotionServiceNames {
 
   val cachingStrategy = new DurationStaleCacheStategy(10000000, 10000000000l)
   val maxSize = new MaxMapSizeStrategy(1000, 100)
 
-  val mostPopularHttp = http(HostName("mostPopular"), Port(80))
 
-  val promotionHttp = http(HostName("promotion"), Port(80))
 
-  val programmeAndProductionsHttp = http(HostName("programmeAndProductions"), Port(80))
+  val mostPopularHttp = http(mostPopularServiceName)
+
+  val promotionHttp = http(promotionServiceName)
+
+  val programmeAndProductionsHttp = http(programmeAndProductionServiceName)
 
   val rawMostPopularService = mostPopularHttp >--< profile("Most Popular") >--< objectify[MostPopularQuery, MostPopular]("mostPopular", ResponseProcessor.parsed) >--< caching[MostPopularQuery, MostPopular]("Most Popular", cachingStrategy, maxSize)
   val rawPromotionService = promotionHttp >--< caching("Promotion", cachingStrategy, maxSize) >--< profile("Promotion") >--< objectify[PromotionQuery, Promotion]("Promotion", ResponseProcessor.parsed)
@@ -47,17 +54,17 @@ HttpRes: ToServiceResponse : CachableResult : ClassTag](implicit
 
   val homePage = (enrichedPromotion, enrichedMostPopular).merge[HomePageQuery, HomePage]
 
-//
-//  val homePage2 = (
-//    (
-//      promotionHttp >--< caching("Promotion", cachingStrategy, maxSize) >--< profile("Promotion") >--< objectify[PromotionQuery, Promotion]("Promotion", ResponseProcessor.parsed),
-//      programmeAndProductionsHttp >--< objectify[ProductionId, Production]("Production", ResponseProcessor.parsed)
-//    ).enrich[EnrichedPromotion],
-//    (
-//      mostPopularHttp >--< profile("Most Popular") >--< objectify[MostPopularQuery, MostPopular]("mostPopular", ResponseProcessor.parsed) >--< caching[MostPopularQuery, MostPopular]("Most Popular", cachingStrategy, maxSize),
-//      programmeAndProductionsHttp >--< objectify[ProgrammeId, Programme]("Programme", ResponseProcessor.parsed)
-//    ).enrich[EnrichedMostPopular]
-//  ).merge[HomePageQuery, HomePage]
+  //
+  //  val homePage2 = (
+  //    (
+  //      promotionHttp >--< caching("Promotion", cachingStrategy, maxSize) >--< profile("Promotion") >--< objectify[PromotionQuery, Promotion]("Promotion", ResponseProcessor.parsed),
+  //      programmeAndProductionsHttp >--< objectify[ProductionId, Production]("Production", ResponseProcessor.parsed)
+  //    ).enrich[EnrichedPromotion],
+  //    (
+  //      mostPopularHttp >--< profile("Most Popular") >--< objectify[MostPopularQuery, MostPopular]("mostPopular", ResponseProcessor.parsed) >--< caching[MostPopularQuery, MostPopular]("Most Popular", cachingStrategy, maxSize),
+  //      programmeAndProductionsHttp >--< objectify[ProgrammeId, Programme]("Programme", ResponseProcessor.parsed)
+  //    ).enrich[EnrichedMostPopular]
+  //  ).merge[HomePageQuery, HomePage]
 
   val enrichedMostPopularEndPoint = enrichedMostPopular >--< endpoint("/mostPopular")
   val homePageEndPoint = homePage >--< endpoint("/homepage")
