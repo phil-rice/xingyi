@@ -1,16 +1,18 @@
 package org.validoc.sample.pact
 
-import org.scalatest.BeforeAndAfter
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.validoc.sample.{PromotionServiceNames, PromotionSetup}
 import org.validoc.sample.domain.SampleJsonsForCompilation
 import org.validoc.utils.{Closable, UtilsSpec}
 import org.validoc.utils.caching.{CachableKey, CachableResult, CachingService}
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.http.{FromServiceRequest, MakeHttpService, ServiceName, ToServiceResponse}
-import org.validoc.utils.serviceTree.{ServiceDescription, ServiceTree}
+import org.validoc.utils.serviceTree.{ServiceDescription, ServiceLanguage, ServiceTree}
 
 import scala.reflect.ClassTag
 import com.itv.scalapact.ScalaPactForger._
+import org.validoc.utils.server.ServerBuilder
+
 import scala.language.higherKinds
 
 class HttpServiceHolder[M[_] : Async, HttpReq, HttpRes, S <: HttpReq => M[HttpRes] : Closable](makeServiceOnLocalHost: Int => S) extends (HttpReq => M[HttpRes]) {
@@ -34,14 +36,18 @@ abstract class PactSpec[
 M[_] : Async,
 HttpReq: FromServiceRequest : CachableKey : ClassTag,
 HttpRes: ToServiceResponse : CachableResult : ClassTag,
-S <: HttpReq => M[HttpRes] : Closable] extends UtilsSpec with SampleJsonsForCompilation with PromotionServiceNames with BeforeAndAfter {
+S <: HttpReq => M[HttpRes] : Closable,
+Server: Closable](implicit serverBuilder: ServerBuilder[M, Server]) extends UtilsSpec with SampleJsonsForCompilation with PromotionServiceNames with BeforeAndAfter with BeforeAndAfterAll {
 
   type HSH = HttpServiceHolder[M, HttpReq, HttpRes, S]
 
+
+  val endPoint = ServiceName("EndPoint")
   val config: Map[ServiceName, HSH] = Map[ServiceName, HSH](
     programmeAndProductionServiceName -> new HSH(makeServiceOnLocalHost),
     promotionServiceName -> new HSH(makeServiceOnLocalHost),
-    mostPopularServiceName -> new HSH(makeServiceOnLocalHost)
+    mostPopularServiceName -> new HSH(makeServiceOnLocalHost),
+    endPoint -> new HSH(makeServiceOnLocalHost)
   )
 
   def makeServiceOnLocalHost(port: Int): S
@@ -52,13 +58,22 @@ S <: HttpReq => M[HttpRes] : Closable] extends UtilsSpec with SampleJsonsForComp
 
   def serviceTrees: List[ServiceTree[M, _, _, ServiceDescription]]
 
-
   val promotionSetup = makePromotion()
-  //    val promotionSetup = new FinatraPromotionSetup(FuturePools.fixedPool(getClass.getName, 20))
-  //
+
+  import promotionSetup._
+
+  val server = implicitly[ServerBuilder[M, Server]].apply(9000, List(homePageEndPoint, enrichedMostPopularEndPoint))
+
+
+
   after {
     config.values.foreach(_.clear)
     serviceTrees.foreach(_.findAllServices[CachingService[M, _, _]].foreach(_.clearCache))
+  }
+
+  override def afterAll(): Unit = {
+    super.afterAll()
+    implicitly[Closable[Server]].close(server)
   }
 
   def makePact(provider: ServiceName, interaction: ScalaPactInteraction*)(block: => Unit) = {

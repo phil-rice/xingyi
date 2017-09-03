@@ -9,6 +9,8 @@ import org.validoc.utils.caching.CachableResult
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.http._
 import org.validoc.utils.metrics.NullPutMetrics
+import org.validoc.utils.server.ServerBuilder
+import org.validoc.utils.serviceTree.{ServiceDescription, ServiceTree}
 import org.validoc.utils.success.SucceededFromFn
 import org.validoc.utils.time.SystemClockNanoTimeService
 
@@ -76,4 +78,5 @@ class FinatraAdapter(futurePool: FuturePool) {
   implicit val nanoTimeService = SystemClockNanoTimeService
   implicit val putMetrics = NullPutMetrics
   implicit val succeeded = new SucceededFromFn[Response](_.getStatusCode() / 100 == 2)
+
 }

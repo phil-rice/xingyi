@@ -6,20 +6,21 @@ import org.validoc.utils.Closable
 import org.validoc.utils.caching.{CachableKey, CachableResult}
 import org.validoc.utils.concurrency.Async
 import org.validoc.utils.concurrency.Async._
-import org.validoc.utils.http.{FromServiceRequest, ToServiceResponse}
+import org.validoc.utils.http._
+import org.validoc.utils.server.ServerBuilder
 
-import scala.reflect.ClassTag
 import scala.language.higherKinds
+import scala.reflect.ClassTag
 
 abstract class PromotionPactSpec[
 M[_] : Async,
 HttpReq: FromServiceRequest : CachableKey : ClassTag,
 HttpRes: ToServiceResponse : CachableResult : ClassTag,
-S <: HttpReq => M[HttpRes] : Closable] extends PactSpec[M, HttpReq, HttpRes, S] with PromotionServiceNames {
+S <: HttpReq => M[HttpRes] : Closable, Server: Closable](implicit serverBuilder: ServerBuilder[M, Server]) extends PactSpec[M, HttpReq, HttpRes, S, Server] with PromotionServiceNames {
 
   import promotionSetup._
 
-  behavior of "HomePage Service"
+  behavior of "HomePage Service - Pact"
 
   it should "return programmes when a programme id is sent" in {
     makePact(programmeAndProductionServiceName, programInteraction(1)) {
@@ -71,6 +72,22 @@ S <: HttpReq => M[HttpRes] : Closable] extends PactSpec[M, HttpReq, HttpRes, S] 
             HomePage(
               EnrichedMostPopular(List(Programme("someProgramme6Info"), Programme("someProgramme7Info"))),
               EnrichedPromotion(List(Production("someProduction4Info"), Production("someProduction5Info"))))
+        }
+      }
+    }
+  }
+
+  it should "handle the homepage endpoint" in {
+    makePact(promotionServiceName, promotion(4, 5)) {
+      makePact(mostPopularServiceName, mostPopular(6, 7)) {
+        makePact(programmeAndProductionServiceName, productionInteraction(4), productionInteraction(5), programInteraction(6), programInteraction(7)) {
+          val service = config(endPoint)
+          service.setPort(9000)
+          val httpReq = implicitly[FromServiceRequest[HttpReq]].apply(ServiceRequest(Get, Uri("/homepage")))
+          val httpRes = service(httpReq).await5s
+          val serviceResponse = implicitly[ToServiceResponse[HttpRes]].apply(httpRes)
+          serviceResponse.status.code shouldBe 200
+          serviceResponse.body.s shouldBe """HomePage(EnrichedMostPopular(List(Programme(someProgramme6Info), Programme(someProgramme7Info))),EnrichedPromotion(List(Production(someProduction4Info), Production(someProduction5Info))))"""
         }
       }
     }

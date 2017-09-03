@@ -7,10 +7,12 @@ import org.validoc.utils.http._
 import org.validoc.utils.json.{FromJson, ToJson}
 import org.validoc.utils.map.MaxMapSizeStrategy
 import org.validoc.utils.serviceTree.HttpReqHttpResServiceLanguageExtension
+import org.validoc.utils.success.{Succeeded, SucceededFromFn}
 import org.validoc.utils.time.NanoTimeService
 
 import scala.language.{higherKinds, postfixOps}
 import scala.reflect.ClassTag
+import scala.util.Try
 
 
 trait PromotionServiceNames {
@@ -35,7 +37,7 @@ class PromotionSetup[M[_], HttpReq: FromServiceRequest : CachableKey : ClassTag,
   val cachingStrategy = new DurationStaleCacheStategy(10000000, 10000000000l)
   val maxSize = new MaxMapSizeStrategy(1000, 100)
 
-
+  implicit def succeeded[T] = new SucceededFromFn[T](_ => true)
 
   val mostPopularHttp = http(mostPopularServiceName)
 
@@ -55,19 +57,19 @@ class PromotionSetup[M[_], HttpReq: FromServiceRequest : CachableKey : ClassTag,
   val homePage = (enrichedPromotion, enrichedMostPopular).merge[HomePageQuery, HomePage]
 
   //
-//    val homePage2 = (
-//      (
-//        promotionHttp >--< caching("Promotion", cachingStrategy, maxSize) >--< profile("Promotion") >--< objectify[PromotionQuery, Promotion]("Promotion", ResponseProcessor.parsed),
-//        programmeAndProductionsHttp >--< objectify[ProductionId, Production]("Production", ResponseProcessor.parsed)
-//      ).enrich[EnrichedPromotion],
-//      (
-//        mostPopularHttp >--< profile("Most Popular") >--< objectify[MostPopularQuery, MostPopular]("mostPopular", ResponseProcessor.parsed) >--< caching[MostPopularQuery, MostPopular]("Most Popular", cachingStrategy, maxSize),
-//        programmeAndProductionsHttp >--< objectify[ProgrammeId, Programme]("Programme", ResponseProcessor.parsed)
-//      ).enrich[EnrichedMostPopular]
-//    ).merge[HomePageQuery, HomePage]
-//
+  //    val homePage2 = (
+  //      (
+  //        promotionHttp >--< caching("Promotion", cachingStrategy, maxSize) >--< profile("Promotion") >--< objectify[PromotionQuery, Promotion]("Promotion", ResponseProcessor.parsed),
+  //        programmeAndProductionsHttp >--< objectify[ProductionId, Production]("Production", ResponseProcessor.parsed)
+  //      ).enrich[EnrichedPromotion],
+  //      (
+  //        mostPopularHttp >--< profile("Most Popular") >--< objectify[MostPopularQuery, MostPopular]("mostPopular", ResponseProcessor.parsed) >--< caching[MostPopularQuery, MostPopular]("Most Popular", cachingStrategy, maxSize),
+  //        programmeAndProductionsHttp >--< objectify[ProgrammeId, Programme]("Programme", ResponseProcessor.parsed)
+  //      ).enrich[EnrichedMostPopular]
+  //    ).merge[HomePageQuery, HomePage]
+  //
   val enrichedMostPopularEndPoint = enrichedMostPopular >--< endpoint("/mostPopular")
-  val homePageEndPoint = homePage >--< endpoint("/homepage")
+  val homePageEndPoint = homePage >--< logging("Logging{0}") >--< endpoint("/homepage")
 
 }
 
