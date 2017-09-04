@@ -41,7 +41,7 @@ class LoggingServiceTests extends UtilsWithLoggingSpec with LoggingFixture {
       loggingMemoriser =>
         implicit loggingAdapter =>
           val LoggingReport(Success("success_result"), LoggingRecords(records, spans)) = await(loggingMemoriser.traceFuture(service("success")))
-          records.map(x => x.msg + "/" + x.level) shouldBe Vector("Requesting RequestDetails(success,Calling [success] with success)/Trace", "Success: success with success_result/Trace")
+          records.map(x => x.msg + "/" + x.level) shouldBe Vector("Calling RequestDetails(success,Calling [success] with success)/Trace", "Success: success with success_result/Trace")
     }
   }
 
@@ -50,7 +50,7 @@ class LoggingServiceTests extends UtilsWithLoggingSpec with LoggingFixture {
       loggingMemoriser =>
         implicit loggingAdapter =>
           val LoggingReport(Success("someFail_result"), LoggingRecords(records, spans)) = await(loggingMemoriser.traceFuture(service("someFail")))
-          records.map(x => x.msg + "/" + x.level) shouldBe Vector("Requesting RequestDetails(someFail,Calling [someFail] with someFail)/Trace", "Failed:  RequestDetails(someFail,Calling [someFail] with someFail) with someFail_result/Trace")
+          records.map(x => x.msg + "/" + x.level) shouldBe Vector("Calling RequestDetails(someFail,Calling [someFail] with someFail)/Trace", "Failed:  RequestDetails(someFail,Calling [someFail] with someFail) with someFail_result/Trace")
     }
   }
 
@@ -60,7 +60,7 @@ class LoggingServiceTests extends UtilsWithLoggingSpec with LoggingFixture {
         implicit loggingAdapter =>
           val LoggingReport(Failure(e), LoggingRecords(records, spans)) = await(loggingMemoriser.traceFuture(service("failure")))
           e shouldBe runtimeException
-          records.map(x => x.msg + "/" + x.level) shouldBe Vector("Requesting RequestDetails(failure,Calling [failure] with failure)/Trace", "Exception java.lang.RuntimeException from RequestDetails(failure,Calling [failure] with failure)/Trace")
+          records.map(x => x.msg + "/" + x.level) shouldBe Vector("Calling RequestDetails(failure,Calling [failure] with failure)/Trace", "Exception java.lang.RuntimeException from RequestDetails(failure,Calling [failure] with failure)/Trace")
     }
   }
 }

@@ -37,7 +37,7 @@ class LoggingService[M[_] : Async, Req, Res: Succeeded](delegate: Service[M, Req
 
   override def apply(req: Req): M[Res] = {
     lazy val requestDetails: RequestDetails[Req] = toRequestDetails(req)
-    trace(s"Requesting $requestDetails")
+    log((Trace, s"Calling $requestDetails"))
     delegate(req).registerSideEffectWhenComplete(log[Req, Res](requestDetails, _))
 
   }
