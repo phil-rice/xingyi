@@ -41,6 +41,11 @@ lazy val finatraSettings = commonSettings ++ Seq(
   libraryDependencies += "com.twitter" %% "finatra-jackson" % versions.finatra % "test" classifier "tests"
 )
 
+lazy val playSettings = commonSettings ++ Seq(
+  libraryDependencies ++= Seq( jdbc , ehcache , ws , guice )
+
+)
+
 lazy val pactSettings = commonSettings ++ Seq(
   libraryDependencies += "com.itv" %% "scalapact-scalatest" % versions.scalapact % "test",
   libraryDependencies += "junit" % "junit" % "4.12" % "test"
@@ -61,6 +66,14 @@ lazy val core = (project in file("modules/core")).
 lazy val playJson = (project in file("modules/playJson")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   settings(playJsonSetting: _*)
+
+lazy val play = (project in file("modules/play")).
+  dependsOn(core % "test->test;compile->compile").aggregate(core).
+  settings(playSettings: _*)
+
+lazy val playSample = (project in file("modules/playSample")).
+  dependsOn(play % "test->test;compile->compile").aggregate(play).
+  settings(playSettings: _*).enablePlugins(PlayScala)
 
 lazy val finatra = (project in file("modules/finatra")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).

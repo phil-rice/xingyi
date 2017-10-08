@@ -99,7 +99,7 @@ and separating that from the framework that actually implements it. I want to be
 'run it in Play' and 'run it in Akka-Http' with an absolutely minimum of code in the different frameworks
 
 ## Here is one implementation of the 'main endpoint'
-The
+
 
      val homePage = (
          (

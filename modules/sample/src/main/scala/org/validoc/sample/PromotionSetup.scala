@@ -34,21 +34,21 @@ class PromotionSetup[M[_], HttpReq: FromServiceRequest : CachableKey : ClassTag,
  fromJsonForProduction: FromJson[Production]
 ) extends HttpReqHttpResServiceLanguageExtension[M, HttpReq, HttpRes] with PromotionServiceNames {
 
+  implicit def succeeded[T] = new SucceededFromFn[T](_ => true)
   val cachingStrategy = new DurationStaleCacheStategy(10000000, 10000000000l)
   val maxSize = new MaxMapSizeStrategy(1000, 100)
 
-  implicit def succeeded[T] = new SucceededFromFn[T](_ => true)
 
-  val mostPopularHttp = http(mostPopularServiceName)
+  val vogue = http(mostPopularServiceName)
 
-  val promotionHttp = http(promotionServiceName)
+  val billboard = http(promotionServiceName)
 
-  val programmeAndProductionsHttp = http(programmeAndProductionServiceName)
+  val fnord = http(programmeAndProductionServiceName)
 
-  val rawMostPopularService = mostPopularHttp >--< profile("Most Popular") >--< objectify[MostPopularQuery, MostPopular]("mostPopular", ResponseProcessor.parsed) >--< caching[MostPopularQuery, MostPopular]("Most Popular", cachingStrategy, maxSize)
-  val rawPromotionService = promotionHttp >--< caching("Promotion", cachingStrategy, maxSize) >--< profile("Promotion") >--< objectify[PromotionQuery, Promotion]("Promotion", ResponseProcessor.parsed)
-  val rawProductionService = programmeAndProductionsHttp >--< objectify[ProductionId, Production]("Production", ResponseProcessor.parsed)
-  val rawProgrammeService = programmeAndProductionsHttp >--< objectify[ProgrammeId, Programme]("Programme", ResponseProcessor.parsed)
+  val rawMostPopularService = vogue >--< profile("Most Popular") >--< objectify[MostPopularQuery, MostPopular]("mostPopular", ResponseProcessor.parsed) >--< caching[MostPopularQuery, MostPopular]("Most Popular", cachingStrategy, maxSize)
+  val rawPromotionService = billboard >--< caching("Promotion", cachingStrategy, maxSize) >--< profile("Promotion") >--< objectify[PromotionQuery, Promotion]("Promotion", ResponseProcessor.parsed)
+  val rawProductionService = fnord >--< objectify[ProductionId, Production]("Production", ResponseProcessor.parsed)
+  val rawProgrammeService = fnord >--< objectify[ProgrammeId, Programme]("Programme", ResponseProcessor.parsed)
 
 
   val enrichedPromotion = (rawPromotionService, rawProductionService).enrich[EnrichedPromotion]
@@ -56,6 +56,7 @@ class PromotionSetup[M[_], HttpReq: FromServiceRequest : CachableKey : ClassTag,
 
   val homePage = (enrichedPromotion, enrichedMostPopular).merge[HomePageQuery, HomePage]
 
+  val homePageEndPoint = homePage >--< logging("Logging{0}") >--< endpoint("/homepage")
   //
   //    val homePage2 = (
   //      (
@@ -69,7 +70,6 @@ class PromotionSetup[M[_], HttpReq: FromServiceRequest : CachableKey : ClassTag,
   //    ).merge[HomePageQuery, HomePage]
   //
   val enrichedMostPopularEndPoint = enrichedMostPopular >--< endpoint("/mostPopular")
-  val homePageEndPoint = homePage >--< logging("Logging{0}") >--< endpoint("/homepage")
 
 }
 
