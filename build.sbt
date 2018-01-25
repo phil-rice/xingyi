@@ -11,6 +11,7 @@ val versions = new {
   val play = "2.5.12"
   val scalapact = "2.1.3"
 }
+
 lazy val commonSettings = Seq(
   version := "1.0",
   organization := "org.validoc",
