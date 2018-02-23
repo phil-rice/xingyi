@@ -3,7 +3,7 @@ package org.validoc.utils.strings
 import org.validoc.utils.functions.{Monoid, SemiGroup}
 import org.validoc.utils.service.html.ToHtml
 
-case class IndentAndString(indent: Int, lines: List[(Int, String)]) {
+case class IndentAndString(indent: Int, lines: Seq[(Int, String)]) {
   def addLineAndIndent(line: String) = IndentAndString(indent + 1, lines :+ (indent, line))
 
   def unindent = IndentAndString(indent - 1, lines)
@@ -12,6 +12,11 @@ case class IndentAndString(indent: Int, lines: List[(Int, String)]) {
 }
 
 object IndentAndString {
+
+  def merge(title: String, indentAndStrings: IndentAndString*): IndentAndString = {
+    val depth = indentAndStrings.map(_.indent).max + 1
+    IndentAndString(depth, Seq((depth, title)) ++ indentAndStrings.flatMap(_.lines))
+  }
 
   implicit object ToHtmlForIndentAndString extends ToHtml[IndentAndString] {
     override def apply(v1: IndentAndString): String = {
@@ -22,7 +27,7 @@ object IndentAndString {
   implicit object MonoidForIndentAndString extends Monoid[IndentAndString] {
     override def add(one: IndentAndString, two: IndentAndString): IndentAndString = {
       val maxIndent = Math.max(one.indent, two.indent)
-      IndentAndString(maxIndent + 1, one.lines ::: two.lines)
+      IndentAndString(maxIndent + 1, one.lines ++ two.lines)
     }
 
     override def zero: IndentAndString = IndentAndString(0, List())

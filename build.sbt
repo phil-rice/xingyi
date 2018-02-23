@@ -23,6 +23,8 @@ lazy val commonSettings = Seq(
 )
 
 lazy val finatraSettings = commonSettings ++ Seq(
+  // https://mvnrepository.com/artifact/org.apache.thrift/libthrift
+  libraryDependencies += "org.apache.thrift" % "libthrift" % "0.5.0-1",
 
   libraryDependencies += "com.twitter" %% "finatra-http" % versions.finatra,
   libraryDependencies += "com.twitter" %% "finatra-http" % versions.finatra % "test",
@@ -76,17 +78,17 @@ lazy val playSample = (project in file("modules/playSample")).
   dependsOn(play % "test->test;compile->compile").aggregate(play).
   settings(playSettings: _*).enablePlugins(PlayScala)
 
-lazy val finatra = (project in file("modules/finatra")).
-  dependsOn(core % "test->test;compile->compile").aggregate(core).
-  settings(finatraSettings: _*)
+//lazy val finatra = (project in file("modules/finatra")).
+//  dependsOn(core % "test->test;compile->compile").aggregate(core).
+//  settings(finatraSettings: _*)
 
 lazy val sample = (project in file("modules/sample")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   settings(commonSettings: _*).
   settings(pactSettings: _*)
 
-lazy val finatraSample = (project in file("modules/finatraSample")).
-  dependsOn(core % "test->test;compile->compile").aggregate(core).
-  dependsOn(finatra % "test->test;compile->compile").aggregate(finatra).
-  dependsOn(sample % "test->test;compile->compile").aggregate(sample).
-  settings(commonSettings: _*)
+//lazy val finatraSample = (project in file("modules/finatraSample")).
+//  dependsOn(core % "test->test;compile->compile").aggregate(core).
+//  dependsOn(finatra % "test->test;compile->compile").aggregate(finatra).
+//  dependsOn(sample % "test->test;compile->compile").aggregate(sample).
+//  settings(commonSettings: _*)

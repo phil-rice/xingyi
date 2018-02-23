@@ -5,10 +5,7 @@ import org.validoc.utils.{Service, UtilsWithLoggingSpec}
 
 import scala.concurrent.Future
 
-
-class HttpObjectServiceTest extends UtilsWithLoggingSpec {
-
-  behavior of "HttpObjectService with 'parser' response processor"
+trait HttpObjectFixture {
 
   case class HttpRes(s: String)
 
@@ -26,6 +23,13 @@ class HttpObjectServiceTest extends UtilsWithLoggingSpec {
   implicit object FromServiceRequestForHttpReq extends FromServiceRequest[HttpReq] {
     override def apply(s: ServiceRequest): HttpReq = HttpReq(s.uri.asUriString)
   }
+
+}
+
+class HttpObjectServiceTest extends UtilsWithLoggingSpec with HttpObjectFixture {
+
+  behavior of "HttpObjectService with 'parser' response processor"
+
 
   def setup(serviceResponse: => ServiceResponse)(fn: (HttpObjectService[Future, HttpReq, Req, HttpRes, Res], Service[Future, HttpReq, HttpRes], ResponseProcessor[Req, Res], ServiceResponse) => Unit) = {
     val httpService = mock[Service[Future, HttpReq, HttpRes]]

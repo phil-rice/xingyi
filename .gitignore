@@ -1,7 +1,7 @@
 .idea
 .idea_modules
 *.iml
-target
+target/
 project/target
 _site/
 Gemfile.lock
@@ -12,3 +12,10 @@ sbt
 .history
 .ensime
 .ensime_cache/
+sbt
+sbt-launch.jar
+repositories-truststore.jks
+repositories
+modules/playSample/
+project/project/
+
