@@ -1,14 +1,14 @@
 package org.validoc.sample
 
 import org.validoc.sample.domain._
-import org.validoc.utils.concurrency.Async
+import org.validoc.utils.concurrency.AsyncLanguage
 
 import scala.language.{higherKinds, postfixOps}
 
-class Sample1[M[_] : Async, HttpReq, HttpRes](mostPopularHttp: Service[M, HttpReq, HttpRes],
-                                              promotionHttp: Service[M, HttpReq, HttpRes],
-                                              programmeHttp: Service[M, HttpReq, HttpRes],
-                                              productionHttp: Service[M, HttpReq, HttpRes]) {
+class Sample1[M[_] : AsyncLanguage, HttpReq, HttpRes](mostPopularHttp: Service[M, HttpReq, HttpRes],
+                                                      promotionHttp: Service[M, HttpReq, HttpRes],
+                                                      programmeHttp: Service[M, HttpReq, HttpRes],
+                                                      productionHttp: Service[M, HttpReq, HttpRes]) {
 
   implicit class ServicePimper[Req, Res](service: Service[M, Req, Res]) {
     def cached(config: String): Service[M, Req, Res] = ???

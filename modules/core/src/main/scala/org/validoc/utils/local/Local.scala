@@ -1,8 +1,10 @@
-package org.validoc.utils.aggregate
+package org.validoc.utils.local
 
 import scala.collection.concurrent.TrieMap
-import scala.reflect.ClassTag
 import scala.language.higherKinds
+import scala.reflect.ClassTag
+import org.validoc.utils._
+
 trait LocalOps {
   def get[V: ClassTag](): Option[V]
   def put[V: ClassTag](v: V)
@@ -16,7 +18,7 @@ trait Holder[H[_]] {
 
 }
 
-class SimpleLocalOps[H[_]](holder: Holder[H]) extends LocalOps with AnyPimpers {
+class SimpleLocalOps[H[_]](holder: Holder[H]) extends LocalOps {
 
   import holder._
 

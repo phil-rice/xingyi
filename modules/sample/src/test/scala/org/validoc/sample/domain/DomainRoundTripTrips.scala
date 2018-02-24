@@ -1,6 +1,6 @@
 package org.validoc.sample.domain
 
-import org.validoc.utils.concurrency.Async
+import org.validoc.utils.concurrency.AsyncLanguage
 import org.validoc.utils.mock.MockHttpService
 
 import scala.language.higherKinds

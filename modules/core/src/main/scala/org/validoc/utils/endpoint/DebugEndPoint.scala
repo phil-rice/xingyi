@@ -1,11 +1,9 @@
 package org.validoc.utils.endpoint
 
 import org.validoc.utils.Service
-import org.validoc.utils.concurrency.Async
+import org.validoc.utils.containers.Monad
 import org.validoc.utils.http._
 import org.validoc.utils.json.ToJson
-import org.validoc.utils.monads.CanMap._
-import org.validoc.utils.serviceTree.ServiceLanguageExtension
 
 import scala.language.higherKinds
 import scala.reflect.ClassTag
@@ -47,11 +45,11 @@ trait DebugEndPointInfo {
   def samplePath: String
 }
 
-class DebugEndPointService[M[_] : Async, Req: ClassTag, Res: ClassTag](delegate: Service[M, Req, Res])(implicit debugBasePath: DebugBasePath, debugReq: DebugEndPointReqOps[Req], debugRes: DebugEndPointResOps[Res]) extends Service[M, Req, Res] with DebugEndPointInfo {
+class DebugEndPointService[M[_] : Monad, Req: ClassTag, Res: ClassTag](delegate: Service[M, Req, Res])(implicit debugBasePath: DebugBasePath, debugReq: DebugEndPointReqOps[Req], debugRes: DebugEndPointResOps[Res]) extends Service[M, Req, Res] with DebugEndPointInfo {
   val fromServiceRequest = implicitly[FromServiceRequest[Req]]
   val toServiceResponse = implicitly[ToServiceResponse[Res]]
 
-  val debugEndpoint = implicitly[FromServiceRequest[Req]] andThen delegate >>> toServiceResponse
+//  val debugEndpoint = implicitly[FromServiceRequest[Req]] andThen delegate |=>  toServiceResponse
 
   override def apply(v1: Req): M[Res] = delegate(v1)
 
@@ -60,10 +58,3 @@ class DebugEndPointService[M[_] : Async, Req: ClassTag, Res: ClassTag](delegate:
   override def samplePath: String = ???
 }
 
-
-trait DebugEndPointServiceLanguageExtension[M[_]] extends ServiceLanguageExtension[M] {
-  def debugEndpoint[Req: ClassTag : DebugEndPointReqOps, Res: ClassTag : DebugEndPointResOps](implicit debugBasePath: DebugBasePath): ServiceDelegator[Req, Res] = { childTree =>
-
-    delegate(s"DebugEndPoint", childTree, new DebugEndPointService[M, Req, Res](_))
-  }
-}

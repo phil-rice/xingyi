@@ -4,7 +4,7 @@ import org.validoc.utils.UtilsSpec
 import org.validoc.utils.http.HttpObjectFixture
 import org.validoc.utils.strings.IndentAndString
 import scala.language.higherKinds
-
+import scala.language.implicitConversions
 class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
 
@@ -12,13 +12,15 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
     import httpLanguage._
 
+    implicit def fn(s: String) = s;
+
     def s1 = http |+| objectify[String, String] |+| logging("service1") |+| metrics("service1")
     def s2 = http |+| objectify[String, String] |+| logging("service1")
     def s3 = http |+| objectify[String, String]
     def s4 = http |+| objectify[String, String]
-    def m2 = merge2(s1, s2, (_: String, _, _) => "someFn")
-    def m3 = merge3(s1, s2, s3, (_: String, _, _, _) => "someFn")
-    def m4 = merge4(s1, s2, s3, s4, (_: String, _, _, _, _) => "someFn")
+    def m2 = merge2(s1, s2, (_: String, _:String, _: String) => "someFn")
+    def m3 = merge3(s1, s2, s3, (_: String, _:String, _:String, _:String) => "someFn")
+    def m4 = merge4(s1, s2, s3, s4, (_: String, _:String, _:String, _:String, _:String) => "someFn")
   }
 
   behavior of "Tagless with toString Interpreter"

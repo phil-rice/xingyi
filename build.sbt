@@ -2,10 +2,10 @@
 
 
 val versions = new {
-  val scala = "2.11.8"
+  val scala = "2.12.2"
   //  val scala = "2.12.1"
   val finatra = "2.2.0"
-  val scalatest = "3.0.1"
+  val scalatest = "3.0.5"
   val mockito = "1.10.19"
   val guice = "4.0"
   val play = "2.5.12"
@@ -66,26 +66,26 @@ lazy val core = (project in file("modules/core")).
 //  dependsOn(core % "test->test;compile->compile").aggregate(core)
 
 
-lazy val playJson = (project in file("modules/playJson")).
-  dependsOn(core % "test->test;compile->compile").aggregate(core).
-  settings(playJsonSetting: _*)
-
-lazy val play = (project in file("modules/play")).
-  dependsOn(core % "test->test;compile->compile").aggregate(core).
-  settings(playSettings: _*)
-
-lazy val playSample = (project in file("modules/playSample")).
-  dependsOn(play % "test->test;compile->compile").aggregate(play).
-  settings(playSettings: _*).enablePlugins(PlayScala)
+//lazy val playJson = (project in file("modules/playJson")).
+//  dependsOn(core % "test->test;compile->compile").aggregate(core).
+//  settings(playJsonSetting: _*)
+//
+//lazy val play = (project in file("modules/play")).
+//  dependsOn(core % "test->test;compile->compile").aggregate(core).
+//  settings(playSettings: _*)
+//
+//lazy val playSample = (project in file("modules/playSample")).
+//  dependsOn(play % "test->test;compile->compile").aggregate(play).
+//  settings(playSettings: _*).enablePlugins(PlayScala)
 
 //lazy val finatra = (project in file("modules/finatra")).
 //  dependsOn(core % "test->test;compile->compile").aggregate(core).
 //  settings(finatraSettings: _*)
 
-lazy val sample = (project in file("modules/sample")).
-  dependsOn(core % "test->test;compile->compile").aggregate(core).
-  settings(commonSettings: _*).
-  settings(pactSettings: _*)
+//lazy val sample = (project in file("modules/sample")).
+//  dependsOn(core % "test->test;compile->compile").aggregate(core).
+//  settings(commonSettings: _*).
+//  settings(pactSettings: _*)
 
 //lazy val finatraSample = (project in file("modules/finatraSample")).
 //  dependsOn(core % "test->test;compile->compile").aggregate(core).

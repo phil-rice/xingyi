@@ -5,6 +5,7 @@ import java.util.UUID
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.Eventually
 import org.validoc.utils.UtilsWithLoggingSpec
+import org.validoc.utils.concurrency.AsyncForScalaFuture._
 import org.validoc.utils.time.NanoTimeService
 
 import scala.concurrent.duration._

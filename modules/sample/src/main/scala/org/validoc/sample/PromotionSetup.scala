@@ -2,7 +2,7 @@ package org.validoc.sample
 
 import org.validoc.sample.domain._
 import org.validoc.utils.caching.{CachableKey, CachableResult, DurationStaleCacheStategy}
-import org.validoc.utils.concurrency.Async
+import org.validoc.utils.concurrency.AsyncLanguage
 import org.validoc.utils.http._
 import org.validoc.utils.json.{FromJson, ToJson}
 import org.validoc.utils.map.MaxMapSizeStrategy
@@ -23,7 +23,7 @@ trait PromotionServiceNames {
 
 class PromotionSetup[M[_], HttpReq: FromServiceRequest : CachableKey : ClassTag, HttpRes: ToServiceResponse : CachableResult : ClassTag]
 (implicit
- protected val async: Async[M],
+ protected val async: AsyncLanguage[M],
  timeService: NanoTimeService,
  makeHttpService: MakeHttpService[M, HttpReq, HttpRes],
  toJsonForHomePage: ToJson[HomePage],
@@ -45,10 +45,10 @@ class PromotionSetup[M[_], HttpReq: FromServiceRequest : CachableKey : ClassTag,
 
   val fnord = http(programmeAndProductionServiceName)
 
-  val rawMostPopularService = vogue >--< profile("Most Popular") >--< objectify[MostPopularQuery, MostPopular]("mostPopular", ResponseProcessor.parsed) >--< caching[MostPopularQuery, MostPopular]("Most Popular", cachingStrategy, maxSize)
-  val rawPromotionService = billboard >--< caching("Promotion", cachingStrategy, maxSize) >--< profile("Promotion") >--< objectify[PromotionQuery, Promotion]("Promotion", ResponseProcessor.parsed)
-  val rawProductionService = fnord >--< objectify[ProductionId, Production]("Production", ResponseProcessor.parsed)
-  val rawProgrammeService = fnord >--< objectify[ProgrammeId, Programme]("Programme", ResponseProcessor.parsed)
+  val rawMostPopularService = vogue >--< profile("Most Popular") >--< objectify[MostPopularQuery, MostPopular]("mostPopular", ResponseCategoriser.parsed) >--< caching[MostPopularQuery, MostPopular]("Most Popular", cachingStrategy, maxSize)
+  val rawPromotionService = billboard >--< caching("Promotion", cachingStrategy, maxSize) >--< profile("Promotion") >--< objectify[PromotionQuery, Promotion]("Promotion", ResponseCategoriser.parsed)
+  val rawProductionService = fnord >--< objectify[ProductionId, Production]("Production", ResponseCategoriser.parsed)
+  val rawProgrammeService = fnord >--< objectify[ProgrammeId, Programme]("Programme", ResponseCategoriser.parsed)
 
 
   val enrichedPromotion = (rawPromotionService, rawProductionService).enrich[EnrichedPromotion]

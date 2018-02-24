@@ -2,12 +2,12 @@ package org.validoc.utils.logging
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.validoc.utils.concurrency.Async
+import org.validoc.utils.containers.{Monad, MonadCanFail, MonadWithException}
 import org.validoc.utils.time.{NanoTimeService, SystemClockNanoTimeService}
 
 import scala.language.higherKinds
 import scala.util.{Failure, Success}
-
+import org.validoc.utils._
 
 object LoggingMemoriser extends LoggingMemoriser {
 
@@ -22,7 +22,7 @@ object LoggingMemoriser extends LoggingMemoriser {
 }
 
 
-trait LoggingMemoriser  {
+trait LoggingMemoriser {
 
   def nanoTimeService: NanoTimeService
 
@@ -54,11 +54,14 @@ trait LoggingMemoriser  {
     }
   }
 
-  import Async._
-
-  def traceFuture[M[_] : Async, X](block: => M[X])(implicit loggingAdapter: LoggingAdapter): M[LoggingReport[X]] = {
+  def traceFuture[M[_], Fail, X](block: => M[X])(implicit async: MonadWithException[M], loggingAdapter: LoggingAdapter): M[LoggingReport[X]] = {
     val traceId: String = setup
-    block.transform(tryResult => LoggingReport[X](tryResult, map(traceId)).lift).registerSideEffectWhenComplete(_ => cleanup)
+    block.mapTry[LoggingReport[X]](tryResult => LoggingReport[X](tryResult, map(traceId))).registerSideeffect(_ => cleanup)
+
+
+    //      .onComplete(_ => cleanup)
+
+    //    ).registerSideEffectWhenComplete(_ => cleanup)
   }
 
 
@@ -84,7 +87,7 @@ trait LoggingMemoriser  {
     useTraceId(lr => lr.copy(records = lr.records :+ LoggingRecord(nanoTimeService(), level, msg, Option(throwable))))
   }
 
-  def useTraceId(fn: LoggingRecords => LoggingRecords)(implicit loggingAdapter: LoggingAdapter): SpanId ={
+  def useTraceId(fn: LoggingRecords => LoggingRecords)(implicit loggingAdapter: LoggingAdapter): SpanId = {
     lock.synchronized {
       thisTraceId match {
         case Some(traceId) =>
@@ -96,7 +99,8 @@ trait LoggingMemoriser  {
           }
         case _ => SpanId(0)
       }
-    }}
+    }
+  }
 
   override def toString: String = s"${getClass.getSimpleName}($map)"
 }

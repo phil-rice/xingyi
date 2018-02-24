@@ -19,9 +19,6 @@ class UtilsSpec extends FlatSpec with Matchers with MockitoSugar with Eventually
 
   def await[X](f: Future[X]) = Await.result(f, 5 seconds)
 
-  implicit class UtilsSpecAsyncPimper[M[_], T](mt: M[T])(implicit async: Async[M]) {
-    def await = async.await(mt, 5 seconds)
-  }
 
   def captorFor[C: ClassTag] = ArgumentCaptor.forClass(implicitly[ClassTag[C]].runtimeClass).asInstanceOf[ArgumentCaptor[C]]
 
@@ -34,10 +31,11 @@ class UtilsSpec extends FlatSpec with Matchers with MockitoSugar with Eventually
   }
 
 }
+
 class UtilsWithLoggingSpec extends UtilsSpec {
   implicit val loggingAdapter = NullLoggingAdapterWithMdc
 }
 
-class UtilsWithExecutionContextSpec extends UtilsSpec{
-  implicit  val mdc: MDCPropagatingExecutionContext = ExecutionContext.global
+class UtilsWithExecutionContextSpec extends UtilsSpec {
+  implicit val mdc: MDCPropagatingExecutionContext = ExecutionContext.global
 }

@@ -3,14 +3,12 @@ package org.validoc.utils.logging
 import java.text.MessageFormat
 
 import org.validoc.utils.Service
-import org.validoc.utils.concurrency.Async
-import org.validoc.utils.concurrency.Async._
+import org.validoc.utils.containers.{Monad, MonadCanFail, MonadWithException}
 import org.validoc.utils.http.RequestDetails
-import org.validoc.utils.serviceTree.ServiceLanguageExtension
 import org.validoc.utils.success.Succeeded
+import org.validoc.utils._
 
 import scala.language.higherKinds
-import scala.reflect.ClassTag
 
 trait LoggingStrings[Res] {
   def succeeded(req: RequestDetails[_], res: Res): (LogLevel, String)
@@ -32,20 +30,15 @@ object LoggingStrings {
 }
 
 
-class LoggingService[M[_] : Async, Req, Res: Succeeded](delegate: Service[M, Req, Res], pattern: String)(implicit loggingStrings: LoggingStrings[Res], loggingAdapter: LoggingAdapter) extends Service[M, Req, Res] with Logging {
+class LoggingService[M[_] : MonadWithException, Req, Res: Succeeded](delegate: Service[M, Req, Res], pattern: String)(implicit loggingStrings: LoggingStrings[Res], loggingAdapter: LoggingAdapter) extends Service[M, Req, Res] with Logging {
   def toRequestDetails(req: Req) = RequestDetails[Req](MessageFormat.format(pattern, req.toString))(req)
 
   override def apply(req: Req): M[Res] = {
     lazy val requestDetails: RequestDetails[Req] = toRequestDetails(req)
     log((Trace, s"Calling $requestDetails"))
-    delegate(req).registerSideEffectWhenComplete(log[Req, Res](requestDetails, _))
+    delegate(req)
+    //TODO actually log it
+    //      .onComplete[Fail]((requestDetails, _))
 
-  }
-}
-
-trait LoggingClientServiceLanguageExtension[M[_]] extends ServiceLanguageExtension[M] {
-
-  def logging[Req: ClassTag, Res: ClassTag : Succeeded, OldService <: Req => M[Res]](pattern: String)(implicit loggingStrings: LoggingStrings[Res], loggingAdapter: LoggingAdapter): ServiceDelegator[Req, Res] = { childTree =>
-    delegate(s"LoggingClient($pattern)", childTree, new LoggingService[M, Req, Res](_, pattern))
   }
 }

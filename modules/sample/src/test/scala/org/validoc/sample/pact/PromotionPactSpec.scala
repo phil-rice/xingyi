@@ -4,8 +4,8 @@ import org.validoc.sample.PromotionServiceNames
 import org.validoc.sample.domain._
 import org.validoc.utils.Closable
 import org.validoc.utils.caching.{CachableKey, CachableResult}
-import org.validoc.utils.concurrency.Async
-import org.validoc.utils.concurrency.Async._
+import org.validoc.utils.concurrency.AsyncLanguage
+import org.validoc.utils.concurrency.AsyncLanguage._
 import org.validoc.utils.http._
 import org.validoc.utils.server.ServerBuilder
 
@@ -13,7 +13,7 @@ import scala.language.higherKinds
 import scala.reflect.ClassTag
 
 abstract class PromotionPactSpec[
-M[_] : Async,
+M[_] : AsyncLanguage,
 HttpReq: FromServiceRequest : CachableKey : ClassTag,
 HttpRes: ToServiceResponse : CachableResult : ClassTag,
 S <: HttpReq => M[HttpRes] : Closable, Server: Closable](implicit serverBuilder: ServerBuilder[M, Server]) extends PactSpec[M, HttpReq, HttpRes, S, Server] with PromotionServiceNames {

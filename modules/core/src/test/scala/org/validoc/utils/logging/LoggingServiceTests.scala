@@ -7,6 +7,7 @@ import org.validoc.utils.success.{Succeeded, SucceededFromFn}
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
+import org.validoc.utils.concurrency.AsyncForScalaFuture._
 
 class LoggingServiceTests extends UtilsWithLoggingSpec with LoggingFixture {
 

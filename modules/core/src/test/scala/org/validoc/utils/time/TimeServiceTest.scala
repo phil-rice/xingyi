@@ -5,13 +5,16 @@ import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
-import org.validoc.utils.concurrency.Async._
 import org.validoc.utils.concurrency.MDCPropagatingExecutionContext
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
+
+import org.validoc.utils._
+import org.validoc.utils.concurrency.AsyncForScalaFuture._
+
 class MockTimeService extends NanoTimeService {
   val i = new AtomicLong(1000)
 
@@ -34,7 +37,7 @@ class TimeServiceTest extends FlatSpec with Matchers with MockitoSugar with Even
 
   it should "time a Req => Future[Res] and report the time to a sideeffect" in {
     setup { (timeService, ref, sideeffect) =>
-      await(timeService[Future, String, String] { x => (x + "_result").liftValue }(sideeffect).apply("x")) shouldBe "x_result"
+      await(timeService[Future, String, String] { x => (x + "_result").liftM }(sideeffect).apply("x")) shouldBe "x_result"
       eventually(ref.get shouldBe ((Success("x_result"), 100l)))
     }
   }
@@ -42,7 +45,7 @@ class TimeServiceTest extends FlatSpec with Matchers with MockitoSugar with Even
   it should "time a Req => Future[Res] and report the time to a sideeffect when there is an exception" in {
     val runtimeException = new RuntimeException
     setup { (timeService, ref, sideeffect) =>
-      intercept[RuntimeException](await(timeService[Future, String, String] { _ => runtimeException.liftThrowable }(sideeffect).apply("x"))) shouldBe runtimeException
+      intercept[RuntimeException](await(timeService[Future, String, String] { _ => runtimeException.liftException }(sideeffect).apply("x"))) shouldBe runtimeException
       eventually(ref.get shouldBe ((Failure(runtimeException), 100l)))
     }
   }

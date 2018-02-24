@@ -15,6 +15,7 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.language.postfixOps
 import scala.util.{Failure, Success}
 
+import org.validoc.utils.concurrency.AsyncForScalaFuture._
 class MetricServiceTest extends FlatSpec with Matchers with MockitoSugar with Eventually {
   implicit val ec: MDCPropagatingExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
   

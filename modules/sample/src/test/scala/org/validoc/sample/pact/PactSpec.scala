@@ -5,7 +5,7 @@ import org.validoc.sample.{PromotionServiceNames, PromotionSetup}
 import org.validoc.sample.domain.SampleJsonsForCompilation
 import org.validoc.utils.{Closable, UtilsSpec}
 import org.validoc.utils.caching.{CachableKey, CachableResult, CachingService}
-import org.validoc.utils.concurrency.Async
+import org.validoc.utils.concurrency.AsyncLanguage
 import org.validoc.utils.http.{FromServiceRequest, MakeHttpService, ServiceName, ToServiceResponse}
 import org.validoc.utils.serviceTree.{ServiceDescription, ServiceLanguage, ServiceTree}
 
@@ -15,7 +15,7 @@ import org.validoc.utils.server.ServerBuilder
 
 import scala.language.higherKinds
 
-class HttpServiceHolder[M[_] : Async, HttpReq, HttpRes, S <: HttpReq => M[HttpRes] : Closable](makeServiceOnLocalHost: Int => S) extends (HttpReq => M[HttpRes]) {
+class HttpServiceHolder[M[_] : AsyncLanguage, HttpReq, HttpRes, S <: HttpReq => M[HttpRes] : Closable](makeServiceOnLocalHost: Int => S) extends (HttpReq => M[HttpRes]) {
   def clear = service = None
 
   var service: Option[S] = None
@@ -33,7 +33,7 @@ class HttpServiceHolder[M[_] : Async, HttpReq, HttpRes, S <: HttpReq => M[HttpRe
 }
 
 abstract class PactSpec[
-M[_] : Async,
+M[_] : AsyncLanguage,
 HttpReq: FromServiceRequest : CachableKey : ClassTag,
 HttpRes: ToServiceResponse : CachableResult : ClassTag,
 S <: HttpReq => M[HttpRes] : Closable,
