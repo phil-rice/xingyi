@@ -26,10 +26,10 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
       override def apply(v1: String) = v1.split(",")
     }
 
-    def s1 = http |+| objectify[String, String] |+| logging("service1") |+| metrics("service1")
-    def s2 = http |+| objectify[String, String] |+| logging("service1")
-    def s3 = http |+| objectify[String, String]
-    def s4 = http |+| objectify[String, String]
+    def s1 = http("s1") |+| objectify[String, String] |+| logging("service1") |+| metrics("service1")
+    def s2 = http("s2") |+| objectify[String, String] |+| logging("service1")
+    def s3 = http("s3") |+| objectify[String, String]
+    def s4 = http("s4") |+| objectify[String, String]
 
     val e1 = enrich(s1).withChild(s2).mergeInto[String]
 
@@ -41,26 +41,22 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
   behavior of "Tagless with toString Interpreter"
 
   it should "handle" in {
-    implicit val stringlanguage = new TaglessLanguageForToString[HttpReq, HttpRes]
+    implicit val stringlanguage = new TaglessInterpreterForToString[HttpReq, HttpRes]
     import stringlanguage._
 
 
     val sample = new Sample[StringHolder, Void]()
-    sample.s1.lines shouldBe List((3, "metrics(service1)"), (2, "logging(service1 using prefixsomeMessageName)"), (1, "objectify[String,String]"), (0, "http"))
+    sample.s1.lines shouldBe List((3, "metrics(service1)"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s1)"))
 
     sample.m2.lines shouldBe List(
       (4, "merge2"),
-      (3, "metrics(service1)"), (2, "logging(service1 using prefixsomeMessageName)"), (1, "objectify[String,String]"), (0, "http"),
-      (2, "logging(service1 using prefixsomeMessageName)"), (1, "objectify[String,String]"), (0, "http"))
-    //      (0,http), (1,objectify[String,String]), (2,logging(service1)), (3,metrics(service1)), (0,http), (1,objectify[String,String]), (2,logging(service1
-    //    List()
-    //    sample.m3.lines shouldBe List((0, "http"), (1, "objectify[String,String]"), (2, "logging(service1)"), (3, "metrics(service1)"))
-    //    sample.m4.lines shouldBe List((0, "http"), (1, "objectify[String,String]"), (2, "logging(service1)"), (3, "metrics(service1)"))
+      (3, "metrics(service1)"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s1)"),
+      (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s2)"))
 
     sample.e1.lines shouldBe List(
       (4, "enrich"),
-      (3, "metrics(service1)"), (2, "logging(service1 using prefixsomeMessageName)"), (1, "objectify[String,String]"), (0, "http"),
-      (2, "logging(service1 using prefixsomeMessageName)"), (1, "objectify[String,String]"), (0, "http"))
+      (3, "metrics(service1)"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s1)"),
+      (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s2)"))
   }
 
 }

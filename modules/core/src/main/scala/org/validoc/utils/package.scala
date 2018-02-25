@@ -10,7 +10,6 @@ import scala.util.{Failure, Success, Try}
 package object utils {
 
   type Service[M[_], Req, Res] = (Req => M[Res])
-  type Parser[T] = String => T
 
   def withValue[X, Y](x: X)(fn: X => Y) = fn(x)
   implicit class AnyPimper[T](t: T) {
@@ -32,6 +31,7 @@ package object utils {
 
   implicit class FunctionPimper[Req, Res](fn: Req => Res) {
     def ~>[Res2](fn2: Res => Res2): (Req) => Res2 = { res: Req => fn2(fn(res)) }
+    def ~+>[Res2](fn2: Req => Res => Res2): (Req => Res2) = { req: Req => fn2(req)(fn(req)) }
     //    def let[Mid, Res2](mid: Req => Mid)(fn2: Mid => Res => Res): Req => Res = { req: Req => fn2(mid(req))(fn(req)) }
     def onEnterAndExit[Mid](mid: Req => Mid, before: Mid => Unit, after: (Mid, Res) => Unit) = { req: Req =>
       val m = mid(req)
@@ -43,6 +43,16 @@ package object utils {
   }
   implicit class Function2Pimper[Req1, Req2, Res](fn: (Req1, Req2) => Res) {
     def ~>[Res2](fn2: Res => Res2): (Req1, Req2) => Res2 = { (r1, r2) => fn2(fn(r1, r2)) }
+  }
+
+  implicit class SeqFunctionPimper[Req, Res](fn: Req => Seq[Res]) {
+    def ~>[Res2](fn2: Res => Res2): (Req) => Seq[Res2] = { res: Req => fn(res).map(fn2) }
+
+    def ~~>[M[_], Res2](fn2: Res => M[Res2])(implicit async: Monad[M]): Req => M[Seq[Res2]] = { req: Req => async.flattenM(fn(req).map(fn2)) }
+    def ~+>[M[_], Res2](fn2: Res => M[Res2])(implicit async: Monad[M]): Req => M[Seq[(Res, Res2)]] = { req: Req =>
+      async.flattenM(fn(req).map(r => fn2(r).map(res2 => (r, res2))))
+
+    }
   }
 
 
@@ -85,7 +95,8 @@ package object utils {
 
   implicit class MonadFunctionPimper[M[_], Req, Res](fn: Req => M[Res])(implicit monad: Monad[M]) {
     def |=>[Res2](mapFn: Res => Res2): (Req => M[Res2]) = req => monad.map(fn(req), mapFn)
-    def |+>[Res2](mapFn: (Req => Res => Res2)): (Req => M[Res2]) = req => monad.map(fn(req), mapFn(req))
+    def |=+>[Res2](mapFn: (Req => Res => Res2)): (Req => M[Res2]) = req => monad.map(fn(req), mapFn(req))
+    def |=++>[Res2](mapFn: (Req => Res => Res => M[Res2])): (Req => M[Res2]) = { req => monad.flatMap(fn(req), { res: Res => mapFn(req)(res)(res) }) }
     def |==>[Res2](mapFn: Res => M[Res2]): (Req => M[Res2]) = req => monad.flatMap(fn(req), mapFn)
 
     def split[Res1, Res2](mapFn1: Res => M[Res1], mapFn2: Res => M[Res2]): (Req => M[(Res1, Res2)]) = { req =>
@@ -100,6 +111,7 @@ package object utils {
       monad.join2(res, res2)
     }
   }
+
 
   implicit class MonadCanFailFunctionPimper[M[_], Req, Res](fn: Req => M[Res]) {
     def |=|>[Fail, Res2](mapFn: Res => Either[Fail, Res2])(implicit monad: MonadCanFail[M, Fail]) = { req: Req =>
@@ -132,12 +144,6 @@ package object utils {
     }
   }
 
-
-  implicit class SeqFunctionPimper[Req, Res](fn: Req => Seq[Res]) {
-    def ~>[Res2](fn2: Res => Res2): (Req) => Seq[Res2] = { res: Req => fn(res).map(fn2) }
-
-    def ~~>[M[_], Res2](fn2: Res => M[Res2])(implicit async: Monad[M]): Req => M[Seq[Res2]] = { res: Req => async.flattenM(fn(res).map(fn2)) }
-  }
 
   implicit class Tuple2MonadPimper[M[_], T1, T2](tuple: (M[T1], M[T2]))(implicit async: Monad[M]) {
     def join[T](fn: (T1, T2) => T): M[T] = async.map(async.join2(tuple._1, tuple._2), fn.tupled)

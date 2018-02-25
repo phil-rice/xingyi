@@ -40,8 +40,9 @@ class LogRequestAndResult[Fail: DetailedLogging : SummaryLogging](implicit bundl
 
   }
 }
-class LoggingService[M[_], Fail, Req: DetailedLogging : SummaryLogging, Res: DetailedLogging : SummaryLogging](sender: Any)(implicit monadCanFail: MonadCanFail[M, Fail], messageName: MessageName[Req, Res], logReqAndResult: LogRequestAndResult[Fail], loggingAdapter: LoggingAdapter) extends Logging {
+class LoggingService[M[_], Fail](sender: Any)(implicit monadCanFail: MonadCanFail[M, Fail], logReqAndResult: LogRequestAndResult[Fail], loggingAdapter: LoggingAdapter) extends Logging {
 
-  def logging(pattern: String)(delegate: Req => M[Res]) = delegate.sideeffect(logReqAndResult[Req, Res](sender))
+  def logging[Req: DetailedLogging : SummaryLogging, Res: DetailedLogging : SummaryLogging](pattern: String)(delegate: Req => M[Res])(implicit messageName: MessageName[Req, Res]) =
+    delegate.sideeffect(logReqAndResult[Req, Res](sender))
 
 }
