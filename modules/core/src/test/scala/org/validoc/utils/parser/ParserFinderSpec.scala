@@ -2,7 +2,7 @@ package org.validoc.utils.parser
 
 import org.mockito.Mockito._
 import org.validoc.utils.http.ContentType
-import org.validoc.utils.{Parser, ParserNotFoundException, UtilsWithLoggingSpec}
+import org.validoc.utils.{ParserNotFoundException, UtilsWithLoggingSpec}
 
 abstract class AbstractParserSpec[T <: ParserFinder[String]] extends UtilsWithLoggingSpec {
 

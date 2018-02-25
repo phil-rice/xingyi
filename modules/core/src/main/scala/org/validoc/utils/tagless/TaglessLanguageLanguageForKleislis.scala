@@ -10,8 +10,9 @@ import org.validoc.utils.time.NanoTimeService
 import scala.reflect.ClassTag
 import scala.language.higherKinds
 import org.validoc.utils._
+import org.validoc.utils.cache._
 
-trait HttpFactory[M[_], HttpReq, HttpRes] extends (String => HttpReq => M[HttpRes])
+trait HttpFactory[M[_], HttpReq, HttpRes] extends (ServiceName => HttpReq => M[HttpRes])
 
 class TaglessLanguageLanguageForKleislis[M[_], Fail, HttpReq, HttpRes](implicit monadCanFail: MonadCanFail[M, Fail],
                                                                        httpFactory: HttpFactory[M, HttpReq, HttpRes],
@@ -20,18 +21,23 @@ class TaglessLanguageLanguageForKleislis[M[_], Fail, HttpReq, HttpRes](implicit 
                                                                        logReqAndResult: LogRequestAndResult[Fail],
                                                                        loggingAdapter: LoggingAdapter,
                                                                        timeService: NanoTimeService,
-                                                                       putMetrics: PutMetrics) extends LoggingService[M, Fail] {
+                                                                       putMetrics: PutMetrics,
+                                                                       cacheFactory: CacheFactory[M]) extends LoggingService[M, Fail] {
   type K[Req, Res] = Req => M[Res]
 
 
   class NonFunctionalLanguageService extends TaglessLanguage[K, Fail, HttpReq, HttpRes] {
-    override def http(name: String) = httpFactory(name)
+    override def http(name: ServiceName) = httpFactory(name)
 
     override def metrics[Req: ClassTag, Res: ClassTag](prefix: String)(raw: K[Req, Res])(implicit makeReportData: RD[Res]) =
       raw.enterAndExit[Fail, Long]({ r: Req => timeService() }, makeReportData(prefix) ~> putMetrics)
 
     override def logging[Req: ClassTag : DetailedLogging : SummaryLogging, Res: ClassTag : DetailedLogging : SummaryLogging](pattern: String)(raw: K[Req, Res])(implicit messageName: MessageName[Req, Res]) =
       raw.sideeffect(logReqAndResult[Req, Res](raw))
+
+    override def cache[Req: ClassTag : Cachable : ShouldCache, Res: ClassTag](name: String)(raw: K[Req, Res]): Req => M[Res] =
+      Cache.apply[M, Req, Res](cacheFactory[Res](name), raw)
+
 
     def objectify[Req: ClassTag : ToServiceRequest : ResponseCategoriser, Res: ClassTag](http: K[HttpReq, HttpRes])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[Req], responseProcessor: ResponseProcessor[Fail, Req, Res]) =
       toRequest ~> toHttpReq ~> http |=> toServiceResponse |=+> categoriser |=|> responseProcessor

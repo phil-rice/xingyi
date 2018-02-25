@@ -30,6 +30,7 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
       override def apply(v1: String) = v1
     }
 
+    implicit def toSName(s: String)= ServiceName(s)
     def s1 = http("s1") |+| objectify[String, String] |+| logging("service1") |+| metrics("service1")
     def s2 = http("s2") |+| objectify[String, String] |+| logging("service1")
     def s3 = http("s3") |+| objectify[String, String]

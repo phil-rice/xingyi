@@ -82,10 +82,10 @@ lazy val core = (project in file("modules/core")).
 //  dependsOn(core % "test->test;compile->compile").aggregate(core).
 //  settings(finatraSettings: _*)
 
-//lazy val sample = (project in file("modules/sample")).
-//  dependsOn(core % "test->test;compile->compile").aggregate(core).
-//  settings(commonSettings: _*).
-//  settings(pactSettings: _*)
+lazy val sample = (project in file("modules/sample")).
+  dependsOn(core % "test->test;compile->compile").aggregate(core).
+  settings(commonSettings: _*).
+  settings(pactSettings: _*)
 
 //lazy val finatraSample = (project in file("modules/finatraSample")).
 //  dependsOn(core % "test->test;compile->compile").aggregate(core).

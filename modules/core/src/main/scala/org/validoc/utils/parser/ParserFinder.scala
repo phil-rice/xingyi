@@ -2,10 +2,11 @@ package org.validoc.utils.parser
 
 import org.validoc.utils.http.ContentType
 import org.validoc.utils.json.FromJson
-import org.validoc.utils.{Parser, ParserException, ParserNotFoundException}
+import org.validoc.utils.{ParserException, ParserNotFoundException}
 
 import scala.annotation.implicitNotFound
 
+trait Parser[T] extends (String => T)
 
 sealed trait ParserResult[Result] {
   def map[Result2](fn: Result => Result2): ParserResult[Result2]

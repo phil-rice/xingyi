@@ -1,13 +1,11 @@
 package org.validoc.utils.tagless
 
 import org.validoc.utils.aggregate.FindReq
-import org.validoc.utils.functions.MonadCanFail
+import org.validoc.utils.cache.{Cachable, ShouldCache}
 import org.validoc.utils.http._
 import org.validoc.utils.logging._
-import org.validoc.utils.metrics.{MetricsService, PutMetrics, ReportData}
-import org.validoc.utils.strings.IndentAndString
+import org.validoc.utils.metrics.ReportData
 import org.validoc.utils.success.MessageName
-import org.validoc.utils.time.NanoTimeService
 
 import scala.language.higherKinds
 import scala.reflect.ClassTag
@@ -19,8 +17,9 @@ trait Enricher[Req, Parent, ChildId, Child, Res] extends ((Req, Parent, Seq[(Chi
 trait TaglessLanguage[Wrapper[_, _], Fail, HttpReq, HttpRes] extends HttpLanguage[Wrapper, Fail, HttpReq, HttpRes] with NonfunctionalLanguage[Wrapper, Fail] with ComposeLanguage[Wrapper]
 
 trait HttpLanguage[Wrapper[_, _], Fail, HttpReq, HttpRes] extends NonfunctionalLanguage[Wrapper, Fail] {
-  def http(name: String): Wrapper[HttpReq, HttpRes]
-  def objectify[Req: ClassTag : ToServiceRequest : ResponseCategoriser, Res: ClassTag](http: Wrapper[HttpReq, HttpRes])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[Req], responseProcessor: ResponseProcessor[Fail, Req, Res]): Wrapper[Req, Res]
+  def http(name: ServiceName): Wrapper[HttpReq, HttpRes]
+  def objectify[Req: ClassTag : ToServiceRequest : ResponseCategoriser, Res: ClassTag](http: Wrapper[HttpReq, HttpRes])
+                                                                                      (implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[Req], responseProcessor: ResponseProcessor[Fail, Req, Res]): Wrapper[Req, Res]
 }
 
 trait NonfunctionalLanguage[Wrapper[_, _], Fail] {
@@ -29,6 +28,7 @@ trait NonfunctionalLanguage[Wrapper[_, _], Fail] {
 
   def logging[Req: ClassTag : DetailedLogging : SummaryLogging, Res: ClassTag : DetailedLogging : SummaryLogging](pattern: String)(raw: Wrapper[Req, Res])(implicit messageName: MessageName[Req, Res]): Wrapper[Req, Res]
 
+  def cache[Req: ClassTag:Cachable:ShouldCache, Res: ClassTag](name: String)(raw: Wrapper[Req, Res]): Wrapper[Req, Res]
 
   implicit class ComposePimper[RawReq, RawRes](wrapper: Wrapper[RawReq, RawRes]) {
     def |+|[Req, Res](fn: Wrapper[RawReq, RawRes] => Wrapper[Req, Res]): Wrapper[Req, Res] = fn(wrapper)

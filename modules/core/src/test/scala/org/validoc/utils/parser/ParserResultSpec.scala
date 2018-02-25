@@ -1,7 +1,7 @@
 package org.validoc.utils.parser
 
 import org.validoc.utils.http.ContentType
-import org.validoc.utils.{Parser, ParserException, UtilsWithLoggingSpec}
+import org.validoc.utils.{ParserException, UtilsWithLoggingSpec}
 
 class ParserResultSpec extends UtilsWithLoggingSpec {
 
