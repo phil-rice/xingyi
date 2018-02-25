@@ -10,7 +10,7 @@ class HttpObjectService[M[_], Fail, HttpReq, HttpRes](implicit async: MonadCanFa
                                                       toServiceResponse: ToServiceResponse[HttpRes],
                                                       toHttpReq: FromServiceRequest[HttpReq]) {
 
-  def objectify[Req, Res](name: String, rawClient: HttpReq => M[HttpRes])
-                         (implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[Req], responseProcessor: ResponseProcessor[M, Fail, Req, Res]): (Req => M[Res]) =
-    toRequest ~> toHttpReq ~> rawClient |=> toServiceResponse |+> categoriser |==> responseProcessor
+  def objectify[Req, Res](rawClient: HttpReq => M[HttpRes])
+                         (implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[Req], responseProcessor: ResponseProcessor[Fail, Req, Res]): (Req => M[Res]) =
+    toRequest ~> toHttpReq ~> rawClient |=> toServiceResponse |+> categoriser |=|> responseProcessor
 }

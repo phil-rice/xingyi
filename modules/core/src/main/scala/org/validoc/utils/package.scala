@@ -66,7 +66,7 @@ package object utils {
   }
 
   implicit class MonadCanFailPimper[M[_], T](m: M[T]) {
-    def fold[Fail, T1](fnE: Exception => M[T1], fnFailure: Fail => M[T1], fn: T => M[T1])(implicit async: MonadCanFail[M, Fail]): M[T1] = async.foldWithFail[T, T1](m, fnE, fnFailure, fn)
+    def foldFailure[Fail, T1](fnE: Exception => M[T1], fnFailure: Fail => M[T1], fn: T => M[T1])(implicit async: MonadCanFail[M, Fail]): M[T1] = async.foldWithFail[T, T1](m, fnE, fnFailure, fn)
     //    def foldTry[Fail, T1](fnTry: Try[T] => T1)(implicit async: MonadCanFail[M, Fail]) = monad.fold(m, t => fnTry(Failure(t)), { t: T => fnTry(Success(t)) })
     def onComplete[Fail](fn: Try[Either[Fail, T]] => Unit)(implicit async: MonadCanFail[M, Fail]): M[T] = async.onComplete(m, fn)
 
@@ -102,13 +102,16 @@ package object utils {
   }
 
   implicit class MonadCanFailFunctionPimper[M[_], Req, Res](fn: Req => M[Res]) {
-    def enterAndExit[Fail, Mid](midFn: Req => Mid,sideeffectFn: (Mid,  SucceededState[ Fail,Res]) => Unit)(implicit monad: MonadCanFail[M, Fail]): Req => M[Res] = { req: Req =>
+    def |=|>[Fail, Res2](mapFn: Res => Either[Fail, Res2])(implicit monad: MonadCanFail[M, Fail]) = { req: Req =>
+      fn(req).flatMap(res => mapFn(res).fold[M[Res2]]({ fail: Fail => monad.fail(fail) }, { res2: Res2 => monad.liftM(res2) }))
+    }
+    def enterAndExit[Fail, Mid](midFn: Req => Mid, sideeffectFn: (Mid, SucceededState[Fail, Res]) => Unit)(implicit monad: MonadCanFail[M, Fail]): Req => M[Res] = { req: Req =>
       val mid = midFn(req)
       val m = fn(req)
       monad.foldWithFail[Res, Res](m, { t => sideeffectFn(mid, ExceptionState(t)); m }, { f => sideeffectFn(mid, FailedState(f)); m }, { res => sideeffectFn(mid, SuccessState(res)); m })
 
     }
-    def sideeffect[Fail](sideeffectFn: Req => SucceededState[Fail,Res] => Unit)(implicit monad: MonadCanFail[M, Fail]): Req => M[Res] = { req: Req =>
+    def sideeffect[Fail](sideeffectFn: Req => SucceededState[Fail, Res] => Unit)(implicit monad: MonadCanFail[M, Fail]): Req => M[Res] = { req: Req =>
       val m = fn(req)
       monad.foldWithFail[Res, Res](m, { t => sideeffectFn(req)(ExceptionState(t)); m }, { f => sideeffectFn(req)(FailedState(f)); m }, { res => sideeffectFn(req)(SuccessState(res)); m })
     }

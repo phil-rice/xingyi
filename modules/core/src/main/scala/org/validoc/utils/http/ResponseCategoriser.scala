@@ -21,4 +21,6 @@ object ResponseCategoriser {
       }
     }
   }
+
+  implicit def default[Req] = apply[Req]()
 }

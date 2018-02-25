@@ -15,7 +15,7 @@ case class IndentAndString(indent: Int, lines: List[(Int, String)]) {
 object IndentAndString {
 
   def merge(title: String, indentAndStrings: IndentAndString*): IndentAndString = {
-    val depth = indentAndStrings.map(_.indent).max + 1
+    val depth = indentAndStrings.map(_.indent).max
     IndentAndString(depth, (depth, title) :: indentAndStrings.flatMap(_.lines).toList)
   }
 
