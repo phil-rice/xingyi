@@ -12,6 +12,11 @@ package object utils {
   type Service[M[_], Req, Res] = (Req => M[Res])
 
   def withValue[X, Y](x: X)(fn: X => Y) = fn(x)
+
+  def join2WithReq[M[_], Req, Res1, Res2](firstService: Req => M[Res1], secondService: Req => M[Res2])(implicit monad: Monad[M]) = { req: Req => monad.join3(req.liftM, firstService(req), secondService(req)) }
+  def join3WithReq[M[_], Req, Res1, Res2,Res3](firstService: Req => M[Res1], secondService: Req => M[Res2], thirdService: Req => M[Res3])(implicit monad: Monad[M]) = { req: Req => monad.join4(req.liftM, firstService(req), secondService(req), thirdService(req)) }
+  def join4WithReq[M[_], Req, Res1, Res2,Res3, Res4](firstService: Req => M[Res1], secondService: Req => M[Res2], thirdService: Req => M[Res3], fouthService: Req => M[Res4])(implicit monad: Monad[M]) = { req: Req => monad.join5(req.liftM, firstService(req), secondService(req), thirdService(req), fouthService(req)) }
+
   implicit class AnyPimper[T](t: T) {
     def |>[T2](fn: T => T2) = fn(t)
     def liftM[M[_]](implicit monad: Monad[M]): M[T] = monad.liftM(t)

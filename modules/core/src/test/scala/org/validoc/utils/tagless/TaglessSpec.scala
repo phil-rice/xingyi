@@ -1,6 +1,7 @@
 package org.validoc.utils.tagless
 
 import org.validoc.utils.UtilsSpec
+import org.validoc.utils.aggregate.FindReq
 import org.validoc.utils.http._
 import org.validoc.utils.success.MessageName
 
@@ -25,6 +26,9 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
     implicit object HasChildrenForString extends HasChildren[String, String] {
       override def apply(v1: String) = v1.split(",")
     }
+    implicit object FindReqForString extends FindReq[String, String] {
+      override def apply(v1: String) = v1
+    }
 
     def s1 = http("s1") |+| objectify[String, String] |+| logging("service1") |+| metrics("service1")
     def s2 = http("s2") |+| objectify[String, String] |+| logging("service1")
@@ -33,9 +37,11 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
     val e1 = enrich(s1).withChild(s2).mergeInto[String]
 
-    def m2 = merge2(s1, s2, (_: String, _: String, _: String) => "someFn")
-    def m3 = merge3(s1, s2, s3, (_: String, _: String, _: String, _: String) => "someFn")
-    def m4 = merge4(s1, s2, s3, s4, (_: String, _: String, _: String, _: String, _: String) => "someFn")
+    def m2 = merge(s1) and s2 into ((_: String, _: String, _: String) => "someFn")
+    def m3 = merge(s1) and s2 and s3 into ((_: String, _: String, _: String, _: String) => "someFn")
+    def m4 = merge(s1) and s2 and s3 and s4 into ((_: String, _: String, _: String, _: String, _: String) => "someFn")
+    //    def m3 = merge3(s1, s2, s3, (_: String, _: String, _: String, _: String) => "someFn")
+    //    def m4 = merge4(s1, s2, s3, s4, (_: String, _: String, _: String, _: String, _: String) => "someFn")
   }
 
   behavior of "Tagless with toString Interpreter"
@@ -52,11 +58,28 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
       (4, "merge2"),
       (3, "metrics(service1)"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s1)"),
       (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s2)"))
+    sample.m3.lines shouldBe List(
+      (4, "merge3"),
+      (3, "metrics(service1)"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s1)"),
+      (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s2)"),
+      (1, "objectify[String,String]"), (0, "http(s3)"))
+
+//      :List((4,merge4), (3,metrics(service1)), (2,logging(service1 using prefix someMessageName)), (1,objectify[String,String]), (0,http(s1)), (2,logging(service1 using prefix someMessageName)), (1,objectify[String,String]), (0,http(s2)), (1,objectify[String,String]), (0,http(s3)), (1,objectify[String,String]), (0,http(s4)))
+
+    sample.m4.lines shouldBe List(
+      (4, "merge4"),
+      (3, "metrics(service1)"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s1)"),
+      (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s2)"),
+      (1, "objectify[String,String]"), (0, "http(s3)"),
+      (1, "objectify[String,String]"), (0, "http(s4)"))
 
     sample.e1.lines shouldBe List(
       (4, "enrich"),
       (3, "metrics(service1)"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s1)"),
       (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s2)"))
+
+
+
   }
 
 }

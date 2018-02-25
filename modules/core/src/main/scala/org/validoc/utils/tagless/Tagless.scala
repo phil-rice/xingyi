@@ -1,5 +1,6 @@
 package org.validoc.utils.tagless
 
+import org.validoc.utils.aggregate.FindReq
 import org.validoc.utils.functions.MonadCanFail
 import org.validoc.utils.http._
 import org.validoc.utils.logging._
@@ -36,20 +37,37 @@ trait NonfunctionalLanguage[Wrapper[_, _], Fail] {
 }
 
 trait ComposeLanguage[Wrapper[_, _]] {
+  case class ServiceAndFindChildIds[ReqM, Req, Res](service: Wrapper[Req, Res])(implicit findChildIds1: FindReq[ReqM, Req])
+
   case class enrich[ReqP, ResP](parent: Wrapper[ReqP, ResP]) {
     case class withChild[ReqC, ResC](child: Wrapper[ReqC, ResC])(implicit findChildIds: HasChildren[ResP, ReqC]) {
       def mergeInto[ResE](implicit enricher: Enricher[ReqP, ResP, ReqC, ResC, ResE]): Wrapper[ReqP, ResE] = enrichPrim(parent, child)
     }
   }
+  protected class Merge[Req1, Res1](firstService: Wrapper[Req1, Res1]) {
+    case class and[Req2, Res2](secondService: Wrapper[Req2, Res2]) {
+      def into[ReqM, ResM](merger: (ReqM, Res1, Res2) => ResM)(implicit findReq1: FindReq[ReqM, Req1], findReq2: FindReq[ReqM, Req2]): Wrapper[ReqM, ResM] =
+        merge2Prim(firstService, secondService, merger)
+      case class and[Req3, Res3](thirdService: Wrapper[Req3, Res3]) {
+        def into[ReqM, ResM](merger: (ReqM, Res1, Res2, Res3) => ResM)(implicit findReq1: FindReq[ReqM, Req1], findReq2: FindReq[ReqM, Req2], findReq3: FindReq[ReqM, Req3]): Wrapper[ReqM, ResM] =
+          merge3Prim(firstService, secondService, thirdService, merger)
+        case class and[Req4, Res4](fourthService: Wrapper[Req4, Res4]) {
+          def into[ReqM, ResM](merger: (ReqM, Res1, Res2, Res3, Res4) => ResM)(implicit findReq1: FindReq[ReqM, Req1], findReq2: FindReq[ReqM, Req2], findReq3: FindReq[ReqM, Req3], findReq4: FindReq[ReqM, Req4]): Wrapper[ReqM, ResM] = merge4Prim(firstService, secondService, thirdService, fourthService, merger)
+        }
+      }
+    }
+  }
+
+  def merge[Req1, Res1](firstService: Wrapper[Req1, Res1]) = new Merge[Req1, Res1](firstService)
 
   protected def enrichPrim[ReqP, ResP, ReqC, ResC, ResE](parent: Wrapper[ReqP, ResP], child: Wrapper[ReqC, ResC])(implicit findChildIds: HasChildren[ResP, ReqC], enricher: Enricher[ReqP, ResP, ReqC, ResC, ResE]): Wrapper[ReqP, ResE]
 
-  def merge2[ReqM, ResM, Req1, Res1, Req2, Res2](firstService: Wrapper[Req1, Res1], secondService: Wrapper[Req2, Res2], merger: (ReqM, Res1, Res2) => ResM)(implicit reqMtoReq1: ReqM => Req1, reqMtoReq2: ReqM => Req2): Wrapper[ReqM, ResM]
 
-  def merge3[ReqM, ResM, Req1, Res1, Req2, Res2, Req3, Res3](firstService: Wrapper[Req1, Res1], secondService: Wrapper[Req2, Res2], thirdService: Wrapper[Req3, Res3], merger: (ReqM, Res1, Res2, Res3) => ResM)(implicit reqMtoReq1: ReqM => Req1, reqMtoReq2: ReqM => Req2, reqMtoReq3: ReqM => Req3): Wrapper[ReqM, ResM]
+  protected def merge2Prim[ReqM, ResM, Req1, Res1, Req2, Res2](firstService: Wrapper[Req1, Res1], secondService: Wrapper[Req2, Res2], merger: (ReqM, Res1, Res2) => ResM)(implicit reqMtoReq1: ReqM => Req1, reqMtoReq2: ReqM => Req2): Wrapper[ReqM, ResM]
 
-  def merge4[ReqM, ResM, Req1, Res1, Req2, Res2, Req3, Res3, Req4, Res4](firstService: Wrapper[Req1, Res1], secondService: Wrapper[Req2, Res2], thirdService: Wrapper[Req3, Res3], fourthService: Wrapper[Req4, Res4], merger: (ReqM, Res1, Res2, Res3, Res4) => ResM)(implicit reqMtoReq1: ReqM => Req1, reqMtoReq2: ReqM => Req2, reqMtoReq3: ReqM => Req3): Wrapper[ReqM, ResM]
+  protected def merge3Prim[ReqM, ResM, Req1, Res1, Req2, Res2, Req3, Res3](firstService: Wrapper[Req1, Res1], secondService: Wrapper[Req2, Res2], thirdService: Wrapper[Req3, Res3], merger: (ReqM, Res1, Res2, Res3) => ResM)(implicit reqMtoReq1: ReqM => Req1, reqMtoReq2: ReqM => Req2, reqMtoReq3: ReqM => Req3): Wrapper[ReqM, ResM]
 
+  protected def merge4Prim[ReqM, ResM, Req1, Res1, Req2, Res2, Req3, Res3, Req4, Res4](firstService: Wrapper[Req1, Res1], secondService: Wrapper[Req2, Res2], thirdService: Wrapper[Req3, Res3], fourthService: Wrapper[Req4, Res4], merger: (ReqM, Res1, Res2, Res3, Res4) => ResM)(implicit reqMtoReq1: ReqM => Req1, reqMtoReq2: ReqM => Req2, reqMtoReq3: ReqM => Req3, reqMtoReq4: ReqM => Req4): Wrapper[ReqM, ResM]
 }
 
 
