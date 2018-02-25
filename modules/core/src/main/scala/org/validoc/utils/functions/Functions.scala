@@ -1,7 +1,5 @@
 package org.validoc.utils.functions
 
-import org.validoc.utils.containers.Monad
-
 import scala.language.higherKinds
 object Functions {
   def pipelineFn[X](sideEffect: X => Unit)(x: X): X = {

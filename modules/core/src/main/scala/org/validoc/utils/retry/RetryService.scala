@@ -3,12 +3,12 @@ package org.validoc.utils.retry
 import java.util.concurrent.atomic.AtomicLong
 
 import org.validoc.utils.Service
-import org.validoc.utils.containers.Monad
 import org.validoc.utils.time.Delay
 
 import scala.language.higherKinds
 import scala.util.Try
 import org.validoc.utils._
+import org.validoc.utils.functions.Monad
 trait NeedsRetry[T] {
   def apply(t: Try[T]): Boolean
 }

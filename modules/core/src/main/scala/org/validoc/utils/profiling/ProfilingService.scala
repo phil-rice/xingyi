@@ -1,7 +1,7 @@
 package org.validoc.utils.profiling
 
 import org.validoc.utils.Service
-import org.validoc.utils.containers.Monad
+import org.validoc.utils.functions.Monad
 import org.validoc.utils.time.{NanoTimeService, SystemClockNanoTimeService}
 
 import scala.language.higherKinds

@@ -21,33 +21,4 @@ class MockTimeService extends NanoTimeService {
   override def apply(): Long = i.addAndGet(100l)
 }
 
-class TimeServiceTest extends FlatSpec with Matchers with MockitoSugar with Eventually {
 
-  implicit val ec: MDCPropagatingExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
-
-  behavior of "TimeService"
-
-  def setup(fn: (NanoTimeService, AtomicReference[(Try[String], Long)], (Try[String], Long) => Unit) => Unit) = {
-    val timeService = new MockTimeService
-    val ref = new AtomicReference[(Try[String], Long)]()
-    fn(timeService, ref, (t, d) => ref.set((t, d)))
-  }
-
-  def await[T](f: Future[T]) = Await.result(f, 5 seconds)
-
-  it should "time a Req => Future[Res] and report the time to a sideeffect" in {
-    setup { (timeService, ref, sideeffect) =>
-      await(timeService[Future, String, String] { x => (x + "_result").liftM }(sideeffect).apply("x")) shouldBe "x_result"
-      eventually(ref.get shouldBe ((Success("x_result"), 100l)))
-    }
-  }
-
-  it should "time a Req => Future[Res] and report the time to a sideeffect when there is an exception" in {
-    val runtimeException = new RuntimeException
-    setup { (timeService, ref, sideeffect) =>
-      intercept[RuntimeException](await(timeService[Future, String, String] { _ => runtimeException.liftException }(sideeffect).apply("x"))) shouldBe runtimeException
-      eventually(ref.get shouldBe ((Failure(runtimeException), 100l)))
-    }
-  }
-
-}

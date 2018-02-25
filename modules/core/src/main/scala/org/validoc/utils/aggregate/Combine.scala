@@ -1,7 +1,8 @@
 package org.validoc.utils.aggregate
 
-import org.validoc.utils.containers.Monad
 import org.validoc.utils._
+import org.validoc.utils.functions.Monad
+
 import scala.language.higherKinds
 
 class Combine[M[_]] {

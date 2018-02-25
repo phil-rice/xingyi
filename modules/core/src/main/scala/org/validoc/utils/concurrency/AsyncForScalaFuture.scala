@@ -1,6 +1,6 @@
 package org.validoc.utils.concurrency
 
-import org.validoc.utils.containers.{Monad, MonadCanFail}
+import org.validoc.utils.functions.MonadCanFail
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -19,7 +19,10 @@ object AsyncForScalaFuture {
     } catch {
       case e: Exception => tryT
     }
-    override def fold[T, T1](m: Future[T], fnE: Exception => Future[T1], fnFailure: Throwable => Future[T1], fn: T => Future[T1]) = ???
+    override def foldWithFail[T, T1](m: Future[T], fnE: Exception => Future[T1], fnFailure: Throwable => Future[T1], fn: T => Future[T1]) = m.transformWith(_ match {
+      case Success(t) => fn(t)
+      case Failure(t) => fnFailure(t)
+    })
     override def recover[T](m: Future[T], fn: Exception => T) = m.recover { case e: Exception => fn(e) }
 
     override def respond[T](m: Future[T], fn: Try[T] => Unit): Future[T] = m.transform(wrap(fn))

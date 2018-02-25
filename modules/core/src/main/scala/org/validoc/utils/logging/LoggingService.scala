@@ -1,44 +1,47 @@
 package org.validoc.utils.logging
 
 import java.text.MessageFormat
+import java.util.ResourceBundle
 
-import org.validoc.utils.Service
-import org.validoc.utils.containers.{Monad, MonadCanFail, MonadWithException}
-import org.validoc.utils.http.RequestDetails
-import org.validoc.utils.success.Succeeded
 import org.validoc.utils._
+import org.validoc.utils.functions.{MonadCanFail, MonadWithException}
+import org.validoc.utils.success._
 
 import scala.language.higherKinds
+import scala.util.{Failure, Success, Try}
 
-trait LoggingStrings[Res] {
-  def succeeded(req: RequestDetails[_], res: Res): (LogLevel, String)
+case class RequestDetails[Req](req: Req, requestSummary: String)
 
-  def failed(req: RequestDetails[_], res: Res): (LogLevel, String)
+trait DetailedLogging[T] extends (T => String)
 
-  def exception(req: RequestDetails[_], t: Throwable): (LogLevelThatHasError, String)
+object DetailedLogging {
+  implicit def default[T] = new DetailedLogging[T] {
+    override def apply(v1: T) = v1.toString
+  }
 }
 
-object LoggingStrings {
-  implicit def defaultLoggingStrings[Res] = new LoggingStrings[Res] {
-    override def succeeded(req: RequestDetails[_], res: Res) = (Trace, s"Success: Returned from $req with $res")
+trait SummaryLogging[T] extends (T => String)
 
-    override def failed(req: RequestDetails[_], res: Res) = (Error, s"Failed: Returned from $req with $res")
-
-    override def exception(req: RequestDetails[_], t: Throwable) = (Error, s"Exception returning from $req")
+object SummaryLogging {
+  implicit def default[T] = new SummaryLogging[T] {
+    override def apply(v1: T) = v1.toString
   }
-
 }
 
 
-class LoggingService[M[_] : MonadWithException, Req, Res: Succeeded](delegate: Service[M, Req, Res], pattern: String)(implicit loggingStrings: LoggingStrings[Res], loggingAdapter: LoggingAdapter) extends Service[M, Req, Res] with Logging {
-  def toRequestDetails(req: Req) = RequestDetails[Req](MessageFormat.format(pattern, req.toString))(req)
+class LogRequestAndResult[Fail: DetailedLogging : SummaryLogging](implicit bundle: ResourceBundle, log: LoggingAdapter) {
+  def details[T](t: T)(implicit detailedLogging: DetailedLogging[T]) = detailedLogging(t)
+  def summary[T](t: T)(implicit summaryLogging: SummaryLogging[T]) = summaryLogging(t)
 
-  override def apply(req: Req): M[Res] = {
-    lazy val requestDetails: RequestDetails[Req] = toRequestDetails(req)
-    log((Trace, s"Calling $requestDetails"))
-    delegate(req)
-    //TODO actually log it
-    //      .onComplete[Fail]((requestDetails, _))
+  def apply[Req: DetailedLogging : SummaryLogging, Res: DetailedLogging : SummaryLogging](sender: Any)(req: Req)(implicit messageName: MessageName[Req, Res]): SucceededState[Fail, Res] => Unit = {
+    case state@SuccessState(res) => log.debug(sender, state.format[Req, Res](summary(req), summary(res)))
+    case state@FailedState(fail) => log.debug(sender, state.format[Req, Res](summary(req), details(req), summary(fail), details(fail)))
+    case state@ExceptionState(t) => log.error(sender, state.format[Req, Res](summary(req), details(req), t.getClass.getSimpleName, t.getMessage), t)
 
   }
+}
+class LoggingService[M[_], Fail, Req: DetailedLogging : SummaryLogging, Res: DetailedLogging : SummaryLogging](sender: Any)(implicit monadCanFail: MonadCanFail[M, Fail], messageName: MessageName[Req, Res], logReqAndResult: LogRequestAndResult[Fail], loggingAdapter: LoggingAdapter) extends Logging {
+
+  def logging(pattern: String)(delegate: Req => M[Res]) = delegate.sideeffect(logReqAndResult[Req, Res](sender))
+
 }

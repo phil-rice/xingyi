@@ -1,10 +1,7 @@
 package org.validoc.utils.functions
 
-import org.validoc.utils.containers.Monad
-
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.higherKinds
-
 import org.validoc.utils._
 trait MonadCleaner[M1[_], M2[_]] {
   def clean[T](value: M2[M1[M2[T]]]): M1[M2[T]]

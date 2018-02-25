@@ -1,8 +1,7 @@
 package org.validoc.utils.logging
 
-import org.validoc.utils.http.RequestDetails
 import org.validoc.utils.strings.Strings
-import org.validoc.utils.success.{ExceptionState, FailedState, Succeeded, SuccessState}
+import org.validoc.utils.success.{ExceptionState, FailedState, SuccessState}
 
 import scala.util.Try
 
@@ -23,13 +22,6 @@ object Trace extends LogLevel
 
 trait Logging {
 
-  protected def log[Req, Res](requestDetails: RequestDetails[Req], tryRes: Try[Res])(implicit actualLogging: LoggingAdapter, succeeded: Succeeded[Res], loggingStrings: LoggingStrings[Res]): Unit = {
-    succeeded(tryRes) match {
-      case SuccessState(res) => log(loggingStrings.succeeded(requestDetails, res))
-      case FailedState(res) => log(loggingStrings.failed(requestDetails, res))
-      case ExceptionState(t) => logException(loggingStrings.exception(requestDetails, t), t)
-    }
-  }
 
   protected def log(levelAndMessage: (LogLevel, String))(implicit actualLogging: LoggingAdapter): Unit = levelAndMessage._1 match {
     case Info => info(levelAndMessage._2)
@@ -87,7 +79,7 @@ trait Logging {
 }
 
 
-trait LoggingAdapter {
+trait LoggingAdapter{
   def info(sender: Any, msg: => String)
 
   def error(sender: Any, msg: => String)

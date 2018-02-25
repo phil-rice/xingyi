@@ -1,6 +1,6 @@
 package org.validoc.utils.mock
 
-import org.validoc.utils.containers.Monad
+import org.validoc.utils.functions.Monad
 import org.validoc.utils.http.{ServiceRequest, ServiceResponse, ToServiceRequest, ToServiceResponse}
 
 import scala.language.higherKinds

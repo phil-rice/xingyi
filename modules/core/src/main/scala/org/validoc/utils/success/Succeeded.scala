@@ -1,55 +1,27 @@
 package org.validoc.utils.success
 
+import java.text.MessageFormat
+import java.util.ResourceBundle
+
 import scala.util.{Failure, Success, Try}
 
-trait Succeeded[T] {
-  def apply(t: Try[T]): SucceededState[T]
-}
 
+case class MessageName[Req, Res](name: String) extends AnyVal
 
-class DefaultSucceeded[T] extends Succeeded[T] {
-  def apply(t: Try[T]) = t match {
-    case Success(t) => SuccessState(t)
-    case Failure(t) => ExceptionState(t)
-  }
-}
-
-class SucceededFromFn[T](ok: T => Boolean) extends Succeeded[T] {
-  def apply(t: Try[T]) = t match {
-    case Success(t) if ok(t) => SuccessState(t)
-    case Success(t) => FailedState(t)
-    case Failure(t) => ExceptionState(t)
-  }
-}
-
-object Succeeded {
-
-  implicit object SucceededForString extends SucceededFromFn[String](_ => true)
-
-  implicit def succeededFromEither[L, R] = new SucceededFromEither[L, R]
-
-}
-
-class SucceededFromEither[L, R] extends Succeeded[Either[L, R]] {
-  override def apply(t: Try[Either[L, R]]): SucceededState[Either[L, R]] = t match {
-    case Success(Right(s)) => SuccessState(Right(s))
-    case Success(Left(f)) => FailedState(Left(f))
-    case Failure(t) => ExceptionState(t)
-  }
-}
-
-sealed trait SucceededState[T] {
+sealed trait SucceededState[Fail,T] {
   def asKey: String
+  def fromBundle[Req, Res](implicit messageName: MessageName[Req, Res], bundle: ResourceBundle) = bundle.getString(messageName.name + "." + asKey)
+  def format[Req, Res](strings: String*)(implicit messageName: MessageName[Req, Res], bundle: ResourceBundle) = MessageFormat.format(fromBundle[Req, Res], strings:_*)
 }
 
-case class SuccessState[T](t: T) extends SucceededState[T] {
+case class SuccessState[Fail,T](t: T) extends SucceededState[Fail,T] {
   override def asKey: String = "success"
 }
 
-case class FailedState[T](t: T) extends SucceededState[T] {
+case class FailedState[Fail,T](fail: Fail) extends SucceededState[Fail,T] {
   override def asKey: String = "failure"
 }
 
-case class ExceptionState[T](t: Throwable) extends SucceededState[T] {
+case class ExceptionState[Fail,T](t: Throwable) extends SucceededState[Fail,T] {
   override def asKey: String = "exception"
 }

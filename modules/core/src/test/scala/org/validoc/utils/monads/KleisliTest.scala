@@ -8,7 +8,7 @@ import scala.concurrent.Future
 import scala.language.higherKinds
 import scala.concurrent.ExecutionContext.Implicits._
 import org.validoc.utils.concurrency.AsyncForScalaFuture._
-import org.validoc.utils.containers.Monad
+import org.validoc.utils.functions.Monad
 
 abstract class AbstractKleisliTest[M[_]: Async:Monad] extends UtilsWithLoggingSpec {
 

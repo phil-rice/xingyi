@@ -1,7 +1,8 @@
 package org.validoc
 
 import org.validoc.utils.concurrency.{Async, MultipleExceptions}
-import org.validoc.utils.containers._
+import org.validoc.utils.functions._
+import org.validoc.utils.success.{ExceptionState, FailedState, SucceededState, SuccessState}
 
 import scala.language.higherKinds
 import scala.util.{Failure, Success, Try}
@@ -11,6 +12,7 @@ package object utils {
   type Service[M[_], Req, Res] = (Req => M[Res])
   type Parser[T] = String => T
 
+  def withValue[X, Y](x: X)(fn: X => Y) = fn(x)
   implicit class AnyPimper[T](t: T) {
     def |>[T2](fn: T => T2) = fn(t)
     def liftM[M[_]](implicit monad: Monad[M]): M[T] = monad.liftM(t)
@@ -25,11 +27,22 @@ package object utils {
   }
 
   implicit class TryPimper[T](tryT: Try[T]) {
-    def liftTry[M[_]](implicit monadWithException: MonadWithException[M])= monadWithException.liftTry(tryT)
+    def liftTry[M[_]](implicit monadWithException: MonadWithException[M]) = monadWithException.liftTry(tryT)
   }
 
   implicit class FunctionPimper[Req, Res](fn: Req => Res) {
     def ~>[Res2](fn2: Res => Res2): (Req) => Res2 = { res: Req => fn2(fn(res)) }
+    //    def let[Mid, Res2](mid: Req => Mid)(fn2: Mid => Res => Res): Req => Res = { req: Req => fn2(mid(req))(fn(req)) }
+    def onEnterAndExit[Mid](mid: Req => Mid, before: Mid => Unit, after: (Mid, Res) => Unit) = { req: Req =>
+      val m = mid(req)
+      before(m)
+      val result = fn(req)
+      after(m, result)
+      result
+    }
+  }
+  implicit class Function2Pimper[Req1, Req2, Res](fn: (Req1, Req2) => Res) {
+    def ~>[Res2](fn2: Res => Res2): (Req1, Req2) => Res2 = { (r1, r2) => fn2(fn(r1, r2)) }
   }
 
 
@@ -53,7 +66,7 @@ package object utils {
   }
 
   implicit class MonadCanFailPimper[M[_], T](m: M[T]) {
-    def fold[Fail, T1](fnE: Exception => M[T1], fnFailure: Fail => M[T1], fn: T => M[T1])(implicit async: MonadCanFail[M, Fail]): M[T1] = async.fold[T, T1](m, fnE, fnFailure, fn)
+    def fold[Fail, T1](fnE: Exception => M[T1], fnFailure: Fail => M[T1], fn: T => M[T1])(implicit async: MonadCanFail[M, Fail]): M[T1] = async.foldWithFail[T, T1](m, fnE, fnFailure, fn)
     //    def foldTry[Fail, T1](fnTry: Try[T] => T1)(implicit async: MonadCanFail[M, Fail]) = monad.fold(m, t => fnTry(Failure(t)), { t: T => fnTry(Success(t)) })
     def onComplete[Fail](fn: Try[Either[Fail, T]] => Unit)(implicit async: MonadCanFail[M, Fail]): M[T] = async.onComplete(m, fn)
 
@@ -88,8 +101,24 @@ package object utils {
     }
   }
 
+  implicit class MonadCanFailFunctionPimper[M[_], Req, Res](fn: Req => M[Res]) {
+    def enterAndExit[Fail, Mid](midFn: Req => Mid,sideeffectFn: (Mid,  SucceededState[ Fail,Res]) => Unit)(implicit monad: MonadCanFail[M, Fail]): Req => M[Res] = { req: Req =>
+      val mid = midFn(req)
+      val m = fn(req)
+      monad.foldWithFail[Res, Res](m, { t => sideeffectFn(mid, ExceptionState(t)); m }, { f => sideeffectFn(mid, FailedState(f)); m }, { res => sideeffectFn(mid, SuccessState(res)); m })
+
+    }
+    def sideeffect[Fail](sideeffectFn: Req => SucceededState[Fail,Res] => Unit)(implicit monad: MonadCanFail[M, Fail]): Req => M[Res] = { req: Req =>
+      val m = fn(req)
+      monad.foldWithFail[Res, Res](m, { t => sideeffectFn(req)(ExceptionState(t)); m }, { f => sideeffectFn(req)(FailedState(f)); m }, { res => sideeffectFn(req)(SuccessState(res)); m })
+    }
+  }
+
   implicit class MonadWithExceptionFunctionPimper[M[_], Req, Res](fn: Req => M[Res])(implicit monad: MonadWithException[M]) {
     def foldException[Res2](fnThrowable: Throwable => Res2, fnMap: Res => Res2): (Req => M[Res2]) = { req => monad.foldException[Res, Res2](fn(req), fnThrowable, fnMap) }
+    def onEnterAndExitM[Mid](mid: Req => Mid, before: Mid => Unit, after: Mid => Try[Res] => Unit) = { req: Req =>
+      withValue(mid(req))(m => fn(req).registerSideeffect(after(m)))
+    }
   }
 
   implicit class MonadSeqFunctionPimper[M[_], Req, Res](fn: Req => M[Seq[Res]])(implicit async: Monad[M]) {

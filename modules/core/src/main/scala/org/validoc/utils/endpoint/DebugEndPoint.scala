@@ -1,7 +1,7 @@
 package org.validoc.utils.endpoint
 
 import org.validoc.utils.Service
-import org.validoc.utils.containers.Monad
+import org.validoc.utils.functions.Monad
 import org.validoc.utils.http._
 import org.validoc.utils.json.ToJson
 

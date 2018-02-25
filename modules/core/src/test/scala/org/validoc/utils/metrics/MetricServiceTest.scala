@@ -16,9 +16,10 @@ import scala.language.postfixOps
 import scala.util.{Failure, Success}
 
 import org.validoc.utils.concurrency.AsyncForScalaFuture._
+
 class MetricServiceTest extends FlatSpec with Matchers with MockitoSugar with Eventually {
   implicit val ec: MDCPropagatingExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
-  
+
   behavior of "Metrics"
 
   val exception = new RuntimeException
@@ -27,9 +28,9 @@ class MetricServiceTest extends FlatSpec with Matchers with MockitoSugar with Ev
 
   def await[X](f: Future[X]) = Await.result(f, 5 seconds)
 
-  def setup(fn: (MetricsService[Future, String, String], PutMetrics, ReportData[String]) => Unit): Unit = {
+  def setup(fn: (String => Future[String], PutMetrics, ReportData[Throwable, String]) => Unit): Unit = {
     implicit val timeService = new MockTimeService
-    implicit val reportData = mock[ReportData[String]]
+    implicit val reportData = mock[ReportData[Throwable,String]]
     implicit val putMetrics = mock[PutMetrics]
 
     when(putMetrics.apply(any[Map[String, MetricValue]])) thenReturn()
@@ -39,23 +40,25 @@ class MetricServiceTest extends FlatSpec with Matchers with MockitoSugar with Ev
       case s: String => Future(s + "_result")
     }
 
-    fn(new MetricsService[Future, String, String]("prefix", delegate), putMetrics, reportData)
+    fn(new MetricsService[Future, Throwable].metrics("prefix", delegate), putMetrics, reportData)
   }
 
   it should "record the metrics from a successful delegate call" in {
-    setup { (metrics, putMetrics, reportData) =>
-      when(reportData.apply("prefix", Success("succeed_result"), 100l)) thenReturn someMetrics
-      await(metrics("succeed")) shouldBe "succeed_result"
-      eventually(verify(putMetrics, times(1)).apply(someMetrics))
-    }
+    fail()
+//    setup { (metrics, putMetrics, reportData) =>
+//      when(reportData.apply("prefix", Success("succeed_result"), 100l)) thenReturn someMetrics
+//      await(metrics("succeed")) shouldBe "succeed_result"
+//      eventually(verify(putMetrics, times(1)).apply(someMetrics))
+//    }
   }
 
   it should "record the metrics from a  delegate call that throws an Exception" in {
-    setup { (metrics, putMetrics, reportData) =>
-      when(reportData.apply("prefix", Failure(exception), 100l)) thenReturn someMetrics
-      intercept[RuntimeException](await(metrics("fail"))) shouldBe exception
-      eventually(verify(putMetrics, times(1)).apply(someMetrics))
-    }
+    fail()
+//    setup { (metrics, putMetrics, reportData) =>
+//      when(reportData.apply("prefix", Failure(exception), 100l)) thenReturn someMetrics
+//      intercept[RuntimeException](await(metrics("fail"))) shouldBe exception
+//      eventually(verify(putMetrics, times(1)).apply(someMetrics))
+//    }
   }
 }
 

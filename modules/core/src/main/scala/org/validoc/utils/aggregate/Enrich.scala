@@ -1,7 +1,7 @@
 package org.validoc.utils.aggregate
 
 import org.validoc.utils._
-import org.validoc.utils.containers.{Functor, Monad}
+import org.validoc.utils.functions.{Functor, Monad}
 
 import scala.language.higherKinds
 trait FindReq[Main,Req] extends (Main => Req)

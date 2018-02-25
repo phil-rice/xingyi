@@ -1,7 +1,7 @@
 package org.validoc.utils.either
 
 
-object Eithers {
+trait EitherOps {
 
   implicit class EitherPimper[L, R](either: Either[L, R]) {
     def getOrException(exceptionCreator: L => Throwable): R =
@@ -12,3 +12,5 @@ object Eithers {
   }
 
 }
+
+object EitherOps extends EitherOps

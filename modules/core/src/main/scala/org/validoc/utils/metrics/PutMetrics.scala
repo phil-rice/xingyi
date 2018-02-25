@@ -1,6 +1,6 @@
 package org.validoc.utils.metrics
 
-import org.validoc.utils.success.Succeeded
+import org.validoc.utils.success.SucceededState
 
 import scala.util.Try
 
@@ -10,15 +10,14 @@ object CountMetricValue extends MetricValue
 
 case class HistogramMetricValue(name: Long) extends MetricValue
 
-
-trait ReportData[T] extends ((String, Try[T], Long) => Map[String, MetricValue]) {
-}
+trait ReportData[Fail, T] extends (String => (Long, SucceededState[Fail, T]) => Map[String, MetricValue])
 
 object ReportData {
-  implicit def defaultReportData[T](implicit succeeded: Succeeded[T]) = new ReportData[T] {
-    def apply(prefix: String, tryT: Try[T], duration: Long): Map[String, MetricValue] =
-      Map(prefix + "." + succeeded(tryT).asKey -> CountMetricValue,
+  implicit def defaultReportData[Fail, T] = new ReportData[Fail, T] {
+    override def apply(prefix: String) = { ( duration,state) =>
+      Map(prefix + "." + state.asKey -> CountMetricValue,
         prefix + "." + "duration" -> HistogramMetricValue(duration))
+    }
   }
 }
 

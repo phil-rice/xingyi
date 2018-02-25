@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
 import org.scalatest.BeforeAndAfter
 import org.validoc.utils.UtilsWithLoggingSpec
-import org.validoc.utils.containers.MonadWithException
+import org.validoc.utils.functions.MonadWithException
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}

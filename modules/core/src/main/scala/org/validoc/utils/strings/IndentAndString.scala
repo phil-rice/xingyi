@@ -3,8 +3,9 @@ package org.validoc.utils.strings
 import org.validoc.utils.functions.{Monoid, SemiGroup}
 import org.validoc.utils.service.html.ToHtml
 
-case class IndentAndString(indent: Int, lines: Seq[(Int, String)]) {
+case class IndentAndString(indent: Int, lines: List[(Int, String)]) {
   def addLineAndIndent(line: String) = IndentAndString(indent + 1, lines :+ (indent, line))
+  def insertLineAndIndent(line: String) = IndentAndString(indent + 1, (indent, line) :: lines)
 
   def unindent = IndentAndString(indent - 1, lines)
 
@@ -15,7 +16,7 @@ object IndentAndString {
 
   def merge(title: String, indentAndStrings: IndentAndString*): IndentAndString = {
     val depth = indentAndStrings.map(_.indent).max + 1
-    IndentAndString(depth, Seq((depth, title)) ++ indentAndStrings.flatMap(_.lines))
+    IndentAndString(depth, (depth, title) :: indentAndStrings.flatMap(_.lines).toList)
   }
 
   implicit object ToHtmlForIndentAndString extends ToHtml[IndentAndString] {

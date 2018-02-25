@@ -1,7 +1,7 @@
 package org.validoc.utils.http
 
+import org.validoc.utils._
 import org.validoc.utils.parser.ParserFinder
-import org.validoc.utils.{NotFoundException, _}
 
 
 class ResponseProcessorTests extends UtilsWithLoggingSpec {
@@ -14,7 +14,7 @@ class ResponseProcessorTests extends UtilsWithLoggingSpec {
 
   val serviceResponse = ServiceResponse(Status(111), Body("someBody"), ContentType("some/content"))
 
-  val requestDetails = RequestDetails("someReq", "someSummary")
+//  val requestDetails = RequestDetails("someReq", "someSummary")
 
 
   behavior of "ResponseProcessorExpectingResult"

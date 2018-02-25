@@ -2,12 +2,12 @@ package org.validoc.utils.logging
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.validoc.utils.containers.{Monad, MonadCanFail, MonadWithException}
+import org.validoc.utils._
+import org.validoc.utils.functions.MonadWithException
 import org.validoc.utils.time.{NanoTimeService, SystemClockNanoTimeService}
 
 import scala.language.higherKinds
 import scala.util.{Failure, Success}
-import org.validoc.utils._
 
 object LoggingMemoriser extends LoggingMemoriser {
 
