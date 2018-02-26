@@ -1,5 +1,7 @@
 package org.validoc.utils.http
 
+import scala.annotation.implicitNotFound
+
 
 trait ResponseCategoriser[Req] extends (Req => ServiceResponse => ResponseState[Req]) {}
 

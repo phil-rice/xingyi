@@ -5,13 +5,9 @@ import java.net.{URL, URLEncoder}
 sealed trait Method {
   override def toString: String = getClass.getSimpleName.dropRight(1)
 }
-
 case object Get extends Method
-
 case object Post extends Method
-
 case object Put extends Method
-
 case object Delete extends Method
 
 object Status {
@@ -20,27 +16,20 @@ object Status {
 }
 
 case class Status(code: Int) extends AnyVal
-
 case class Body(s: String) extends AnyVal
-
 case class ContentType(s: String) extends AnyVal
-
 case class AcceptHeader(s: String) extends AnyVal
-
 case class Header(s: String) extends AnyVal
 
 
 trait UriFragment {
   protected def encode(s: String) = URLEncoder.encode(s, "UTF-8")
-
   def asUriString: String
 }
 
 case class ServiceName(name: String) extends AnyVal
 
 case class ProtocolHostAndPort(protocol: Protocol, hostName: HostName, port: Port)
-
-
 object ProtocolHostAndPort {
   def apply(hostName: HostName, port: Port): ProtocolHostAndPort = ProtocolHostAndPort(Protocol("http"), hostName, port)
 

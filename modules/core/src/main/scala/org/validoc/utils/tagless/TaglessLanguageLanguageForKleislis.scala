@@ -1,28 +1,30 @@
 package org.validoc.utils.tagless
 
+import org.validoc.utils._
+import org.validoc.utils.cache._
+import org.validoc.utils.concurrency.Async
 import org.validoc.utils.functions.MonadCanFail
 import org.validoc.utils.http._
 import org.validoc.utils.logging._
-import org.validoc.utils.metrics.{MetricsService, PutMetrics}
+import org.validoc.utils.metrics.PutMetrics
+import org.validoc.utils.retry.{NeedsRetry, RetryConfig, RetryService}
 import org.validoc.utils.success.MessageName
 import org.validoc.utils.time.NanoTimeService
 
-import scala.reflect.ClassTag
 import scala.language.higherKinds
-import org.validoc.utils._
-import org.validoc.utils.cache._
+import scala.reflect.ClassTag
 
 trait HttpFactory[M[_], HttpReq, HttpRes] extends (ServiceName => HttpReq => M[HttpRes])
 
-class TaglessLanguageLanguageForKleislis[M[_], Fail, HttpReq, HttpRes](implicit monadCanFail: MonadCanFail[M, Fail],
-                                                                       httpFactory: HttpFactory[M, HttpReq, HttpRes],
-                                                                       toServiceResponse: ToServiceResponse[HttpRes],
-                                                                       toHttpReq: FromServiceRequest[HttpReq],
-                                                                       logReqAndResult: LogRequestAndResult[Fail],
-                                                                       loggingAdapter: LoggingAdapter,
-                                                                       timeService: NanoTimeService,
-                                                                       putMetrics: PutMetrics,
-                                                                       cacheFactory: CacheFactory[M]) extends LoggingService[M, Fail] {
+class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail, HttpReq, HttpRes](implicit monadCanFail: MonadCanFail[M, Fail],
+                                                                               httpFactory: HttpFactory[M, HttpReq, HttpRes],
+                                                                               toServiceResponse: ToServiceResponse[HttpRes],
+                                                                               toHttpReq: FromServiceRequest[HttpReq],
+                                                                               logReqAndResult: LogRequestAndResult[Fail],
+                                                                               loggingAdapter: LoggingAdapter,
+                                                                               timeService: NanoTimeService,
+                                                                               putMetrics: PutMetrics,
+                                                                               cacheFactory: CacheFactory[M]) {
   type K[Req, Res] = Req => M[Res]
 
 
@@ -38,6 +40,8 @@ class TaglessLanguageLanguageForKleislis[M[_], Fail, HttpReq, HttpRes](implicit 
     override def cache[Req: ClassTag : Cachable : ShouldCache, Res: ClassTag](name: String)(raw: K[Req, Res]): Req => M[Res] =
       Cache.apply[M, Req, Res](cacheFactory[Res](name), raw)
 
+    override def retry[Req: ClassTag, Res: ClassTag](retryConfig: RetryConfig)(raw: K[Req, Res])(implicit retry: NeedsRetry[Fail, Res]): K[Req, Res] =
+      new RetryService[M, Fail, Req, Res](raw, retryConfig)
 
     def objectify[Req: ClassTag : ToServiceRequest : ResponseCategoriser, Res: ClassTag](http: K[HttpReq, HttpRes])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[Req], responseProcessor: ResponseProcessor[Fail, Req, Res]) =
       toRequest ~> toHttpReq ~> http |=> toServiceResponse |=+> categoriser |=|> responseProcessor
@@ -67,4 +71,5 @@ class TaglessLanguageLanguageForKleislis[M[_], Fail, HttpReq, HttpRes](implicit 
         reqMtoReq4 ~> fourthService,
       ) |=> merger.tupled
   }
+
 }

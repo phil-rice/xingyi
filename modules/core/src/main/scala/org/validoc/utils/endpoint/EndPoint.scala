@@ -6,17 +6,6 @@ import org.validoc.utils.http._
 
 import scala.language.higherKinds
 
-trait OriginalReq[Req] {
-  def acceptHeader(req: Req): AcceptHeader
-
-  def header(req: Req, name: String): Header
-
-  def contentType(req: Req): ContentType
-
-  def method(req: Req): Method
-
-  def path(req: Req): Path
-}
 
 trait EndPointInfo[M[_]] extends Service[M, ServiceRequest, ServiceResponse] {
   def path: String

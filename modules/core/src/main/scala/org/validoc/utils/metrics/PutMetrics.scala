@@ -4,10 +4,14 @@ import org.validoc.utils.success.SucceededState
 
 import scala.util.Try
 
-sealed trait MetricValue
+trait PutMetrics extends (Map[String, MetricValue] => Unit)
+object NullPutMetrics extends PutMetrics {
+  override def apply(v1: Map[String, MetricValue]): Unit = ()
+}
+
+trait MetricValue
 
 object CountMetricValue extends MetricValue
-
 case class HistogramMetricValue(name: Long) extends MetricValue
 
 trait ReportData[Fail, T] extends (String => (Long, SucceededState[Fail, T]) => Map[String, MetricValue])

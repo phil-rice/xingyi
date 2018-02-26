@@ -11,17 +11,12 @@ sealed trait LogLevel {
 }
 
 sealed trait LogLevelThatHasError extends LogLevel
-
 object Info extends LogLevel
-
 object Debug extends LogLevelThatHasError
-
 object Error extends LogLevelThatHasError
-
 object Trace extends LogLevel
 
 trait Logging {
-
 
   protected def log(levelAndMessage: (LogLevel, String))(implicit actualLogging: LoggingAdapter): Unit = levelAndMessage._1 match {
     case Info => info(levelAndMessage._2)

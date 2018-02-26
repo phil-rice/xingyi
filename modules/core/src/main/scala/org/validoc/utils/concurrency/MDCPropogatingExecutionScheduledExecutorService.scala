@@ -7,20 +7,12 @@ import org.validoc.utils.logging.LoggingAdapter
 
 
 trait DelegateExecutorService extends ScheduledExecutorService {
-
   protected def delegate: ScheduledExecutorService
-
   override def shutdown(): Unit = delegate.shutdown()
-
   override def isTerminated: Boolean = delegate.isTerminated
-
   override def awaitTermination(timeout: Long, unit: TimeUnit): Boolean = delegate.awaitTermination(timeout, unit)
-
   override def shutdownNow(): util.List[Runnable] = delegate.shutdownNow()
-
   override def isShutdown: Boolean = delegate.isShutdown
-
-
 }
 
 object MDCPropogatingExecutionScheduledExecutorService {

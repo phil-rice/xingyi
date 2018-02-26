@@ -16,19 +16,19 @@ class RetryServiceTest extends UtilsWithLoggingSpec {
 
   behavior of "RetryService"
 
-  def setup(fn: (RetryService[Future, Req, Res], Service[Future, Req, Res], NeedsRetry[Res], Delay) => Unit) = {
-   implicit  val retry = mock[NeedsRetry[Res]]
+  def setup(fn: (RetryService[Future, Throwable, Req, Res], Service[Future, Req, Res], NeedsRetry[Throwable, Res], Delay) => Unit) = {
+   implicit  val retry = mock[NeedsRetry[Throwable, Res]]
     val delay = mock[Delay]
     when(delay.apply()) thenReturn (1 milli)
     val delegate = mock[Service[Future, Req, Res]]
-    fn(new RetryService[Future, Req, Res](delegate, RetryConfig(2, delay)), delegate, retry, delay)
+    fn(new RetryService[Future, Throwable, Req, Res](delegate, RetryConfig(2, delay)), delegate, retry, delay)
   }
 
 
   it should "just call the delegate once if it returns and the retry strategy says 'it's OK' " in {
     setup { (retryService, delegate, needsRetry, delay) =>
       when(delegate("req1")) thenReturn Future.successful("result1")
-      when(needsRetry.apply(Success("result1"))) thenReturn false
+      when(needsRetry.apply(Success(Right("result1")))) thenReturn false
       await(retryService("req1")) shouldBe "result1"
       retryService.metrics.retryCount shouldBe 0
       retryService.metrics.failedCount shouldBe 0
@@ -39,8 +39,10 @@ class RetryServiceTest extends UtilsWithLoggingSpec {
   it should "just call the delegate twice if it returns and the retry strategy says 'retry' followed by 'OK' " in {
     setup { (retryService, delegate, needsRetry, delay) =>
       when(delegate("req1")) thenReturn(Future.successful("result1"), Future.successful("result2"))
-      when(needsRetry.apply(Success("result1"))) thenReturn true
-      when(needsRetry.apply(Success("result2"))) thenReturn false
+      when(needsRetry.apply(Success(Right("result1")))) thenReturn true
+      when(needsRetry.apply(Success(Right("result2")))) thenReturn false
+
+
       await(retryService("req1")) shouldBe "result2"
       retryService.metrics.retryCount shouldBe 1
       retryService.metrics.failedCount shouldBe 0
@@ -53,8 +55,8 @@ class RetryServiceTest extends UtilsWithLoggingSpec {
   it should "call the delegate twice and fail with the final result if the retry strategy says 'retry' and the count is up" in {
     setup { (retryService, delegate, needsRetry, delay) =>
       when(delegate("req1")) thenReturn(Future.successful("result1"), Future.successful("result2"))
-      when(needsRetry.apply(Success("result1"))) thenReturn true
-      when(needsRetry.apply(Success("result2"))) thenReturn true
+      when(needsRetry.apply(Success(Right("result1")))) thenReturn true
+      when(needsRetry.apply(Success(Right("result2")))) thenReturn true
 
       await(retryService("req1")) shouldBe "result2"
       retryService.metrics.retryCount shouldBe 1

@@ -37,12 +37,6 @@ class LogRequestAndResult[Fail: DetailedLogging : SummaryLogging](implicit bundl
     case state@SuccessState(res) => log.debug(sender, state.format[Req, Res](summary(req), summary(res)))
     case state@FailedState(fail) => log.debug(sender, state.format[Req, Res](summary(req), details(req), summary(fail), details(fail)))
     case state@ExceptionState(t) => log.error(sender, state.format[Req, Res](summary(req), details(req), t.getClass.getSimpleName, t.getMessage), t)
-
   }
 }
-class LoggingService[M[_], Fail](sender: Any)(implicit monadCanFail: MonadCanFail[M, Fail], logReqAndResult: LogRequestAndResult[Fail], loggingAdapter: LoggingAdapter) extends Logging {
 
-  def logging[Req: DetailedLogging : SummaryLogging, Res: DetailedLogging : SummaryLogging](pattern: String)(delegate: Req => M[Res])(implicit messageName: MessageName[Req, Res]) =
-    delegate.sideeffect(logReqAndResult[Req, Res](sender))
-
-}

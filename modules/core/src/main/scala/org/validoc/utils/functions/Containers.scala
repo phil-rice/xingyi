@@ -21,9 +21,9 @@ trait Monad[M[_]] extends Functor[M] {
 
 trait MonadWithException[M[_]] extends Monad[M] {
   def exception[T](t: Throwable): M[T]
-  def liftTry[T](t: Try[T]): M[T] = t.fold(exception, liftM)
   def recover[T](m: M[T], fn: Exception => T): M[T]
 
+  def liftTry[T](t: Try[T]): M[T] = t.fold(exception, liftM)
   def foldException[T, T1](m: M[T], fnE: Exception => T1, fn: T => T1): M[T1] = recover[T1](map(m, fn), fnE)
 }
 

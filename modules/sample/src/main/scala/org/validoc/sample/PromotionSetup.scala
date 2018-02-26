@@ -16,32 +16,29 @@ trait PromotionServiceNames {
   val programmeAndProductionServiceName = ServiceName("programmeAndProduction")
 }
 
-class PromotionSetup[Wrapper[_, _], Fail, HttpReq: ClassTag:Cachable:ShouldCache, HttpRes: ClassTag]
+case class JsonBundle(implicit
+                      val toJsonForHomePage: ToJson[HomePage],
+                      val toJsonForEnrichedMostPopular: ToJson[EnrichedMostPopular],
+                      val fromJsonForMostPopular: FromJson[MostPopular],
+                      val fromJsonForPromotion: FromJson[Promotion],
+                      val fromJsonForProgramme: FromJson[Programme],
+                      val fromJsonForProduction: FromJson[Production])
+
+class PromotionSetup[Wrapper[_, _], Fail, HttpReq: ClassTag : Cachable : ShouldCache, HttpRes: ClassTag]
 (implicit
  interpreter: TaglessLanguage[Wrapper, Fail, HttpReq, HttpRes],
  failer: Failer[Fail],
- toJsonForHomePage: ToJson[HomePage],
- toJsonForEnrichedMostPopular: ToJson[EnrichedMostPopular],
- fromJsonForMostPopular: FromJson[MostPopular],
- fromJsonForPromotion: FromJson[Promotion],
- fromJsonForProgramme: FromJson[Programme],
- fromJsonForProduction: FromJson[Production]
+ jsonBundle: JsonBundle
 ) extends PromotionServiceNames {
 
   import interpreter._
+  import jsonBundle._
 
 
   val vogue = http(mostPopularServiceName)
-
   val billboard = http(promotionServiceName)
-
   val fnord = http(programmeAndProductionServiceName)
 
-
-  val x = Promotion.responseParser[Fail]
-  ResponseProcessor.defaultResponseProcessor[Fail, MostPopularQuery, MostPopular]
-  ResponseProcessor.defaultResponseProcessor[Fail, PromotionQuery, Promotion]
-  ResponseProcessor.defaultResponseProcessor[Fail, ProductionId, Production]
   val rawMostPopularService = vogue |+| objectify[MostPopularQuery, MostPopular] |+| cache("vogue")
   val rawPromotionService = billboard |+| cache("Promotion") |+| objectify[PromotionQuery, Promotion]
   val rawProductionService = fnord |+| objectify[ProductionId, Production]

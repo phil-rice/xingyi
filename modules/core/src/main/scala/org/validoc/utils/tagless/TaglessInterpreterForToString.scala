@@ -3,6 +3,7 @@ package org.validoc.utils.tagless
 import org.validoc.utils.cache.{Cachable, ShouldCache}
 import org.validoc.utils.http.{ResponseCategoriser, ResponseProcessor, ServiceName, ToServiceRequest}
 import org.validoc.utils.logging.{DetailedLogging, SummaryLogging}
+import org.validoc.utils.retry.{NeedsRetry, RetryConfig}
 import org.validoc.utils.strings.IndentAndString
 import org.validoc.utils.success.MessageName
 
@@ -26,6 +27,8 @@ class TaglessInterpreterForToString[HttpReq, HttpRes] {
       raw.insertLineAndIndent(s"metrics($prefix)")
     override def cache[Req: ClassTag : Cachable : ShouldCache, Res: ClassTag](name: String)(raw: StringHolder[Req, Res]) =
       raw.insertLineAndIndent(s"cache($name)")
+    override def retry[Req: ClassTag, Res: ClassTag](retryConfig: RetryConfig)(raw: StringHolder[Req, Res])(implicit retry: NeedsRetry[Void, Res]): StringHolder[Req, Res] =
+      raw.insertLineAndIndent(s"retry($retryConfig)")
 
     override def logging[Req: ClassTag : DetailedLogging : SummaryLogging, Res: ClassTag : DetailedLogging : SummaryLogging](pattern: String)(raw: StringHolder[Req, Res])(implicit messageName: MessageName[Req, Res]) =
       raw.insertLineAndIndent(s"logging($pattern using prefix ${messageName.name})")

@@ -14,8 +14,8 @@ package object utils {
   def withValue[X, Y](x: X)(fn: X => Y) = fn(x)
 
   def join2WithReq[M[_], Req, Res1, Res2](firstService: Req => M[Res1], secondService: Req => M[Res2])(implicit monad: Monad[M]) = { req: Req => monad.join3(req.liftM, firstService(req), secondService(req)) }
-  def join3WithReq[M[_], Req, Res1, Res2,Res3](firstService: Req => M[Res1], secondService: Req => M[Res2], thirdService: Req => M[Res3])(implicit monad: Monad[M]) = { req: Req => monad.join4(req.liftM, firstService(req), secondService(req), thirdService(req)) }
-  def join4WithReq[M[_], Req, Res1, Res2,Res3, Res4](firstService: Req => M[Res1], secondService: Req => M[Res2], thirdService: Req => M[Res3], fouthService: Req => M[Res4])(implicit monad: Monad[M]) = { req: Req => monad.join5(req.liftM, firstService(req), secondService(req), thirdService(req), fouthService(req)) }
+  def join3WithReq[M[_], Req, Res1, Res2, Res3](firstService: Req => M[Res1], secondService: Req => M[Res2], thirdService: Req => M[Res3])(implicit monad: Monad[M]) = { req: Req => monad.join4(req.liftM, firstService(req), secondService(req), thirdService(req)) }
+  def join4WithReq[M[_], Req, Res1, Res2, Res3, Res4](firstService: Req => M[Res1], secondService: Req => M[Res2], thirdService: Req => M[Res3], fouthService: Req => M[Res4])(implicit monad: Monad[M]) = { req: Req => monad.join5(req.liftM, firstService(req), secondService(req), thirdService(req), fouthService(req)) }
 
   implicit class AnyPimper[T](t: T) {
     def |>[T2](fn: T => T2) = fn(t)
@@ -46,6 +46,7 @@ package object utils {
       result
     }
   }
+
   implicit class Function2Pimper[Req1, Req2, Res](fn: (Req1, Req2) => Res) {
     def ~>[Res2](fn2: Res => Res2): (Req1, Req2) => Res2 = { (r1, r2) => fn2(fn(r1, r2)) }
   }
@@ -81,9 +82,15 @@ package object utils {
   }
 
   implicit class MonadCanFailPimper[M[_], T](m: M[T]) {
-    def foldFailure[Fail, T1](fnE: Exception => M[T1], fnFailure: Fail => M[T1], fn: T => M[T1])(implicit async: MonadCanFail[M, Fail]): M[T1] = async.foldWithFail[T, T1](m, fnE, fnFailure, fn)
+    def foldFailure[Fail, T1](fnE: Exception => M[T1], fnFailure: Fail => M[T1], fn: T => M[T1])(implicit async: MonadCanFail[M, Fail]): M[T1] =
+      async.foldWithFail[T, T1](m, fnE, fnFailure, fn)
     //    def foldTry[Fail, T1](fnTry: Try[T] => T1)(implicit async: MonadCanFail[M, Fail]) = monad.fold(m, t => fnTry(Failure(t)), { t: T => fnTry(Success(t)) })
     def onComplete[Fail](fn: Try[Either[Fail, T]] => Unit)(implicit async: MonadCanFail[M, Fail]): M[T] = async.onComplete(m, fn)
+    def mapTryFail[Fail, T1](fn: Try[Either[Fail, T]] => M[T1])(implicit async: MonadCanFail[M, Fail]): M[T1] = async.foldWithFail[T, T1](m,
+      t => fn(Failure(t)),
+      f => fn(Success(Left(f))),
+      t => fn(Success(Right(t)))
+    )
 
     //    def transformAndLift[Fail, Res](fnThrowable: Throwable => Res, fnMap: T => Res)(implicit async: MonadCanFail[M, Fail]) =
     //      async.transformWithFail[T, Res](m, e => fnThrowable(e).liftM[M], fail ) { case Success(t) => fnMap(t); case Failure(t) => fnThrowable(t) }

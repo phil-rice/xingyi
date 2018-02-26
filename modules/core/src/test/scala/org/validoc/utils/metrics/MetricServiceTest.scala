@@ -40,7 +40,7 @@ class MetricServiceTest extends FlatSpec with Matchers with MockitoSugar with Ev
       case s: String => Future(s + "_result")
     }
 
-    fn(new MetricsService[Future, Throwable].metrics("prefix", delegate), putMetrics, reportData)
+//    fn(new MetricsService[Future, Throwable].metrics("prefix", delegate), putMetrics, reportData)
   }
 
   it should "record the metrics from a successful delegate call" in {

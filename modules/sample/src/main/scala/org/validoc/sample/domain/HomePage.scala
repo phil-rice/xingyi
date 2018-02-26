@@ -1,12 +1,10 @@
 package org.validoc.sample.domain
 
-import org.validoc.utils.aggregate.FindReq
 import org.validoc.utils.cache.Cachable
+import org.validoc.utils.tagless.FindReq
 //import io.circe.syntax._
 
 // need this, but it may be removed by 'organise imports' import io.circe.generic.auto._
-import org.validoc.utils.http._
-
 import scala.language.implicitConversions
 
 case class HomePage(mostPopular: EnrichedMostPopular, promotions: EnrichedPromotion)

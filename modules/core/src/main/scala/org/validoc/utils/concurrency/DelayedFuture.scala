@@ -1,5 +1,7 @@
 package org.validoc.utils.concurrency
 
+import scala.concurrent.duration.Duration
+
 object DelayedFuture {
 
   import java.util.{Date, Timer, TimerTask}
@@ -41,5 +43,8 @@ object DelayedFuture {
 
   def apply[T](delay: FiniteDuration)(body: => T)(implicit ctx: ExecutionContext): Future[T] = {
     makeTask(body)(timer.schedule(_, delay.toMillis))
+  }
+  def apply[T](delay: Duration)(body: => Future[T])(implicit ctx: ExecutionContext): Future[T] = {
+    makeTask()(timer.schedule(_, delay.toMillis)).flatMap(_ => body)
   }
 }

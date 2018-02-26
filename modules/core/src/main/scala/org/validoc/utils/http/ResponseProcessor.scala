@@ -2,9 +2,15 @@ package org.validoc.utils.http
 
 import org.validoc.utils.parser.Parser
 
+import scala.annotation.implicitNotFound
 import scala.language.higherKinds
 
-/** This is usually made by having a parser and a failer in scope, and using the ResponseProcessor default. It can obviously be overridden */
+@implicitNotFound("""Cannot find ResponseProcessor[${Fail},${Req},${Res}] The easiest way is to have a ResponseParser and a Failer in scope
+     To check this you can try
+        val failer = implicitly[Failer[${Fail}]]
+        val responseParser = implicitly[ResponseParser[${Fail},${Req},${Res}]
+        the compiler should give you a more helpful message then
+  """)
 trait ResponseProcessor[Fail, Req, Res] extends (ResponseState[Req] => Either[Fail, Res])
 
 trait ResponseParser[Fail, Req, Res] extends (Req => String => Either[Fail, Res])
@@ -20,7 +26,9 @@ trait Failer[Fail] {
   def unexpected[Req](req: Req, response: ServiceResponse): Fail
   def exception[Req](req: Req, throwable: Throwable): Fail
 }
+
 object Failer {
+
   implicit object FailerForVoid extends Failer[Void] {
     override def notFound[Req](req: Req, response: ServiceResponse) = ???
     override def unexpected[Req](req: Req, response: ServiceResponse) = ???
@@ -32,6 +40,7 @@ object Failer {
     override def unexpected[Req](req: Req, response: ServiceResponse) = ???
     override def exception[Req](req: Req, throwable: Throwable) = ???
   }
+
 }
 
 object ResponseProcessor {

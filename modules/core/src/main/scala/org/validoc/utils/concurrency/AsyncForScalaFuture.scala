@@ -35,6 +35,7 @@ object AsyncForScalaFuture {
     override def fail[T](f: Throwable): Future[T] = Future.failed(f)
     override def flattenM[T](seq: Seq[Future[T]]): Future[Seq[T]] = Future.sequence(seq)
     override def async[T](t: => T) = Future(t)
+    override def delay[T](duration: Duration)(block: => Future[T]): Future[T] = DelayedFuture(duration)(block)
   }
 
 }

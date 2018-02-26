@@ -39,9 +39,6 @@ object Zero {
   }
 }
 
-//trait Monoid[T] extends SemiGroup[T] with Zero[T] {
-//  def addAll(seq: Iterable[T]) = seq.foldLeft(zero)(add)
-//}
 
 trait Monoid[T] {
   def zero: T
