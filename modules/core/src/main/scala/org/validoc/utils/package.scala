@@ -86,11 +86,7 @@ package object utils {
       async.foldWithFail[T, T1](m, fnE, fnFailure, fn)
     //    def foldTry[Fail, T1](fnTry: Try[T] => T1)(implicit async: MonadCanFail[M, Fail]) = monad.fold(m, t => fnTry(Failure(t)), { t: T => fnTry(Success(t)) })
     def onComplete[Fail](fn: Try[Either[Fail, T]] => Unit)(implicit async: MonadCanFail[M, Fail]): M[T] = async.onComplete(m, fn)
-    def mapTryFail[Fail, T1](fn: Try[Either[Fail, T]] => M[T1])(implicit async: MonadCanFail[M, Fail]): M[T1] = async.foldWithFail[T, T1](m,
-      t => fn(Failure(t)),
-      f => fn(Success(Left(f))),
-      t => fn(Success(Right(t)))
-    )
+
 
     //    def transformAndLift[Fail, Res](fnThrowable: Throwable => Res, fnMap: T => Res)(implicit async: MonadCanFail[M, Fail]) =
     //      async.transformWithFail[T, Res](m, e => fnThrowable(e).liftM[M], fail ) { case Success(t) => fnMap(t); case Failure(t) => fnThrowable(t) }

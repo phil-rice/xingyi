@@ -45,7 +45,7 @@ lazy val finatraSettings = commonSettings ++ Seq(
 )
 
 lazy val playSettings = commonSettings ++ Seq(
-  libraryDependencies ++= Seq( jdbc , ehcache , ws , guice )
+  libraryDependencies ++= Seq(jdbc, ehcache, ws, guice)
 
 )
 
@@ -57,10 +57,18 @@ lazy val pactSettings = commonSettings ++ Seq(
 lazy val playJsonSetting = commonSettings ++ Seq(
   libraryDependencies += "com.typesafe.play" %% "play-json" % versions.play
 )
+lazy val caffeineSettings = commonSettings ++ Seq(
+  libraryDependencies += "com.github.ben-manes.caffeine" % "caffeine" % "2.6.2",
+  libraryDependencies += "org.scala-lang.modules" %% "scala-java8-compat" % "0.2.0"
+
+)
 
 lazy val core = (project in file("modules/core")).
   settings(commonSettings: _*)
 
+lazy val caffeine = (project in file("modules/caffeine")).
+  settings(caffeineSettings: _*).
+  dependsOn(core % "test->test;compile->compile").aggregate(core)
 //lazy val language = (project in file("modules/language")).
 //  settings(commonSettings: _*).
 //  dependsOn(core % "test->test;compile->compile").aggregate(core)

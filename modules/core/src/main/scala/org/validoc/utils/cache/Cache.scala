@@ -6,14 +6,14 @@ case class CacheStats(size: Int)
 
 
 trait ShouldCache[Req] extends (Req => Boolean)
+
 trait Cachable[Req] extends (Req => Any)
 
 trait CacheFactory[M[_]] {
-  def apply[Res](name: String): Cache[M, Res]
+  def apply[Req: Cachable, Res](name: String, raw: Req => M[Res]): Cache[M, Req, Res]
 }
 
-trait Cache[M[_], Res] {
-  def apply[Req: Cachable](req: Req, raw: Req => M[Res]): M[Res]
+trait Cache[M[_], Req, Res] extends (Req => M[Res]) {
   def clear()
   def stats: CacheStats
 }
