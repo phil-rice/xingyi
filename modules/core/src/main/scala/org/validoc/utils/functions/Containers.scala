@@ -20,12 +20,22 @@ trait Monad[M[_]] extends Functor[M] {
 }
 
 trait MonadWithException[M[_]] extends Monad[M] {
+
   def exception[T](t: Throwable): M[T]
   def recover[T](m: M[T], fn: Exception => T): M[T]
 
   def liftTry[T](t: Try[T]): M[T] = t.fold(exception, liftM)
   def foldException[T, T1](m: M[T], fnE: Exception => T1, fn: T => T1): M[T1] = recover[T1](map(m, fn), fnE)
 }
+
+trait CompletableMonad[M[_],H[_]] extends MonadWithException[M]{
+  def makePromise[T]: H[T]
+  def monad[T](h: H[T]): M[T];
+  def complete[T](h: H[T], t: Try[T])
+
+}
+
+
 
 trait MonadCanFail[M[_], Fail] extends MonadWithException[M] {
   def fail[T](f: Fail): M[T]

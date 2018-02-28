@@ -4,6 +4,7 @@ import java.util.concurrent.TimeUnit
 
 import org.validoc.utils.UtilsSpec
 import org.validoc.utils.http._
+import org.validoc.utils.profiling.TryProfileData
 import org.validoc.utils.retry.RetryConfig
 import org.validoc.utils.success.MessageName
 import org.validoc.utils.time.RandomDelay
@@ -40,10 +41,14 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
     implicit def toSName(s: String) = ServiceName(s)
 
+
     val retryConfig = RetryConfig(10, RandomDelay(FiniteDuration(100, TimeUnit.MILLISECONDS)))
 
     def s1 = http("s1") |+| objectify[String, String] |+| logging("service1") |+| metrics("service1")
-    def s2 = http("s2") |+| objectify[String, String] |+| logging("service1")
+
+    val data = new TryProfileData
+
+    def s2 = http("s2") |+| objectify[String, String] |+| logging("service1") |+| profile(data)
     def s3 = http("s3") |+| objectify[String, String]
     def s4 = http("s4") |+| objectify[String, String] |+| retry(retryConfig)
 
@@ -69,11 +74,11 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
     sample.m2.lines shouldBe List(
       (4, "merge2"),
       (3, "metrics(service1)"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s1)"),
-      (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s2)"))
+      (3, "profile"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s2)"))
     sample.m3.lines shouldBe List(
       (4, "merge3"),
       (3, "metrics(service1)"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s1)"),
-      (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s2)"),
+      (3, "profile"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s2)"),
       (1, "objectify[String,String]"), (0, "http(s3)"))
 
     //      :List((4,merge4), (3,metrics(service1)), (2,logging(service1 using prefix someMessageName)), (1,objectify[String,String]), (0,http(s1)), (2,logging(service1 using prefix someMessageName)), (1,objectify[String,String]), (0,http(s2)), (1,objectify[String,String]), (0,http(s3)), (1,objectify[String,String]), (0,http(s4)))
@@ -81,14 +86,14 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
     sample.m4.lines shouldBe List(
       (4, "merge4"),
       (3, "metrics(service1)"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s1)"),
-      (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s2)"),
+      (3, "profile"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s2)"),
       (1, "objectify[String,String]"), (0, "http(s3)"),
       (2, "retry(RetryConfig(10,RandomDelay(100 milliseconds)))"), (1, "objectify[String,String]"), (0, "http(s4)"))
 
     sample.e1.lines shouldBe List(
       (4, "enrich"),
       (3, "metrics(service1)"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s1)"),
-      (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s2)"))
+      (3, "profile"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s2)"))
 
 
   }

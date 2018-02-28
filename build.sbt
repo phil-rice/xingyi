@@ -58,8 +58,7 @@ lazy val playJsonSetting = commonSettings ++ Seq(
   libraryDependencies += "com.typesafe.play" %% "play-json" % versions.play
 )
 lazy val caffeineSettings = commonSettings ++ Seq(
-  libraryDependencies += "com.github.ben-manes.caffeine" % "caffeine" % "2.6.2",
-  libraryDependencies += "org.scala-lang.modules" %% "scala-java8-compat" % "0.2.0"
+  libraryDependencies += "com.github.blemale" %% "scaffeine" % "2.4.0" % "compile"
 
 )
 

@@ -4,8 +4,10 @@ import org.validoc.utils.cache.{Cachable, ShouldCache}
 import org.validoc.utils.http._
 import org.validoc.utils.logging._
 import org.validoc.utils.metrics.ReportData
+import org.validoc.utils.profiling.TryProfileData
 import org.validoc.utils.retry.{NeedsRetry, RetryConfig}
 import org.validoc.utils.success.MessageName
+import org.validoc.utils.time.NanoTimeService
 
 import scala.language.higherKinds
 import scala.reflect.ClassTag
@@ -39,6 +41,7 @@ trait NonfunctionalLanguage[Wrapper[_, _], Fail] {
   def logging[Req: ClassTag : DetailedLogging : SummaryLogging, Res: ClassTag : DetailedLogging : SummaryLogging](pattern: String)(raw: Wrapper[Req, Res])(implicit messageName: MessageName[Req, Res]): Wrapper[Req, Res]
   def cache[Req: ClassTag : Cachable : ShouldCache, Res: ClassTag](name: String)(raw: Wrapper[Req, Res]): Wrapper[Req, Res]
   def retry[Req: ClassTag, Res: ClassTag](retryConfig: RetryConfig)(raw: Wrapper[Req, Res])(implicit retry: NeedsRetry[Fail, Res]): Wrapper[Req, Res]
+  def profile[Req: ClassTag, Res: ClassTag](profileData: TryProfileData)(raw: Wrapper[Req, Res]): Wrapper[Req, Res]
 
   implicit class ComposePimper[RawReq, RawRes](wrapper: Wrapper[RawReq, RawRes]) {
     def |+|[Req, Res](fn: Wrapper[RawReq, RawRes] => Wrapper[Req, Res]): Wrapper[Req, Res] = fn(wrapper)

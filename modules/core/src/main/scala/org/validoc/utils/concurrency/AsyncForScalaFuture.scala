@@ -1,9 +1,12 @@
 package org.validoc.utils.concurrency
 
-import org.validoc.utils.functions.MonadCanFail
+import java.util.concurrent.CompletableFuture
+
+import org.validoc.utils.functions.{CompletableMonad, MonadCanFail}
+import org.validoc.utils.local.ExecutionContextWithLocal
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
@@ -12,7 +15,7 @@ class MultipleExceptions(val first: Throwable, val seq: List[Throwable]) extends
 
 object AsyncForScalaFuture {
 
-  implicit def defaultAsyncForScalaFuture(implicit ec: ExecutionContext) = new Async[Future] with MonadCanFail[Future, Throwable] {
+  implicit def defaultAsyncForScalaFuture(implicit ec: ExecutionContextWithLocal) = new Async[Future] with MonadCanFail[Future, Throwable] with CompletableMonad[Future, Promise] {
     private def wrap[T](fn: Try[T] => Unit)(tryT: Try[T]): Try[T] = try {
       fn(tryT)
       tryT
@@ -36,6 +39,9 @@ object AsyncForScalaFuture {
     override def flattenM[T](seq: Seq[Future[T]]): Future[Seq[T]] = Future.sequence(seq)
     override def async[T](t: => T) = Future(t)
     override def delay[T](duration: Duration)(block: => Future[T]): Future[T] = DelayedFuture(duration)(block)
+    override def makePromise[T] = Promise()
+    override def monad[T](h: Promise[T]) = h.future
+    override def complete[T](h: Promise[T], t: Try[T]) = h.tryComplete(t)
   }
 
 }

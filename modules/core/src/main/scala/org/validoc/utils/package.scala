@@ -102,6 +102,7 @@ package object utils {
 
 
   implicit class MonadFunctionPimper[M[_], Req, Res](fn: Req => M[Res])(implicit monad: Monad[M]) {
+
     def |=>[Res2](mapFn: Res => Res2): (Req => M[Res2]) = req => monad.map(fn(req), mapFn)
     def |=+>[Res2](mapFn: (Req => Res => Res2)): (Req => M[Res2]) = req => monad.map(fn(req), mapFn(req))
     def |=++>[Res2](mapFn: (Req => Res => Res => M[Res2])): (Req => M[Res2]) = { req => monad.flatMap(fn(req), { res: Res => mapFn(req)(res)(res) }) }
@@ -139,7 +140,7 @@ package object utils {
 
   implicit class MonadWithExceptionFunctionPimper[M[_], Req, Res](fn: Req => M[Res])(implicit monad: MonadWithException[M]) {
     def foldException[Res2](fnThrowable: Throwable => Res2, fnMap: Res => Res2): (Req => M[Res2]) = { req => monad.foldException[Res, Res2](fn(req), fnThrowable, fnMap) }
-    def onEnterAndExitM[Mid](mid: Req => Mid, before: Mid => Unit, after: Mid => Try[Res] => Unit) = { req: Req =>
+    def onEnterAndExitM[Mid](mid: Req => Mid, after: Mid => Try[Res] => Unit) = { req: Req =>
       withValue(mid(req))(m => fn(req).registerSideeffect(after(m)))
     }
   }

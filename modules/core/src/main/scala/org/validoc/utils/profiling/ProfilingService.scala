@@ -1,11 +1,12 @@
 package org.validoc.utils.profiling
 
 import org.validoc.utils.Service
-import org.validoc.utils.functions.Monad
+import org.validoc.utils.functions.{Monad, MonadWithException}
 import org.validoc.utils.time.{NanoTimeService, SystemClockNanoTimeService}
 
 import scala.language.higherKinds
 import scala.util.{Failure, Success, Try}
+import org.validoc.utils._
 
 class TryProfileData {
   def clearData = {
@@ -28,17 +29,4 @@ trait ProfileInfo {
   def tryProfileData: TryProfileData
 }
 
-
-class ProfilingService[M[_] : Monad, Req, Res](val name: String, delegate: Req => M[Res],
-                                                       val tryProfileData: TryProfileData = new TryProfileData)(implicit timeService: NanoTimeService = SystemClockNanoTimeService)
-  extends Service[M, Req, Res] with ProfileInfo {
-
-  override def apply(request: Req): M[Res] = {
-    val start = timeService()
-    delegate(request)
-
-
-      //TODO .registerSideEffectWhenComplete(tryProfileData.event(timeService() - start))
-  }
-}
 

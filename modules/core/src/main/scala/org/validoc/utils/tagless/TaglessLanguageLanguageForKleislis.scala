@@ -7,6 +7,7 @@ import org.validoc.utils.functions.MonadCanFail
 import org.validoc.utils.http._
 import org.validoc.utils.logging._
 import org.validoc.utils.metrics.PutMetrics
+import org.validoc.utils.profiling.TryProfileData
 import org.validoc.utils.retry.{NeedsRetry, RetryConfig, RetryService}
 import org.validoc.utils.success.MessageName
 import org.validoc.utils.time.NanoTimeService
@@ -38,10 +39,13 @@ class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail, HttpReq, HttpRes](i
       raw.sideeffect(logReqAndResult[Req, Res](raw))
 
     override def cache[Req: ClassTag : Cachable : ShouldCache, Res: ClassTag](name: String)(raw: K[Req, Res]): Req => M[Res] =
-      Cache.apply[M, Req, Res](cacheFactory[Res](name), raw)
+      Cache[M, Req, Res](cacheFactory[Req, Res](name, raw))
 
     override def retry[Req: ClassTag, Res: ClassTag](retryConfig: RetryConfig)(raw: K[Req, Res])(implicit retry: NeedsRetry[Fail, Res]): K[Req, Res] =
       new RetryService[M, Fail, Req, Res](raw, retryConfig)
+    override def profile[Req: ClassTag, Res: ClassTag]( profileData: TryProfileData)(raw: K[Req, Res]) =
+      raw.onEnterAndExitM(_ => timeService(), profileData.event)
+
 
     def objectify[Req: ClassTag : ToServiceRequest : ResponseCategoriser, Res: ClassTag](http: K[HttpReq, HttpRes])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[Req], responseProcessor: ResponseProcessor[Fail, Req, Res]) =
       toRequest ~> toHttpReq ~> http |=> toServiceResponse |=+> categoriser |=|> responseProcessor

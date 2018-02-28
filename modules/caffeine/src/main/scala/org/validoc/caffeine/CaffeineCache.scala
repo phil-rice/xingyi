@@ -1,17 +1,17 @@
 package org.validoc.caffeine
 
-import java.util.concurrent.{CompletionStage, Executor, TimeUnit}
-
-import com.github.benmanes.caffeine.cache.{AsyncCacheLoader, AsyncLoadingCache, CacheLoader, Caffeine}
-import org.validoc.utils.cache.{Cachable, Cache, CacheFactory, CacheStats}
+import com.github.blemale.scaffeine.Scaffeine
 import org.validoc.utils._
+import org.validoc.utils.cache.{Cachable, Cache, CacheFactory}
+import org.validoc.utils.functions.CompletableMonad
 
-import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.language.higherKinds
 
 
 //Has a req and a key, but equals delegates to key equals.
-class CacheKey[Req](req: Req, key: Any) {
+class CacheKey[Req](req: Req, val key: Any) {
   override def toString: String = s"CacheKey($key)"
   override def equals(obj: scala.Any): Boolean = obj match {
     case ck: CacheKey[Req] => ck.key == key
@@ -25,30 +25,38 @@ object CacheKey {
 }
 
 object CaffeineCache {
-  def toScala[T](cs: CompletionStage[T]): Future[T] = {
-    cs match {
-      case cf: CF[T] => cf.wrapped
-      case _ =>
-        val p = new P[T](cs)
-        cs whenComplete p
-        p.future
-    }
-  }
-  def cache[M[_], Req, Res](loader: AsyncCacheLoader[CacheKey[Req], Res])(implicit executor: Executor): AsyncLoadingCache[CacheKey[Req], Res] =
-    Caffeine.newBuilder()
-      .maximumSize(10000)
-      .expireAfterWrite(10, TimeUnit.MINUTES)
-      .buildAsync[CacheKey[Req], Res](loader)
 
-  import FutureConverters ._
-  implicit def cacheFactory[M[_]] = new CacheFactory[M[_]] {
-    override def apply[Req: Cachable, Res](name: String, raw: Req => M[Res]): Cache[M, Req, Res] = new Cache[M, Req, Res] {
-      val c = cache[M, ReqRes](raw =>
-      )
-      override def clear(): Unit = ???
-      override def stats: CacheStats = ???
-      override def apply(v1: Req): M[Res] = ???
+
+  def defaultCacheBuilder[Req, Res](raw: Req => Future[Res]): Scaffeine[Any, Any] =
+    Scaffeine()
+      .recordStats()
+      .expireAfterWrite(1.hour)
+      .maximumSize(500)
+  //      .buildAsyncFuture(raw)
+
+  def cacheFactoryForFuture(scaffeine: Scaffeine[Any, Any])(implicit executionContext: ExecutionContext) = new CacheFactory[Future] {
+    override def apply[Req: Cachable, Res](name: String, rawFn: Req => Future[Res]) = new Cache[Future, Req, Res] {
+      val cache = scaffeine.buildAsyncFuture[Req, Res](rawFn)
+      override def clear() = cache.underlying.synchronous().invalidateAll()
+      override def apply(v1: Req) = cache.get(v1)
+      override def raw = rawFn
     }
   }
 
+  def cacheFactory[M[_], H[_]](scaffeine: Scaffeine[Any, Any])(implicit executionContext: ExecutionContext, monad: CompletableMonad[M, H]) = new CacheFactory[M] {
+    override def apply[Req: Cachable, Res](name: String, rawFn: Req => M[Res]) = new Cache[M, Req, Res] {
+      val cache = scaffeine.buildAsyncFuture[Req, Res] { req =>
+        val promise: Promise[Res] = Promise[Res]()
+        raw(req).mapTry(promise.tryComplete)
+        promise.future
+      }
+      override def apply(req: Req) = {
+        val completable = monad.makePromise[Res]
+        cache.get(req).onComplete(monad.complete(completable, _))(executionContext)
+        monad.monad(completable)
+      }
+      override def clear() = cache.underlying.synchronous().invalidateAll()
+      override def raw = rawFn
+    }
+  }
 }

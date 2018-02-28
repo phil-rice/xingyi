@@ -1,5 +1,7 @@
 package org.validoc.utils.cache
 
+import org.validoc.utils.functions.{CompletableMonad, MonadWithException}
+
 import scala.language.higherKinds
 
 case class CacheStats(size: Int)
@@ -14,12 +16,13 @@ trait CacheFactory[M[_]] {
 }
 
 trait Cache[M[_], Req, Res] extends (Req => M[Res]) {
+  def raw: Req => M[Res]
   def clear()
-  def stats: CacheStats
 }
 
 object Cache {
-  def apply[M[_], Req, Res](cache: Cache[M, Res], raw: Req => M[Res])(req: Req)(implicit shouldCache: ShouldCache[Req], cachable: Cachable[Req]): M[Res] =
-    if (shouldCache(req)) cache(req, raw) else raw(req)
+  def apply[M[_], Req, Res](cache: Cache[M, Req, Res])(implicit shouldCache: ShouldCache[Req], cachable: Cachable[Req]): Req => M[Res] = { req =>
+    if (shouldCache(req)) cache(req) else cache.raw(req)
+  }
 }
 
