@@ -39,7 +39,7 @@ object Failer {
     override def pathNotFound(serviceRequest: ServiceRequest): Void = ???
   }
 
-  implicit object FailerForException extends Failer[Throwable] {
+  implicit object FailerForThrowable extends Failer[Throwable] {
     override def notFound[Req](req: Req, response: ServiceResponse) = ???
     override def unexpected[Req](req: Req, response: ServiceResponse) = ???
     override def exception[Req](req: Req, throwable: Throwable) = ???

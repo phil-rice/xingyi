@@ -2,8 +2,17 @@ package org.validoc.utils.http
 
 import java.net.{URL, URLEncoder}
 
+object Method {
+  def apply(s: String) = s.toLowerCase match {
+    case "get" => Get
+    case "post" => Post
+    case "put" => Put
+    case "delete" => Delete
+  }
+}
 sealed trait Method {
   override def toString: String = getClass.getSimpleName.dropRight(1)
+
 }
 case object Get extends Method
 case object Post extends Method

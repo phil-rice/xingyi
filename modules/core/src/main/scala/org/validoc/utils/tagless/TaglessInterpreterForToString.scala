@@ -25,7 +25,7 @@ class TaglessInterpreterForToString[HttpReq, HttpRes] {
 
     override def objectify[Req: ClassTag : ToServiceRequest : ResponseCategoriser, Res: ClassTag](http: StringHolder[HttpReq, HttpRes])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[Req], responseProcessor: ResponseProcessor[Void, Req, Res]) =
       http.insertLineAndIndent(s"objectify[${nameOf[Req]},${nameOf[Res]}]")
-    override def chain(endpoints: StringHolder[ServiceRequest, ServiceResponse]*): StringHolder[ServiceRequest, ServiceResponse] =
+    override def chain(endpoints: StringHolder[_, _]*) =
       IndentAndString.merge("chain", endpoints: _*)
     override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: StringHolder[Req, Res])(implicit fromServiceRequest: FromServiceRequest[Req], toServiceResponse: ToServiceResponse[Res]): StringHolder[Req, Res] =
       raw.insertLineAndIndent(s"endpoint[${nameOf[Req]},${nameOf[Res]}]($normalisedPath,$matchesServiceRequest)")

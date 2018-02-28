@@ -1,7 +1,5 @@
 package org.validoc.utils.cache
 
-import org.validoc.utils.functions.{CompletableMonad, MonadWithException}
-
 import scala.language.higherKinds
 
 case class CacheStats(size: Int)

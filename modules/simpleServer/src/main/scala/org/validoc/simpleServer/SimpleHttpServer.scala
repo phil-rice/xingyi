@@ -3,20 +3,12 @@ package org.validoc.simpleServer
 import java.net.InetSocketAddress
 import java.util.concurrent.Executor
 
-import com.sun.net.httpserver.HttpServer
+import com.sun.net.httpserver.{HttpHandler, HttpServer}
 
-class SimpleHttpServer (port: Int, executor: Executor, handlers: PathAndHandler*){
+class SimpleHttpServer(port: Int, handler: HttpHandler)(implicit executor: Executor) {
   private val server = HttpServer.create(new InetSocketAddress(port), 0)
-
-  handlers.foreach(server.createContext())
-  def this {
-    this()
-    this.server =
-    for (pathAndHandler <- handlers) {
-      server.createContext(pathAndHandler.path, pathAndHandler)
-    }
-    server.setExecutor(executor)
-  }
+  server.createContext("/", handler)
+  server.setExecutor(executor)
 
   def start(): Unit = {
     server.start()

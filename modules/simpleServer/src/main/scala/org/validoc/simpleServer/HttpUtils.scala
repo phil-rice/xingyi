@@ -7,7 +7,7 @@ import org.validoc.utils.http.{Body, ContentType, ServiceResponse, Status}
 
 import scala.io.Source
 
-class HttpUtils {
+object HttpUtils {
   def makeDefaultExecutor: ExecutorService = Executors.newFixedThreadPool(100)
 
 
@@ -18,9 +18,9 @@ class HttpUtils {
     Streams.sendAll(exchange.getResponseBody, bytes)
   }
 
-  def process(exchange: HttpExchange, callable: Callable[ServiceResponse]): Unit = {
+  def process(exchange: HttpExchange)(response: ServiceResponse): Unit = {
     try
-      write(exchange, callable.call)
+      write(exchange, response)
     catch {
       case e: Exception =>
         write(exchange, new ServiceResponse(Status(500), Body(e.getClass.getName + "\n" + e.getMessage), ContentType("text/plain")))

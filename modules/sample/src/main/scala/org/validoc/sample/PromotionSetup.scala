@@ -24,12 +24,11 @@ case class JsonBundle(implicit
                       val fromJsonForProgramme: FromJson[Programme],
                       val fromJsonForProduction: FromJson[Production])
 
-class PromotionSetup[EndpointWrapper[_, _], Wrapper[_, _], Fail, HttpReq: ClassTag : Cachable : ShouldCache, HttpRes: ClassTag]
-(implicit
- interpreter: TaglessLanguage[EndpointWrapper, Wrapper, Fail, HttpReq, HttpRes],
- failer: Failer[Fail],
- jsonBundle: JsonBundle
-) extends PromotionServiceNames {
+class PromotionSetup[EndpointWrapper[_, _], Wrapper[_, _], Fail, HttpReq: ClassTag : Cachable : ShouldCache, HttpRes: ClassTag](interpreter: TaglessLanguage[EndpointWrapper, Wrapper, Fail, HttpReq, HttpRes])(implicit
+
+                                                                                                                                failer: Failer[Fail],
+                                                                                                                                jsonBundle: JsonBundle
+                                                                                                                               ) extends PromotionServiceNames {
 
   import interpreter._
   import jsonBundle._
@@ -40,7 +39,8 @@ class PromotionSetup[EndpointWrapper[_, _], Wrapper[_, _], Fail, HttpReq: ClassT
   val billboard = http(promotionServiceName)
   val fnord = http(programmeAndProductionServiceName)
 
-  val rawMostPopularService = vogue |+| objectify[MostPopularQuery, MostPopular] |+| cache("vogue")
+  println(s"vogue $vogue")
+  val rawMostPopularService = vogue |+| objectify[MostPopularQuery, MostPopular]// |+| cache("vogue")
   val rawPromotionService = billboard |+| cache("Promotion") |+| objectify[PromotionQuery, Promotion]
   val rawProductionService = fnord |+| objectify[ProductionId, Production]
   val rawProgrammeService = fnord |+| objectify[ProgrammeId, Programme]
@@ -80,6 +80,7 @@ object PromotionSetup extends App {
   implicit val fromJsonForProgramme = fromJson[Programme]
   implicit val fromJsonForProduction = fromJson[Production]
   implicit val jsonBundle: JsonBundle = JsonBundle()
-  val setup = new PromotionSetup[StringHolder, StringHolder, Void, String, String]()
+
+  val setup = new PromotionSetup[StringHolder, StringHolder, Void, String, String](language.ForToString)
   println(setup.microservice.invertIndent)
 }

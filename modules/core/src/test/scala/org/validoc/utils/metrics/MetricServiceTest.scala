@@ -7,18 +7,14 @@ import org.mockito.Mockito._
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
-import org.validoc.utils.concurrency.MDCPropagatingExecutionContext
 import org.validoc.utils.time.MockTimeService
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.language.postfixOps
-import scala.util.{Failure, Success}
-
-import org.validoc.utils.concurrency.AsyncForScalaFuture._
 
 class MetricServiceTest extends FlatSpec with Matchers with MockitoSugar with Eventually {
-  implicit val ec: MDCPropagatingExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
+  implicit val ec = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
 
   behavior of "Metrics"
 

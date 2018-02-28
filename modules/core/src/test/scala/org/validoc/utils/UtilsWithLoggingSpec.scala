@@ -6,7 +6,6 @@ import org.mockito.ArgumentCaptor
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
-import org.validoc.utils.concurrency.{Async, MDCPropagatingExecutionContext}
 import org.validoc.utils.local.ExecutionContextWithLocal
 import org.validoc.utils.logging.NullLoggingAdapterWithMdc
 
@@ -37,6 +36,6 @@ class UtilsWithLoggingSpec extends UtilsSpec {
   implicit val loggingAdapter = NullLoggingAdapterWithMdc
 }
 
-class UtilsWithExecutionContextSpec extends UtilsSpec {
-  implicit val mdc: MDCPropagatingExecutionContext = ExecutionContext.global
-}
+//class UtilsWithExecutionContextSpec extends UtilsSpec {
+//  implicit val mdc: MDCPropagatingExecutionContext = ExecutionContext.global
+//}

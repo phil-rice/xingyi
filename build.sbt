@@ -57,6 +57,7 @@ lazy val pactSettings = commonSettings ++ Seq(
 lazy val playJsonSetting = commonSettings ++ Seq(
   libraryDependencies += "com.typesafe.play" %% "play-json" % versions.play
 )
+
 lazy val caffeineSettings = commonSettings ++ Seq(
   libraryDependencies += "com.github.blemale" %% "scaffeine" % "2.4.0" % "compile"
 )
@@ -67,6 +68,14 @@ lazy val core = (project in file("modules/core")).
 lazy val simpleServer = (project in file("modules/simpleServer")).
   settings(commonSettings: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core)
+
+lazy val sampleServer = (project in file("modules/sampleServer")).
+  settings(commonSettings: _*).
+  dependsOn(core % "test->test;compile->compile").aggregate(core).
+  dependsOn(simpleServer % "test->test;compile->compile").aggregate(simpleServer).
+  dependsOn(sample % "test->test;compile->compile").aggregate(sample).
+  dependsOn(caffeine % "test->test;compile->compile").aggregate(caffeine)
+
 
 lazy val caffeine = (project in file("modules/caffeine")).
   settings(caffeineSettings: _*).

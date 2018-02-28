@@ -11,8 +11,11 @@ trait NanoTimeService {
 
 }
 
-object SystemClockNanoTimeService extends NanoTimeService {
-  override def apply(): Long = System.nanoTime()
+object NanoTimeService {
+
+  implicit object DefaultNanotimeService extends NanoTimeService {
+    override def apply() = System.nanoTime()
+  }
 }
 
 
