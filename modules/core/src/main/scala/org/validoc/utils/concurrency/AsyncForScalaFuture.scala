@@ -1,12 +1,10 @@
 package org.validoc.utils.concurrency
 
-import java.util.concurrent.CompletableFuture
-
-import org.validoc.utils.functions.{CompletableMonad, MonadCanFail}
-import org.validoc.utils.local.{ExecutionContextWithLocal, LocalOps, LocalOpsForScalaFuture}
+import org.validoc.utils.functions.MonadCanFail
+import org.validoc.utils.local.{ExecutionContextWithLocal, LocalOpsForScalaFuture}
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future, Promise}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
@@ -21,7 +19,7 @@ object AsyncForScalaFuture {
 
   implicit val LocalOpsForScalaFuture = new LocalOpsForScalaFuture
 
-  implicit def defaultAsyncForScalaFuture(implicit ec: ExecutionContextWithLocal) = new Async[Future] with MonadCanFail[Future, Throwable] with CompletableMonad[Future, Promise] {
+  implicit def defaultAsyncForScalaFuture(implicit ec: ExecutionContextWithLocal) = new Async[Future] with MonadCanFail[Future, Throwable] {
     private def wrap[T](fn: Try[T] => Unit)(tryT: Try[T]): Try[T] = try {
       fn(tryT)
       tryT
@@ -45,9 +43,7 @@ object AsyncForScalaFuture {
     override def flattenM[T](seq: Seq[Future[T]]): Future[Seq[T]] = Future.sequence(seq)
     override def async[T](t: => T) = Future(t)
     override def delay[T](duration: Duration)(block: => Future[T]): Future[T] = DelayedFuture(duration)(block)
-    override def makePromise[T] = Promise()
-    override def monad[T](h: Promise[T]) = h.future
-    override def complete[T](h: Promise[T], t: Try[T]) = h.tryComplete(t)
+
   }
 
 }

@@ -14,7 +14,7 @@ case class IndentAndString(indent: Int, lines: List[(Int, String)]) {
     IndentAndString(0, lines.map { case (i, s) => (max - i, s) })
   }
   def offset(by: Int) = IndentAndString(indent, lines.map { case (i, s) => (i + by, s) })
-  override def toString: String = lines.map { case (i, s) => List.fill(i)(" ").mkString("") + s }.mkString("\n")
+  override def toString: String = lines.map { case (i, s) => List.fill(i)("  ").mkString("") + s }.mkString("\n")
 }
 
 object IndentAndString {

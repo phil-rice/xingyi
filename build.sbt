@@ -59,11 +59,14 @@ lazy val playJsonSetting = commonSettings ++ Seq(
 )
 lazy val caffeineSettings = commonSettings ++ Seq(
   libraryDependencies += "com.github.blemale" %% "scaffeine" % "2.4.0" % "compile"
-
 )
 
 lazy val core = (project in file("modules/core")).
   settings(commonSettings: _*)
+
+lazy val simpleServer = (project in file("modules/simpleServer")).
+  settings(commonSettings: _*).
+  dependsOn(core % "test->test;compile->compile").aggregate(core)
 
 lazy val caffeine = (project in file("modules/caffeine")).
   settings(caffeineSettings: _*).

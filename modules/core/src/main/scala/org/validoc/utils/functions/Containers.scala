@@ -27,13 +27,13 @@ trait MonadWithException[M[_]] extends Monad[M] {
   def liftTry[T](t: Try[T]): M[T] = t.fold(exception, liftM)
   def foldException[T, T1](m: M[T], fnE: Exception => T1, fn: T => T1): M[T1] = recover[T1](map(m, fn), fnE)
 }
-
-trait CompletableMonad[M[_],H[_]] extends MonadWithException[M]{
-  def makePromise[T]: H[T]
-  def monad[T](h: H[T]): M[T];
-  def complete[T](h: H[T], t: Try[T])
-
-}
+//
+//trait CompletableMonad[M[_],H[_]] extends MonadWithException[M]{
+//  def makePromise[T]: H[T]
+//  def monad[T](h: H[T]): M[T];
+//  def complete[T](h: H[T], t: Try[T])
+//
+//}
 
 
 
