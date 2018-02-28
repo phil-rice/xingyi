@@ -8,6 +8,7 @@ import scala.annotation.implicitNotFound
 import scala.concurrent.ExecutionContext
 import scala.reflect.ClassTag
 import scala.util.DynamicVariable
+import scala.language.implicitConversions
 
 class LocalOpsForScalaFuture extends LocalOps {
   val localValues: DynamicVariable[Map[Class[_], Any]] = new DynamicVariable(Map())
@@ -15,6 +16,7 @@ class LocalOpsForScalaFuture extends LocalOps {
   override def put[V: ClassTag](v: V) = localValues.value = localValues.value + (ClassTags.clazz -> v)
   override def clear[V: ClassTag]() = localValues.value = Map()
 }
+
 object LocalOpsForScalaFuture {
   implicit val localOps = new LocalOpsForScalaFuture
   implicit def executionContext(implicit executionContext: ExecutionContext, localOps: LocalOpsForScalaFuture) = new ExecutionContextWithLocal(executionContext)
@@ -32,4 +34,8 @@ class ExecutionContextWithLocal(executionContext: ExecutionContext)(implicit loc
     })
   }
   override def reportFailure(cause: Throwable) = executionContext.reportFailure(cause)
+}
+
+object ExecutionContextWithLocal {
+  implicit def default(executionContext: ExecutionContext) = new ExecutionContextWithLocal(executionContext)
 }

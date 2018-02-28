@@ -30,6 +30,10 @@ package object utils {
       }
   }
 
+  implicit class BooleanPimper(boolean: Boolean) {
+    def toOption[T](value: => T) = if (boolean) Some(value) else None
+  }
+
   implicit class TryPimper[T](tryT: Try[T]) {
     def liftTry[M[_]](implicit monadWithException: MonadWithException[M]) = monadWithException.liftTry(tryT)
   }
@@ -44,6 +48,20 @@ package object utils {
       val result = fn(req)
       after(m, result)
       result
+    }
+  }
+
+  implicit class OptionFunctionPimper[Req, Res](fn: Req => Option[Res]) {
+    def <+>(fn2: Req => Option[Res]) { req: Req => fn(req).getOrElse(fn2(req)) }
+  }
+
+  implicit class OptionFunctionCurriedPimper[T, T1, T2](fn: T => T1 => Option[T2]) {
+    def <++>(fn2: T => T1 => Option[T2]): T => T1 => Option[T2] = { t: T =>
+      t1: T1 =>
+        fn(t)(t1) match {
+          case None => fn2(t)(t1)
+          case x => x
+        }
     }
   }
 

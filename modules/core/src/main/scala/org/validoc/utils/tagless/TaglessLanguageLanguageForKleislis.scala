@@ -3,6 +3,7 @@ package org.validoc.utils.tagless
 import org.validoc.utils._
 import org.validoc.utils.cache._
 import org.validoc.utils.concurrency.Async
+import org.validoc.utils.endpoint.MatchesServiceRequest
 import org.validoc.utils.functions.MonadCanFail
 import org.validoc.utils.http._
 import org.validoc.utils.logging._
@@ -34,6 +35,10 @@ class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail, HttpReq, HttpRes](i
 
     override def metrics[Req: ClassTag, Res: ClassTag](prefix: String)(raw: K[Req, Res])(implicit makeReportData: RD[Res]) =
       raw.enterAndExit[Fail, Long]({ r: Req => timeService() }, makeReportData(prefix) ~> putMetrics)
+
+    override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: K[Req, Res])(implicit fromServiceRequest: FromServiceRequest[Req], toServiceResponse: ToServiceResponse[Res]): K[ServiceRequest, Option[ServiceResponse]] =
+      {serviceRequest => matchesServiceRequest(normalisedPath)(serviceRequest).toOption((fromServiceRequest ~> raw |=> toServiceResponse) (serviceRequest))}
+//    override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest) (implicit fromServiceRequest: FromServiceRequest[Req], toServiceResponse: ToServiceResponse[Res])(raw: K[Req, Res]): K[Req, Res] =
 
     override def logging[Req: ClassTag : DetailedLogging : SummaryLogging, Res: ClassTag : DetailedLogging : SummaryLogging](pattern: String)(raw: K[Req, Res])(implicit messageName: MessageName[Req, Res]) =
       raw.sideeffect(logReqAndResult[Req, Res](raw))

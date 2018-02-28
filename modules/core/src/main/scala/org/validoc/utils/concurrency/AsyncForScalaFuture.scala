@@ -3,7 +3,7 @@ package org.validoc.utils.concurrency
 import java.util.concurrent.CompletableFuture
 
 import org.validoc.utils.functions.{CompletableMonad, MonadCanFail}
-import org.validoc.utils.local.ExecutionContextWithLocal
+import org.validoc.utils.local.{ExecutionContextWithLocal, LocalOps, LocalOpsForScalaFuture}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
@@ -14,6 +14,12 @@ class MultipleExceptions(val first: Throwable, val seq: List[Throwable]) extends
 
 
 object AsyncForScalaFuture {
+
+  object ImplicitsForTest {
+    implicit val executionContext = new ExecutionContextWithLocal(ExecutionContext.Implicits.global)
+  }
+
+  implicit val LocalOpsForScalaFuture = new LocalOpsForScalaFuture
 
   implicit def defaultAsyncForScalaFuture(implicit ec: ExecutionContextWithLocal) = new Async[Future] with MonadCanFail[Future, Throwable] with CompletableMonad[Future, Promise] {
     private def wrap[T](fn: Try[T] => Unit)(tryT: Try[T]): Try[T] = try {

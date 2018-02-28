@@ -2,7 +2,7 @@ package org.validoc.utils.http
 
 import scala.annotation.implicitNotFound
 
-case class ServiceRequest(method: Method, uri: Uri, acceptHeader: Option[AcceptHeader] = None, otherHeaders: List[Header] = List(), body: Option[Body] = None)
+case class ServiceRequest(method: Method, uri: Uri, acceptHeader: Option[AcceptHeader] = None, contentType: Option[ContentType] = None,  otherHeaders: List[Header] = List(), body: Option[Body] = None)
 trait OriginalReq[Req] {
   def acceptHeader(req: Req): AcceptHeader
   def header(req: Req, name: String): Header

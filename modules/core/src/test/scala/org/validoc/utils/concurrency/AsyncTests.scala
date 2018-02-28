@@ -49,8 +49,8 @@ abstract class AbstractAsyncTests[A[_]](implicit val  async: Async[A], m: MonadW
 
 }
 
-import scala.concurrent.ExecutionContext.Implicits._
-import AsyncForScalaFuture._
+import org.validoc.utils.concurrency.AsyncForScalaFuture.ImplicitsForTest._
+import org.validoc.utils.concurrency.AsyncForScalaFuture._
 
 class FutureAsyncTests extends AbstractAsyncTests[Future] with BeforeAndAfter {
 

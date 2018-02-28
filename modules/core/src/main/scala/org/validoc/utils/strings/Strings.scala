@@ -9,6 +9,7 @@ object Strings {
   def ellipses(maxLength: Int)(s: String): String = if (s.length > maxLength) s.take(maxLength) + ".." else s
 
   def lastSection(marker: String)(s: String) = s.split(marker).last
+  def allButlastSection(marker: String)(s: String) = s.split(marker).dropRight(1).mkString(marker)
 }
 
 

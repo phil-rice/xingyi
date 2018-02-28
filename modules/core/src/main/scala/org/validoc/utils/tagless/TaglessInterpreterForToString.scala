@@ -1,7 +1,8 @@
 package org.validoc.utils.tagless
 
 import org.validoc.utils.cache.{Cachable, ShouldCache}
-import org.validoc.utils.http.{ResponseCategoriser, ResponseProcessor, ServiceName, ToServiceRequest}
+import org.validoc.utils.endpoint.MatchesServiceRequest
+import org.validoc.utils.http._
 import org.validoc.utils.logging.{DetailedLogging, SummaryLogging}
 import org.validoc.utils.profiling.{ProfileData, TryProfileData}
 import org.validoc.utils.retry.{NeedsRetry, RetryConfig}
@@ -24,7 +25,8 @@ class TaglessInterpreterForToString[HttpReq, HttpRes] {
 
     override def objectify[Req: ClassTag : ToServiceRequest : ResponseCategoriser, Res: ClassTag](http: StringHolder[HttpReq, HttpRes])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[Req], responseProcessor: ResponseProcessor[Void, Req, Res]) =
       http.insertLineAndIndent(s"objectify[${nameOf[Req]},${nameOf[Res]}]")
-
+    override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: StringHolder[Req, Res])(implicit fromServiceRequest: FromServiceRequest[Req], toServiceResponse: ToServiceResponse[Res]): StringHolder[ServiceRequest, ServiceResponse] =
+      raw.insertLineAndIndent(s"endpoint[${nameOf[Req]},${nameOf[Res]}]($normalisedPath,$matchesServiceRequest)")
     override def metrics[Req: ClassTag, Res: ClassTag : RD](prefix: String)(raw: StringHolder[Req, Res]) =
       raw.insertLineAndIndent(s"metrics($prefix)")
     override def cache[Req: ClassTag : Cachable : ShouldCache, Res: ClassTag](name: String)(raw: StringHolder[Req, Res]) =
