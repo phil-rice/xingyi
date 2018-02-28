@@ -33,8 +33,8 @@ case class IdAtEndAndVerb(method: Method) extends MatchesServiceRequest {
   override def apply(endpointName: String)(serviceRequest: ServiceRequest): Boolean = startFn(serviceRequest.uri.asUriString) == endpointName && serviceRequest.method == method
 }
 
-import org.validoc.utils.concurrency.AsyncForScalaFuture._
-import org.validoc.utils.concurrency.AsyncForScalaFuture.ImplicitsForTest._
+import org.validoc.utils.functions.AsyncForScalaFuture._
+import org.validoc.utils.functions.AsyncForScalaFuture.ImplicitsForTest._
 
 object EndPointChecker {
 

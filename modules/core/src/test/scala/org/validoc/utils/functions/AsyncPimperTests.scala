@@ -1,9 +1,8 @@
-package org.validoc.utils.concurrency
+package org.validoc.utils.functions
 
 import java.util.concurrent.atomic.AtomicReference
 
 import org.validoc.utils.{UtilsWithLoggingSpec, _}
-import org.validoc.utils.functions.MonadWithException
 
 import scala.concurrent.Future
 import scala.language.higherKinds
@@ -52,7 +51,7 @@ abstract class AbstractAsyncPimperTests[M[_] : Async : MonadWithException] exten
   }
 }
 
-import org.validoc.utils.concurrency.AsyncForScalaFuture.ImplicitsForTest._
-import org.validoc.utils.concurrency.AsyncForScalaFuture._
+import org.validoc.utils.functions.AsyncForScalaFuture.ImplicitsForTest._
+import org.validoc.utils.functions.AsyncForScalaFuture._
 
 class FutureAsyncPimperTests extends AbstractAsyncPimperTests[Future]

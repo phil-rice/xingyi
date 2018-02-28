@@ -1,6 +1,5 @@
 package org.validoc
 
-import org.validoc.utils.concurrency.{Async, MultipleExceptions}
 import org.validoc.utils.functions._
 import org.validoc.utils.success.{ExceptionState, FailedState, SucceededState, SuccessState}
 

@@ -1,4 +1,4 @@
-package org.validoc.utils.concurrency
+package org.validoc.utils.functions
 
 import scala.concurrent.duration.Duration
 import scala.language.higherKinds

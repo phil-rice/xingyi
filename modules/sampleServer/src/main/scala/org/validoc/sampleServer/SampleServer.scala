@@ -7,8 +7,8 @@ import org.validoc.caffeine.CaffeineCache
 import org.validoc.sample.{JsonBundle, PromotionSetup}
 import org.validoc.sample.domain.{MostPopular, MostPopularQuery, SampleJsonsForCompilation}
 import org.validoc.simpleServer.{EndpointHandler, SimpleHttpServer}
-import org.validoc.utils.concurrency.AsyncForScalaFuture.ImplicitsForTest._
-import org.validoc.utils.concurrency.AsyncForScalaFuture._
+import org.validoc.utils.functions.AsyncForScalaFuture.ImplicitsForTest._
+import org.validoc.utils.functions.AsyncForScalaFuture._
 import org.validoc.utils.http._
 import org.validoc.utils.json.FromJson
 import org.validoc.utils.logging.{LogRequestAndResult, PrintlnLoggingAdapter}

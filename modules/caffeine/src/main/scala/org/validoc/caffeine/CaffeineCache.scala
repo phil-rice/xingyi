@@ -2,7 +2,7 @@ package org.validoc.caffeine
 
 import com.github.blemale.scaffeine.Scaffeine
 import org.validoc.utils.cache.{Cachable, Cache, CacheFactory}
-import org.validoc.utils.concurrency.MonadConvertor
+import org.validoc.utils.functions.MonadConvertor
 import org.validoc.utils.local.ExecutionContextWithLocal
 
 import scala.concurrent.duration._

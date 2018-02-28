@@ -8,8 +8,7 @@ import org.validoc.utils.time.Delay
 import scala.language.higherKinds
 import scala.util.{Success, Try}
 import org.validoc.utils._
-import org.validoc.utils.concurrency.Async
-import org.validoc.utils.functions.{Functions, Monad, MonadCanFail}
+import org.validoc.utils.functions.{Async, Functions, Monad, MonadCanFail}
 
 trait NeedsRetry[Fail, T] {
   def apply(t: Try[Either[Fail, T]]): Boolean

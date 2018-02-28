@@ -3,8 +3,7 @@ package org.validoc.utils.cache
 import java.util.concurrent.atomic.AtomicLong
 
 import org.validoc.utils.Service
-import org.validoc.utils.concurrency.Async
-import org.validoc.utils.functions.{Functions, MonadWithException}
+import org.validoc.utils.functions.{Async, Functions, MonadWithException}
 import org.validoc.utils.map.{MapSizeStrategy, SafeMap}
 import org.validoc.utils.time.NanoTimeService
 import org.validoc.utils._

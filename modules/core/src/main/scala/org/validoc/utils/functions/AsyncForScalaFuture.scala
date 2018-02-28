@@ -1,6 +1,6 @@
-package org.validoc.utils.concurrency
+package org.validoc.utils.functions
 
-import org.validoc.utils.functions.MonadCanFail
+import org.validoc.utils.concurrency.DelayedFuture
 import org.validoc.utils.local.{ExecutionContextWithLocal, LocalOpsForScalaFuture}
 
 import scala.concurrent.duration._

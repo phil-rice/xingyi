@@ -1,11 +1,11 @@
 package org.validoc.simpleServer
 
 import com.sun.net.httpserver.{Headers, HttpExchange, HttpHandler}
-import org.validoc.utils.concurrency.Async
 import org.validoc.utils.endpoint.MatchesServiceRequest
-import org.validoc.utils.functions.MonadCanFail
+import org.validoc.utils.functions.{Async, MonadCanFail}
 import org.validoc.utils.http._
 import org.validoc.utils._
+
 import scala.language.higherKinds
 
 class EndpointHandler[M[_] : Async, Fail](fn: ServiceRequest => M[ServiceResponse])(implicit monadCanFail: MonadCanFail[M, Fail], failer: Failer[Fail]) extends HttpHandler {

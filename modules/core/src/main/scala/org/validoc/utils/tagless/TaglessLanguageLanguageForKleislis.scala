@@ -2,9 +2,8 @@ package org.validoc.utils.tagless
 
 import org.validoc.utils._
 import org.validoc.utils.cache._
-import org.validoc.utils.concurrency.Async
 import org.validoc.utils.endpoint.MatchesServiceRequest
-import org.validoc.utils.functions.MonadCanFail
+import org.validoc.utils.functions.{Async, MonadCanFail}
 import org.validoc.utils.http._
 import org.validoc.utils.logging._
 import org.validoc.utils.metrics.PutMetrics

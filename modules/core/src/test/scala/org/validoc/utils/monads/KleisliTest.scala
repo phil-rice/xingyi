@@ -1,14 +1,13 @@
 package org.validoc.utils.monads
 
 import org.validoc.utils.UtilsWithLoggingSpec
-import org.validoc.utils.concurrency.Async
 import org.validoc.utils._
 
 import scala.concurrent.Future
 import scala.language.higherKinds
-import org.validoc.utils.concurrency.AsyncForScalaFuture._
-import org.validoc.utils.concurrency.AsyncForScalaFuture.ImplicitsForTest._
-import org.validoc.utils.functions.Monad
+import org.validoc.utils.functions.AsyncForScalaFuture._
+import ImplicitsForTest._
+import org.validoc.utils.functions.{Async, Monad}
 
 abstract class AbstractKleisliTest[M[_]: Async:Monad] extends UtilsWithLoggingSpec {
 
