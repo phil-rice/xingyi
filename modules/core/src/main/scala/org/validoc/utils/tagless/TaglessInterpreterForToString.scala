@@ -19,7 +19,7 @@ class TaglessInterpreterForToString[HttpReq, HttpRes] {
 
   type StringHolder[Req, Res] = IndentAndString
 
-  implicit object ForToString extends TaglessLanguage[StringHolder, Void, HttpReq, HttpRes] {
+  implicit object ForToString extends TaglessLanguage[StringHolder, StringHolder, Void, HttpReq, HttpRes] {
     override def http(name: ServiceName): StringHolder[HttpReq, HttpRes] =
       IndentAndString(0, List()).insertLineAndIndent(s"http(${name.name})")
 

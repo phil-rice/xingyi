@@ -28,15 +28,16 @@ class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail, HttpReq, HttpRes](i
                                                                                putMetrics: PutMetrics,
                                                                                cacheFactory: CacheFactory[M]) {
   type K[Req, Res] = Req => M[Res]
+  type KOpt[Req, Res] = Req => Option[M[Res]]
 
 
-  class NonFunctionalLanguageService extends TaglessLanguage[K, Fail, HttpReq, HttpRes] {
+  class NonFunctionalLanguageService extends TaglessLanguage[KOpt, K, Fail, HttpReq, HttpRes] {
     override def http(name: ServiceName) = httpFactory(name)
 
     override def metrics[Req: ClassTag, Res: ClassTag](prefix: String)(raw: K[Req, Res])(implicit makeReportData: RD[Res]) =
       raw.enterAndExit[Fail, Long]({ r: Req => timeService() }, makeReportData(prefix) ~> putMetrics)
 
-    override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: K[Req, Res])(implicit fromServiceRequest: FromServiceRequest[Req], toServiceResponse: ToServiceResponse[Res]): K[ServiceRequest, Option[ServiceResponse]] =
+    override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: K[Req, Res])(implicit fromServiceRequest: FromServiceRequest[Req], toServiceResponse: ToServiceResponse[Res]): KOpt[ServiceRequest, ServiceResponse] =
       {serviceRequest => matchesServiceRequest(normalisedPath)(serviceRequest).toOption((fromServiceRequest ~> raw |=> toServiceResponse) (serviceRequest))}
 //    override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest) (implicit fromServiceRequest: FromServiceRequest[Req], toServiceResponse: ToServiceResponse[Res])(raw: K[Req, Res]): K[Req, Res] =
 

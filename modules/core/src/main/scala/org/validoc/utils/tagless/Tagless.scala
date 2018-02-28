@@ -25,7 +25,8 @@ trait HasChildren[Main, Children] extends (Main => Seq[Children])
 
 trait Enricher[Req, Parent, ChildId, Child, Res] extends ((Req, Parent, Seq[(ChildId, Child)]) => Res)
 
-trait TaglessLanguage[Wrapper[_, _], Fail, HttpReq, HttpRes] extends HttpLanguage[Wrapper, Fail, HttpReq, HttpRes] with NonfunctionalLanguage[Wrapper, Fail] with ComposeLanguage[Wrapper]
+trait TaglessLanguage[EndpointWrapper[_,_], Wrapper[_, _], Fail, HttpReq, HttpRes] extends HttpLanguage[Wrapper, Fail, HttpReq, HttpRes]
+  with NonfunctionalLanguage[Wrapper, Fail] with ComposeLanguage[Wrapper] with EndpointLanguage[EndpointWrapper, Wrapper, Fail]
 
 trait HttpLanguage[Wrapper[_, _], Fail, HttpReq, HttpRes] extends NonfunctionalLanguage[Wrapper, Fail] {
   def http(name: ServiceName): Wrapper[HttpReq, HttpRes]
@@ -38,7 +39,6 @@ trait HttpLanguage[Wrapper[_, _], Fail, HttpReq, HttpRes] extends NonfunctionalL
 
 trait NonfunctionalLanguage[Wrapper[_, _], Fail] {
   type RD[T] = ReportData[Fail, T]
-  def endpoint[Req: ClassTag, Res: ClassTag]( normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: Wrapper[Req, Res]) (implicit fromServiceRequest: FromServiceRequest[Req], toServiceResponse: ToServiceResponse[Res]): Wrapper[ServiceRequest, ServiceResponse]
   def metrics[Req: ClassTag, Res: ClassTag : RD](prefix: String)(raw: Wrapper[Req, Res]): Wrapper[Req, Res]
   def logging[Req: ClassTag : DetailedLogging : SummaryLogging, Res: ClassTag : DetailedLogging : SummaryLogging](pattern: String)(raw: Wrapper[Req, Res])(implicit messageName: MessageName[Req, Res]): Wrapper[Req, Res]
   def cache[Req: ClassTag : Cachable : ShouldCache, Res: ClassTag](name: String)(raw: Wrapper[Req, Res]): Wrapper[Req, Res]
@@ -48,6 +48,11 @@ trait NonfunctionalLanguage[Wrapper[_, _], Fail] {
   implicit class ComposePimper[RawReq, RawRes](wrapper: Wrapper[RawReq, RawRes]) {
     def |+|[Req, Res](fn: Wrapper[RawReq, RawRes] => Wrapper[Req, Res]): Wrapper[Req, Res] = fn(wrapper)
   }
+
+}
+
+trait EndpointLanguage[EndpointWrapper[_, _], Wrapper[_,_], Fail] {
+  def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: Wrapper[Req, Res])(implicit fromServiceRequest: FromServiceRequest[Req], toServiceResponse: ToServiceResponse[Res]): EndpointWrapper[ServiceRequest, ServiceResponse]
 
 }
 

@@ -16,7 +16,7 @@ object IndentAndString {
 
   def merge(title: String, indentAndStrings: IndentAndString*): IndentAndString = {
     val depth = indentAndStrings.map(_.indent).max
-    IndentAndString(depth, (depth, title) :: indentAndStrings.flatMap(_.lines).toList)
+    IndentAndString(depth+1, (depth, title) :: indentAndStrings.flatMap(_.lines).toList)
   }
 
   implicit object ToHtmlForIndentAndString extends ToHtml[IndentAndString] {

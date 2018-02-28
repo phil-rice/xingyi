@@ -24,9 +24,9 @@ case class JsonBundle(implicit
                       val fromJsonForProgramme: FromJson[Programme],
                       val fromJsonForProduction: FromJson[Production])
 
-class PromotionSetup[Wrapper[_, _], Fail, HttpReq: ClassTag : Cachable : ShouldCache, HttpRes: ClassTag]
+class PromotionSetup[EndpointWrapper[_,_], Wrapper[_, _], Fail, HttpReq: ClassTag : Cachable : ShouldCache, HttpRes: ClassTag]
 (implicit
- interpreter: TaglessLanguage[Wrapper, Fail, HttpReq, HttpRes],
+ interpreter: TaglessLanguage[EndpointWrapper, Wrapper, Fail, HttpReq, HttpRes],
  failer: Failer[Fail],
  jsonBundle: JsonBundle
 ) extends PromotionServiceNames {

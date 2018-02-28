@@ -3,9 +3,11 @@ package org.validoc.utils.tagless
 import java.util.concurrent.TimeUnit
 
 import org.validoc.utils.UtilsSpec
+import org.validoc.utils.endpoint.IdAtEndAndVerb
 import org.validoc.utils.http._
 import org.validoc.utils.profiling.TryProfileData
 import org.validoc.utils.retry.RetryConfig
+import org.validoc.utils.strings.Strings
 import org.validoc.utils.success.MessageName
 import org.validoc.utils.time.RandomDelay
 
@@ -15,7 +17,7 @@ import scala.language.{higherKinds, implicitConversions}
 class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
 
-  class Sample[Wrapper[_, _], Fail](implicit httpLanguage: TaglessLanguage[Wrapper, Fail, HttpReq, HttpRes], failer: Failer[Fail]) {
+  class Sample[EndpointWrapper[_, _], Wrapper[_, _], Fail](implicit httpLanguage: TaglessLanguage[EndpointWrapper, Wrapper, Fail, HttpReq, HttpRes], failer: Failer[Fail]) {
 
     import httpLanguage._
 
@@ -39,6 +41,14 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
       override def apply(v1: String) = v1
     }
 
+    implicit object FromServiceRequestForString extends FromServiceRequest[String] {
+      override def apply(v1: ServiceRequest): String = Strings.lastSection("/")(v1.body.map(_.s).getOrElse(throw new RuntimeException))
+    }
+
+    implicit object ToServiceResponseForString extends ToServiceResponse[String] {
+      override def apply(v1: String): ServiceResponse = ServiceResponse(Status(200), Body(v1), ContentType("text/plain"))
+    }
+
     implicit def toSName(s: String) = ServiceName(s)
 
 
@@ -59,6 +69,9 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
     def m4 = merge(s1) and s2 and s3 and s4 into ((_: String, _: String, _: String, _: String, _: String) => "someFn")
     //    def m3 = merge3(s1, s2, s3, (_: String, _: String, _: String, _: String) => "someFn")
     //    def m4 = merge4(s1, s2, s3, s4, (_: String, _: String, _: String, _: String, _: String) => "someFn")
+
+    def endpoint1 = endpoint("/endpoint1", IdAtEndAndVerb(Get))(e1)
+    def endpoint2 = endpoint("/endpoint2", IdAtEndAndVerb(Get))(s1)
   }
 
   behavior of "Tagless with toString Interpreter"
@@ -68,7 +81,7 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
     import stringlanguage._
 
 
-    val sample = new Sample[StringHolder, Void]()
+    val sample = new Sample[StringHolder, StringHolder, Void]()
     sample.s1.lines shouldBe List((3, "metrics(service1)"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s1)"))
 
     sample.m2.lines shouldBe List(
@@ -94,6 +107,13 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
       (4, "enrich"),
       (3, "metrics(service1)"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s1)"),
       (3, "profile"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s2)"))
+    sample.endpoint1.lines shouldBe List(
+      (5, "endpoint[String,String](/endpoint1,IdAtEndAndVerb(Get))"),
+      (4, "enrich"),
+      (3, "metrics(service1)"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s1)"),
+      (3, "profile"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s2)"))
+
+    sample.endpoint2.lines shouldBe List((4, "endpoint[String,String](/endpoint2,IdAtEndAndVerb(Get))"), (3, "metrics(service1)"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s1)"))
 
 
   }
