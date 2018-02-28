@@ -40,6 +40,7 @@ class PromotionSetup[EndpointWrapper[_, _], Wrapper[_, _], Fail, HttpReq: ClassT
   val fnord = http(programmeAndProductionServiceName)
 
   println(s"vogue $vogue")
+  println(s"objectify[MostPopularQuery, MostPopular] ${objectify[MostPopularQuery, MostPopular] _}")
   val rawMostPopularService = vogue |+| objectify[MostPopularQuery, MostPopular]// |+| cache("vogue")
   val rawPromotionService = billboard |+| cache("Promotion") |+| objectify[PromotionQuery, Promotion]
   val rawProductionService = fnord |+| objectify[ProductionId, Production]
@@ -61,25 +62,13 @@ class PromotionSetup[EndpointWrapper[_, _], Wrapper[_, _], Fail, HttpReq: ClassT
 
 }
 
-object PromotionSetup extends App {
+object PromotionSetup extends App with  SampleJsonsForCompilation {
   implicit val language: TaglessInterpreterForToString[String, String] = new TaglessInterpreterForToString[String, String]
 
   import language._
 
-  def toJson[T] = new ToJson[T] {
-    override def apply(v1: T): String = ???
-  }
-  def fromJson[T] = new FromJson[T] {
-    override def apply(v1: String): T = ???
-  }
-  implicit val toJsonForHomePage = toJson[HomePage]
-  implicit val toJsonForEnrichedMostPopular = toJson[EnrichedMostPopular]
-
-  implicit val fromJsonForMostPopular = fromJson[MostPopular]
-  implicit val fromJsonForPromotion = fromJson[Promotion]
-  implicit val fromJsonForProgramme = fromJson[Programme]
-  implicit val fromJsonForProduction = fromJson[Production]
   implicit val jsonBundle: JsonBundle = JsonBundle()
+
 
   val setup = new PromotionSetup[StringHolder, StringHolder, Void, String, String](language.ForToString)
   println(setup.microservice.invertIndent)

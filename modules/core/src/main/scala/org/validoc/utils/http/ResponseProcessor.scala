@@ -8,7 +8,7 @@ import scala.language.higherKinds
 @implicitNotFound("""Cannot find ResponseProcessor[${Fail},${Req},${Res}] The easiest way is to have a ResponseParser and a Failer in scope
      To check this you can try
         val failer = implicitly[Failer[${Fail}]]
-        val responseParser = implicitly[ResponseParser[${Fail},${Req},${Res}]
+        val responseParser = implicitly[ResponseParser[${Fail},${Req},${Res}]]
         the compiler should give you a more helpful message then
   """)
 trait ResponseProcessor[Fail, Req, Res] extends (ResponseState[Req] => Either[Fail, Res])

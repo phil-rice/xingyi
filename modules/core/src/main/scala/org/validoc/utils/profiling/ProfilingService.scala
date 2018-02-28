@@ -1,12 +1,7 @@
 package org.validoc.utils.profiling
 
-import org.validoc.utils.Service
-import org.validoc.utils.functions.{Monad, MonadWithException}
-import org.validoc.utils.time.{NanoTimeService, SystemClockNanoTimeService}
-
 import scala.language.higherKinds
 import scala.util.{Failure, Success, Try}
-import org.validoc.utils._
 
 class TryProfileData {
   def clearData = {

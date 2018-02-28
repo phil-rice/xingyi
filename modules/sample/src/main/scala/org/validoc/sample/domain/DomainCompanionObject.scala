@@ -28,6 +28,7 @@ abstract class DomainCompanionQuery[T <: BypassCache] {
 abstract class DomainCompanionObject[Req, Res] {
   def defaultContentType = ContentType("application/json")
 
-  implicit def responseParser[Fail](implicit parser: Parser[Res]): ResponseParser[Fail, Req, Res] = ResponseParser.defaultDirtyParser[Fail, Req, Res]
+  implicit def responseParser[Fail](implicit parser: Parser[Res]): ResponseParser[Fail, Req, Res] =
+    ResponseParser.defaultDirtyParser[Fail, Req, Res]
 
 }

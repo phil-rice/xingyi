@@ -15,6 +15,7 @@ import org.validoc.utils.time.NanoTimeService
 
 import scala.annotation.tailrec
 import scala.language.higherKinds
+import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
 trait HttpFactory[M[_], HttpReq, HttpRes] extends (ServiceName => HttpReq => M[HttpRes])
@@ -74,8 +75,16 @@ class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail, HttpReq, HttpRes](i
       raw.onEnterAndExitM(_ => timeService(), profileData.event)
 
 
-    def objectify[Req: ClassTag : ToServiceRequest : ResponseCategoriser, Res: ClassTag](http: Kleisli[HttpReq, HttpRes])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[Req], responseProcessor: ResponseProcessor[Fail, Req, Res]) =
+    def objectify[Req: ClassTag : ToServiceRequest : ResponseCategoriser, Res: ClassTag](http: Kleisli[HttpReq, HttpRes])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[Req], responseProcessor: ResponseProcessor[Fail, Req, Res]) = {
+      println(s"toRequest $toRequest")
+      println(s"toHttpReq $toHttpReq")
+      println(s"http $http")
+      println(s"toServiceResponse $toServiceResponse")
+      println(s"categoriser $categoriser")
+      println(s"responseProcessor $responseProcessor")
+
       toRequest ~> toHttpReq ~> http |=> toServiceResponse |=+> categoriser |=|> responseProcessor
+    }
 
     override protected def enrichPrim[ReqP, ResP, ReqC, ResC, ResE](parentService: Kleisli[ReqP, ResP], childService: Kleisli[ReqC, ResC])(implicit findChildIds: HasChildren[ResP, ReqC], enricher: Enricher[ReqP, ResP, ReqC, ResC, ResE]) =
       parentService |=++> { reqP => resP => findChildIds ~+> childService |=> (seq => enricher(reqP, resP, seq)) }

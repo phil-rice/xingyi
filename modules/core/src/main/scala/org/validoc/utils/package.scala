@@ -12,6 +12,7 @@ package object utils {
   type Service[M[_], Req, Res] = (Req => M[Res])
 
   def withValue[X, Y](x: X)(fn: X => Y) = fn(x)
+  def sideeffect[X, Y](x: X)(fn: X => Y) = {fn(x);x}
 
   def join2WithReq[M[_], Req, Res1, Res2](firstService: Req => M[Res1], secondService: Req => M[Res2])(implicit monad: Monad[M]) = { req: Req => monad.join3(req.liftM, firstService(req), secondService(req)) }
   def join3WithReq[M[_], Req, Res1, Res2, Res3](firstService: Req => M[Res1], secondService: Req => M[Res2], thirdService: Req => M[Res3])(implicit monad: Monad[M]) = { req: Req => monad.join4(req.liftM, firstService(req), secondService(req), thirdService(req)) }
@@ -40,6 +41,7 @@ package object utils {
 
   implicit class FunctionPimper[Req, Res](fn: Req => Res) {
     def ~>[Res2](fn2: Res => Res2): (Req) => Res2 = { res: Req => fn2(fn(res)) }
+    def ~^>(fn2: Res => Unit): (Req => Res) = { req: Req => sideeffect(fn(req))(fn2)}
     def ~+>[Res2](fn2: Req => Res => Res2): (Req => Res2) = { req: Req => fn2(req)(fn(req)) }
     //    def let[Mid, Res2](mid: Req => Mid)(fn2: Mid => Res => Res): Req => Res = { req: Req => fn2(mid(req))(fn(req)) }
     def onEnterAndExit[Mid](mid: Req => Mid, before: Mid => Unit, after: (Mid, Res) => Unit) = { req: Req =>
