@@ -25,7 +25,7 @@ trait HasChildren[Main, Children] extends (Main => Seq[Children])
 
 trait Enricher[Req, Parent, ChildId, Child, Res] extends ((Req, Parent, Seq[(ChildId, Child)]) => Res)
 
-trait TaglessLanguage[EndpointWrapper[_,_], Wrapper[_, _], Fail, HttpReq, HttpRes] extends HttpLanguage[Wrapper, Fail, HttpReq, HttpRes]
+trait TaglessLanguage[EndpointWrapper[_, _], Wrapper[_, _], Fail, HttpReq, HttpRes] extends HttpLanguage[Wrapper, Fail, HttpReq, HttpRes]
   with NonfunctionalLanguage[Wrapper, Fail] with ComposeLanguage[Wrapper] with EndpointLanguage[EndpointWrapper, Wrapper, Fail]
 
 trait HttpLanguage[Wrapper[_, _], Fail, HttpReq, HttpRes] extends NonfunctionalLanguage[Wrapper, Fail] {
@@ -45,14 +45,34 @@ trait NonfunctionalLanguage[Wrapper[_, _], Fail] {
   def retry[Req: ClassTag, Res: ClassTag](retryConfig: RetryConfig)(raw: Wrapper[Req, Res])(implicit retry: NeedsRetry[Fail, Res]): Wrapper[Req, Res]
   def profile[Req: ClassTag, Res: ClassTag](profileData: TryProfileData)(raw: Wrapper[Req, Res]): Wrapper[Req, Res]
 
-  implicit class ComposePimper[RawReq, RawRes](wrapper: Wrapper[RawReq, RawRes]) {
+  implicit class ComposeWrapperPimper[RawReq, RawRes](wrapper: Wrapper[RawReq, RawRes]) {
     def |+|[Req, Res](fn: Wrapper[RawReq, RawRes] => Wrapper[Req, Res]): Wrapper[Req, Res] = fn(wrapper)
+  }
+
+  implicit class OtherPimper[Req, Res, NewReq, NewRes](wrapperFn: Wrapper[Req, Res] => Wrapper[NewReq, NewRes]) {
+    def <+>[EvenNewerReq, EvenNewerRes](fn: Wrapper[NewReq, NewRes] => Wrapper[EvenNewerReq, EvenNewerRes]): Wrapper[Req, Res] => Wrapper[EvenNewerReq, EvenNewerRes] = wrapperFn andThen fn
   }
 
 }
 
-trait EndpointLanguage[EndpointWrapper[_, _], Wrapper[_,_], Fail] {
-  def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: Wrapper[Req, Res])(implicit fromServiceRequest: FromServiceRequest[Req], toServiceResponse: ToServiceResponse[Res]): EndpointWrapper[ServiceRequest, ServiceResponse]
+trait EndpointLanguage[EndpointWrapper[_, _], Wrapper[_, _], Fail] {
+  def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: Wrapper[Req, Res])(implicit fromServiceRequest: FromServiceRequest[Req], toServiceResponse: ToServiceResponse[Res]): EndpointWrapper[Req, Res]
+  def chain(endpoints: EndpointWrapper[_, _]*): Wrapper[ServiceRequest, ServiceResponse]
+
+  implicit class ComposeWrapper2Pimper[RawReq, RawRes](wrapper: Wrapper[RawReq, RawRes]) {
+    def |++|[Req, Res](fn: Wrapper[RawReq, RawRes] => EndpointWrapper[Req, Res]): EndpointWrapper[Req, Res] = fn(wrapper)
+
+  }
+
+  implicit class OtherPimper2[Req, Res, NewReq, NewRes](wrapperFn: Wrapper[NewReq, NewRes] => EndpointWrapper[Req, Res]) {
+    def <+>(fn: Wrapper[NewReq, NewReq] => Wrapper[NewReq, NewRes]): Wrapper[NewReq, NewReq] => EndpointWrapper[Req, Res] = fn andThen wrapperFn
+    def <++>[EvenNewerReq, EvenNewerRes](fn: Wrapper[EvenNewerReq, EvenNewerRes] => Wrapper[NewReq, NewRes]): Wrapper[EvenNewerReq, EvenNewerRes] => EndpointWrapper[Req, Res] = fn andThen wrapperFn
+    def <++>(wrapper:  Wrapper[NewReq, NewRes]): EndpointWrapper[Req, Res] =  wrapperFn(wrapper)
+  }
+
+  implicit class ComposeEndpointWrapperPimper[RawReq, RawRes](wrapper: EndpointWrapper[RawReq, RawRes]) {
+    def |+++|[Req, Res](fn: EndpointWrapper[RawReq, RawRes] => Wrapper[Req, Res]): Wrapper[Req, Res] = fn(wrapper)
+  }
 
 }
 

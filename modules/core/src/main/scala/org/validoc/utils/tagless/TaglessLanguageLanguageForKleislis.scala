@@ -13,6 +13,7 @@ import org.validoc.utils.retry.{NeedsRetry, RetryConfig, RetryService}
 import org.validoc.utils.success.MessageName
 import org.validoc.utils.time.NanoTimeService
 
+import scala.annotation.tailrec
 import scala.language.higherKinds
 import scala.reflect.ClassTag
 
@@ -26,9 +27,10 @@ class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail, HttpReq, HttpRes](i
                                                                                loggingAdapter: LoggingAdapter,
                                                                                timeService: NanoTimeService,
                                                                                putMetrics: PutMetrics,
-                                                                               cacheFactory: CacheFactory[M]) {
+                                                                               cacheFactory: CacheFactory[M],
+                                                                               failer: Failer[Fail]) {
   type K[Req, Res] = Req => M[Res]
-  type KOpt[Req, Res] = Req => Option[M[Res]]
+  type KOpt[Req, Res] = ServiceRequest => Option[M[ServiceResponse]]
 
 
   class NonFunctionalLanguageService extends TaglessLanguage[KOpt, K, Fail, HttpReq, HttpRes] {
@@ -37,10 +39,23 @@ class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail, HttpReq, HttpRes](i
     override def metrics[Req: ClassTag, Res: ClassTag](prefix: String)(raw: K[Req, Res])(implicit makeReportData: RD[Res]) =
       raw.enterAndExit[Fail, Long]({ r: Req => timeService() }, makeReportData(prefix) ~> putMetrics)
 
-    override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: K[Req, Res])(implicit fromServiceRequest: FromServiceRequest[Req], toServiceResponse: ToServiceResponse[Res]): KOpt[ServiceRequest, ServiceResponse] =
-      {serviceRequest => matchesServiceRequest(normalisedPath)(serviceRequest).toOption((fromServiceRequest ~> raw |=> toServiceResponse) (serviceRequest))}
-//    override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest) (implicit fromServiceRequest: FromServiceRequest[Req], toServiceResponse: ToServiceResponse[Res])(raw: K[Req, Res]): K[Req, Res] =
-
+    override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: K[Req, Res])(implicit fromServiceRequest: FromServiceRequest[Req], toServiceResponse: ToServiceResponse[Res]): KOpt[Req, Res] =
+    { serviceRequest => matchesServiceRequest(normalisedPath)(serviceRequest).toOption((fromServiceRequest ~> raw |=> toServiceResponse) (serviceRequest)) }
+    //    override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest) (implicit fromServiceRequest: FromServiceRequest[Req], toServiceResponse: ToServiceResponse[Res])(raw: K[Req, Res]): K[Req, Res] =
+    override def chain(endpoints: KOpt[_, _]*): K[ServiceRequest, ServiceResponse] = { req: ServiceRequest =>
+      @tailrec
+      def recurse(seq: List[KOpt[ServiceRequest, ServiceResponse]]): M[ServiceResponse] = {
+        seq match {
+          case head :: tail =>
+            head(req) match {
+              case Some(result) => result
+              case None => recurse(tail)
+            }
+          case Nil => failer.pathNotFound(req).fail
+        }
+      }
+      recurse(endpoints.toList)
+    }
     override def logging[Req: ClassTag : DetailedLogging : SummaryLogging, Res: ClassTag : DetailedLogging : SummaryLogging](pattern: String)(raw: K[Req, Res])(implicit messageName: MessageName[Req, Res]) =
       raw.sideeffect(logReqAndResult[Req, Res](raw))
 
@@ -49,7 +64,7 @@ class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail, HttpReq, HttpRes](i
 
     override def retry[Req: ClassTag, Res: ClassTag](retryConfig: RetryConfig)(raw: K[Req, Res])(implicit retry: NeedsRetry[Fail, Res]): K[Req, Res] =
       new RetryService[M, Fail, Req, Res](raw, retryConfig)
-    override def profile[Req: ClassTag, Res: ClassTag]( profileData: TryProfileData)(raw: K[Req, Res]) =
+    override def profile[Req: ClassTag, Res: ClassTag](profileData: TryProfileData)(raw: K[Req, Res]) =
       raw.onEnterAndExitM(_ => timeService(), profileData.event)
 
 

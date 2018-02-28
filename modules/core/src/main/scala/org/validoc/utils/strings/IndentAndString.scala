@@ -9,6 +9,11 @@ case class IndentAndString(indent: Int, lines: List[(Int, String)]) {
 
   def unindent = IndentAndString(indent - 1, lines)
 
+  def invertIndent = {
+    val max = lines.map(_._1).max
+    IndentAndString(0, lines.map { case (i, s) => (max - i, s) })
+  }
+  def offset(by: Int) = IndentAndString(indent, lines.map { case (i, s) => (i + by, s) })
   override def toString: String = lines.map { case (i, s) => List.fill(i)(" ").mkString("") + s }.mkString("\n")
 }
 
@@ -16,7 +21,8 @@ object IndentAndString {
 
   def merge(title: String, indentAndStrings: IndentAndString*): IndentAndString = {
     val depth = indentAndStrings.map(_.indent).max
-    IndentAndString(depth+1, (depth, title) :: indentAndStrings.flatMap(_.lines).toList)
+    val normalised = indentAndStrings.map{case i@IndentAndString(indent, lines) => i.offset(depth-indent)}
+    IndentAndString(depth + 1, (depth, title) :: normalised.flatMap(_.lines).toList)
   }
 
   implicit object ToHtmlForIndentAndString extends ToHtml[IndentAndString] {

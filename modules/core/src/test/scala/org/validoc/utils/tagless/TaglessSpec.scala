@@ -13,6 +13,7 @@ import org.validoc.utils.time.RandomDelay
 
 import scala.concurrent.duration.FiniteDuration
 import scala.language.{higherKinds, implicitConversions}
+import org.validoc.utils.endpoint.MatchesServiceRequest._
 
 class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
@@ -54,7 +55,8 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
     val retryConfig = RetryConfig(10, RandomDelay(FiniteDuration(100, TimeUnit.MILLISECONDS)))
 
-    def s1 = http("s1") |+| objectify[String, String] |+| logging("service1") |+| metrics("service1")
+
+    def s1: Wrapper[String, String] = http("s1") |+| objectify[String, String] |+| logging("service1") |+| metrics("service1")
 
     val data = new TryProfileData
 
@@ -62,7 +64,7 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
     def s3 = http("s3") |+| objectify[String, String]
     def s4 = http("s4") |+| objectify[String, String] |+| retry(retryConfig)
 
-    val e1 = enrich(s1).withChild(s2).mergeInto[String]
+    val e1: Wrapper[String, String] = enrich(s1).withChild(s2).mergeInto[String]
 
     def m2 = merge(s1) and s2 into ((_: String, _: String, _: String) => "someFn")
     def m3 = merge(s1) and s2 and s3 into ((_: String, _: String, _: String, _: String) => "someFn")
@@ -70,8 +72,22 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
     //    def m3 = merge3(s1, s2, s3, (_: String, _: String, _: String, _: String) => "someFn")
     //    def m4 = merge4(s1, s2, s3, s4, (_: String, _: String, _: String, _: String, _: String) => "someFn")
 
-    def endpoint1 = endpoint("/endpoint1", IdAtEndAndVerb(Get))(e1)
-    def endpoint2 = endpoint("/endpoint2", IdAtEndAndVerb(Get))(s1)
+    def endpoint1: EndpointWrapper[String, String] = endpoint("/endpoint1", idAtEnd(Get))(e1)
+    def endpoint2: EndpointWrapper[String, String] = endpoint("/endpoint2", idAtEnd(Get))(s1)
+
+    def microservice: Wrapper[ServiceRequest, ServiceResponse] = chain(endpoint1, endpoint2)
+
+//    def endPointx: Wrapper[String, String] => EndpointWrapper[String, String] = endpoint[String, String]("/endpoint2", idAtEnd(Get)) _
+//    def endPointy = endpoint[String, String]("/endpoint2", idAtEnd(Get)) _ <++> objectify[String, String] _
+//    def endPointz = endpoint[String, String]("/endpoint2", idAtEnd(Get)) _ <++> objectify[String,String] _ <++> http("s6")
+//
+//
+//    def endPointw: EndpointWrapper[String, String] = endpoint[String,String]("/endpoint2", idAtEnd(Get)) _ <++> objectify _ <+> http("s6")
+    //
+
+    //    def endPointz: EndpointWrapper[String, String] = endpoint[String, String]("/endpoint2", idAtEnd(Get)) _ <+> objectify[String,String] <++> http("sa1")
+    //    def endPointe = endpoint[String, String]("/endpoint2", idAtEnd(Get)) _ <+> objectify <++> http("sa1")
+
   }
 
   behavior of "Tagless with toString Interpreter"
@@ -115,6 +131,14 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
     sample.endpoint2.lines shouldBe List((4, "endpoint[String,String](/endpoint2,IdAtEndAndVerb(Get))"), (3, "metrics(service1)"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s1)"))
 
+    sample.microservice.lines shouldBe List(
+      (6, "chain"),
+      (5, "endpoint[String,String](/endpoint1,IdAtEndAndVerb(Get))"),
+      (4, "enrich"),
+      (3, "metrics(service1)"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s1)"),
+      (3, "profile"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s2)"),
+      (4, "endpoint[String,String](/endpoint2,IdAtEndAndVerb(Get))"), (3, "metrics(service1)"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s1)")
+    )
 
   }
 

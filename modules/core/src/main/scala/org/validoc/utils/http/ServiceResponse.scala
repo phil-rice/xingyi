@@ -14,10 +14,21 @@ object ServiceResponse {
 }
 
 
-@implicitNotFound("Missing ToServiceResponse[${T}] This turns ${T} into a service response so that it can be shown to the user. The simplest way to implement this is to have the domain object companion extend DomainCompanionObject and have a 'ToJson[${T}]' in the scope. This allows all decisions about which JSON library  we are using to be dealt with outside the main business logic")
+@implicitNotFound(
+  """Missing ToServiceResponse[${T}] This turns ${T} into a service response so that it can be shown to the user. The simplest way to implement this is to have a 'ToJson[${T}]' in the scope.
+    To debug this you can have the following code
+    val x = implicitly[ToJson[${T}]]
+    val y = implicitly[ToServiceResponse]
+
+  """)
 trait ToServiceResponse[T] extends (T => ServiceResponse)
 
 object ToServiceResponse {
+
+  implicit def toServiceResponse[T](implicit toJson: ToJson[T]) = new ToServiceResponse[T] {
+    override def apply(t: T): ServiceResponse = ServiceResponse(Status.Ok, Body(toJson(t)), ContentType("application/json"))
+  }
+
   implicit object ToServiceResponseForServiceResponse extends ToServiceResponse[ServiceResponse] {
     override def apply(v1: ServiceResponse): ServiceResponse = v1
   }

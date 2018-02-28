@@ -9,7 +9,18 @@ case class CacheStats(size: Int)
 
 trait ShouldCache[Req] extends (Req => Boolean)
 
+object ShouldCache{
+  implicit  def shouldCache[Req] = new ShouldCache[Req] {
+    override def apply(v1: Req): Boolean = true
+  }
+}
+
 trait Cachable[Req] extends (Req => Any)
+object Cachable{
+  implicit def defaultIsAll[Req] = new Cachable[Req] {
+    override def apply(v1: Req): Any = v1
+  }
+}
 
 trait CacheFactory[M[_]] {
   def apply[Req: Cachable, Res](name: String, raw: Req => M[Res]): Cache[M, Req, Res]

@@ -16,10 +16,6 @@ object BypassCache {
 abstract class DomainCompanionQuery[T <: BypassCache] {
   def defaultContentType = ContentType("application/json")
 
-  implicit def toServiceResponse(implicit toJson: ToJson[T]) = new ToServiceResponse[T] {
-    override def apply(t: T): ServiceResponse = ServiceResponse(Status.Ok, Body(toJson(t)), defaultContentType)
-  }
-
   implicit def fromServiceResponse(implicit parserFinder: ParserFinder[T]) = new FromServiceResponse[T] {
     override def apply(serviceResponse: ServiceResponse): T =
       parserFinder.find(defaultContentType).valueOrException(serviceResponse.body.s)

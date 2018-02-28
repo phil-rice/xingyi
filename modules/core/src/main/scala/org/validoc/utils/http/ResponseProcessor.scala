@@ -26,6 +26,7 @@ trait Failer[Fail] {
   def unexpected[Req](req: Req, response: ServiceResponse): Fail
   def exception[Req](req: Req, throwable: Throwable): Fail
   def idNotFind(serviceRequest: ServiceRequest): Fail
+  def pathNotFound(serviceRequest: ServiceRequest): Fail
 }
 
 object Failer {
@@ -35,6 +36,7 @@ object Failer {
     override def unexpected[Req](req: Req, response: ServiceResponse) = ???
     override def exception[Req](req: Req, throwable: Throwable) = ???
     override def idNotFind(serviceRequest: ServiceRequest): Void = ???
+    override def pathNotFound(serviceRequest: ServiceRequest): Void = ???
   }
 
   implicit object FailerForException extends Failer[Throwable] {
@@ -42,6 +44,7 @@ object Failer {
     override def unexpected[Req](req: Req, response: ServiceResponse) = ???
     override def exception[Req](req: Req, throwable: Throwable) = ???
     override def idNotFind(serviceRequest: ServiceRequest): Throwable = ???
+    override def pathNotFound(serviceRequest: ServiceRequest): Throwable = ???
   }
 
 }
