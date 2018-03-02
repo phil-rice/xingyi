@@ -56,3 +56,4 @@ class MonoidForSeqSpec extends MonoidSpec[Seq[String]] {
 
   override def three = List("3")
 }
+

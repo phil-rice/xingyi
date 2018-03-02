@@ -13,20 +13,20 @@ object Strings {
 }
 
 
-case class Indent(s: String = "  ", size: Int = 0) {
-  def indent = Indent(s, size + 1)
-
-  def unIndent = Indent(s, Math.max(size - 1, 0))
-
-  override def toString = List.fill(size)(s).mkString("")
-
-  def padTo(target: Int, ch: Char = ' ') = List.fill(Math.max(0, target - size * s.length))(ch).mkString("")
-
-  def nameValue(maxNameWidth: Int, ch: Char = ' ')(name: String, value: Option[String]) = {
-    val nameString = Strings.ellipses(maxNameWidth - 3)(indent + name)
-    value.fold(nameString) { value =>
-      val padding = List.fill(Math.max(0, maxNameWidth - nameString.length))(ch).mkString("")
-      nameString + padding + value
-    }
-  }
-}
+//case class Indent(s: String = "  ", size: Int = 0) {
+//  def indent = Indent(s, size + 1)
+//
+//  def unIndent = Indent(s, Math.max(size - 1, 0))
+//
+//  override def toString = List.fill(size)(s).mkString("")
+//
+//  def padTo(target: Int, ch: Char = ' ') = List.fill(Math.max(0, target - size * s.length))(ch).mkString("")
+//
+//  def nameValue(maxNameWidth: Int, ch: Char = ' ')(name: String, value: Option[String]) = {
+//    val nameString = Strings.ellipses(maxNameWidth - 3)(indent + name)
+//    value.fold(nameString) { value =>
+//      val padding = List.fill(Math.max(0, maxNameWidth - nameString.length))(ch).mkString("")
+//      nameString + padding + value
+//    }
+//  }
+//}

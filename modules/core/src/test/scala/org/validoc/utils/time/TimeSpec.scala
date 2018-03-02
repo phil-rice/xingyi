@@ -20,4 +20,13 @@ class TimeSpec extends UtilsWithLoggingSpec {
       d < seconds8 && d > seconds2
     }
   }
+
+  behavior of "NanoTimeService"
+
+  it should "return System.nanos" in {
+    val x = implicitly[NanoTimeService].apply()
+    val expected = System.nanoTime()
+
+    Math.abs(x-expected) < 1000000000l shouldBe true
+  }
 }

@@ -11,20 +11,22 @@ case class IndentAndString(indent: Int, lines: List[(Int, String)]) {
 
   def unindent = IndentAndString(indent - 1, lines)
 
+   val maxIndent: Int = if (lines.isEmpty) 0 else lines.map(_._1).max
   def invertIndent = {
-    val max = lines.map(_._1).max
-    IndentAndString(0, lines.map { case (i, s) => (max - i, s) })
+    IndentAndString(indent, lines.map { case (i, s) => (maxIndent - i, s) })
   }
   def offset(by: Int) = IndentAndString(indent, lines.map { case (i, s) => (i + by, s) })
   def toString(filler: String, separator: String): String = lines.map { case (i, s) => List.fill(i)(filler).mkString("") + s }.mkString(separator)
-  override def toString: String = toString("  ", "\n")
+//    override def toString: String = toString("  ", "\n")
 }
 
 object IndentAndString {
 
   def merge(title: String, indentAndStrings: IndentAndString*): IndentAndString = {
     val depth = indentAndStrings.map(_.indent).max
-    val normalised = indentAndStrings.map{case i@IndentAndString(indent, lines) => i.offset(depth-indent)}
+    val maxIndent = indentAndStrings.map(_.maxIndent).max
+    println(s"Max indent is $maxIndent")
+    val normalised = indentAndStrings.map { case i@IndentAndString(indent, lines) => i.offset(maxIndent - i.maxIndent) }
     IndentAndString(depth + 1, (depth, title) :: normalised.flatMap(_.lines).toList)
   }
 
@@ -37,7 +39,7 @@ object IndentAndString {
   implicit object MonoidForIndentAndString extends Monoid[IndentAndString] {
     override def add(one: IndentAndString, two: IndentAndString): IndentAndString = {
       val maxIndent = Math.max(one.indent, two.indent)
-      IndentAndString(maxIndent + 1, one.lines ++ two.lines)
+      IndentAndString(maxIndent , one.lines ++ two.lines)
     }
 
     override def zero: IndentAndString = IndentAndString(0, List())

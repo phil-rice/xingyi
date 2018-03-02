@@ -18,4 +18,19 @@ class StringsTest extends UtilsWithLoggingSpec {
     Strings.removeWhiteSpace("  a \tb\nc\f\r") shouldBe "abc"
   }
 
+  "Strings.classNameOfObject" should "remove the $" in {
+    Strings.classNameOfObject(Strings) shouldBe "Strings"
+  }
+
+  "Strings.lastSection" should "return the last section" in {
+    Strings.lastSection("/")("a/b/c") shouldBe "c"
+    Strings.lastSection("/")("") shouldBe ""
+    Strings.lastSection("/")("a") shouldBe "a"
+  }
+  "Strings.allButlastSection" should "return the last section" in {
+    Strings.allButlastSection("/")("a/b/c") shouldBe "a/b/c"
+    Strings.allButlastSection("/")("") shouldBe ""
+    Strings.allButlastSection("/")("a") shouldBe ""
+    Strings.allButlastSection("/")("a/b") shouldBe "a"
+  }
 }
