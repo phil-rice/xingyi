@@ -5,7 +5,7 @@ import java.util.concurrent.Executors
 import org.mockito.ArgumentCaptor
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.{FlatSpec, FlatSpecLike, Matchers}
 import org.validoc.utils.local.ExecutionContextWithLocal
 import org.validoc.utils.logging.NullLoggingAdapterWithMdc
 
@@ -14,11 +14,9 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.language.{higherKinds, postfixOps}
 import scala.reflect.ClassTag
 
-trait UtilsSpec extends FlatSpec with Matchers with MockitoSugar with Eventually {
-  implicit lazy val ec: ExecutionContextWithLocal = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
+trait UtilsSpec extends FlatSpecLike with Matchers with MockitoSugar with Eventually {
 
   def await[X](f: Future[X]) = Await.result(f, 5 seconds)
-
 
   def captorFor[C: ClassTag] = ArgumentCaptor.forClass(implicitly[ClassTag[C]].runtimeClass).asInstanceOf[ArgumentCaptor[C]]
 

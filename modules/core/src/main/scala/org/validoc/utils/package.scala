@@ -101,7 +101,7 @@ package object utils {
   }
 
   implicit class MonadCanFailPimper[M[_], T](m: M[T]) {
-    def foldFailure[Fail, T1](fnE: Exception => M[T1], fnFailure: Fail => M[T1], fn: T => M[T1])(implicit async: MonadCanFail[M, Fail]): M[T1] =
+    def foldFailure[Fail, T1](fnE: Throwable => M[T1], fnFailure: Fail => M[T1], fn: T => M[T1])(implicit async: MonadCanFail[M, Fail]): M[T1] =
       async.foldWithFail[T, T1](m, fnE, fnFailure, fn)
     //    def foldTry[Fail, T1](fnTry: Try[T] => T1)(implicit async: MonadCanFail[M, Fail]) = monad.fold(m, t => fnTry(Failure(t)), { t: T => fnTry(Success(t)) })
     def onComplete[Fail](fn: Try[Either[Fail, T]] => Unit)(implicit async: MonadCanFail[M, Fail]): M[T] = async.onComplete(m, fn)

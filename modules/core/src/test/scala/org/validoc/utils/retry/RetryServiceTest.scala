@@ -9,6 +9,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.Success
 import org.validoc.utils.functions.AsyncForScalaFuture._
+import org.validoc.utils.functions.AsyncForScalaFuture.ImplicitsForTest._
 
 class RetryServiceTest extends UtilsWithLoggingSpec {
   type Req = String

@@ -26,9 +26,9 @@ object AsyncForScalaFuture {
     } catch {
       case e: Exception => tryT
     }
-    override def foldWithFail[T, T1](m: Future[T], fnE: Exception => Future[T1], fnFailure: Throwable => Future[T1], fn: T => Future[T1]) = m.transformWith(_ match {
+    override def foldWithFail[T, T1](m: Future[T], fnE: Throwable => Future[T1], fnFailure: Throwable => Future[T1], fn: T => Future[T1]) = m.transformWith(_ match {
       case Success(t) => fn(t)
-      case Failure(t) => fnFailure(t)
+      case Failure(t) => fnE(t)
     })
     override def recover[T](m: Future[T], fn: Exception => T) = m.recover { case e: Exception => fn(e) }
 

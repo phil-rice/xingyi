@@ -39,9 +39,9 @@ trait MonadWithException[M[_]] extends Monad[M] {
 
 trait MonadCanFail[M[_], Fail] extends MonadWithException[M] {
   def fail[T](f: Fail): M[T]
-  def foldWithFail[T, T1](m: M[T], fnE: Exception => M[T1], fnFailure: Fail => M[T1], fn: T => M[T1]): M[T1]
+  def foldWithFail[T, T1](m: M[T], fnE: Throwable => M[T1], fnFailure: Fail => M[T1], fn: T => M[T1]): M[T1]
   def onComplete[T](m: M[T], fn: Try[Either[Fail, T]] => Unit): M[T] = foldWithFail[T, T](m,
-    { e: Exception => fn(Failure(e)); exception(e) },
+    { e: Throwable => fn(Failure(e)); exception(e) },
     { f: Fail => fn(Success(Left(f))); fail(f) },
     { t: T => fn(Success(Right(t))); liftM(t) }
   )

@@ -34,11 +34,12 @@ abstract class AbstractAsyncPimperTests[M[_] : Async : MonadWithException] exten
   }
 
   it should "pimp a transform" in {
-    val fn = (tryI: Try[Int]) => tryI match {
-      case Success(i) => (i + 1).liftM[M];
-      case Failure(t) => 999.liftM[M]
+    val fn: Try[Int] =>Int = (tryI: Try[Int]) => tryI match {
+      case Success(i) => (i + 1)
+      case Failure(t) => 999
     }
-
+    println(1.liftM[M])
+    println(1.liftM[M].mapTry(fn).await)
     1.liftM[M].mapTry(fn).await() shouldBe 2
     runtimeException.liftException[M, Int].mapTry(fn).await() shouldBe 999
   }
@@ -46,8 +47,8 @@ abstract class AbstractAsyncPimperTests[M[_] : Async : MonadWithException] exten
   it should "pimp a registersideeffect" in {
     val store = new AtomicReference[Try[Int]]()
     1.liftM[M].registerSideeffect(store.set).await()
-    runtimeException.liftException[M, Int].registerSideeffect(store.set).await()
-    store.get shouldBe Success(2)
+    intercept[RuntimeException](runtimeException.liftException[M, Int].registerSideeffect(store.set).await()) shouldBe runtimeException
+    store.get shouldBe Failure(runtimeException)
   }
 }
 
