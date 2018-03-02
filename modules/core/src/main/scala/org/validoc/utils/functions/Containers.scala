@@ -5,11 +5,12 @@ import scala.util.{Failure, Success, Try}
 
 
 trait Functor[M[_]] {
+  def liftM[T](t: T): M[T]
   def map[T, T1](m: M[T], fn: T => T1): M[T1]
 }
 
+
 trait Monad[M[_]] extends Functor[M] {
-  def liftM[T](t: T): M[T]
   def flatMap[T, T1](m: M[T], fn: T => M[T1]): M[T1]
 
   def join2[T1, T2](m1: M[T1], m2: M[T2]): M[(T1, T2)] = flatMap(m1, (t1: T1) => flatMap(m2, (t2: T2) => liftM((t1, t2))))

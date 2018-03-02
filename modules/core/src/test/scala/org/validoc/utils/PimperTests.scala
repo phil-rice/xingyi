@@ -119,11 +119,11 @@ class PimperTests extends UtilsSpec with FunctionFixture {
   behavior of "OptionFunctionCurriedPimper"
 
   it should "chain of responsibility two option functions together. If the first returns a value that should be used" in {
-    (fn2Curried(1, 2, Some(2)) chain fn2Curried[Int, Int, Some[Int]](1, 1, throw new RuntimeException)) (1)(1) shouldBe Some(2)
+    (fn2Curried(1, 2, Some(2)) chain fn2Curried[Int, Int, Some[Int]](1, 2, throw new RuntimeException)) (1)(2) shouldBe Some(2)
   }
   it should "chain of responsibility two option functions together. If the first returns None the second shoud be used" in {
-    (fn2Curried(1, 2, None) chain fn2Curried[Int, Int, Option[Int]](1, 1, Some(3))) (1)(1) shouldBe Some(3)
-    (fn2Curried(1, 2, None) chain fn2Curried[Int, Int, Option[Int]](1, 1, None)) (1)(1) shouldBe None
+    (fn2Curried(1, 2, None) chain fn2Curried[Int, Int, Option[Int]](1, 2, Some(3))) (1)(2) shouldBe Some(3)
+    (fn2Curried(1, 2, None) chain fn2Curried[Int, Int, Option[Int]](1, 2, None)) (1)(2) shouldBe None
   }
 
   behavior of "Function2Pimper"

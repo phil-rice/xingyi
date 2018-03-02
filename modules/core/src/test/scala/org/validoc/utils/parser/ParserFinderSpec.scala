@@ -1,19 +1,24 @@
 package org.validoc.utils.parser
 
 import org.mockito.Mockito._
+import org.validoc.utils.functions.{ContainerSpec, Functor, MonadCanFail}
 import org.validoc.utils.http.ContentType
-import org.validoc.utils.{ParserNotFoundException, UtilsWithLoggingSpec}
 
-abstract class AbstractParserSpec[T <: ParserFinder[String]] extends UtilsWithLoggingSpec {
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
+import scala.language.{higherKinds, postfixOps}
+import scala.reflect.ClassTag
+
+abstract class AbstractParserFinderSpec[M[_] : Functor, T <: ParserFinder[M, String]] extends ContainerSpec[M] {
 
 
   val ctMain = ContentType("main")
   val ct1 = ContentType("one")
   val ct2 = ContentType("two")
 
-  def makeParserFinderForCtMain(parser: Parser[String]): ParserFinder[String]
+  def makeParserFinderForCtMain(parser: Parser[String]): ParserFinder[M, String]
 
-  def setup(fn: (ParserFinder[String], Parser[String]) => Unit): Unit = {
+  def setup(fn: (ParserFinder[M, String], Parser[String]) => Unit): Unit = {
     val parser = mock[Parser[String]]
 
     fn(makeParserFinderForCtMain(parser), parser)
@@ -21,58 +26,74 @@ abstract class AbstractParserSpec[T <: ParserFinder[String]] extends UtilsWithLo
 
   behavior of getClass.getSimpleName
 
-  it should "return FoundResult(ctMain,parser) when ctMain is the contentType " in {
+  it should "return M[parser] when ctMain is the contentType " in {
     setup { (finder, parser) =>
-      finder.find(ctMain) shouldBe FoundResult(ctMain, parser)
+      getT(finder.find(Some(ctMain))) shouldBe parser
     }
   }
 
   it should "have a apply method that finds a parser and then applies it" in {
     setup { (finder, parser) =>
       when(parser.apply("someString")) thenReturn ("someResult")
-      finder(ctMain, "someString") shouldBe FoundResult(ctMain, "someResult")
+      getT(finder(Some(ctMain), "someString")) shouldBe "someResult"
     }
   }
 
 }
 
-class AlwaysParserFinderTest extends AbstractParserSpec[AlwaysParserFinder[String]] {
+abstract class AlwaysParserFinderTest[M[_] : Functor] extends AbstractParserFinderSpec[M, AlwaysParserFinder[M, String]] {
 
 
   it should "always find the same parser" in {
     setup { (finder, parser) =>
-      finder.find(ct1) shouldBe FoundResult(ct1, parser)
-      finder.find(ct2) shouldBe FoundResult(ct2, parser)
+      getT(finder.find(Some(ct1))) shouldBe parser
+      getT(finder.find(Some(ct2))) shouldBe parser
+      getT(finder.find(None)) shouldBe parser
     }
   }
 
-  override def makeParserFinderForCtMain(parser: Parser[String]): ParserFinder[String] = ParserFinder.always(parser)
+  override def makeParserFinderForCtMain(parser: Parser[String]): ParserFinder[M, String] = ParserFinder.always(parser)
 }
 
-class FromMapParserFinderTest extends AbstractParserSpec[MapParserFinder[String]] {
+
+abstract class FromMapParserFinderTest[M[_], Fail <: AnyRef : ClassTag](implicit monadCanFail: MonadCanFail[M, Fail]) extends AbstractParserFinderSpec[M, MapParserFinder[M, Fail, String]] {
+
+  def getFailure[T](m: M[T]): Fail
 
   val parser1 = mock[Parser[String]]
+  val fail = mock[Fail]
 
-  override def makeParserFinderForCtMain(parser: Parser[String]): ParserFinder[String] =
-    ParserFinder.fromMap(Map(ctMain -> parser, ct1 -> parser1))
+  override def makeParserFinderForCtMain(parser: Parser[String]): ParserFinder[M, String] = {
+    implicit object parserFailer extends ParserFailer[Fail] {
+      override def cannotFindParser(contentType: Option[ContentType]) = fail
+    }
+    ParserFinder.fromMap(Map(Some(ctMain) -> parser, Some(ct1) -> parser1))
+  }
 
 
   it should "find the registered parser for the content type" in {
     setup { (finder, parser) =>
-      finder.find(ct1) shouldBe FoundResult(ct1, parser1)
+      getT(finder.find(Some(ct1))) shouldBe parser1
     }
   }
 
   it should "not find parsers for unregistered content types" in {
     setup { (finder, parser) =>
-      finder.find(ct2) shouldBe NotFoundResult(ct2, Set(ctMain, ct1))
+      getFailure(finder.find(Some(ct2))) shouldBe fail
+      getFailure(finder.find(None)) shouldBe fail
     }
   }
 
-  it should "throw a ParserNotFoundException if the parser isn't found" in {
-    setup { (finder, parser) =>
-      intercept[ParserNotFoundException](finder.findAndParse(ct2, "some string")).parserResult shouldBe NotFoundResult(ct2, Set(ctMain, ct1))
-    }
-  }
+}
+import org.validoc.utils.functions.AsyncForScalaFuture.ImplicitsForTest._
+import org.validoc.utils.functions.AsyncForScalaFuture._
 
+class AlwaysParserFinderForScalaFuture extends AlwaysParserFinderTest[Future] {
+  override def liftA[T](t: T) = Future.successful(t)
+  override def getT[X](a: Future[X]) = Await.result(a, 5 seconds)
+}
+class FromMapParserFinderTestForFuture extends FromMapParserFinderTest[Future, Throwable] {
+  override def liftA[T](t: T) = Future.successful(t)
+  override def getT[X](a: Future[X]) = Await.result(a, 5 seconds)
+  override def getFailure[T](m: Future[T]) = intercept[Throwable](getT(m))
 }

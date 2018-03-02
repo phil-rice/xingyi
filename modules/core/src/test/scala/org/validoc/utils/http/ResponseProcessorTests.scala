@@ -8,11 +8,11 @@ class ResponseProcessorTests extends UtilsWithLoggingSpec {
 
   case class Result(s: String)
 
-  val parserFinder = ParserFinder.always(Result(_))
-  val runtimeException = new RuntimeException
-  val errorThrowingParserFinder = ParserFinder.always[Result](s => throw runtimeException)
-
-  val serviceResponse = ServiceResponse(Status(111), Body("someBody"), ContentType("some/content"))
+//  val parserFinder = ParserFinder.always(Result(_))
+//  val runtimeException = new RuntimeException
+//  val errorThrowingParserFinder = ParserFinder.always[Result](s => throw runtimeException)
+//
+//  val serviceResponse = ServiceResponse(Status(111), Body("someBody"), ContentType("some/content"))
 
 //  val requestDetails = RequestDetails("someReq", "someSummary")
 

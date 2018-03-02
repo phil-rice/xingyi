@@ -1,13 +1,12 @@
 package org.validoc.utils.domain
 
+import org.mockito.Mockito._
 import org.validoc.utils.UtilsSpec
-import org.validoc.utils.cache.ShouldCache
 import org.validoc.utils.http._
-import org.validoc.utils.parser.{FoundResult, Parser, ParserFinder}
+import org.validoc.utils.parser.{Parser, ParserFinder}
 import org.validoc.utils.reflection.ClassTags
 
 import scala.reflect.ClassTag
-import org.mockito.Mockito._
 
 abstract class DomainCompanionQuerySpec[Req <: BypassCache : ClassTag] extends UtilsSpec {
 
@@ -26,12 +25,11 @@ abstract class DomainCompanionQuerySpec[Req <: BypassCache : ClassTag] extends U
   val serviceRequest = ServiceRequest(Get, Uri("/someUri"), body = Some(Body("someBody")))
 
   it should "Have a implicit from service response if there is a parserFinder in scope" in {
-    implicit val parserfinder = mock[ParserFinder[Req]]
-    val parser = mock[Parser[Req]]
-    val req = mock[Req]
-    when(parserfinder.find(companion.defaultContentType)) thenReturn FoundResult(companion.defaultContentType, parser)
-    when(parser.apply("someBody")) thenReturn req
-    import companion._
+//    implicit val parserfinder = mock[ParserFinder[Req]]
+//    val parser = mock[Parser[Req]]
+//    val req = mock[Req]
+//    when(parserfinder.find(companion.defaultContentType)) thenReturn FoundResult(companion.defaultContentType, parser)
+//    when(parser.apply("someBody")) thenReturn req
 //    val x = fromServiceResponse
 //    implicitly[FromServiceResponse[Req]].apply(serviceRequest) shouldBe req
   }
