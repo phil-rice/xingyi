@@ -1,8 +1,11 @@
 package org.validoc.utils.http
 
-import scala.annotation.implicitNotFound
+import org.validoc.utils.functions.{Liftable, Monad}
 
-case class ServiceRequest(method: Method, uri: Uri, acceptHeader: Option[AcceptHeader] = None, contentType: Option[ContentType] = None,  otherHeaders: List[Header] = List(), body: Option[Body] = None)
+import scala.annotation.implicitNotFound
+import scala.language.higherKinds
+
+case class ServiceRequest(method: Method, uri: Uri, acceptHeader: Option[AcceptHeader] = None, contentType: Option[ContentType] = None, otherHeaders: List[Header] = List(), body: Option[Body] = None)
 trait OriginalReq[Req] {
   def acceptHeader(req: Req): AcceptHeader
   def header(req: Req, name: String): Header
@@ -22,10 +25,10 @@ object ToServiceRequest {
 }
 
 @implicitNotFound("Missing FromServiceRequest[${T}]This is how we create a query/request (${T}) from an external clients HTTP request. It is isolated from exactly which webframework we are using.")
-trait FromServiceRequest[T] extends (ServiceRequest => T)
+trait FromServiceRequest[M[_], T] extends (ServiceRequest => M[T])
 
 object FromServiceRequest {
-  implicit object FromServiceResponseForServiceResponse extends FromServiceRequest[ServiceRequest] {
-    override def apply(v1: ServiceRequest): ServiceRequest = v1
+  implicit def FromServiceResponseForServiceResponse[M[_] : Liftable] = new FromServiceRequest[M, ServiceRequest] {
+    override def apply(v1: ServiceRequest): M[ServiceRequest] = v1.liftM
   }
 }

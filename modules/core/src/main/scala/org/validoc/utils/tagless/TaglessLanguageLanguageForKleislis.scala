@@ -23,7 +23,7 @@ trait HttpFactory[M[_], HttpReq, HttpRes] extends (ServiceName => HttpReq => M[H
 class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail, HttpReq, HttpRes](implicit monadCanFail: MonadCanFailWithException[M, Fail],
                                                                                httpFactory: HttpFactory[M, HttpReq, HttpRes],
                                                                                toServiceResponse: ToServiceResponse[HttpRes],
-                                                                               toHttpReq: FromServiceRequest[HttpReq],
+                                                                               toHttpReq: FromServiceRequest[M, HttpReq],
                                                                                logReqAndResult: LogRequestAndResult[Fail],
                                                                                loggingAdapter: LoggingAdapter,
                                                                                timeService: NanoTimeService,
@@ -37,17 +37,17 @@ class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail, HttpReq, HttpRes](i
     override def apply(v1: Req) = fn(v1)
   }
   implicit def foK[Req, Res](fn: Req => M[Res]) = Kleisli[Req, Res](fn)
-  implicit def foEK[Req, Res](fn: ServiceRequest =>Option[ M[ServiceResponse]]) = EndpointK[Req, Res](fn)
+  implicit def foEK[Req, Res](fn: ServiceRequest => Option[M[ServiceResponse]]) = EndpointK[Req, Res](fn)
 
-  object NonFunctionalLanguageService extends TaglessLanguage[EndpointK, Kleisli, Fail, HttpReq, HttpRes] {
+  object NonFunctionalLanguageService extends TaglessLanguage[EndpointK, Kleisli, M, Fail, HttpReq, HttpRes] {
 
     override def http(name: ServiceName) = httpFactory(name)
 
     override def metrics[Req: ClassTag, Res: ClassTag](prefix: String)(raw: Kleisli[Req, Res])(implicit makeReportData: RD[Res]) =
       raw.enterAndExit[Fail, Long]({ r: Req => timeService() }, makeReportData(prefix) ~> putMetrics)
 
-    override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: Kleisli[Req, Res])(implicit fromServiceRequest: FromServiceRequest[Req], toServiceResponse: ToServiceResponse[Res]) =
-      EndpointK[Req, Res] { serviceRequest: ServiceRequest => matchesServiceRequest(normalisedPath)(serviceRequest).toOption((fromServiceRequest ~> raw |=> toServiceResponse) (serviceRequest)) }
+    override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: Kleisli[Req, Res])(implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]) =
+      EndpointK[Req, Res] { serviceRequest: ServiceRequest => matchesServiceRequest(normalisedPath)(serviceRequest).toOption((fromServiceRequest |==> raw |=> toServiceResponse) (serviceRequest)) }
     override def chain(endpoints: EndpointK[_, _]*): Kleisli[ServiceRequest, ServiceResponse] = { req: ServiceRequest =>
       @tailrec
       def recurse(seq: List[EndpointK[_, _]]): M[ServiceResponse] = {
@@ -82,7 +82,7 @@ class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail, HttpReq, HttpRes](i
       println(s"categoriser $categoriser")
       println(s"responseProcessor $responseProcessor")
 
-      toRequest ~> toHttpReq ~> http |=> toServiceResponse |=+> categoriser |=|> responseProcessor
+      toRequest ~> toHttpReq |==> http |=> toServiceResponse |=+> categoriser |=|> responseProcessor
     }
 
     override protected def enrichPrim[ReqP, ResP, ReqC, ResC, ResE](parentService: Kleisli[ReqP, ResP], childService: Kleisli[ReqC, ResC])(implicit findChildIds: HasChildren[ResP, ReqC], enricher: Enricher[ReqP, ResP, ReqC, ResC, ResE]) =

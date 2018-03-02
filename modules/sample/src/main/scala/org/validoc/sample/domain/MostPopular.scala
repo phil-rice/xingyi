@@ -2,11 +2,13 @@ package org.validoc.sample.domain
 
 import org.validoc.utils.cache.Cachable
 import org.validoc.utils.domain.{BypassCache, DomainCompanionObject, DomainCompanionQuery}
+import org.validoc.utils.functions.Liftable
 import org.validoc.utils.tagless.{Enricher, HasChildren}
 //needs to be here import io.circe.generic.auto._
 import org.validoc.utils.http._
 
 import scala.language.implicitConversions
+import scala.language.higherKinds
 
 case class MostPopularQuery(bypassCache: Boolean) extends BypassCache
 
@@ -22,8 +24,10 @@ object MostPopularQuery extends DomainCompanionQuery[MostPopularQuery] {
   }
 
 
-  implicit object fromServiceRequestForMostPopularQuery extends FromServiceRequest[MostPopularQuery] {
-    override def apply(v1: ServiceRequest): MostPopularQuery = MostPopularQuery(false)
+  implicit def fromServiceRequest[M[_]:Liftable] = new fromServiceRequestForMostPopularQuery[M]
+
+  class fromServiceRequestForMostPopularQuery[M[_]:Liftable] extends FromServiceRequest[M, MostPopularQuery] {
+    override def apply(v1: ServiceRequest) = MostPopularQuery(false).liftM
   }
 
   implicit def fromHomePageQuery(h: HomePageQuery) = MostPopularQuery(h.bypassCache)

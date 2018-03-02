@@ -1,8 +1,10 @@
 package org.validoc.utils.http
 
 import org.mockito.Mockito._
+import org.validoc.utils.functions.Liftable
 import org.validoc.utils.{Service, UtilsWithLoggingSpec}
 
+import scala.language.higherKinds
 import scala.concurrent.Future
 
 trait HttpObjectFixture {
@@ -20,8 +22,10 @@ trait HttpObjectFixture {
     override def apply(req: Req): ServiceRequest = ServiceRequest(Get, Uri(req))
   }
 
-  implicit object FromServiceRequestForHttpReq extends FromServiceRequest[HttpReq] {
-    override def apply(s: ServiceRequest): HttpReq = HttpReq(s.uri.asUriString)
+  implicit def fromServiceRequestForHttpReq[M[_]:Liftable] = new FromServiceRequestForHttpReq[M]
+
+  class FromServiceRequestForHttpReq[M[_]:Liftable] extends FromServiceRequest[M, HttpReq] {
+    override def apply(s: ServiceRequest): M[HttpReq] = HttpReq(s.uri.asUriString).liftM
   }
 
 }

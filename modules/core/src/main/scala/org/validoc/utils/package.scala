@@ -22,7 +22,7 @@ package object utils {
 
   implicit class AnyPimper[T](t: T) {
     def |>[T2](fn: T => T2) = fn(t)
-    def liftM[M[_]](implicit monad: Monad[M]): M[T] = monad.liftM(t)
+    def liftM[M[_]](implicit container: Liftable[M]): M[T] = container.liftM(t)
     def |+>[T1](fn: T => T => T1): T1 = fn(t)(t)
     def liftException[M[_], T1](implicit async: MonadWithException[M], ev: T <:< Throwable): M[T1] = async.exception(t)
     def |?[M[_] : Functor, Failure](validation: T => Seq[Failure])(implicit withFailure: MonadCanFail[M, Failure], monoid: Monoid[Failure]): M[T] =

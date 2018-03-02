@@ -2,10 +2,12 @@ package org.validoc.sample
 
 import org.validoc.sample.domain._
 import org.validoc.utils.cache.{Cachable, ShouldCache}
+import org.validoc.utils.functions.Liftable
 import org.validoc.utils.http._
 import org.validoc.utils.json.{FromJson, ToJson}
 import org.validoc.utils.tagless.{TaglessInterpreterForToString, TaglessLanguage}
 
+import scala.concurrent.Future
 import scala.language.{higherKinds, postfixOps}
 import scala.reflect.ClassTag
 
@@ -24,11 +26,10 @@ case class JsonBundle(implicit
                       val fromJsonForProgramme: FromJson[Programme],
                       val fromJsonForProduction: FromJson[Production])
 
-class PromotionSetup[EndpointWrapper[_, _], Wrapper[_, _], Fail, HttpReq: ClassTag : Cachable : ShouldCache, HttpRes: ClassTag](interpreter: TaglessLanguage[EndpointWrapper, Wrapper, Fail, HttpReq, HttpRes])(implicit
-
-                                                                                                                                failer: Failer[Fail],
-                                                                                                                                jsonBundle: JsonBundle
-                                                                                                                               ) extends PromotionServiceNames {
+class PromotionSetup[EndpointWrapper[_, _], Wrapper[_, _], M[_] : Liftable, Fail, HttpReq: ClassTag : Cachable : ShouldCache, HttpRes: ClassTag](interpreter: TaglessLanguage[EndpointWrapper, Wrapper, M, Fail, HttpReq, HttpRes])(implicit
+                                                                                                                                                                                                                                    failer: Failer[Fail],
+                                                                                                                                                                                                                                    jsonBundle: JsonBundle
+) extends PromotionServiceNames {
 
   import interpreter._
   import jsonBundle._
@@ -41,7 +42,8 @@ class PromotionSetup[EndpointWrapper[_, _], Wrapper[_, _], Fail, HttpReq: ClassT
 
   println(s"vogue $vogue")
   println(s"objectify[MostPopularQuery, MostPopular] ${objectify[MostPopularQuery, MostPopular] _}")
-  val rawMostPopularService = vogue |+| objectify[MostPopularQuery, MostPopular]// |+| cache("vogue")
+  val rawMostPopularService = vogue |+| objectify[MostPopularQuery, MostPopular]
+  // |+| cache("vogue")
   val rawPromotionService = billboard |+| cache("Promotion") |+| objectify[PromotionQuery, Promotion]
   val rawProductionService = fnord |+| objectify[ProductionId, Production]
   val rawProgrammeService = fnord |+| objectify[ProgrammeId, Programme]
@@ -62,14 +64,16 @@ class PromotionSetup[EndpointWrapper[_, _], Wrapper[_, _], Fail, HttpReq: ClassT
 
 }
 
-object PromotionSetup extends App with  SampleJsonsForCompilation {
+object PromotionSetup extends App with SampleJsonsForCompilation {
   implicit val language: TaglessInterpreterForToString[String, String] = new TaglessInterpreterForToString[String, String]
 
   import language._
 
   implicit val jsonBundle: JsonBundle = JsonBundle()
 
+  import org.validoc.utils.functions.AsyncForScalaFuture._
+  import ImplicitsForTest._
 
-  val setup = new PromotionSetup[StringHolder, StringHolder, Void, String, String](language.ForToString)
+  val setup = new PromotionSetup[StringHolder, StringHolder, Future, Throwable, String, String](language.forToString)
   println(setup.microservice.invertIndent)
 }

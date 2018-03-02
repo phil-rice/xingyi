@@ -14,11 +14,16 @@ import org.validoc.utils.time.RandomDelay
 import scala.concurrent.duration.FiniteDuration
 import scala.language.{higherKinds, implicitConversions}
 import org.validoc.utils.endpoint.MatchesServiceRequest._
+import org.validoc.utils.functions.Liftable
+
+import scala.concurrent.Future
+import scala.language.higherKinds
+import org.validoc.utils._
 
 class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
 
-  class Sample[EndpointWrapper[_, _], Wrapper[_, _], Fail](implicit httpLanguage: TaglessLanguage[EndpointWrapper, Wrapper, Fail, HttpReq, HttpRes], failer: Failer[Fail]) {
+  class Sample[EndpointWrapper[_, _], Wrapper[_, _], M[_] : Liftable, Fail](implicit httpLanguage: TaglessLanguage[EndpointWrapper, Wrapper, M, Fail, HttpReq, HttpRes], failer: Failer[Fail]) {
 
     import httpLanguage._
 
@@ -42,8 +47,8 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
       override def apply(v1: String) = v1
     }
 
-    implicit object FromServiceRequestForString extends FromServiceRequest[String] {
-      override def apply(v1: ServiceRequest): String = Strings.lastSection("/")(v1.body.map(_.s).getOrElse(throw new RuntimeException))
+    implicit object FromServiceRequestForString extends FromServiceRequest[M, String] {
+      override def apply(v1: ServiceRequest): M[String] = Strings.lastSection("/")(v1.body.map(_.s).getOrElse(throw new RuntimeException)).liftM
     }
 
     implicit object ToServiceResponseForString extends ToServiceResponse[String] {
@@ -77,12 +82,12 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
     def microservice: Wrapper[ServiceRequest, ServiceResponse] = chain(endpoint1, endpoint2)
 
-//    def endPointx: Wrapper[String, String] => EndpointWrapper[String, String] = endpoint[String, String]("/endpoint2", idAtEnd(Get)) _
-//    def endPointy = endpoint[String, String]("/endpoint2", idAtEnd(Get)) _ <++> objectify[String, String] _
-//    def endPointz = endpoint[String, String]("/endpoint2", idAtEnd(Get)) _ <++> objectify[String,String] _ <++> http("s6")
-//
-//
-//    def endPointw: EndpointWrapper[String, String] = endpoint[String,String]("/endpoint2", idAtEnd(Get)) _ <++> objectify _ <+> http("s6")
+    //    def endPointx: Wrapper[String, String] => EndpointWrapper[String, String] = endpoint[String, String]("/endpoint2", idAtEnd(Get)) _
+    //    def endPointy = endpoint[String, String]("/endpoint2", idAtEnd(Get)) _ <++> objectify[String, String] _
+    //    def endPointz = endpoint[String, String]("/endpoint2", idAtEnd(Get)) _ <++> objectify[String,String] _ <++> http("s6")
+    //
+    //
+    //    def endPointw: EndpointWrapper[String, String] = endpoint[String,String]("/endpoint2", idAtEnd(Get)) _ <++> objectify _ <+> http("s6")
     //
 
     //    def endPointz: EndpointWrapper[String, String] = endpoint[String, String]("/endpoint2", idAtEnd(Get)) _ <+> objectify[String,String] <++> http("sa1")
@@ -95,9 +100,10 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
   it should "handle" in {
     implicit val stringlanguage = new TaglessInterpreterForToString[HttpReq, HttpRes]
     import stringlanguage._
+    import org.validoc.utils.functions.AsyncForScalaFuture._
+    import ImplicitsForTest._
 
-
-    val sample = new Sample[StringHolder, StringHolder, Void]()
+    val sample = new Sample[StringHolder, StringHolder, Future, Throwable]()
     sample.s1.lines shouldBe List((3, "metrics(service1)"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s1)"))
 
     sample.m2.lines shouldBe List(

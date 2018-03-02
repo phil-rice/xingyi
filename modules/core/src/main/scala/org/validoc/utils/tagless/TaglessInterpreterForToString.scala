@@ -19,21 +19,21 @@ class TaglessInterpreterForToString[HttpReq, HttpRes] {
 
   type StringHolder[Req, Res] = IndentAndString
 
-  implicit object ForToString extends TaglessLanguage[StringHolder, StringHolder, Void, HttpReq, HttpRes] {
+  implicit def forToString[M[_], Fail] = new ForToString[M, Fail]
+  class ForToString[M[_], Fail] extends TaglessLanguage[StringHolder, StringHolder, M, Fail, HttpReq, HttpRes] {
     override def http(name: ServiceName): StringHolder[HttpReq, HttpRes] =
       IndentAndString(0, List()).insertLineAndIndent(s"http(${name.name})")
-
-    override def objectify[Req: ClassTag : ToServiceRequest : ResponseCategoriser, Res: ClassTag](http: StringHolder[HttpReq, HttpRes])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[Req], responseProcessor: ResponseProcessor[Void, Req, Res]) =
+    override def objectify[Req: ClassTag : ToServiceRequest : ResponseCategoriser, Res: ClassTag](http: StringHolder[HttpReq, HttpRes])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[Req], responseProcessor: ResponseProcessor[Fail, Req, Res]) =
       http.insertLineAndIndent(s"objectify[${nameOf[Req]},${nameOf[Res]}]")
     override def chain(endpoints: StringHolder[_, _]*) =
       IndentAndString.merge("chain", endpoints: _*)
-    override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: StringHolder[Req, Res])(implicit fromServiceRequest: FromServiceRequest[Req], toServiceResponse: ToServiceResponse[Res]): StringHolder[Req, Res] =
+    override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: StringHolder[Req, Res])(implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]): StringHolder[Req, Res] =
       raw.insertLineAndIndent(s"endpoint[${nameOf[Req]},${nameOf[Res]}]($normalisedPath,$matchesServiceRequest)")
     override def metrics[Req: ClassTag, Res: ClassTag : RD](prefix: String)(raw: StringHolder[Req, Res]) =
       raw.insertLineAndIndent(s"metrics($prefix)")
     override def cache[Req: ClassTag : Cachable : ShouldCache, Res: ClassTag](name: String)(raw: StringHolder[Req, Res]) =
       raw.insertLineAndIndent(s"cache($name)")
-    override def retry[Req: ClassTag, Res: ClassTag](retryConfig: RetryConfig)(raw: StringHolder[Req, Res])(implicit retry: NeedsRetry[Void, Res]): StringHolder[Req, Res] =
+    override def retry[Req: ClassTag, Res: ClassTag](retryConfig: RetryConfig)(raw: StringHolder[Req, Res])(implicit retry: NeedsRetry[Fail, Res]): StringHolder[Req, Res] =
       raw.insertLineAndIndent(s"retry($retryConfig)")
 
     override def profile[Req: ClassTag, Res: ClassTag](profileData: TryProfileData)(raw: StringHolder[Req, Res]) =

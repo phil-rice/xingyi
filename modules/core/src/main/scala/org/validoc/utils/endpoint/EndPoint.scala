@@ -14,9 +14,9 @@ trait MatchesServiceRequest {
 }
 
 case class EndPoint[M[_] : Monad, Req, Res](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(kleisli: Req => M[Res])
-                                           (implicit fromServiceRequest: FromServiceRequest[Req], toServiceResponse: ToServiceResponse[Res]) extends (ServiceRequest => Option[M[ServiceResponse]]) {
+                                           (implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]) extends (ServiceRequest => Option[M[ServiceResponse]]) {
   override def apply(serviceRequest: ServiceRequest): Option[M[ServiceResponse]] =
-    matchesServiceRequest(normalisedPath)(serviceRequest).toOption((fromServiceRequest ~> kleisli |=> toServiceResponse) (serviceRequest))
+    matchesServiceRequest(normalisedPath)(serviceRequest).toOption((fromServiceRequest |==> kleisli |=> toServiceResponse) (serviceRequest))
 }
 
 object MatchesServiceRequest {
@@ -35,21 +35,6 @@ case class IdAtEndAndVerb(method: Method) extends MatchesServiceRequest {
 
 import org.validoc.utils.functions.AsyncForScalaFuture._
 import org.validoc.utils.functions.AsyncForScalaFuture.ImplicitsForTest._
-
-object EndPointChecker {
-
-  implicit object F extends FromServiceRequest[Int] {
-    override def apply(v1: ServiceRequest): Int = ???
-  }
-
-  implicit object G extends ToServiceResponse[Int] {
-    override def apply(v1: Int): ServiceResponse = ???
-  }
-
-  def raw(x: Int) = Future.successful(x + 1)
-  val x = EndPoint[Future, Int, Int]("/path", IdAtEndAndVerb(Get)) _ chain EndPoint[Future, Int, Int]("/path", IdAtEndAndVerb(Get)) _
-
-}
 
 
 

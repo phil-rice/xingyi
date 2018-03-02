@@ -4,8 +4,11 @@ import scala.language.higherKinds
 import scala.util.{Failure, Success, Try}
 
 
-trait Functor[M[_]] {
+trait Liftable[M[_]]{
   def liftM[T](t: T): M[T]
+
+}
+trait Functor[M[_]] extends Liftable[M]{
   def map[T, T1](m: M[T], fn: T => T1): M[T1]
 }
 
