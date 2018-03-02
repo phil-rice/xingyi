@@ -100,16 +100,16 @@ package object utils {
   }
 
   implicit class MonadCanFailPimper[M[_], T](m: M[T]) {
-    def foldFailure[Fail, T1](fnE: Throwable => M[T1], fnFailure: Fail => M[T1], fn: T => M[T1])(implicit async: MonadCanFailWithException[M, Fail]): M[T1] =
+    def mapEither[Fail, T1](fn: Either[Fail, T] => M[T1])(implicit monadCanFail: MonadCanFail[M, Fail]): M[T1] = monadCanFail.mapEither(m, fn)
+    def |=?[Failure](validation: T => Seq[Failure])(implicit withFailure: MonadCanFail[M, Failure], monoid: Monoid[Failure]): M[T] =
+      m.flatMap[T] { res => res |?[M, Failure] validation }
+  }
+
+  implicit class MonadCanFailWithExceptionPimper[M[_], T](m: M[T]) {
+    def foldWithExceptionAndFail[Fail, T1](fnE: Throwable => M[T1], fnFailure: Fail => M[T1], fn: T => M[T1])(implicit async: MonadCanFailWithException[M, Fail]): M[T1] =
       async.foldWithExceptionAndFail[T, T1](m, fnE, fnFailure, fn)
-    //    def foldTry[Fail, T1](fnTry: Try[T] => T1)(implicit async: MonadCanFail[M, Fail]) = monad.fold(m, t => fnTry(Failure(t)), { t: T => fnTry(Success(t)) })
     def onComplete[Fail](fn: Try[Either[Fail, T]] => Unit)(implicit async: MonadCanFailWithException[M, Fail]): M[T] = async.onComplete(m, fn)
 
-
-    //    def transformAndLift[Fail, Res](fnThrowable: Throwable => Res, fnMap: T => Res)(implicit async: MonadCanFail[M, Fail]) =
-    //      async.transformWithFail[T, Res](m, e => fnThrowable(e).liftM[M], fail ) { case Success(t) => fnMap(t); case Failure(t) => fnThrowable(t) }
-    def |=?[Failure](validation: T => Seq[Failure])(implicit withFailure: MonadCanFailWithException[M, Failure], monoid: Monoid[Failure]): M[T] =
-      m.flatMap[T] { res => res |?[M, Failure] validation }
   }
 
 
@@ -201,12 +201,6 @@ package object utils {
     case Failure(t) => monad.exception(t)
   }
 
-  implicit class AsyncSeqFailurePimper[Failure](s: Seq[Failure]) {
-    def singleFailure[M[_], T](implicit asyncWithFailure: MonadCanFailWithException[M, Failure], multipleFailures: FailureMaker[Seq[Failure], Failure]): M[T] = s match {
-      case Seq(single) => asyncWithFailure.fail(single)
-      case other => asyncWithFailure.fail(multipleFailures(other))
-    }
-  }
 
 
   implicit class AsyncPimper[M[_], T](m: M[T])(implicit async: Async[M]) {
@@ -215,13 +209,6 @@ package object utils {
   }
 
 
-  implicit object FailureMakerForThrowable extends FailureMaker[Seq[Throwable], Throwable] {
-    override def apply(v1: Seq[Throwable]): Throwable = v1.toList match {
-      case Nil => throw new IllegalArgumentException("Should not call failure maker when have no failures")
-      case Seq(one) => one
-      case head :: tail => new MultipleExceptions(head, tail)
-    }
-  }
 
 
 }

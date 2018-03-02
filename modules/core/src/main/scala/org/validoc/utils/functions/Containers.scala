@@ -72,15 +72,3 @@ trait MonadCanFailWithException[M[_], Fail] extends MonadWithException[M] with M
 
 }
 
-
-trait FailureMaker[X, Fail] extends (X => Fail)
-
-object FailureMaker {
-
-  import Monoid._
-
-  implicit def failureMakerForSequenceOfMonoid[T](implicit monoid: Monoid[T]): FailureMaker[Seq[T], T] = new FailureMaker[Seq[T], T] {
-    override def apply(seq: Seq[T]): T = seq.addAll
-  }
-
-}

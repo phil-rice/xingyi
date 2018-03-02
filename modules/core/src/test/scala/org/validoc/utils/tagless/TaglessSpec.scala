@@ -108,7 +108,7 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
       (4, "merge3"),
       (3, "metrics(service1)"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s1)"),
       (3, "profile"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s2)"),
-      (1, "objectify[String,String]"), (0, "http(s3)"))
+      (3, "objectify[String,String]"), (2, "http(s3)"))
 
     //      :List((4,merge4), (3,metrics(service1)), (2,logging(service1 using prefix someMessageName)), (1,objectify[String,String]), (0,http(s1)), (2,logging(service1 using prefix someMessageName)), (1,objectify[String,String]), (0,http(s2)), (1,objectify[String,String]), (0,http(s3)), (1,objectify[String,String]), (0,http(s4)))
 
@@ -116,8 +116,8 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
       (4, "merge4"),
       (3, "metrics(service1)"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s1)"),
       (3, "profile"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s2)"),
-      (1, "objectify[String,String]"), (0, "http(s3)"),
-      (2, "retry(RetryConfig(10,RandomDelay(100 milliseconds)))"), (1, "objectify[String,String]"), (0, "http(s4)"))
+      (3, "objectify[String,String]"), (2, "http(s3)"),
+      (3, "retry(RetryConfig(10,RandomDelay(100 milliseconds)))"), (2, "objectify[String,String]"), (1, "http(s4)"))
 
     sample.e1.lines shouldBe List(
       (4, "enrich"),
@@ -137,7 +137,7 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
       (4, "enrich"),
       (3, "metrics(service1)"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s1)"),
       (3, "profile"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s2)"),
-      (4, "endpoint[String,String](/endpoint2,IdAtEndAndVerb(Get))"), (3, "metrics(service1)"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s1)")
+      (5, "endpoint[String,String](/endpoint2,IdAtEndAndVerb(Get))"), (4, "metrics(service1)"), (3, "logging(service1 using prefix someMessageName)"), (2, "objectify[String,String]"), (1, "http(s1)")
     )
 
   }
