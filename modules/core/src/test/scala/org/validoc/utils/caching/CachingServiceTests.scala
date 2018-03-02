@@ -258,7 +258,7 @@ class CachingServiceTests extends UtilsWithLoggingSpec with Eventually {
           val future1 = cachingService(request1)
           request1.countDownLatch.countDown()
           intercept[RuntimeException](await(future1))
-          checkMetrics("after future 1 fiCnished ", requests = 1, delegateRequests = 1, delegateFailures = 1)
+          checkMetrics("after future 1 finished ", requests = 1, delegateRequests = 1, delegateFailures = 1)
 
           val future2 = cachingService(request2)
           checkMetrics("after future 1 finished and future 2 started", requests = 2, delegateRequests = 2, delegateFailures = 1)
@@ -312,7 +312,7 @@ class CachingServiceTests extends UtilsWithLoggingSpec with Eventually {
 
           val future1 = cachingService(request1)
           checkMetrics("after future 1 started ", requests = 1, delegateRequests = 1, delegateSuccesses = 0, cacheSize = Some(1))
-          cachingService.clearCache
+          cachingService.clear
           checkMetrics("after clearCache", requests = 1, delegateRequests = 1, delegateSuccesses = 0, cacheSize = Some(0))
           request1.countDownLatch.countDown()
           await(future1) shouldBe "result1"
@@ -336,7 +336,7 @@ class CachingServiceTests extends UtilsWithLoggingSpec with Eventually {
 
           val future1 = cachingService(request1)
           checkMetrics("after future 1 started ", requests = 1, delegateRequests = 1, delegateSuccesses = 0, cacheSize = Some(1))
-          cachingService.clearCache
+          cachingService.clear
 
           val future2 = cachingService(request2)
           checkMetrics("after future 2 started ", requests = 2, delegateRequests = 2, delegateSuccesses = 0, cacheSize = Some(1))
@@ -365,7 +365,7 @@ class CachingServiceTests extends UtilsWithLoggingSpec with Eventually {
           val request3 = DelegateRequest("sameKey", Success("result3"))
 
           val future1 = cachingService(request1)
-          cachingService.clearCache
+          cachingService.clear
           checkMetrics("after future 1 started ", requests = 1, delegateRequests = 1, delegateFailures = 0, cacheSize = Some(0))
           request1.countDownLatch.countDown()
           checkMetrics("after future 1 finished ", requests = 1, delegateRequests = 1, delegateFailures = 1, cacheSize = Some(1))

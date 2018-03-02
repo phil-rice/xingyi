@@ -1,7 +1,7 @@
 package org.validoc.caffeine
 
 import com.github.blemale.scaffeine.Scaffeine
-import org.validoc.utils.cache.{Cachable, Cache, CacheFactory}
+import org.validoc.utils.cache.{Cachable, Cache, CacheFactory, ShouldCacheResult}
 import org.validoc.utils.functions.MonadConvertor
 import org.validoc.utils.local.ExecutionContextWithLocal
 
@@ -23,7 +23,7 @@ object CacheKey {
   def apply[Req](req: Req)(implicit cachable: Cachable[Req]) = new CacheKey(req, cachable(req))
   def getReqFromKey[Req] = { cacheKey: CacheKey[Req] => cacheKey.req }
 }
-
+//Note this ignores the ShouldCacheResult at the moment
 object CaffeineCache {
 
   def defaultCacheBuilder: Scaffeine[Any, Any] =
@@ -35,7 +35,7 @@ object CaffeineCache {
 
 
   def cacheFactoryForFuture(scaffeine: Scaffeine[Any, Any])(implicit executionContext: ExecutionContextWithLocal) = new CacheFactory[Future] {
-    override def apply[Req: Cachable, Res](name: String, rawFn: Req => Future[Res]) = new Cache[Future, Req, Res] {
+    override def apply[Req: Cachable, Res: ShouldCacheResult](name: String, rawFn: Req => Future[Res]) = new Cache[Future, Req, Res] {
       val cache = scaffeine.buildAsyncFuture[CacheKey[Req], Res](CacheKey.getReqFromKey andThen rawFn)
       override def clear() = cache.underlying.synchronous().invalidateAll()
       override def apply(v1: Req) = cache.get(CacheKey(v1))
@@ -44,7 +44,7 @@ object CaffeineCache {
   }
 
   def cacheFactory[M[_]](scaffeine: Scaffeine[Any, Any])(implicit executionContext: ExecutionContextWithLocal, toFuture: MonadConvertor[M, Future], fromFuture: MonadConvertor[Future, M]) = new CacheFactory[M] {
-    override def apply[Req: Cachable, Res](name: String, rawFn: Req => M[Res]) = new Cache[M, Req, Res] {
+    override def apply[Req: Cachable, Res:ShouldCacheResult](name: String, rawFn: Req => M[Res]) = new Cache[M, Req, Res] {
       val cache = scaffeine.buildAsyncFuture[CacheKey[Req], Res](key => toFuture[Res](raw(key.req)))
       override def apply(req: Req) = fromFuture(cache.get(CacheKey(req)))
       override def clear() = cache.underlying.synchronous().invalidateAll()

@@ -1,11 +1,10 @@
 package org.validoc.utils.http
 
-import org.mockito.Mockito._
+import org.validoc.utils.UtilsWithLoggingSpec
 import org.validoc.utils.functions.Liftable
-import org.validoc.utils.{Service, UtilsWithLoggingSpec}
 
 import scala.language.higherKinds
-import scala.concurrent.Future
+import org.validoc.utils.language.Language._
 
 trait HttpObjectFixture {
 

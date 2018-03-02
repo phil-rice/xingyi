@@ -2,13 +2,13 @@ package org.validoc.utils.retry
 
 import java.util.concurrent.atomic.AtomicLong
 
-import org.validoc.utils.Service
+import org.validoc.utils._
+import org.validoc.utils.functions.{Async, MonadCanFailWithException}
 import org.validoc.utils.time.Delay
 
 import scala.language.higherKinds
 import scala.util.{Success, Try}
-import org.validoc.utils._
-import org.validoc.utils.functions.{Async, Functions, Monad, MonadCanFailWithException}
+import org.validoc.utils.language.Language._
 
 trait NeedsRetry[Fail, T] {
   def apply(t: Try[Either[Fail, T]]): Boolean
@@ -43,7 +43,7 @@ trait RetryInfo {
 case class RetryConfig(retries: Int, delay: Delay)
 
 
-class RetryService[M[_], Fail, Req, Res](delegate: Service[M, Req, Res], retryConfig: RetryConfig)(implicit async: Async[M], monad: MonadCanFailWithException[M, Fail], resRetry: NeedsRetry[Fail, Res]) extends Service[M, Req, Res] with RetryInfo {
+class RetryService[M[_], Fail, Req, Res](delegate: (Req => M[Res]) , retryConfig: RetryConfig)(implicit async: Async[M], monad: MonadCanFailWithException[M, Fail], resRetry: NeedsRetry[Fail, Res]) extends (Req => M[Res])  with RetryInfo {
 
   import retryConfig._
 

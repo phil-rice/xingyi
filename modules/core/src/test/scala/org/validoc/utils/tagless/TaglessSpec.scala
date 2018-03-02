@@ -16,6 +16,7 @@ import org.validoc.utils.time.RandomDelay
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.language.{higherKinds, implicitConversions}
+import org.validoc.utils.language.Language._
 
 class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 

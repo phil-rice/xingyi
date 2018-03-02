@@ -1,6 +1,8 @@
 package org.validoc.utils.exceptions
 
 import org.validoc.utils.functions.MonadWithException
+import org.validoc.utils.http.{ServiceRequest, ServiceResponse}
+
 import scala.language.higherKinds
 
 object Exceptions {
@@ -11,3 +13,6 @@ object Exceptions {
       case e: Throwable => monadWithException.exception(e)
     }
 }
+
+class NotFoundException(val req: Any, val response: ServiceResponse) extends Exception(s"Not found: $response")
+class UnexpectedStatusCodeException(val req: Any, val response: ServiceResponse) extends Exception(s"unexpected status code: $response")

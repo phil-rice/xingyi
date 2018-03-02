@@ -1,7 +1,7 @@
 package org.validoc.utils.success
 
-import org.validoc.utils._
 import org.validoc.utils.functions.MonadCanFailWithException
+import org.validoc.utils.language.Language._
 
 import scala.language.higherKinds
 import scala.util.{Failure, Success, Try}

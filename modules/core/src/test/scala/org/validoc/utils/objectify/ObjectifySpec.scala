@@ -9,6 +9,7 @@ import scala.language.higherKinds
 import scala.reflect.ClassTag
 import org.mockito.Mockito._
 import org.validoc.utils._
+import org.validoc.utils.language.Language._
 
 trait ServiceResponseFixture {
   val serviceRequest = ServiceRequest(Get, Uri("/someUri"))

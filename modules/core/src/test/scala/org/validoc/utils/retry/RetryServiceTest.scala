@@ -1,15 +1,15 @@
 package org.validoc.utils.retry
 
 import org.mockito.Mockito._
+import org.validoc.utils.UtilsWithLoggingSpec
+import org.validoc.utils.functions.AsyncForScalaFuture.ImplicitsForTest._
+import org.validoc.utils.functions.AsyncForScalaFuture._
 import org.validoc.utils.time.Delay
-import org.validoc.utils.{Service, UtilsWithLoggingSpec}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.Success
-import org.validoc.utils.functions.AsyncForScalaFuture._
-import org.validoc.utils.functions.AsyncForScalaFuture.ImplicitsForTest._
 
 class RetryServiceTest extends UtilsWithLoggingSpec {
   type Req = String
@@ -17,11 +17,11 @@ class RetryServiceTest extends UtilsWithLoggingSpec {
 
   behavior of "RetryService"
 
-  def setup(fn: (RetryService[Future, Throwable, Req, Res], Service[Future, Req, Res], NeedsRetry[Throwable, Res], Delay) => Unit) = {
+  def setup(fn: (RetryService[Future, Throwable, Req, Res], (Req => Future[Res]) , NeedsRetry[Throwable, Res], Delay) => Unit) = {
    implicit  val retry = mock[NeedsRetry[Throwable, Res]]
     val delay = mock[Delay]
     when(delay.apply()) thenReturn (1 milli)
-    val delegate = mock[Service[Future, Req, Res]]
+    val delegate = mock[(Req => Future[Res]) ]
     fn(new RetryService[Future, Throwable, Req, Res](delegate, RetryConfig(2, delay)), delegate, retry, delay)
   }
 

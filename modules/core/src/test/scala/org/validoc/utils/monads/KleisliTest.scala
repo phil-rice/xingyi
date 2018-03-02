@@ -8,6 +8,7 @@ import scala.language.higherKinds
 import org.validoc.utils.functions.AsyncForScalaFuture._
 import ImplicitsForTest._
 import org.validoc.utils.functions.{Async, Monad}
+import org.validoc.utils.language.Language._
 
 abstract class AbstractKleisliTest[M[_]: Async:Monad] extends UtilsWithLoggingSpec {
 

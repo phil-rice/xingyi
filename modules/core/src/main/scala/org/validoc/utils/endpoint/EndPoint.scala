@@ -1,6 +1,6 @@
 package org.validoc.utils.endpoint
 
-import org.validoc.utils._
+import org.validoc.utils.language.Language._
 import org.validoc.utils.functions.Monad
 import org.validoc.utils.http._
 import org.validoc.utils.strings.Strings

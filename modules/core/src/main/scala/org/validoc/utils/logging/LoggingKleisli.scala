@@ -6,6 +6,7 @@ import org.validoc.utils.tagless.CommonForKleislis
 
 import scala.language.higherKinds
 import scala.reflect.ClassTag
+import org.validoc.utils.language.Language._
 
 trait LoggingKleisli[M[_], Fail] extends CommonForKleislis[M] {
   implicit def monad: MonadCanFailWithException[M, Fail]

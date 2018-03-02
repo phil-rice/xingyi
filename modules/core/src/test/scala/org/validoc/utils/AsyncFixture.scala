@@ -5,6 +5,7 @@ import org.validoc.utils.functions.{Async, MonadWithException}
 
 import scala.language.higherKinds
 import scala.util.Try
+import org.validoc.utils.language.Language._
 
 trait AsyncFixture[M[_]] extends Matchers {
 

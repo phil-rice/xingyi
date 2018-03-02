@@ -11,6 +11,7 @@ import scala.language.higherKinds
 
 // need this, but it may be removed by 'organise imports' import io.circe.generic.auto._
 import scala.language.implicitConversions
+import org.validoc.utils.language.Language._
 
 case class HomePage(mostPopular: EnrichedMostPopular, promotions: EnrichedPromotion)
 

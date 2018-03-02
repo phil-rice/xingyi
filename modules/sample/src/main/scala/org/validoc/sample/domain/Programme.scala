@@ -8,6 +8,7 @@ import org.validoc.utils.strings.Strings
 
 import scala.language.higherKinds
 import scala.language.implicitConversions
+import org.validoc.utils.language.Language._
 
 case class ProgrammeId(id: String, bypassCache: Boolean) extends BypassCache
 

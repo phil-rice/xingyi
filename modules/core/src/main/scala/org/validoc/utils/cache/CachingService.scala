@@ -2,29 +2,14 @@ package org.validoc.utils.cache
 
 import java.util.concurrent.atomic.AtomicLong
 
-import org.validoc.utils.Service
-import org.validoc.utils.functions.{Async, Functions, MonadWithException}
+import org.validoc.utils.language.Language._
+import org.validoc.utils.functions.MonadWithException
 import org.validoc.utils.map.{MapSizeStrategy, SafeMap}
 import org.validoc.utils.time.NanoTimeService
-import org.validoc.utils._
 
 import scala.language.higherKinds
 import scala.util.Try
 
-trait CachableResult[Res] {
-  def shouldCacheStrategy(req: Try[Res]): Boolean
-}
-
-trait CachableResultUsingSucesses[Res] extends CachableResult[Res] {
-  def shouldCacheStrategy(req: Try[Res]): Boolean = req.isSuccess
-
-}
-
-object CachableResult {
-
-  implicit object CachableResultForString extends CachableResultUsingSucesses[String]
-
-}
 
 trait CachableKey[Req] {
   def id(req: Req): Id
@@ -50,27 +35,34 @@ object CachableKey {
 
 trait CachingInfoAndOps {
   def name: String
-  def clearCache
+  def clear
   def cachingMetrics: CachingMetricSnapShot
 }
 
+class CachingServiceFactory[M[_] : MonadWithException](cachingStrategy: StaleCacheStrategy,
+                                                       sizeStrategy: MapSizeStrategy)(implicit timeService: NanoTimeService) extends CacheFactory[M] {
+  override def apply[Req: Cachable, Res: ShouldCacheResult](name: String, raw: Req => M[Res]): Cache[M, Req, Res] = {
+    new CachingService[M, Req, Res](name, raw, cachingStrategy, sizeStrategy)
+  }
+}
 
-class CachingService[M[_] : MonadWithException, Req: CachableKey, Res: CachableResult](val name: String,
-                                                                                       val delegate: Service[M, Req, Res],
-                                                                                       protected val cachingStrategy: StaleCacheStrategy,
-                                                                                       sizeStrategy: MapSizeStrategy)
-                                                                                      (implicit timeService: NanoTimeService)
-  extends HasCachingCommands[M, Req, Res] with Service[M, Req, Res] with CachingInfoAndOps {
+
+class CachingService[M[_] : MonadWithException, Req: CachableKey, Res: ShouldCacheResult](val name: String,
+                                                                                          val raw: (Req => M[Res]),
+                                                                                          protected val cachingStrategy: StaleCacheStrategy,
+                                                                                          sizeStrategy: MapSizeStrategy)
+                                                                                         (implicit timeService: NanoTimeService)
+  extends (Req => M[Res]) with Cache[M, Req, Res] with HasCachingCommands[M, Req, Res] with CachingInfoAndOps {
 
   val cachableKey = implicitly[CachableKey[Req]]
-  val cachableResult = implicitly[CachableResult[Res]]
+  val cachableResult = implicitly[ShouldCacheResult[Res]]
 
   private val nextId = new AtomicLong()
   protected val metrics = CachingMetrics()
   protected val map =
     SafeMap[Id, CachedValue[M, Res]](default = CachedValue[M, Res](timeService(), CachedId(nextId.getAndIncrement()), None, None), sizeStrategy, metrics)
 
-  override def clearCache = map.clear
+  override def clear = map.clear
 
   //  private def logRequest(request: Req, whatsHappening: String) = debug(s" Cache $name. $whatsHappening for request $request")
 
@@ -95,7 +87,7 @@ class CachingService[M[_] : MonadWithException, Req: CachableKey, Res: CachableR
     val cachedValue = command.cachedValue
     val req = command.req
     metrics.delegateRequests.incrementAndGet()
-    val delegateResult: M[Res] = delegate(req)
+    val delegateResult: M[Res] = raw(req)
     val finalResult = delegateResult.registerSideeffect(recordResult(req, cachedValue))
     cachedValue.copy(inFlight = Some(finalResult))
   }
@@ -117,7 +109,7 @@ class CachingService[M[_] : MonadWithException, Req: CachableKey, Res: CachableR
   =
     if (cachableKey.bypassCache(req)) {
       metrics.bypassedRequests.incrementAndGet()
-      delegate(req)
+      raw(req)
     } else {
       metrics.requests.incrementAndGet()
       cachedRequest(req)

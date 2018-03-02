@@ -10,6 +10,7 @@ import org.validoc.utils.http._
 
 import scala.language.implicitConversions
 import scala.language.higherKinds
+import org.validoc.utils.language.Language._
 
 case class MostPopularQuery(bypassCache: Boolean) extends BypassCache
 

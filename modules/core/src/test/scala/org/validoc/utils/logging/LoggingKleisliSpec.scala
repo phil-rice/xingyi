@@ -1,15 +1,14 @@
 package org.validoc.utils.logging
 
 import java.text.MessageFormat
-import java.util.concurrent.atomic.AtomicReference
 
 import org.mockito.Mockito._
-import org.validoc.utils.{UtilsSpec, _}
 import org.validoc.utils.functions.{Async, MonadCanFailWithException}
+import org.validoc.utils.language.Language._
+import org.validoc.utils.{UtilsSpec, _}
 
 import scala.concurrent.Future
 import scala.language.higherKinds
-import scala.util.{Success, Try}
 
 abstract class LoggingKleisliWhenNoRealFailSpec[M[_] : Async, Fail](implicit m: MonadCanFailWithException[M, Fail]) extends UtilsSpec with FunctionFixture {
 

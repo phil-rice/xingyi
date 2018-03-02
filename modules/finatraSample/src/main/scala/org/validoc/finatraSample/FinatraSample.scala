@@ -10,9 +10,10 @@ import com.twitter.util.{Future, FuturePool}
 import org.validoc.finatra._
 import org.validoc.sample.domain._
 import org.validoc.sample.{JsonBundle, PromotionServiceNames, PromotionSetup}
-import org.validoc.utils.cache.{Cachable, CacheFactory}
+import org.validoc.utils.cache._
 import org.validoc.utils.http._
 import org.validoc.utils.logging.{AbstractLogRequestAndResult, LogRequestAndResult, PrintlnLoggingAdapter}
+import org.validoc.utils.map.{MapSizeStrategy, MaxMapSizeStrategy}
 import org.validoc.utils.metrics.PrintlnPutMetrics
 import org.validoc.utils.tagless.{HttpFactory, TaglessLanguageLanguageForKleislis}
 
@@ -28,11 +29,7 @@ class FinatraPromotionSetup(implicit futurePool: FuturePool) extends Controller 
   implicit val logRequestAndResult: LogRequestAndResult[Throwable] = new AbstractLogRequestAndResult[Throwable] {
     override protected def format(messagePrefix: String, messagePostFix: String)(strings: String*) = messagePostFix + "." + messagePostFix + ":" + strings.mkString(",")
   }
-  implicit val cacheFactory = new CacheFactory[Future] {
-    //    override def apply[Req: Cachable, Res](name: String, raw: Req => Future[Res]): Req => Future[Res] = raw
-    override def apply[Req: Cachable, Res](name: String, raw: Req => Future[Res]) = ???
-
-  }
+  implicit val cacheFactory = new CachingServiceFactory[Future](new DurationStaleCacheStategy(100000000l, 10000000000l), new MaxMapSizeStrategy(1000, 100))
 
   val interpreter = new TaglessLanguageLanguageForKleislis[Future, Throwable]
 

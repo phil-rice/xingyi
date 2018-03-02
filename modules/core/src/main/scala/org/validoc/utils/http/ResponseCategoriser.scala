@@ -1,9 +1,8 @@
 package org.validoc.utils.http
 
 import org.validoc.utils.functions.MonadCanFail
+import org.validoc.utils.language.Language._
 
-import scala.annotation.implicitNotFound
-import org.validoc.utils._
 import scala.language.higherKinds
 //We are going to lift the service response into the Monad.  So it might 'fail' or throw an exception depending on the monad chosen
 //the request is needed for validation. For example the request might have a security token and that has to be related to the response

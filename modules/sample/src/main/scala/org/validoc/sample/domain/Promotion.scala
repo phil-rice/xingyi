@@ -8,6 +8,7 @@ import org.validoc.utils.json.ToJson
 import org.validoc.utils.tagless.{Enricher, HasChildren}
 
 import scala.language.{higherKinds, implicitConversions}
+import org.validoc.utils.language.Language._
 
 case class PromotionQuery(bypassCache: Boolean) extends BypassCache
 

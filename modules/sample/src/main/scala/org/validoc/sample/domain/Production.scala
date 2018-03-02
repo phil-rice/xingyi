@@ -9,6 +9,7 @@ import org.validoc.utils.strings.Strings
 
 import scala.language.implicitConversions
 import scala.language.higherKinds
+import org.validoc.utils.language.Language._
 
 case class ProductionId(id: String, bypassCache: Boolean) extends BypassCache
 

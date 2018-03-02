@@ -1,7 +1,7 @@
 package org.validoc.utils.http
 
 import org.validoc.utils.functions.{Liftable, Monad}
-
+import org.validoc.utils.language.Language._
 import scala.annotation.implicitNotFound
 import scala.language.higherKinds
 

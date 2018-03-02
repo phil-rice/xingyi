@@ -1,7 +1,7 @@
 package org.validoc.finatra
 
 import com.twitter.finagle.http.{Method, Request, Response}
-import com.twitter.finatra.http.response.ResponseBuilder
+import com.twitter.finatra.utils.FuturePools
 import com.twitter.util.{Await, FuturePool, Return, Throw, Duration => TDuration, Future => TFuture, Try => TTry}
 import org.validoc.utils.functions.{Async, MonadCanFailWithException}
 import org.validoc.utils.http._
@@ -33,6 +33,12 @@ class AsyncForTwitterFuture(implicit futurePool: FuturePool) extends Async[TFutu
 
 object FinatraImplicits {
 
+  implicit def asyncForTwitter(implicit futurePool: FuturePool) = new AsyncForTwitterFuture
+
+  object ImplicitsForTest {
+    implicit val futurePool = FuturePools.fixedPool("Future pool for tests", 20)
+
+  }
 
   implicit object ToServiceResponseForFinatraResponse extends ToServiceResponse[Response] {
     override def apply(response: Response): ServiceResponse = ServiceResponse(Status(response.statusCode), Body(response.contentString), ContentType(response.mediaType.getOrElse("")))

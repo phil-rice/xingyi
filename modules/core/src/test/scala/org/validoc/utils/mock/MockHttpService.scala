@@ -4,6 +4,7 @@ import org.validoc.utils.functions.Monad
 import org.validoc.utils.http.{ServiceRequest, ServiceResponse, ToServiceRequest, ToServiceResponse}
 
 import scala.language.higherKinds
+import org.validoc.utils.language.Language._
 
 class MockHttpService[M[_]:Monad, Req, Res](mocks: Map[Req, Res])
                                            (implicit toServiceRequest: ToServiceRequest[Req],

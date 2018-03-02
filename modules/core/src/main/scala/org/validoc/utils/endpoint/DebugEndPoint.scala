@@ -1,6 +1,5 @@
 package org.validoc.utils.endpoint
 
-import org.validoc.utils.Service
 import org.validoc.utils.functions.{Liftable, Monad}
 import org.validoc.utils.http._
 import org.validoc.utils.json.ToJson
@@ -45,7 +44,7 @@ trait DebugEndPointInfo {
   def samplePath: String
 }
 
-class DebugEndPointService[M[_] : Monad, Req: ClassTag, Res: ClassTag](delegate: Service[M, Req, Res])(implicit debugBasePath: DebugBasePath, debugReq: DebugEndPointReqOps[M, Req], debugRes: DebugEndPointResOps[Res]) extends Service[M, Req, Res] with DebugEndPointInfo {
+class DebugEndPointService[M[_] : Monad, Req: ClassTag, Res: ClassTag](delegate: (Req => M[Res]) )(implicit debugBasePath: DebugBasePath, debugReq: DebugEndPointReqOps[M, Req], debugRes: DebugEndPointResOps[Res]) extends (Req => M[Res]) with DebugEndPointInfo {
   val fromServiceRequest = implicitly[FromServiceRequest[M, Req]]
   val toServiceResponse = implicitly[ToServiceResponse[Res]]
 
