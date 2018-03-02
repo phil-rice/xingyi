@@ -85,21 +85,10 @@ class PimperTests extends UtilsSpec {
 
   behavior of "Function Pimper"
 
-  //  implicit class FunctionPimper[Req, Res](fn: Req => Res) {
-  //    def ~>[Res2](fn2: Res => Res2): (Req) => Res2 = { res: Req => fn2(fn(res)) }
-  //    def ~^>(fn2: Res => Unit): (Req => Res) = { req: Req => sideeffect(fn(req))(fn2) }
-  //    def ~+>[Res2](fn2: Req => Res => Res2): (Req => Res2) = { req: Req => fn2(req)(fn(req)) }
-  //    //    def let[Mid, Res2](mid: Req => Mid)(fn2: Mid => Res => Res): Req => Res = { req: Req => fn2(mid(req))(fn(req)) }
-  //    def onEnterAndExit[Mid](mid: Req => Mid, before: Mid => Unit, after: (Mid, Res) => Unit) = { req: Req =>
-  //      val m = mid(req)
-  //      before(m)
-  //      val result = fn(req)
-  //      after(m, result)
-  //      result
-  //    }
-  //  }
-  def fn[X, Y](expected: X, y: Y) = { x: X => x shouldBe expected; y }
-  def fn2[X, Y, Z](expectedX: X, expectedY: Y, z: Z) = { x: X => y: Y => x shouldBe expectedX; y shouldBe expectedY; z }
+
+  def fn[X, Y](expected: X, y: => Y) = { x: X => x shouldBe expected; y }
+  def fn2[X, Y, Z](expectedX: X, expectedY: Y, z: => Z) = { (x: X, y: Y) => x shouldBe expectedX; y shouldBe expectedY; z }
+  def fn2Curried[X, Y, Z](expectedX: X, expectedY: Y, z: => Z) = { x: X => y: Y => x shouldBe expectedX; y shouldBe expectedY; z }
   def sideeffect[X](atomicReference: AtomicReference[X]): X => Unit = atomicReference.set _
   it should "compose f1 ~> f2" in {
     (fn(1, "1") ~> fn("1", 2)) (1) shouldBe 2
@@ -111,7 +100,7 @@ class PimperTests extends UtilsSpec {
   }
 
   it should "compose f ~+> g. f is A => B, g is A => B => C" in {
-    (fn(1, "2") ~+> fn2(1, "2", 3)) (1) shouldBe 3
+    (fn(1, "2") ~+> fn2Curried(1, "2", 3)) (1) shouldBe 3
   }
 
   it should "perform sideeffects using on f on EnterAndExit(mid , before, after)  f is A=>B, mid is A=>M, before is Mid => Unit, after is (Mid, B) => Unit   " in {
@@ -121,5 +110,36 @@ class PimperTests extends UtilsSpec {
     before.get shouldBe "mid"
     after.get shouldBe("mid", "2")
   }
+
+  behavior of "OptionFunctionCurriedPimper"
+
+  it should "chain of responsibility two option functions together. If the first returns a value that should be used" in {
+    (fn2Curried(1, 2, Some(2)) chain fn2Curried[Int, Int, Some[Int]](1, 1, throw new RuntimeException)) (1)(1) shouldBe Some(2)
+  }
+  it should "chain of responsibility two option functions together. If the first returns None the second shoud be used" in {
+    (fn2Curried(1, 2, None) chain fn2Curried[Int, Int, Option[Int]](1, 1, Some(3))) (1)(1) shouldBe Some(3)
+    (fn2Curried(1, 2, None) chain fn2Curried[Int, Int, Option[Int]](1, 1, None)) (1)(1) shouldBe None
+  }
+
+  behavior of "Function2Pimper"
+
+  it should "compose a fn2 followed by a fn" in {
+    (fn2(1, 2, 3) ~> fn(3, 4)) (1, 2) shouldBe 4
+  }
+
+  behavior of "SeqFunctionPimper"
+
+  it should "compose a fn A=>Seq[B] with B => C" in {
+    (fn(1, Seq(2, 3, 4)) ~> (_ * 2)) (1) shouldBe List(4, 6, 8)
+  }
+
+  it should "compose f: A=>Seq[B] with g: B => M[C] using f ~~> g giving A => M[Seq[C]]" in {
+    (fn(1, Seq(2, 3, 4)) ~~>(x => Future.successful(x * 2))).apply(1).await shouldBe List(4, 6, 8)
+  }
+
+  it should "compose f: A=>Seq[B] with g: B => M[C] using f ~+~> g giving A => M[Seq[(B, C)]]" in {
+    (fn(1, Seq(2, 3, 4)) ~+>(x => Future.successful(x * 2))).apply(1).await shouldBe List((2,4), (3,6), (4,8))
+  }
+
 
 }

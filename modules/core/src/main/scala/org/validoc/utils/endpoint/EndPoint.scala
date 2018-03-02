@@ -47,7 +47,7 @@ object EndPointChecker {
   }
 
   def raw(x: Int) = Future.successful(x + 1)
-  val x = EndPoint[Future, Int, Int]("/path", IdAtEndAndVerb(Get)) _ <++> EndPoint[Future, Int, Int]("/path", IdAtEndAndVerb(Get)) _
+  val x = EndPoint[Future, Int, Int]("/path", IdAtEndAndVerb(Get)) _ chain EndPoint[Future, Int, Int]("/path", IdAtEndAndVerb(Get)) _
 
 }
 

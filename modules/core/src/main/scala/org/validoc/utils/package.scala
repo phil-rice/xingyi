@@ -54,12 +54,9 @@ package object utils {
     }
   }
 
-  implicit class OptionFunctionPimper[Req, Res](fn: Req => Option[Res]) {
-    def <+>(fn2: Req => Option[Res]) { req: Req => fn(req).getOrElse(fn2(req)) }
-  }
 
   implicit class OptionFunctionCurriedPimper[T, T1, T2](fn: T => T1 => Option[T2]) {
-    def <++>(fn2: T => T1 => Option[T2]): T => T1 => Option[T2] = { t: T =>
+    def chain(fn2: T => T1 => Option[T2]): T => T1 => Option[T2] = { t: T =>
       t1: T1 =>
         fn(t)(t1) match {
           case None => fn2(t)(t1)
@@ -75,7 +72,8 @@ package object utils {
   implicit class SeqFunctionPimper[Req, Res](fn: Req => Seq[Res]) {
     def ~>[Res2](fn2: Res => Res2): (Req) => Seq[Res2] = { res: Req => fn(res).map(fn2) }
 
-    def ~~>[M[_], Res2](fn2: Res => M[Res2])(implicit async: Monad[M]): Req => M[Seq[Res2]] = { req: Req => async.flattenM(fn(req).map(fn2)) }
+    def ~~>[M[_], Res2](fn2: Res => M[Res2])(implicit async: Monad[M]): Req => M[Seq[Res2]] =
+    { req: Req => async.flattenM(fn(req).map(fn2)) }
     def ~+>[M[_], Res2](fn2: Res => M[Res2])(implicit async: Monad[M]): Req => M[Seq[(Res, Res2)]] = { req: Req =>
       async.flattenM(fn(req).map(r => fn2(r).map(res2 => (r, res2))))
 
