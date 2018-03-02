@@ -6,16 +6,12 @@ import org.validoc.utils.functions.AsyncForScalaFuture._
 
 import scala.concurrent.Future
 
-class FutureMonadCanFailAndAsyncTest extends AbstractMonadCanFailWithFailAsThrowableTests[Future] with FlatSpecLike with AbstractAsyncTests[Future] {
-
-  it should "test" in {
-
-  }
+class FutureMonadCanFailWithExceptionAndAsyncTest extends AbstractMonadCanFailWithFailWithExceptionAsThrowableTests[Future] with FlatSpecLike with AbstractAsyncTests[Future] {
   override def async = AsyncForScalaFuture.defaultAsyncForScalaFuture
   override def monad = AsyncForScalaFuture.defaultAsyncForScalaFuture
 }
 
 object thing extends App {
-  org.scalatest.run.apply(new FutureMonadCanFailAndAsyncTest)
+  org.scalatest.run.apply(new FutureMonadCanFailWithExceptionAndAsyncTest)
   println("done")
 }

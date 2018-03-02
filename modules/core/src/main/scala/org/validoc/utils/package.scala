@@ -72,8 +72,7 @@ package object utils {
   implicit class SeqFunctionPimper[Req, Res](fn: Req => Seq[Res]) {
     def ~>[Res2](fn2: Res => Res2): (Req) => Seq[Res2] = { res: Req => fn(res).map(fn2) }
 
-    def ~~>[M[_], Res2](fn2: Res => M[Res2])(implicit async: Monad[M]): Req => M[Seq[Res2]] =
-    { req: Req => async.flattenM(fn(req).map(fn2)) }
+    def ~~>[M[_], Res2](fn2: Res => M[Res2])(implicit async: Monad[M]): Req => M[Seq[Res2]] = { req: Req => async.flattenM(fn(req).map(fn2)) }
     def ~+>[M[_], Res2](fn2: Res => M[Res2])(implicit async: Monad[M]): Req => M[Seq[(Res, Res2)]] = { req: Req =>
       async.flattenM(fn(req).map(r => fn2(r).map(res2 => (r, res2))))
 
@@ -95,21 +94,21 @@ package object utils {
   }
 
   implicit class MonadWithExceptionPimper[M[_], T](m: M[T])(implicit monad: MonadWithException[M]) {
-    def foldException[T1](fnE: Exception => T1, fn: T => T1): M[T1] = monad.foldException(m, fnE, fn)
-    def mapTry[T1](fn: Try[T] => T1): M[T1] = monad.foldException(m, t => fn(Failure(t)), { t: T => fn(Success(t)) })
-    def registerSideeffect(fn: Try[T] => Unit): M[T] = monad.foldException(m, { e: Exception => fn(Failure(e)); throw e }, { t: T => fn(Success(t)); t })
+    def foldException[T1](fnE: Exception => M[T1], fn: T => M[T1]): M[T1] = monad.foldException(m, fnE, fn)
+    def mapTry[T1](fn: Try[T] => M[T1]): M[T1] = monad.foldException(m, t => fn(Failure(t)), { t: T => fn(Success(t)) })
+    def registerSideeffect(fn: Try[T] => Unit): M[T] = monad.foldException(m, { e: Exception => fn(Failure(e)); monad.exception(e) }, { t: T => fn(Success(t)); monad.liftM(t) })
   }
 
   implicit class MonadCanFailPimper[M[_], T](m: M[T]) {
-    def foldFailure[Fail, T1](fnE: Throwable => M[T1], fnFailure: Fail => M[T1], fn: T => M[T1])(implicit async: MonadCanFail[M, Fail]): M[T1] =
-      async.foldWithFail[T, T1](m, fnE, fnFailure, fn)
+    def foldFailure[Fail, T1](fnE: Throwable => M[T1], fnFailure: Fail => M[T1], fn: T => M[T1])(implicit async: MonadCanFailWithException[M, Fail]): M[T1] =
+      async.foldWithExceptionAndFail[T, T1](m, fnE, fnFailure, fn)
     //    def foldTry[Fail, T1](fnTry: Try[T] => T1)(implicit async: MonadCanFail[M, Fail]) = monad.fold(m, t => fnTry(Failure(t)), { t: T => fnTry(Success(t)) })
-    def onComplete[Fail](fn: Try[Either[Fail, T]] => Unit)(implicit async: MonadCanFail[M, Fail]): M[T] = async.onComplete(m, fn)
+    def onComplete[Fail](fn: Try[Either[Fail, T]] => Unit)(implicit async: MonadCanFailWithException[M, Fail]): M[T] = async.onComplete(m, fn)
 
 
     //    def transformAndLift[Fail, Res](fnThrowable: Throwable => Res, fnMap: T => Res)(implicit async: MonadCanFail[M, Fail]) =
     //      async.transformWithFail[T, Res](m, e => fnThrowable(e).liftM[M], fail ) { case Success(t) => fnMap(t); case Failure(t) => fnThrowable(t) }
-    def |=?[Failure](validation: T => Seq[Failure])(implicit withFailure: MonadCanFail[M, Failure], monoid: Monoid[Failure]): M[T] =
+    def |=?[Failure](validation: T => Seq[Failure])(implicit withFailure: MonadCanFailWithException[M, Failure], monoid: Monoid[Failure]): M[T] =
       m.flatMap[T] { res => res |?[M, Failure] validation }
   }
 
@@ -142,23 +141,23 @@ package object utils {
 
 
   implicit class MonadCanFailFunctionPimper[M[_], Req, Res](fn: Req => M[Res]) {
-    def |=|>[Fail, Res2](mapFn: Res => Either[Fail, Res2])(implicit monad: MonadCanFail[M, Fail]) = { req: Req =>
+    def |=|>[Fail, Res2](mapFn: Res => Either[Fail, Res2])(implicit monad: MonadCanFailWithException[M, Fail]) = { req: Req =>
       fn(req).flatMap(res => mapFn(res).fold[M[Res2]]({ fail: Fail => monad.fail(fail) }, { res2: Res2 => monad.liftM(res2) }))
     }
-    def enterAndExit[Fail, Mid](midFn: Req => Mid, sideeffectFn: (Mid, SucceededState[Fail, Res]) => Unit)(implicit monad: MonadCanFail[M, Fail]): Req => M[Res] = { req: Req =>
+    def enterAndExit[Fail, Mid](midFn: Req => Mid, sideeffectFn: (Mid, SucceededState[Fail, Res]) => Unit)(implicit monad: MonadCanFailWithException[M, Fail]): Req => M[Res] = { req: Req =>
       val mid = midFn(req)
       val m = fn(req)
-      monad.foldWithFail[Res, Res](m, { t => sideeffectFn(mid, ExceptionState(t)); m }, { f => sideeffectFn(mid, FailedState(f)); m }, { res => sideeffectFn(mid, SuccessState(res)); m })
+      monad.foldWithExceptionAndFail[Res, Res](m, { t => sideeffectFn(mid, ExceptionState(t)); m }, { f => sideeffectFn(mid, FailedState(f)); m }, { res => sideeffectFn(mid, SuccessState(res)); m })
 
     }
-    def sideeffect[Fail](sideeffectFn: Req => SucceededState[Fail, Res] => Unit)(implicit monad: MonadCanFail[M, Fail]): Req => M[Res] = { req: Req =>
+    def sideeffect[Fail](sideeffectFn: Req => SucceededState[Fail, Res] => Unit)(implicit monad: MonadCanFailWithException[M, Fail]): Req => M[Res] = { req: Req =>
       val m = fn(req)
-      monad.foldWithFail[Res, Res](m, { t => sideeffectFn(req)(ExceptionState(t)); m }, { f => sideeffectFn(req)(FailedState(f)); m }, { res => sideeffectFn(req)(SuccessState(res)); m })
+      monad.foldWithExceptionAndFail[Res, Res](m, { t => sideeffectFn(req)(ExceptionState(t)); m }, { f => sideeffectFn(req)(FailedState(f)); m }, { res => sideeffectFn(req)(SuccessState(res)); m })
     }
   }
 
   implicit class MonadWithExceptionFunctionPimper[M[_], Req, Res](fn: Req => M[Res])(implicit monad: MonadWithException[M]) {
-    def foldException[Res2](fnThrowable: Throwable => Res2, fnMap: Res => Res2): (Req => M[Res2]) = { req => monad.foldException[Res, Res2](fn(req), fnThrowable, fnMap) }
+    def foldException[Res2](fnThrowable: Throwable => M[Res2], fnMap: Res => M[Res2]): (Req => M[Res2]) = { req => monad.foldException[Res, Res2](fn(req), fnThrowable, fnMap) }
     def onEnterAndExitM[Mid](mid: Req => Mid, after: Mid => Try[Res] => Unit) = { req: Req =>
       withValue(mid(req))(m => fn(req).registerSideeffect(after(m)))
     }
@@ -184,7 +183,7 @@ package object utils {
 
 
   implicit class AsyncFailurePimper[Failure](f: Failure) {
-    def fail[M[_], T](implicit async: MonadCanFail[M, Failure]): M[T] = async.fail[T](f)
+    def fail[M[_], T](implicit async: MonadCanFailWithException[M, Failure]): M[T] = async.fail[T](f)
   }
 
   implicit class SeqOfMonadPimper[M[_], T](seq: Seq[M[T]])(implicit async: Monad[M]) {
@@ -203,7 +202,7 @@ package object utils {
   }
 
   implicit class AsyncSeqFailurePimper[Failure](s: Seq[Failure]) {
-    def singleFailure[M[_], T](implicit asyncWithFailure: MonadCanFail[M, Failure], multipleFailures: FailureMaker[Seq[Failure], Failure]): M[T] = s match {
+    def singleFailure[M[_], T](implicit asyncWithFailure: MonadCanFailWithException[M, Failure], multipleFailures: FailureMaker[Seq[Failure], Failure]): M[T] = s match {
       case Seq(single) => asyncWithFailure.fail(single)
       case other => asyncWithFailure.fail(multipleFailures(other))
     }

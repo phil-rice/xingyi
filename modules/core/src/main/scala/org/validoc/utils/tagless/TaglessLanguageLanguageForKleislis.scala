@@ -3,7 +3,7 @@ package org.validoc.utils.tagless
 import org.validoc.utils._
 import org.validoc.utils.cache._
 import org.validoc.utils.endpoint.MatchesServiceRequest
-import org.validoc.utils.functions.{Async, MonadCanFail}
+import org.validoc.utils.functions.{Async, MonadCanFailWithException}
 import org.validoc.utils.http._
 import org.validoc.utils.logging._
 import org.validoc.utils.metrics.PutMetrics
@@ -20,7 +20,7 @@ import scala.reflect.ClassTag
 trait HttpFactory[M[_], HttpReq, HttpRes] extends (ServiceName => HttpReq => M[HttpRes])
 
 
-class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail, HttpReq, HttpRes](implicit monadCanFail: MonadCanFail[M, Fail],
+class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail, HttpReq, HttpRes](implicit monadCanFail: MonadCanFailWithException[M, Fail],
                                                                                httpFactory: HttpFactory[M, HttpReq, HttpRes],
                                                                                toServiceResponse: ToServiceResponse[HttpRes],
                                                                                toHttpReq: FromServiceRequest[HttpReq],

@@ -22,10 +22,10 @@ trait Monad[M[_]] extends Functor[M] {
 trait MonadWithException[M[_]] extends Monad[M] {
 
   def exception[T](t: Throwable): M[T]
-  def recover[T](m: M[T], fn: Exception => T): M[T]
+  def recover[T](m: M[T], fn: Exception => M[T]): M[T]
 
   def liftTry[T](t: Try[T]): M[T] = t.fold(exception, liftM)
-  def foldException[T, T1](m: M[T], fnE: Exception => T1, fn: T => T1): M[T1] = recover[T1](map(m, fn), fnE)
+  def foldException[T, T1](m: M[T], fnE: Exception => M[T1], fn: T => M[T1]): M[T1] = recover[T1](flatMap(m, fn), fnE)
 }
 
 //
@@ -41,33 +41,34 @@ trait LiftFailure[M[_], Fail] {
   def fail[T](f: Fail): M[T]
 }
 
-trait MonadCanFail[M[_], Fail] extends MonadWithException[M] with LiftFailure[M, Fail] {
-  def foldWithFail[T, T1](m: M[T], fnE: Throwable => M[T1], fnFailure: Fail => M[T1], fn: T => M[T1]): M[T1]
-  def onComplete[T](m: M[T], fn: Try[Either[Fail, T]] => Unit): M[T] = foldWithFail[T, T](m,
+trait MonadCanFail[M[_], Fail] extends Monad[M] with LiftFailure[M, Fail] {
+  def mapEither[T, T1](m: M[T], fn: Either[Fail, T] => M[T1]): M[T1]
+}
+
+class MonadCanFailForEither[Fail] extends MonadCanFail[({type λ[α] = Either[Fail, α]})#λ, Fail] {
+  type M[T] = Either[Fail, T]
+  override def fail[T](f: Fail): Either[Fail, T] = Left(f)
+  override def liftM[T](t: T): Either[Fail, T] = Right(t)
+  override def flatMap[T, T1](m: Either[Fail, T], fn: T => M[T1]): M[T1] = m.right.flatMap(fn)
+  override def map[T, T1](m: Either[Fail, T], fn: T => T1): M[T1] = m.right.map(fn)
+  override def mapEither[T, T1](m: Either[Fail, T], fn: Either[Fail, T] => M[T1]): Either[Fail, T1] = fn(m)
+}
+
+object MonadCanFail {
+  implicit def monadCanFailForEither[Fail]: MonadCanFail[({type λ[α] = Either[Fail, α]})#λ, Fail] = new MonadCanFailForEither[Fail]
+}
+
+trait MonadCanFailWithException[M[_], Fail] extends MonadWithException[M] with MonadCanFail[M, Fail] {
+  def foldWithExceptionAndFail[T, T1](m: M[T], fnE: Throwable => M[T1], fnFailure: Fail => M[T1], fn: T => M[T1]): M[T1]
+  def onComplete[T](m: M[T], fn: Try[Either[Fail, T]] => Unit): M[T] = foldWithExceptionAndFail[T, T](m,
     { e: Throwable => fn(Failure(e)); exception(e) },
     { f: Fail => fn(Success(Left(f))); fail(f) },
     { t: T => fn(Success(Right(t))); liftM(t) }
   )
-  def mapTryFail[T, T1](m: M[T], fn: Try[Either[Fail, T]] => M[T1]): M[T1] = foldWithFail[T, T1](m,
+  def mapTryFail[T, T1](m: M[T], fn: Try[Either[Fail, T]] => M[T1]): M[T1] = foldWithExceptionAndFail[T, T1](m,
     t => fn(Failure(t)),
     f => fn(Success(Left(f))),
     t => fn(Success(Right(t))))
-
-}
-
-object MonadCanFail {
-  implicit def monadCanFailForEither[Fail]: MonadCanFail[({type λ[α] = Either[Fail, α]})#λ, Fail] = {
-    type M[T] = Either[Fail, T]
-    new MonadCanFail[({type λ[α] = Either[Fail, α]})#λ, Fail] {
-      override def foldWithFail[T, T1](m: Either[Fail, T], fnE: Throwable => M[T1], fnFailure: Fail => M[T1], fn: T => M[T1]): M[T1] = ???
-      override def fail[T](f: Fail): Either[Fail, T] = Left(f)
-      override def exception[T](t: Throwable): Either[Fail, T] = throw t
-      override def recover[T](m: Either[Fail, T], fn: Exception => T): Either[Fail, T] = ???
-      override def liftM[T](t: T): Either[Fail, T] = Right(t)
-      override def flatMap[T, T1](m: Either[Fail, T], fn: T => M[T1]): M[T1] = m.right.flatMap(fn)
-      override def map[T, T1](m: Either[Fail, T], fn: T => T1): M[T1] = m.right.map(fn)
-    }
-  }
 
 }
 
@@ -78,7 +79,7 @@ object FailureMaker {
 
   import Monoid._
 
- implicit def failureMakerForSequenceOfMonoid[T](implicit monoid: Monoid[T]): FailureMaker[Seq[T], T] = new FailureMaker[Seq[T], T] {
+  implicit def failureMakerForSequenceOfMonoid[T](implicit monoid: Monoid[T]): FailureMaker[Seq[T], T] = new FailureMaker[Seq[T], T] {
     override def apply(seq: Seq[T]): T = seq.addAll
   }
 

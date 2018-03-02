@@ -5,12 +5,21 @@ import java.util.concurrent.atomic.AtomicReference
 import org.validoc.utils.functions._
 import AsyncForScalaFuture._
 import ImplicitsForTest._
+import org.scalatest.Matchers
 
 import scala.concurrent.Future
 import scala.language.higherKinds
 import scala.util.{Failure, Success, Try}
 
-class PimperTests extends UtilsSpec {
+trait FunctionFixture extends Matchers{
+  def fn[X, Y](expected: X, y: => Y) = { x: X => x shouldBe expected; y }
+  def fn2[X, Y, Z](expectedX: X, expectedY: Y, z: => Z) = { (x: X, y: Y) => x shouldBe expectedX; y shouldBe expectedY; z }
+  def fn2Curried[X, Y, Z](expectedX: X, expectedY: Y, z: => Z) = { x: X => y: Y => x shouldBe expectedX; y shouldBe expectedY; z }
+  def sideeffect[X](atomicReference: AtomicReference[X]): X => Unit = atomicReference.set _
+
+}
+
+class PimperTests extends UtilsSpec with FunctionFixture {
   //  implicit class AnyPimper[T](t: T) {
   //    def |>[T2](fn: T => T2) = fn(t)
   //    def liftM[M[_]](implicit monad: Monad[M]): M[T] = monad.liftM(t)
@@ -86,10 +95,6 @@ class PimperTests extends UtilsSpec {
   behavior of "Function Pimper"
 
 
-  def fn[X, Y](expected: X, y: => Y) = { x: X => x shouldBe expected; y }
-  def fn2[X, Y, Z](expectedX: X, expectedY: Y, z: => Z) = { (x: X, y: Y) => x shouldBe expectedX; y shouldBe expectedY; z }
-  def fn2Curried[X, Y, Z](expectedX: X, expectedY: Y, z: => Z) = { x: X => y: Y => x shouldBe expectedX; y shouldBe expectedY; z }
-  def sideeffect[X](atomicReference: AtomicReference[X]): X => Unit = atomicReference.set _
   it should "compose f1 ~> f2" in {
     (fn(1, "1") ~> fn("1", 2)) (1) shouldBe 2
   }

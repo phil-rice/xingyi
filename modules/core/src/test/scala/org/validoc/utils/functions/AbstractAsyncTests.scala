@@ -14,34 +14,33 @@ import scala.util.{Failure, Success, Try}
 
 trait ContainerSpec[A[_]] extends UtilsWithLoggingSpec {
 
-  def liftTryA[T](t: Try[T]): A[T]
-  def liftA[T](t: T): A[T] = liftTryA(Success(t))
-  def awaitFor[X](a: A[X]): X
-  def checkHasException[E <: Exception : ClassTag](a: A[String]): E = intercept[E](awaitFor(a))
+  def liftA[T](t: T): A[T]
+  def getT[X](a: A[X]): X
+  def checkHasException[E <: Exception : ClassTag](a: A[String]): E = intercept[E](getT(a))
   val runtimeException = new RuntimeException("someMessage")
 
 }
 
 trait AbstractAsyncTests[A[_]] extends ContainerSpec[A] {
   def async: Async[A]
-  override def awaitFor[X](a: A[X]) = async.await(a)
+  override def getT[X](a: A[X]) = async.await(a)
 
 
   behavior of s"Async for ${async.getClass.getSimpleName}"
 
   it should "lift values into A which can be awaited for" in {
-    awaitFor(async.async("someString")) shouldBe "someString"
+    getT(async.async("someString")) shouldBe "someString"
   }
 
   it should "lift exceptions into A which can be awaited for" in {
     val a: A[String] = async.async(throw runtimeException)
-    intercept[RuntimeException](awaitFor(a)) shouldBe runtimeException
+    intercept[RuntimeException](getT(a)) shouldBe runtimeException
   }
 
   it should "have a respond method that is called after the monad gains a value" in {
     val count = new AtomicInteger()
     val remembered = new AtomicReference[Try[String]]()
-    awaitFor(async.respond[String](async.async("someString"), { tryR =>
+    getT(async.respond[String](async.async("someString"), { tryR =>
       remembered.set(tryR)
       count.incrementAndGet()
     })) shouldBe "someString"
@@ -52,7 +51,7 @@ trait AbstractAsyncTests[A[_]] extends ContainerSpec[A] {
     val count = new AtomicInteger()
     val remembered = new AtomicReference[Try[String]]()
     val a: A[String] = async.async[String](throw runtimeException)
-    intercept[RuntimeException](awaitFor(async.respond[String](a, { tryR =>
+    intercept[RuntimeException](getT(async.respond[String](a, { tryR =>
       remembered.set(tryR)
       count.incrementAndGet()
     }))) shouldBe runtimeException
@@ -63,7 +62,7 @@ trait AbstractAsyncTests[A[_]] extends ContainerSpec[A] {
 
   it should "async values into A on a different thread" in {
     val thisThread = Thread.currentThread().getName
-    awaitFor(async.async(Thread.currentThread().getName)) shouldNot be(thisThread)
+    getT(async.async(Thread.currentThread().getName)) shouldNot be(thisThread)
   }
 }
 
@@ -73,18 +72,7 @@ trait AbstractFunctorTests[A[_]] extends ContainerSpec[A] {
   behavior of s"Functor for ${functor.getClass.getSimpleName}"
 
   it should "execute map" in {
-    awaitFor(functor.map[String, String](liftA("first"), x => x + "second")) shouldBe "firstsecond"
-  }
-
-  it should "execute map when an exception occurs in the functor" in {
-    val runtimeException = new RuntimeException
-    val a = functor.map(liftTryA(Failure[String](runtimeException)), { x: String => x + 1 })
-    checkHasException[RuntimeException](a) shouldBe runtimeException
-  }
-  it should "execute map when an exception occurs in the fn" in {
-    val runtimeException = new RuntimeException
-    val a = functor.map[String, String](liftTryA(Success("1")), { x: String => throw runtimeException })
-    checkHasException[RuntimeException](a) shouldBe runtimeException
+    getT(functor.map[String, String](liftA("first"), x => x + "second")) shouldBe "firstsecond"
   }
 }
 
@@ -95,11 +83,40 @@ trait AbstractMonadTests[A[_]] extends AbstractFunctorTests[A] {
   behavior of s"Monad for ${monad.getClass.getSimpleName}"
 
   it should "lift values into A" in {
-    awaitFor(monad.liftM("someString")) shouldBe "someString"
+    getT(monad.liftM("someString")) shouldBe "someString"
   }
 
   it should "execute flatMap" in {
-    awaitFor(monad.flatMap[String, String](monad.liftM("first"), x => monad.liftM(x + "second"))) shouldBe "firstsecond"
+    getT(monad.flatMap[String, String](monad.liftM("first"), x => monad.liftM(x + "second"))) shouldBe "firstsecond"
+  }
+  it should "execute join2" in {
+    getT(monad.join2(liftA(1), liftA(2))) shouldBe(1, 2)
+  }
+
+  it should "execute join3" in {
+    getT(monad.join3(liftA(1), liftA(2), liftA(3))) shouldBe(1, 2, 3)
+  }
+
+  it should "execute join4" in {
+    getT(monad.join4(liftA(1), liftA(2), liftA(3), liftA(4))) shouldBe(1, 2, 3, 4)
+  }
+
+}
+
+abstract class AbstractMonadWithExceptionTests[A[_]](implicit m: MonadWithException[A]) extends AbstractMonadTests[A] {
+  def liftTryA[T](t: Try[T]): A[T] = m.liftTry(t)
+  def liftA[T](t: T): A[T] = liftTryA(Success(t))
+
+
+  it should "execute map when an exception occurs in the functor" in {
+    val runtimeException = new RuntimeException
+    val a = functor.map(liftTryA(Failure[String](runtimeException)), { x: String => x + 1 })
+    checkHasException[RuntimeException](a) shouldBe runtimeException
+  }
+  it should "execute map when an exception occurs in the fn" in {
+    val runtimeException = new RuntimeException
+    val a = functor.map[String, String](liftTryA(Success("1")), { x: String => throw runtimeException })
+    checkHasException[RuntimeException](a) shouldBe runtimeException
   }
 
   it should "execute flatMap when a exception in monad" in {
@@ -112,22 +129,7 @@ trait AbstractMonadTests[A[_]] extends AbstractFunctorTests[A] {
     checkHasException[RuntimeException](a) shouldBe runtimeException
   }
 
-  it should "execute join2" in {
-    awaitFor(monad.join2(liftA(1), liftA(2))) shouldBe(1, 2)
-  }
 
-  it should "execute join3" in {
-    awaitFor(monad.join3(liftA(1), liftA(2), liftA(3))) shouldBe(1, 2, 3)
-  }
-
-  it should "execute join4" in {
-    awaitFor(monad.join4(liftA(1), liftA(2), liftA(3), liftA(4))) shouldBe(1, 2, 3, 4)
-  }
-
-}
-
-abstract class AbstractMonadWithExceptionTests[A[_]](implicit m: MonadWithException[A]) extends AbstractMonadTests[A] {
-  override def liftTryA[T](t: Try[T]): A[T] = m.liftTry(t)
   behavior of s"monad with exception ${getClass.getSimpleName}"
 
   it should "be able to lift an exception" in {
@@ -135,7 +137,7 @@ abstract class AbstractMonadWithExceptionTests[A[_]](implicit m: MonadWithExcept
   }
 
   it should "liftTry into A for successes" in {
-    awaitFor(m.liftTry(Success("someString"))) shouldBe "someString"
+    getT(m.liftTry(Success("someString"))) shouldBe "someString"
   }
 
   it should "liftTry into A for failures" in {
@@ -143,26 +145,49 @@ abstract class AbstractMonadWithExceptionTests[A[_]](implicit m: MonadWithExcept
   }
 
   it should "recover from exceptions" in {
-    awaitFor(m.recover(liftTryA(Failure(runtimeException)), _.getMessage)) shouldBe "someMessage"
+    getT(m.recover(liftTryA(Failure(runtimeException)), x => m.liftM(x.getMessage))) shouldBe "someMessage"
   }
 
   it should "fold when the value is present" in {
-    awaitFor(m.foldException[String, String](liftTryA(Success("value")), _.getMessage, _ + "_happened")) shouldBe "value_happened"
+    getT(m.foldException[String, String](liftTryA(Success("value")), x => m.liftM(x.getMessage), x => m.liftM(x + "_happened"))) shouldBe "value_happened"
 
   }
 
   it should "fold when the an exception is present" in {
-    awaitFor(m.foldException[String, String](liftTryA(Failure(runtimeException)), _.getMessage, Functions.identify)) shouldBe "someMessage"
+    getT(m.foldException[String, String](liftTryA(Failure(runtimeException)), x => m.liftM(x.getMessage), x => m.liftM(x))) shouldBe "someMessage"
 
   }
 }
 
-abstract class AbstractMonadCanFailTests[A[_], Fail: ClassTag](implicit m: MonadCanFail[A, Fail]) extends AbstractMonadWithExceptionTests[A] {
-  behavior of s"monad can fail ${getClass.getSimpleName} with fail being ${ClassTags.nameOf[Fail]}"
+trait MonadCanFailFixture[A[_], Fail] {
 
   def makeFail(s: String): Fail
   def failToString(f: Fail): String
-  def callFold(a: A[String]) = awaitFor(m.foldWithFail[String, String](a, e => m.liftM(e.getMessage), f => m.liftM(failToString(f)), x => m.liftM(x + "happened")))
+}
+
+//only extended by those that don't have MonadCanFailWithException.
+abstract class AbstractMonadCanFailTests[A[_], Fail: ClassTag](implicit monad: MonadCanFail[A, Fail]) extends AbstractMonadTests[A] with MonadCanFailFixture[A, Fail] {
+  behavior of s"monad can fail ${getClass.getSimpleName} with fail being ${ClassTags.nameOf[Fail]}"
+
+  it should "have a mapEither that works when holds a T" in {
+    val remember = new AtomicReference[Either[Fail, String]]()
+    getT(monad.mapEither[String, String](monad.liftM("someValue"), { e: Either[Fail, String] => remember.set(e); monad.liftM("result") })) shouldBe "result"
+    remember.get shouldBe Right("someValue")
+  }
+  it should "have a mapEither that works when holds a Fail" in {
+    val remember = new AtomicReference[Either[Fail, String]]()
+    getT(monad.mapEither[String, String](monad.fail(makeFail("someValue")), { e: Either[Fail, String] => remember.set(e); monad.liftM("result") })) shouldBe "result"
+    remember.get shouldBe Left("someValue")
+  }
+
+}
+
+abstract class AbstractMonadCanFailWithExceptionTests[A[_], Fail: ClassTag](implicit monad: MonadCanFailWithException[A, Fail]) extends AbstractMonadWithExceptionTests[A] with MonadCanFailFixture[A, Fail] {
+  behavior of s"monad can fail with exception${getClass.getSimpleName} with fail being ${ClassTags.nameOf[Fail]}"
+
+
+  def callFold(a: A[String]) = getT(monad.foldWithExceptionAndFail[String, String](a, e => monad.liftM(e.getMessage), f => monad.liftM(failToString(f)), x => monad.liftM(x + "happened")))
+
 
   it should "work with fold value" in {
     callFold(liftA("A")) shouldBe "Ahappened"
@@ -172,14 +197,20 @@ abstract class AbstractMonadCanFailTests[A[_], Fail: ClassTag](implicit m: Monad
     callFold(liftTryA(Failure(runtimeException))) shouldBe "someMessage"
   }
   it should "work with fold failure" in {
-    callFold(m.fail(makeFail("fail"))) shouldBe "fail"
+    callFold(monad.fail(makeFail("fail"))) shouldBe "fail"
   }
+  behavior of s"monad can fail ${getClass.getSimpleName} with fail being ${ClassTags.nameOf[Fail]}"
 
+  it should "have a mapEither that works when holds a T" in {
+    val remember = new AtomicReference[Either[Fail, String]]()
+    getT(monad.mapEither[String, String](monad.liftM("someValue"), { e: Either[Fail, String] => remember.set(e); monad.liftM("result") })) shouldBe "result"
+    remember.get shouldBe Right("someValue")
+  }
   def callTry(value: A[String]): Try[Either[Fail, String]] = {
     val remember = new AtomicReference[Try[Either[Fail, String]]]()
     val count = new AtomicInteger()
     try {
-      awaitFor(m.mapTryFail(value, { x: Try[Either[Fail, String]] => remember.set(x); count.incrementAndGet(); liftA("result") }))
+      getT(monad.mapTryFail(value, { x: Try[Either[Fail, String]] => remember.set(x); count.incrementAndGet(); liftA("result") }))
     } catch {
       case e: Exception =>
     }
@@ -190,14 +221,14 @@ abstract class AbstractMonadCanFailTests[A[_], Fail: ClassTag](implicit m: Monad
   def callOnComplete(value: A[String]): Try[Either[Fail, String]] = {
     val remember = new AtomicReference[Try[Either[Fail, String]]]()
     val count = new AtomicInteger()
-    Try(awaitFor(m.onComplete(value, { x: Try[Either[Fail, String]] => remember.set(x); count.incrementAndGet(); liftA("shouldNotBeUsed") })))
+    Try(getT(monad.onComplete(value, { x: Try[Either[Fail, String]] => remember.set(x); count.incrementAndGet(); liftA("shouldNotBeUsed") })))
     count.get shouldBe 1
     remember.get
   }
 
 }
 
-abstract class AbstractMonadCanFailWithFailAsThrowableTests[A[_]](implicit m: MonadCanFail[A, Throwable]) extends AbstractMonadCanFailTests[A, Throwable] {
+abstract class AbstractMonadCanFailWithFailWithExceptionAsThrowableTests[A[_]](implicit m: MonadCanFailWithException[A, Throwable]) extends AbstractMonadCanFailWithExceptionTests[A, Throwable] {
   override def makeFail(s: String) = new RuntimeException(s)
   override def failToString(f: Throwable) = f.getMessage
 
@@ -217,16 +248,23 @@ abstract class AbstractMonadCanFailWithFailAsThrowableTests[A[_]](implicit m: Mo
   }
 
 }
-abstract class AbstractMonadCanFailWithFailNotAsThrowableTests[A[_], Fail: ClassTag](implicit m: MonadCanFail[A, Fail]) extends AbstractMonadCanFailTests[A, Fail] {
+
+abstract class AbstractMonadCanFailWithFailWithExceptionNotAsThrowableTests[A[_], Fail: ClassTag](implicit monad: MonadCanFailWithException[A, Fail]) extends AbstractMonadCanFailWithExceptionTests[A, Fail] {
   it should "have a mapTryFail method " in {
     callTry(liftA("someValue")) shouldBe Success(Right("someValue"))
-    callTry(m.fail(makeFail("someValue"))) shouldBe Success(Left(makeFail("someValue")))
-    callTry(m.exception(runtimeException)) shouldBe Failure(runtimeException)
+    callTry(monad.fail(makeFail("someValue"))) shouldBe Success(Left(makeFail("someValue")))
+    callTry(monad.exception(runtimeException)) shouldBe Failure(runtimeException)
   }
+  it should "have a mapEither that works when holds a Fail" in {
+    val remember = new AtomicReference[Either[Fail, String]]()
+    getT(monad.mapEither[String, String](monad.fail(makeFail("someValue")), { e: Either[Fail, String] => remember.set(e); monad.liftM("result") })) shouldBe "result"
+    remember.get shouldBe Left("someValue")
+  }
+
   it should "have a onComplete method " in {
     callOnComplete(liftA("someValue")) shouldBe Success(Right("someValue"))
-    callOnComplete(m.fail(makeFail("someValue"))) shouldBe Success(Left(makeFail("someValue")))
-    callOnComplete(m.exception(runtimeException)) shouldBe Failure(runtimeException)
+    callOnComplete(monad.fail(makeFail("someValue"))) shouldBe Success(Left(makeFail("someValue")))
+    callOnComplete(monad.exception(runtimeException)) shouldBe Failure(runtimeException)
   }
 
 }

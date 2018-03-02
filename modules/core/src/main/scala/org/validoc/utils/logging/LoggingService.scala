@@ -4,7 +4,7 @@ import java.text.MessageFormat
 import java.util.ResourceBundle
 
 import org.validoc.utils._
-import org.validoc.utils.functions.{MonadCanFail, MonadWithException}
+import org.validoc.utils.functions.{MonadCanFailWithException, MonadWithException}
 import org.validoc.utils.success._
 
 import scala.language.higherKinds
