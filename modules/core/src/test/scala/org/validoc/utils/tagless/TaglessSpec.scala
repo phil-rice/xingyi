@@ -14,7 +14,7 @@ import org.validoc.utils.time.RandomDelay
 import scala.concurrent.duration.FiniteDuration
 import scala.language.{higherKinds, implicitConversions}
 import org.validoc.utils.endpoint.MatchesServiceRequest._
-import org.validoc.utils.functions.Liftable
+import org.validoc.utils.functions.{Liftable, MonadCanFail}
 
 import scala.concurrent.Future
 import scala.language.higherKinds
@@ -23,7 +23,7 @@ import org.validoc.utils._
 class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
 
-  class Sample[EndpointWrapper[_, _], Wrapper[_, _], M[_] : Liftable, Fail](implicit httpLanguage: TaglessLanguage[EndpointWrapper, Wrapper, M, Fail, HttpReq, HttpRes], failer: Failer[Fail]) {
+  class Sample[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail](implicit monadCanFail: MonadCanFail[M, Fail], httpLanguage: TaglessLanguage[EndpointWrapper, Wrapper, M, Fail, HttpReq, HttpRes], failer: Failer[Fail]) {
 
     import httpLanguage._
 
@@ -59,6 +59,7 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
 
     val retryConfig = RetryConfig(10, RandomDelay(FiniteDuration(100, TimeUnit.MILLISECONDS)))
+
 
 
     def s1: Wrapper[String, String] = http("s1") |+| objectify[String, String] |+| logging("service1") |+| metrics("service1")

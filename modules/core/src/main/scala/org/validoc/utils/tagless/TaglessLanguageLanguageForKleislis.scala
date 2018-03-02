@@ -73,17 +73,8 @@ class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail, HttpReq, HttpRes](i
     override def profile[Req: ClassTag, Res: ClassTag](profileData: TryProfileData)(raw: Kleisli[Req, Res]) =
       raw.onEnterAndExitM(_ => timeService(), profileData.event)
 
-
-    def objectify[Req: ClassTag : ToServiceRequest : ResponseCategoriser, Res: ClassTag](http: Kleisli[HttpReq, HttpRes])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[Req], responseProcessor: ResponseProcessor[Fail, Req, Res]) = {
-      println(s"toRequest $toRequest")
-      println(s"toHttpReq $toHttpReq")
-      println(s"http $http")
-      println(s"toServiceResponse $toServiceResponse")
-      println(s"categoriser $categoriser")
-      println(s"responseProcessor $responseProcessor")
-
-      toRequest ~> toHttpReq |==> http |=> toServiceResponse |=+> categoriser |=|> responseProcessor
-    }
+    override def objectify[Req: ClassTag : ToServiceRequest : ResponseCategoriser, Res: ClassTag](http: Kleisli[HttpReq, HttpRes])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[Req], responseProcessor: ResponseProcessor[M, Req, Res]) =
+      toRequest ~> toHttpReq |==> http |=> toServiceResponse |=+> categoriser |==> responseProcessor
 
     override protected def enrichPrim[ReqP, ResP, ReqC, ResC, ResE](parentService: Kleisli[ReqP, ResP], childService: Kleisli[ReqC, ResC])(implicit findChildIds: HasChildren[ResP, ReqC], enricher: Enricher[ReqP, ResP, ReqC, ResC, ResE]) =
       parentService |=++> { reqP => resP => findChildIds ~+> childService |=> (seq => enricher(reqP, resP, seq)) }

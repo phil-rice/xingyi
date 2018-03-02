@@ -37,6 +37,7 @@ package object utils {
   }
 
   implicit class EitherPimper[L, R](either: Either[L, R]) {
+    def liftEither[M[_]](implicit monad: MonadCanFail[M, L]): M[R] = either.fold(_.fail, _.liftM)
     def getOrException(exceptionCreator: L => Throwable): R =
       either match {
         case Right(r) => r
@@ -191,7 +192,7 @@ package object utils {
 
 
   implicit class AsyncFailurePimper[Failure](f: Failure) {
-    def fail[M[_], T](implicit async: MonadCanFailWithException[M, Failure]): M[T] = async.fail[T](f)
+    def fail[M[_], T](implicit async: MonadCanFail[M, Failure]): M[T] = async.fail[T](f)
   }
 
   implicit class SeqOfMonadPimper[M[_], T](seq: Seq[M[T]])(implicit async: Monad[M]) {

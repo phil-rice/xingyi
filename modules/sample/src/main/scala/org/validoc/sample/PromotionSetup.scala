@@ -2,7 +2,7 @@ package org.validoc.sample
 
 import org.validoc.sample.domain._
 import org.validoc.utils.cache.{Cachable, ShouldCache}
-import org.validoc.utils.functions.Liftable
+import org.validoc.utils.functions.{Liftable, MonadCanFail}
 import org.validoc.utils.http._
 import org.validoc.utils.json.{FromJson, ToJson}
 import org.validoc.utils.tagless.{TaglessInterpreterForToString, TaglessLanguage}
@@ -26,9 +26,10 @@ case class JsonBundle(implicit
                       val fromJsonForProgramme: FromJson[Programme],
                       val fromJsonForProduction: FromJson[Production])
 
-class PromotionSetup[EndpointWrapper[_, _], Wrapper[_, _], M[_] : Liftable, Fail, HttpReq: ClassTag : Cachable : ShouldCache, HttpRes: ClassTag](interpreter: TaglessLanguage[EndpointWrapper, Wrapper, M, Fail, HttpReq, HttpRes])(implicit
-                                                                                                                                                                                                                                    failer: Failer[Fail],
-                                                                                                                                                                                                                                    jsonBundle: JsonBundle
+class PromotionSetup[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail, HttpReq: ClassTag : Cachable : ShouldCache, HttpRes: ClassTag](interpreter: TaglessLanguage[EndpointWrapper, Wrapper, M, Fail, HttpReq, HttpRes])(implicit
+                                                                                                                                                                                                                         monadCanFail: MonadCanFail[M, Fail],
+                                                                                                                                                                                                                         failer: Failer[Fail],
+                                                                                                                                                                                                                         jsonBundle: JsonBundle
 ) extends PromotionServiceNames {
 
   import interpreter._

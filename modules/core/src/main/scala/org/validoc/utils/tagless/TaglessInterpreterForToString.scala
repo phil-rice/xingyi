@@ -23,7 +23,7 @@ class TaglessInterpreterForToString[HttpReq, HttpRes] {
   class ForToString[M[_], Fail] extends TaglessLanguage[StringHolder, StringHolder, M, Fail, HttpReq, HttpRes] {
     override def http(name: ServiceName): StringHolder[HttpReq, HttpRes] =
       IndentAndString(0, List()).insertLineAndIndent(s"http(${name.name})")
-    override def objectify[Req: ClassTag : ToServiceRequest : ResponseCategoriser, Res: ClassTag](http: StringHolder[HttpReq, HttpRes])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[Req], responseProcessor: ResponseProcessor[Fail, Req, Res]) =
+    override def objectify[Req: ClassTag : ToServiceRequest : ResponseCategoriser, Res: ClassTag](http: StringHolder[HttpReq, HttpRes])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[Req], responseProcessor: ResponseProcessor[M, Req, Res]) =
       http.insertLineAndIndent(s"objectify[${nameOf[Req]},${nameOf[Res]}]")
     override def chain(endpoints: StringHolder[_, _]*) =
       IndentAndString.merge("chain", endpoints: _*)
