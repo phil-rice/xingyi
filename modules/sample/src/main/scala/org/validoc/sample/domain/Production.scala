@@ -1,6 +1,7 @@
 package org.validoc.sample.domain
 
 import org.validoc.utils.cache.Cachable
+import org.validoc.utils.domain.{BypassCache, DomainCompanionObject, DomainCompanionQuery}
 import org.validoc.utils.http.{Get, ServiceRequest, ToServiceRequest, Uri}
 
 import scala.language.implicitConversions

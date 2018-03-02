@@ -1,11 +1,8 @@
 package org.validoc.sample.domain
 
 import org.validoc.utils.cache.Cachable
-import org.validoc.utils.endpoint.{DebugBasePath, SamplePathOps}
-import org.validoc.utils.metrics.{MetricValue, ReportData}
+import org.validoc.utils.domain.{BypassCache, DomainCompanionObject, DomainCompanionQuery}
 import org.validoc.utils.tagless.{Enricher, HasChildren}
-
-import scala.util.Try
 //needs to be here import io.circe.generic.auto._
 import org.validoc.utils.http._
 

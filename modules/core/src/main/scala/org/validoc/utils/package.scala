@@ -36,6 +36,14 @@ package object utils {
     def toOption[T](value: => T) = if (boolean) Some(value) else None
   }
 
+  implicit class EitherPimper[L, R](either: Either[L, R]) {
+    def getOrException(exceptionCreator: L => Throwable): R =
+      either match {
+        case Right(r) => r
+        case Left(l) => throw exceptionCreator(l)
+      }
+  }
+
   implicit class TryPimper[T](tryT: Try[T]) {
     def liftTry[M[_]](implicit monadWithException: MonadWithException[M]) = monadWithException.liftTry(tryT)
   }
@@ -202,13 +210,10 @@ package object utils {
   }
 
 
-
   implicit class AsyncPimper[M[_], T](m: M[T])(implicit async: Async[M]) {
     def respond(fn: Try[T] => Unit): M[T] = async.respond(m, fn)
     def await(): T = async.await(m)
   }
-
-
 
 
 }
