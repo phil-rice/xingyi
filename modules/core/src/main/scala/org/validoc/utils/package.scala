@@ -11,7 +11,10 @@ package object utils {
   type Service[M[_], Req, Res] = (Req => M[Res])
 
   def withValue[X, Y](x: X)(fn: X => Y) = fn(x)
-  def sideeffect[X, Y](x: X)(fn: X => Y) = {fn(x);x}
+  def sideeffect[X, Y](x: X)(fn: X => Y) = {
+    fn(x);
+    x
+  }
 
   def join2WithReq[M[_], Req, Res1, Res2](firstService: Req => M[Res1], secondService: Req => M[Res2])(implicit monad: Monad[M]) = { req: Req => monad.join3(req.liftM, firstService(req), secondService(req)) }
   def join3WithReq[M[_], Req, Res1, Res2, Res3](firstService: Req => M[Res1], secondService: Req => M[Res2], thirdService: Req => M[Res3])(implicit monad: Monad[M]) = { req: Req => monad.join4(req.liftM, firstService(req), secondService(req), thirdService(req)) }
@@ -22,11 +25,10 @@ package object utils {
     def liftM[M[_]](implicit monad: Monad[M]): M[T] = monad.liftM(t)
     def |+>[T1](fn: T => T => T1): T1 = fn(t)(t)
     def liftException[M[_], T1](implicit async: MonadWithException[M], ev: T <:< Throwable): M[T1] = async.exception(t)
-    def |?[M[_] : Functor, Failure](validation: T => Seq[Failure])(implicit withFailure: MonadCanFail[M, Failure], multipleFailures: FailureMaker[Seq[Failure], Failure]): M[T] =
+    def |?[M[_] : Functor, Failure](validation: T => Seq[Failure])(implicit withFailure: MonadCanFail[M, Failure], monoid: Monoid[Failure]): M[T] =
       validation(t) match {
         case Nil => t.liftM
-        case Seq(single) => withFailure.fail(single)
-        case f => withFailure.fail(multipleFailures(f))
+        case s => withFailure.fail(monoid.addAll(s))
       }
   }
 
@@ -40,7 +42,7 @@ package object utils {
 
   implicit class FunctionPimper[Req, Res](fn: Req => Res) {
     def ~>[Res2](fn2: Res => Res2): (Req) => Res2 = { res: Req => fn2(fn(res)) }
-    def ~^>(fn2: Res => Unit): (Req => Res) = { req: Req => sideeffect(fn(req))(fn2)}
+    def ~^>(fn2: Res => Unit): (Req => Res) = { req: Req => sideeffect(fn(req))(fn2) }
     def ~+>[Res2](fn2: Req => Res => Res2): (Req => Res2) = { req: Req => fn2(req)(fn(req)) }
     //    def let[Mid, Res2](mid: Req => Mid)(fn2: Mid => Res => Res): Req => Res = { req: Req => fn2(mid(req))(fn(req)) }
     def onEnterAndExit[Mid](mid: Req => Mid, before: Mid => Unit, after: (Mid, Res) => Unit) = { req: Req =>
@@ -109,7 +111,7 @@ package object utils {
 
     //    def transformAndLift[Fail, Res](fnThrowable: Throwable => Res, fnMap: T => Res)(implicit async: MonadCanFail[M, Fail]) =
     //      async.transformWithFail[T, Res](m, e => fnThrowable(e).liftM[M], fail ) { case Success(t) => fnMap(t); case Failure(t) => fnThrowable(t) }
-    def |=?[Failure](validation: T => Seq[Failure])(implicit withFailure: MonadCanFail[M, Failure], multipleFailures: FailureMaker[Seq[Failure], Failure]): M[T] =
+    def |=?[Failure](validation: T => Seq[Failure])(implicit withFailure: MonadCanFail[M, Failure], monoid: Monoid[Failure]): M[T] =
       m.flatMap[T] { res => res |?[M, Failure] validation }
   }
 

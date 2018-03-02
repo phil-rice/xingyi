@@ -27,6 +27,7 @@ trait MonadWithException[M[_]] extends Monad[M] {
   def liftTry[T](t: Try[T]): M[T] = t.fold(exception, liftM)
   def foldException[T, T1](m: M[T], fnE: Exception => T1, fn: T => T1): M[T1] = recover[T1](map(m, fn), fnE)
 }
+
 //
 //trait CompletableMonad[M[_],H[_]] extends MonadWithException[M]{
 //  def makePromise[T]: H[T]
@@ -36,9 +37,11 @@ trait MonadWithException[M[_]] extends Monad[M] {
 //}
 
 
-
-trait MonadCanFail[M[_], Fail] extends MonadWithException[M] {
+trait LiftFailure[M[_], Fail] {
   def fail[T](f: Fail): M[T]
+}
+
+trait MonadCanFail[M[_], Fail] extends MonadWithException[M] with LiftFailure[M, Fail] {
   def foldWithFail[T, T1](m: M[T], fnE: Throwable => M[T1], fnFailure: Fail => M[T1], fn: T => M[T1]): M[T1]
   def onComplete[T](m: M[T], fn: Try[Either[Fail, T]] => Unit): M[T] = foldWithFail[T, T](m,
     { e: Throwable => fn(Failure(e)); exception(e) },
@@ -52,4 +55,31 @@ trait MonadCanFail[M[_], Fail] extends MonadWithException[M] {
 
 }
 
+object MonadCanFail {
+  implicit def monadCanFailForEither[Fail]: MonadCanFail[({type λ[α] = Either[Fail, α]})#λ, Fail] = {
+    type M[T] = Either[Fail, T]
+    new MonadCanFail[({type λ[α] = Either[Fail, α]})#λ, Fail] {
+      override def foldWithFail[T, T1](m: Either[Fail, T], fnE: Throwable => M[T1], fnFailure: Fail => M[T1], fn: T => M[T1]): M[T1] = ???
+      override def fail[T](f: Fail): Either[Fail, T] = Left(f)
+      override def exception[T](t: Throwable): Either[Fail, T] = throw t
+      override def recover[T](m: Either[Fail, T], fn: Exception => T): Either[Fail, T] = ???
+      override def liftM[T](t: T): Either[Fail, T] = Right(t)
+      override def flatMap[T, T1](m: Either[Fail, T], fn: T => M[T1]): M[T1] = m.right.flatMap(fn)
+      override def map[T, T1](m: Either[Fail, T], fn: T => T1): M[T1] = m.right.map(fn)
+    }
+  }
+
+}
+
+
 trait FailureMaker[X, Fail] extends (X => Fail)
+
+object FailureMaker {
+
+  import Monoid._
+
+ implicit def failureMakerForSequenceOfMonoid[T](implicit monoid: Monoid[T]): FailureMaker[Seq[T], T] = new FailureMaker[Seq[T], T] {
+    override def apply(seq: Seq[T]): T = seq.addAll
+  }
+
+}

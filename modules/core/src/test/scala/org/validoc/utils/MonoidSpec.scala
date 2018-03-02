@@ -49,7 +49,7 @@ class MonoidForIntSpec extends MonoidSpec[Int] {
 
   override def three = 3
 }
-class MonoidForListSpec extends MonoidSpec[List[String]] {
+class MonoidForSeqSpec extends MonoidSpec[Seq[String]] {
   override def one = List("1")
 
   override def two = List("2")

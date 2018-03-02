@@ -10,9 +10,12 @@ object SemiGroup {
   implicit def semiGroupForInt[T] = new SemiGroup[Int] {
     override def add(one: Int, two: Int) = one + two
   }
+  implicit def semiGroupForString[T] = new SemiGroup[String] {
+    override def add(one: String, two: String) = one + two
+  }
 
-  implicit def semiGroupForList[T] = new SemiGroup[List[T]] {
-    override def add(one: List[T], two: List[T]): List[T] = one ::: two
+  implicit def semiGroupForSeq[T] = new SemiGroup[Seq[T]] {
+    override def add(one: Seq[T], two: Seq[T]): Seq[T] = one ++ two
   }
 
   implicit def semiGroupForMap[K, V] = new SemiGroup[Map[K, V]] {
@@ -30,7 +33,11 @@ object Zero {
     override def zero: Int = 0
   }
 
-  implicit def zeroForList[T] = new Zero[List[T]] {
+  implicit object ZeroForString extends Zero[String] {
+    override def zero: String = ""
+  }
+
+  implicit def zeroForSeq[T] = new Zero[Seq[T]] {
     override def zero: List[T] = List()
   }
 
@@ -44,6 +51,7 @@ trait Monoid[T] {
   def zero: T
 
   def add(t1: T, t2: T): T
+  def addAll(seq: Seq[T]) = if (seq.size < 1000) seq.foldLeft(zero)(add) else add(seq.toParArray.reduce(add), zero)
 }
 
 object Monoid {
@@ -52,10 +60,7 @@ object Monoid {
 
     import monoid._
 
-    def addAll: T = if (t.size < 1000)
-      t.foldLeft(zero)(add)
-    else
-      monoid.add(t.toParArray.reduce(monoid.add), monoid.zero)
+    def addAll: T = monoid.addAll(t)
   }
 
   implicit def monoidFromSemiGroupAndZero[T: Zero : SemiGroup] = new Monoid[T] {
