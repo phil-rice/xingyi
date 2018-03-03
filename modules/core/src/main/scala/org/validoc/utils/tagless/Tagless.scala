@@ -25,12 +25,12 @@ trait HasChildren[Main, Children] extends (Main => Seq[Children])
 
 trait Enricher[Req, Parent, ChildId, Child, Res] extends ((Req, Parent, Seq[(ChildId, Child)]) => Res)
 
-trait TaglessLanguage[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail, HttpReq, HttpRes] extends HttpLanguage[Wrapper, M, Fail, HttpReq, HttpRes]
+trait TaglessLanguage[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail] extends HttpLanguage[Wrapper, M, Fail]
   with NonfunctionalLanguage[Wrapper, Fail] with ComposeLanguage[Wrapper] with EndpointLanguage[EndpointWrapper, Wrapper, M, Fail]
 
-trait HttpLanguage[Wrapper[_, _], M[_], Fail, HttpReq, HttpRes] extends NonfunctionalLanguage[Wrapper, Fail] {
-  def http(name: ServiceName): Wrapper[HttpReq, HttpRes]
-  def objectify[Req: ClassTag : ToServiceRequest : ResponseCategoriser, Res: ClassTag](http: Wrapper[HttpReq, HttpRes])
+trait HttpLanguage[Wrapper[_, _], M[_], Fail] extends NonfunctionalLanguage[Wrapper, Fail] {
+  def http(name: ServiceName): Wrapper[ServiceRequest, ServiceResponse]
+  def objectify[Req: ClassTag : ToServiceRequest : ResponseCategoriser, Res: ClassTag](http: Wrapper[ServiceRequest, ServiceResponse])
                                                                                       (implicit toRequest: ToServiceRequest[Req],
                                                                                        categoriser: ResponseCategoriser[Req],
                                                                                        responseProcessor: ResponseProcessor[M, Req, Res]): Wrapper[Req, Res]

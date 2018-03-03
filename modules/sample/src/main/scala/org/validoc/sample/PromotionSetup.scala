@@ -26,10 +26,10 @@ case class JsonBundle(implicit
                       val fromJsonForProgramme: FromJson[Programme],
                       val fromJsonForProduction: FromJson[Production])
 
-class PromotionSetup[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail, HttpReq: ClassTag : Cachable : ShouldCache, HttpRes: ClassTag](interpreter: TaglessLanguage[EndpointWrapper, Wrapper, M, Fail, HttpReq, HttpRes])(implicit
-                                                                                                                                                                                                                         monadCanFail: MonadCanFail[M, Fail],
-                                                                                                                                                                                                                         failer: Failer[Fail],
-                                                                                                                                                                                                                         jsonBundle: JsonBundle
+class PromotionSetup[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail, HttpReq: ClassTag : Cachable : ShouldCache, HttpRes: ClassTag](interpreter: TaglessLanguage[EndpointWrapper, Wrapper, M, Fail])(implicit
+                                                                                                                                                                                                       monadCanFail: MonadCanFail[M, Fail],
+                                                                                                                                                                                                       failer: Failer[Fail],
+                                                                                                                                                                                                       jsonBundle: JsonBundle
 ) extends PromotionServiceNames {
 
   import interpreter._
@@ -64,7 +64,7 @@ class PromotionSetup[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail, HttpReq: 
 }
 
 object PromotionSetup extends App with SampleJsonsForCompilation {
-  implicit val language: TaglessInterpreterForToString[String, String] = new TaglessInterpreterForToString[String, String]
+  implicit val language: TaglessInterpreterForToString = new TaglessInterpreterForToString
 
   import language._
 

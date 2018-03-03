@@ -23,7 +23,7 @@ import org.validoc.utils._
 class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
 
-  class Sample[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail](implicit monadCanFail: MonadCanFail[M, Fail], httpLanguage: TaglessLanguage[EndpointWrapper, Wrapper, M, Fail, HttpReq, HttpRes], failer: Failer[Fail]) {
+  class Sample[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail](implicit monadCanFail: MonadCanFail[M, Fail], httpLanguage: TaglessLanguage[EndpointWrapper, Wrapper, M, Fail], failer: Failer[Fail]) {
 
     import httpLanguage._
 
@@ -59,7 +59,6 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
 
     val retryConfig = RetryConfig(10, RandomDelay(FiniteDuration(100, TimeUnit.MILLISECONDS)))
-
 
 
     def s1: Wrapper[String, String] = http("s1") |+| objectify[String, String] |+| logging("service1") |+| metrics("service1")
@@ -99,7 +98,7 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
   behavior of "Tagless with toString Interpreter"
 
   it should "handle" in {
-    implicit val stringlanguage = new TaglessInterpreterForToString[HttpReq, HttpRes]
+    implicit val stringlanguage = new TaglessInterpreterForToString
     import stringlanguage._
     import org.validoc.utils.functions.AsyncForScalaFuture._
     import ImplicitsForTest._

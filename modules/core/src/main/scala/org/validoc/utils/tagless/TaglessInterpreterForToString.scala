@@ -13,17 +13,17 @@ import org.validoc.utils.time.NanoTimeService
 import scala.reflect.ClassTag
 import scala.language.higherKinds
 
-class TaglessInterpreterForToString[HttpReq, HttpRes] {
+class TaglessInterpreterForToString {
 
   import org.validoc.utils.reflection.ClassTags._
 
   type StringHolder[Req, Res] = IndentAndString
 
   implicit def forToString[M[_], Fail] = new ForToString[M, Fail]
-  class ForToString[M[_], Fail] extends TaglessLanguage[StringHolder, StringHolder, M, Fail, HttpReq, HttpRes] {
-    override def http(name: ServiceName): StringHolder[HttpReq, HttpRes] =
+  class ForToString[M[_], Fail] extends TaglessLanguage[StringHolder, StringHolder, M, Fail] {
+    override def http(name: ServiceName): StringHolder[ServiceRequest, ServiceResponse] =
       IndentAndString(0, List()).insertLineAndIndent(s"http(${name.name})")
-    override def objectify[Req: ClassTag : ToServiceRequest : ResponseCategoriser, Res: ClassTag](http: StringHolder[HttpReq, HttpRes])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[Req], responseProcessor: ResponseProcessor[M, Req, Res]) =
+    override def objectify[Req: ClassTag : ToServiceRequest : ResponseCategoriser, Res: ClassTag](http: StringHolder[ServiceRequest, ServiceResponse])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[Req], responseProcessor: ResponseProcessor[M, Req, Res]) =
       http.insertLineAndIndent(s"objectify[${nameOf[Req]},${nameOf[Res]}]")
     override def chain(endpoints: StringHolder[_, _]*) =
       IndentAndString.merge("chain", endpoints: _*)

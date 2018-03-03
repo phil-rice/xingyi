@@ -33,9 +33,12 @@ class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail, HttpReq, HttpRes](i
   type EndpointK[Req, Res] = ServiceRequest => Option[M[ServiceResponse]]
   type Kleisli[Req, Res] = Req => M[Res]
 
-  object NonFunctionalLanguageService extends TaglessLanguage[EndpointK, Kleisli, M, Fail, HttpReq, HttpRes] {
+  object NonFunctionalLanguageService extends TaglessLanguage[EndpointK, Kleisli, M, Fail] {
 
-    override def http(name: ServiceName) = httpFactory(name)
+    override def http(name: ServiceName): ServiceRequest => M[ServiceResponse] = toHttpReq |==> httpFactory(name) |=> toServiceResponse
+
+    override def objectify[Req: ClassTag : ToServiceRequest : ResponseCategoriser, Res: ClassTag](http: Kleisli[ServiceRequest, ServiceResponse])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[Req], responseProcessor: ResponseProcessor[M, Req, Res]) =
+      toRequest ~> http |=+> categoriser |==> responseProcessor
 
     override def metrics[Req: ClassTag, Res: ClassTag](prefix: String)(raw: Kleisli[Req, Res])(implicit makeReportData: RD[Res]) =
       raw.enterAndExit[Fail, Long]({ r: Req => timeService() }, makeReportData(prefix) ~> putMetrics)
@@ -66,8 +69,6 @@ class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail, HttpReq, HttpRes](i
     override def profile[Req: ClassTag, Res: ClassTag](profileData: TryProfileData)(raw: Kleisli[Req, Res]) =
       raw.onEnterAndExitM(_ => timeService(), profileData.event)
 
-    override def objectify[Req: ClassTag : ToServiceRequest : ResponseCategoriser, Res: ClassTag](http: Kleisli[HttpReq, HttpRes])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[Req], responseProcessor: ResponseProcessor[M, Req, Res]) =
-      toRequest ~> toHttpReq |==> http |=> toServiceResponse |=+> categoriser |==> responseProcessor
 
     override protected def enrichPrim[ReqP, ResP, ReqC, ResC, ResE](parentService: Kleisli[ReqP, ResP], childService: Kleisli[ReqC, ResC])(implicit findChildIds: HasChildren[ResP, ReqC], enricher: Enricher[ReqP, ResP, ReqC, ResC, ResE]) =
       parentService |=++> { reqP => resP => findChildIds ~+> childService |=> (seq => enricher(reqP, resP, seq)) }
