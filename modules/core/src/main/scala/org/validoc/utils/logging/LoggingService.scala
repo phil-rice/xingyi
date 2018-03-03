@@ -28,8 +28,12 @@ object SummaryLogging {
   }
 }
 
+trait LogRequestAndResult[Fail]{
+  def apply[Req: DetailedLogging : SummaryLogging, Res: DetailedLogging : SummaryLogging](sender: Any)(req: Req)(implicit messageName: MessageName[Req, Res]): SucceededState[Fail, Res] => Unit
+}
 
-class LogRequestAndResult[Fail: DetailedLogging : SummaryLogging](implicit bundle: ResourceBundle, log: LoggingAdapter) {
+
+class LogRequestAndResultForBundle[Fail: DetailedLogging : SummaryLogging](implicit bundle: ResourceBundle, log: LoggingAdapter)  extends LogRequestAndResult[Fail]{
   def details[T](t: T)(implicit detailedLogging: DetailedLogging[T]) = detailedLogging(t)
   def summary[T](t: T)(implicit summaryLogging: SummaryLogging[T]) = summaryLogging(t)
 

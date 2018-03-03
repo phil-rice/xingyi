@@ -19,6 +19,7 @@ import org.validoc.utils.functions.{Liftable, MonadCanFail}
 import scala.concurrent.Future
 import scala.language.higherKinds
 import org.validoc.utils._
+import org.validoc.utils.logging.{DetailedLogging, LogRequestAndResult, SummaryLogging}
 
 class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
@@ -60,12 +61,14 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
     val retryConfig = RetryConfig(10, RandomDelay(FiniteDuration(100, TimeUnit.MILLISECONDS)))
 
-
-    def s1: Wrapper[String, String] = http("s1") |+| objectify[String, String] |+| logging("service1") |+| metrics("service1")
+    implicit object logRequestAndResult extends LogRequestAndResult[Fail] {
+      override def apply[Req: DetailedLogging : SummaryLogging, Res: DetailedLogging : SummaryLogging](sender: Any)(req: Req)(implicit messageName: MessageName[Req, Res]) = ???
+    }
+    def s1: Wrapper[String, String] = http("s1") |+| objectify[String, String] |+| logging("") |+| metrics("service1")
 
     val data = new TryProfileData
 
-    def s2 = http("s2") |+| objectify[String, String] |+| logging("service1") |+| profile(data)
+    def s2 = http("s2") |+| objectify[String, String] |+| logging("") |+| profile(data)
     def s3 = http("s3") |+| objectify[String, String]
     def s4 = http("s4") |+| objectify[String, String] |+| retry(retryConfig)
 

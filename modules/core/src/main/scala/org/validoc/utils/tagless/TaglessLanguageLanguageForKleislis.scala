@@ -3,10 +3,11 @@ package org.validoc.utils.tagless
 import org.validoc.utils._
 import org.validoc.utils.cache._
 import org.validoc.utils.endpoint.MatchesServiceRequest
-import org.validoc.utils.functions.{Async, MonadCanFailWithException}
+import org.validoc.utils.functions.{Async, Monad, MonadCanFailWithException}
 import org.validoc.utils.http._
 import org.validoc.utils.logging._
 import org.validoc.utils.metrics.PutMetrics
+import org.validoc.utils.objectify.ObjectifyKleisli
 import org.validoc.utils.profiling.TryProfileData
 import org.validoc.utils.retry.{NeedsRetry, RetryConfig, RetryService}
 import org.validoc.utils.success.MessageName
@@ -19,27 +20,41 @@ import scala.reflect.ClassTag
 
 trait HttpFactory[M[_], HttpReq, HttpRes] extends (ServiceName => HttpReq => M[HttpRes])
 
+trait CommonForKleislis[M[_]] {
+  type Kleisli[Req, Res] = Req => M[Res]
+}
 
-class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail](implicit monadCanFail: MonadCanFailWithException[M, Fail],
-                                                             httpFactory: HttpFactory[M, ServiceRequest, ServiceResponse],
-                                                             logReqAndResult: LogRequestAndResult[Fail],
-                                                             loggingAdapter: LoggingAdapter,
-                                                             timeService: NanoTimeService,
-                                                             putMetrics: PutMetrics,
-                                                             cacheFactory: CacheFactory[M],
-                                                             failer: Failer[Fail]) {
+trait HttpKlesili[M[_]] extends CommonForKleislis[M] {
+  protected def httpFactory: HttpFactory[M, ServiceRequest, ServiceResponse]
+  def http(name: ServiceName): ServiceRequest => M[ServiceResponse] = httpFactory(name)
+
+}
+
+
+trait MetricsKleisli[M[_], Fail] extends MetricsLanguageBase[Fail] with CommonForKleislis[M] {
+  implicit def monad: MonadCanFailWithException[M, Fail]
+  protected def putMetrics: PutMetrics
+  protected def timeService: NanoTimeService
+  def metrics[Req: ClassTag, Res: ClassTag](prefix: String)(raw: Kleisli[Req, Res])(implicit makeReportData: RD[Res]) =
+    raw.enterAndExit[Fail, Long]({ r: Req => timeService() }, makeReportData(prefix) ~> putMetrics)
+}
+
+
+class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail] {
   type EndpointK[Req, Res] = ServiceRequest => Option[M[ServiceResponse]]
   type Kleisli[Req, Res] = Req => M[Res]
 
-  object NonFunctionalLanguageService extends TaglessLanguage[EndpointK, Kleisli, M, Fail] {
+  case class NonFunctionalLanguageService(implicit monadCanFail: MonadCanFailWithException[M, Fail],
+                                          protected val httpFactory: HttpFactory[M, ServiceRequest, ServiceResponse],
+                                          protected val logReqAndResult: LogRequestAndResult[Fail],
+                                          protected val timeService: NanoTimeService,
+                                          protected val putMetrics: PutMetrics,
+                                          cacheFactory: CacheFactory[M],
+                                          failer: Failer[Fail]) extends
+    TaglessLanguage[EndpointK, Kleisli, M, Fail]
+    with ObjectifyKleisli[M] with HttpKlesili[M] with MetricsKleisli[M, Fail] with LoggingKleisli[M, Fail] {
 
-    override def http(name: ServiceName): ServiceRequest => M[ServiceResponse] = httpFactory(name)
-
-    override def objectify[Req: ClassTag : ToServiceRequest : ResponseCategoriser, Res: ClassTag](http: Kleisli[ServiceRequest, ServiceResponse])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[Req], responseProcessor: ResponseProcessor[M, Req, Res]) =
-      toRequest ~> http |=+> categoriser |==> responseProcessor
-
-    override def metrics[Req: ClassTag, Res: ClassTag](prefix: String)(raw: Kleisli[Req, Res])(implicit makeReportData: RD[Res]) =
-      raw.enterAndExit[Fail, Long]({ r: Req => timeService() }, makeReportData(prefix) ~> putMetrics)
+    override def monad = monadCanFail
 
     override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: Kleisli[Req, Res])(implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]): EndpointK[Req, Res] = { serviceRequest: ServiceRequest => matchesServiceRequest(normalisedPath)(serviceRequest).toOption((fromServiceRequest |==> raw |=> toServiceResponse) (serviceRequest)) }
     override def chain(endpoints: EndpointK[_, _]*): Kleisli[ServiceRequest, ServiceResponse] = { req: ServiceRequest =>
@@ -56,14 +71,13 @@ class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail](implicit monadCanFa
       }
       recurse(endpoints.toList)
     }
-    override def logging[Req: ClassTag : DetailedLogging : SummaryLogging, Res: ClassTag : DetailedLogging : SummaryLogging](pattern: String)(raw: Kleisli[Req, Res])(implicit messageName: MessageName[Req, Res]) =
-      raw.sideeffect(logReqAndResult[Req, Res](raw))
 
     override def cache[Req: ClassTag : Cachable : ShouldCache, Res: ClassTag](name: String)(raw: Kleisli[Req, Res]): Kleisli[Req, Res] =
       Cache[M, Req, Res](cacheFactory[Req, Res](name, raw))
 
     override def retry[Req: ClassTag, Res: ClassTag](retryConfig: RetryConfig)(raw: Kleisli[Req, Res])(implicit retry: NeedsRetry[Fail, Res]): Kleisli[Req, Res] =
       new RetryService[M, Fail, Req, Res](raw, retryConfig)
+
     override def profile[Req: ClassTag, Res: ClassTag](profileData: TryProfileData)(raw: Kleisli[Req, Res]) =
       raw.onEnterAndExitM(_ => timeService(), profileData.event)
 

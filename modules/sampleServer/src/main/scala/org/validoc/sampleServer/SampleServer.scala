@@ -51,7 +51,7 @@ object SampleServer extends App with SampleJsonsForCompilation {
   //  val failer = implicitly[Failer[Throwable]]
   //  val y = ResponseParser.defaultDirtyParser[Throwable, MostPopularQuery, MostPopular]
   //  val responseParser = implicitly[ResponseParser[Throwable,MostPopularQuery,MostPopular]]
-  val setup = new PromotionSetup[interpreter.EndpointK, interpreter.Kleisli, Future, Throwable, ServiceRequest, ServiceResponse](interpreter.NonFunctionalLanguageService)
+  val setup = new PromotionSetup[interpreter.EndpointK, interpreter.Kleisli, Future, Throwable, ServiceRequest, ServiceResponse](interpreter.NonFunctionalLanguageService())
 
 
   new SimpleHttpServer(9000, new EndpointHandler[Future, Throwable](setup.microservice)).start()
