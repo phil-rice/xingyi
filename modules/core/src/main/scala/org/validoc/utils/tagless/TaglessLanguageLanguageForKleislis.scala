@@ -30,14 +30,8 @@ class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail, HttpReq, HttpRes](i
                                                                                putMetrics: PutMetrics,
                                                                                cacheFactory: CacheFactory[M],
                                                                                failer: Failer[Fail]) {
-  case class EndpointK[Req, Res](fn: ServiceRequest => Option[M[ServiceResponse]]) extends (ServiceRequest => Option[M[ServiceResponse]]) {
-    override def apply(v1: ServiceRequest) = fn(v1)
-  }
-  case class Kleisli[Req, Res](fn: Req => M[Res]) extends (Req => M[Res]) {
-    override def apply(v1: Req) = fn(v1)
-  }
-  implicit def foK[Req, Res](fn: Req => M[Res]) = Kleisli[Req, Res](fn)
-  implicit def foEK[Req, Res](fn: ServiceRequest => Option[M[ServiceResponse]]) = EndpointK[Req, Res](fn)
+  type EndpointK[Req, Res] = ServiceRequest => Option[M[ServiceResponse]]
+  type Kleisli[Req, Res] = Req => M[Res]
 
   object NonFunctionalLanguageService extends TaglessLanguage[EndpointK, Kleisli, M, Fail, HttpReq, HttpRes] {
 
@@ -46,8 +40,7 @@ class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail, HttpReq, HttpRes](i
     override def metrics[Req: ClassTag, Res: ClassTag](prefix: String)(raw: Kleisli[Req, Res])(implicit makeReportData: RD[Res]) =
       raw.enterAndExit[Fail, Long]({ r: Req => timeService() }, makeReportData(prefix) ~> putMetrics)
 
-    override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: Kleisli[Req, Res])(implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]) =
-      EndpointK[Req, Res] { serviceRequest: ServiceRequest => matchesServiceRequest(normalisedPath)(serviceRequest).toOption((fromServiceRequest |==> raw |=> toServiceResponse) (serviceRequest)) }
+    override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: Kleisli[Req, Res])(implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]): EndpointK[Req, Res] = { serviceRequest: ServiceRequest => matchesServiceRequest(normalisedPath)(serviceRequest).toOption((fromServiceRequest |==> raw |=> toServiceResponse) (serviceRequest)) }
     override def chain(endpoints: EndpointK[_, _]*): Kleisli[ServiceRequest, ServiceResponse] = { req: ServiceRequest =>
       @tailrec
       def recurse(seq: List[EndpointK[_, _]]): M[ServiceResponse] = {

@@ -24,10 +24,6 @@ object ResponseCategoriser {
     }
   }
 
-  implicit def default[Req] = {
-    println(s"inResponseC")
-    val result = apply[Req]()
-    println(s"i respsC.apply $result")
-    result
-  }
+  implicit def default[Req] = apply[Req]()
+
 }

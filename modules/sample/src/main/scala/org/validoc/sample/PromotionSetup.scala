@@ -41,8 +41,6 @@ class PromotionSetup[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail, HttpReq: 
   val billboard = http(promotionServiceName)
   val fnord = http(programmeAndProductionServiceName)
 
-  println(s"vogue $vogue")
-  println(s"objectify[MostPopularQuery, MostPopular] ${objectify[MostPopularQuery, MostPopular] _}")
   val rawMostPopularService = vogue |+| objectify[MostPopularQuery, MostPopular]
   // |+| cache("vogue")
   val rawPromotionService = billboard |+| cache("Promotion") |+| objectify[PromotionQuery, Promotion]

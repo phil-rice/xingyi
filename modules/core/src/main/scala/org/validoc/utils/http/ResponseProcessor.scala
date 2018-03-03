@@ -8,9 +8,9 @@ import scala.language.higherKinds
 import org.validoc.utils._
 
 @implicitNotFound(
-  """Cannot find ResponseProcessor[${Fail},${Req},${Res}] The easiest way is to have a ResponseParser and a Failer in scope
+  """Cannot find ResponseProcessor[${M},${Req},${Res}] The easiest way is to have a ResponseParser and a Failer in scope
      To check this you can try
-        val failer = implicitly[Failer[${Fail}]]
+        val failer = implicitly[Failer[<whatever your fail type is>]]
         val responseParser = implicitly[ResponseParser[${M},${Req},${Res}]]
         the compiler should give you a more helpful message then
   """)

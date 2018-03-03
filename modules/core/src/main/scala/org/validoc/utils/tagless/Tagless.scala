@@ -46,13 +46,7 @@ trait NonfunctionalLanguage[Wrapper[_, _], Fail] {
   def profile[Req: ClassTag, Res: ClassTag](profileData: TryProfileData)(raw: Wrapper[Req, Res]): Wrapper[Req, Res]
 
   implicit class ComposeWrapperPimper[RawReq, RawRes](wrapper: Wrapper[RawReq, RawRes]) {
-    def |+|[Req, Res](fn: Wrapper[RawReq, RawRes] => Wrapper[Req, Res]): Wrapper[Req, Res] = {
-      println(s"wrapper: $wrapper")
-      println(s"fn: $fn")
-      val result = fn(wrapper)
-      println(s"result: $result")
-      result
-    }
+    def |+|[Req, Res](fn: Wrapper[RawReq, RawRes] => Wrapper[Req, Res]): Wrapper[Req, Res] = fn(wrapper)
   }
 
   implicit class OtherPimper[Req, Res, NewReq, NewRes](wrapperFn: Wrapper[Req, Res] => Wrapper[NewReq, NewRes]) {
