@@ -20,22 +20,20 @@ import scala.reflect.ClassTag
 trait HttpFactory[M[_], HttpReq, HttpRes] extends (ServiceName => HttpReq => M[HttpRes])
 
 
-class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail, HttpReq, HttpRes](implicit monadCanFail: MonadCanFailWithException[M, Fail],
-                                                                               httpFactory: HttpFactory[M, HttpReq, HttpRes],
-                                                                               toServiceResponse: ToServiceResponse[HttpRes],
-                                                                               toHttpReq: FromServiceRequest[M, HttpReq],
-                                                                               logReqAndResult: LogRequestAndResult[Fail],
-                                                                               loggingAdapter: LoggingAdapter,
-                                                                               timeService: NanoTimeService,
-                                                                               putMetrics: PutMetrics,
-                                                                               cacheFactory: CacheFactory[M],
-                                                                               failer: Failer[Fail]) {
+class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail](implicit monadCanFail: MonadCanFailWithException[M, Fail],
+                                                             httpFactory: HttpFactory[M, ServiceRequest, ServiceResponse],
+                                                             logReqAndResult: LogRequestAndResult[Fail],
+                                                             loggingAdapter: LoggingAdapter,
+                                                             timeService: NanoTimeService,
+                                                             putMetrics: PutMetrics,
+                                                             cacheFactory: CacheFactory[M],
+                                                             failer: Failer[Fail]) {
   type EndpointK[Req, Res] = ServiceRequest => Option[M[ServiceResponse]]
   type Kleisli[Req, Res] = Req => M[Res]
 
   object NonFunctionalLanguageService extends TaglessLanguage[EndpointK, Kleisli, M, Fail] {
 
-    override def http(name: ServiceName): ServiceRequest => M[ServiceResponse] = toHttpReq |==> httpFactory(name) |=> toServiceResponse
+    override def http(name: ServiceName): ServiceRequest => M[ServiceResponse] = httpFactory(name)
 
     override def objectify[Req: ClassTag : ToServiceRequest : ResponseCategoriser, Res: ClassTag](http: Kleisli[ServiceRequest, ServiceResponse])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[Req], responseProcessor: ResponseProcessor[M, Req, Res]) =
       toRequest ~> http |=+> categoriser |==> responseProcessor

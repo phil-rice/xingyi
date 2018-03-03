@@ -18,7 +18,7 @@ import org.validoc.utils.tagless.{HttpFactory, TaglessLanguageLanguageForKleisli
 
 import scala.concurrent.Future
 
-object SampleServer extends App with  SampleJsonsForCompilation{
+object SampleServer extends App with SampleJsonsForCompilation {
 
   implicit val httpFactory = new HttpFactory[Future, ServiceRequest, ServiceResponse] {
     override def apply(v1: ServiceName) = { req => Future.successful(ServiceResponse(Status(200), Body(s"response; ${req.body.map(_.s).getOrElse("")}"), ContentType("text/html"))) }
@@ -28,29 +28,30 @@ object SampleServer extends App with  SampleJsonsForCompilation{
   implicit val putMetrics = PrintlnPutMetrics
   implicit val logRequestAndResult: LogRequestAndResult[Throwable] = new LogRequestAndResult[Throwable]
   implicit val cacheFactory = CaffeineCache.cacheFactoryForFuture(CaffeineCache.defaultCacheBuilder)
-  val interpreter = new TaglessLanguageLanguageForKleislis[Future, Throwable, ServiceRequest, ServiceResponse]
+  val interpreter = new TaglessLanguageLanguageForKleislis[Future, Throwable]
   //  type K = interpreter.K
   //  type KOpt[Req, Res] = interpreter.KOpt[Req, Res]
   //
   //implicit  val x: TaglessLanguage[KOpt, K, Throwabe, ServiceRequest, ServiceResponse] = interpreter.NonFunctionalLanguageService
 
   import PromotionSetup.jsonBundle
+
   implicit val jsonBundle: JsonBundle = JsonBundle()
 
   implicit val executors = Executors.newFixedThreadPool(10)
 
-//  println(s"toRequest1 ${implicitly[ToServiceRequest[MostPopularQuery]]}")
-//  println(s"toRequest2 ${implicitly[ToServiceRequest[ServiceRequest]]}")
-//  println(s"toHttpReq1 ${implicitly[FromServiceRequest[ServiceRequest]]}")
-//  val x = implicitly[Parser[MostPopular]]
-//  println(s"toHttpReq 2${implicitly[FromServiceResponse[MostPopular]]}")
-//  println(s"toServiceResponse2${implicitly[ToServiceResponse[ServiceResponse]]}")
-//  println(s"categoriser ${implicitly[ResponseCategoriser[ServiceResponse]]}")
-//  println(s"responseProcessor ${implicitly[ResponseProcessor[Throwable, MostPopularQuery, MostPopular]]}")
-//  val failer = implicitly[Failer[Throwable]]
-//  val y = ResponseParser.defaultDirtyParser[Throwable, MostPopularQuery, MostPopular]
-//  val responseParser = implicitly[ResponseParser[Throwable,MostPopularQuery,MostPopular]]
-  val setup = new PromotionSetup[interpreter.EndpointK, interpreter.Kleisli,Future, Throwable, ServiceRequest, ServiceResponse](interpreter.NonFunctionalLanguageService)
+  //  println(s"toRequest1 ${implicitly[ToServiceRequest[MostPopularQuery]]}")
+  //  println(s"toRequest2 ${implicitly[ToServiceRequest[ServiceRequest]]}")
+  //  println(s"toHttpReq1 ${implicitly[FromServiceRequest[ServiceRequest]]}")
+  //  val x = implicitly[Parser[MostPopular]]
+  //  println(s"toHttpReq 2${implicitly[FromServiceResponse[MostPopular]]}")
+  //  println(s"toServiceResponse2${implicitly[ToServiceResponse[ServiceResponse]]}")
+  //  println(s"categoriser ${implicitly[ResponseCategoriser[ServiceResponse]]}")
+  //  println(s"responseProcessor ${implicitly[ResponseProcessor[Throwable, MostPopularQuery, MostPopular]]}")
+  //  val failer = implicitly[Failer[Throwable]]
+  //  val y = ResponseParser.defaultDirtyParser[Throwable, MostPopularQuery, MostPopular]
+  //  val responseParser = implicitly[ResponseParser[Throwable,MostPopularQuery,MostPopular]]
+  val setup = new PromotionSetup[interpreter.EndpointK, interpreter.Kleisli, Future, Throwable, ServiceRequest, ServiceResponse](interpreter.NonFunctionalLanguageService)
 
 
   new SimpleHttpServer(9000, new EndpointHandler[Future, Throwable](setup.microservice)).start()
