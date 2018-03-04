@@ -10,6 +10,7 @@ import scala.language.higherKinds
 
 
 trait MatchesServiceRequest {
+  def method: Method
   def apply(endpointName: String)(serviceRequest: ServiceRequest): Boolean
 }
 

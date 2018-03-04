@@ -4,7 +4,7 @@
 val versions = new {
   val scala = "2.12.2"
   //  val scala = "2.12.1"
-  val finatra = "2.2.0"
+  val finatra = "18.2.0"
   val scalatest = "3.0.5"
   val mockito = "1.10.19"
   val guice = "4.0"
@@ -24,7 +24,7 @@ lazy val commonSettings = Seq(
 
 lazy val finatraSettings = commonSettings ++ Seq(
   // https://mvnrepository.com/artifact/org.apache.thrift/libthrift
-  libraryDependencies += "org.apache.thrift" % "libthrift" % "0.5.0-1",
+//  libraryDependencies += "org.apache.thrift" % "libthrift" % "0.5.0-1",
 
   libraryDependencies += "com.twitter" %% "finatra-http" % versions.finatra,
   libraryDependencies += "com.twitter" %% "finatra-http" % versions.finatra % "test",
@@ -92,22 +92,23 @@ lazy val caffeine = (project in file("modules/caffeine")).
 //lazy val play = (project in file("modules/play")).
 //  dependsOn(core % "test->test;compile->compile").aggregate(core).
 //  settings(playSettings: _*)
+
 //
 //lazy val playSample = (project in file("modules/playSample")).
 //  dependsOn(play % "test->test;compile->compile").aggregate(play).
 //  settings(playSettings: _*).enablePlugins(PlayScala)
 
-//lazy val finatra = (project in file("modules/finatra")).
-//  dependsOn(core % "test->test;compile->compile").aggregate(core).
-//  settings(finatraSettings: _*)
+lazy val finatra = (project in file("modules/finatra")).
+  dependsOn(core % "test->test;compile->compile").aggregate(core).
+  settings(finatraSettings: _*)
 
 lazy val sample = (project in file("modules/sample")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   settings(commonSettings: _*).
   settings(pactSettings: _*)
 
-//lazy val finatraSample = (project in file("modules/finatraSample")).
-//  dependsOn(core % "test->test;compile->compile").aggregate(core).
-//  dependsOn(finatra % "test->test;compile->compile").aggregate(finatra).
-//  dependsOn(sample % "test->test;compile->compile").aggregate(sample).
-//  settings(commonSettings: _*)
+lazy val finatraSample = (project in file("modules/finatraSample")).
+  dependsOn(core % "test->test;compile->compile").aggregate(core).
+  dependsOn(finatra % "test->test;compile->compile").aggregate(finatra).
+  dependsOn(sample % "test->test;compile->compile").aggregate(sample).
+  settings(commonSettings: _*)

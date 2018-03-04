@@ -42,7 +42,7 @@ class PromotionSetup[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail](interpret
   val fnord = http(programmeAndProductionServiceName)
 
   val rawMostPopularService = vogue |+| objectify[MostPopularQuery, MostPopular]
-  val rawPromotionService = billboard |+| cache("Promotion") |+| objectify[PromotionQuery, Promotion]
+  val rawPromotionService = billboard |+| objectify[PromotionQuery, Promotion]
   val rawProductionService = fnord |+| objectify[ProductionId, Production]
   val rawProgrammeService = fnord |+| objectify[ProgrammeId, Programme]
 
