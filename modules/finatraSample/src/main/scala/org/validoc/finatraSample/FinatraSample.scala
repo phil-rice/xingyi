@@ -1,11 +1,10 @@
 package org.validoc.finatraSample
 
-import java.util.ResourceBundle
 import java.util.concurrent.Executors
 
-import com.twitter.finagle.Http
-import com.twitter.finagle.http.{Request, Response}
+import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
+import com.twitter.finatra.http.response.ResponseBuilder
 import com.twitter.finatra.utils.FuturePools
 import com.twitter.util.{Future, FuturePool}
 import org.validoc.finatra._
@@ -18,19 +17,19 @@ import org.validoc.utils.metrics.PrintlnPutMetrics
 import org.validoc.utils.tagless.{HttpFactory, TaglessLanguageLanguageForKleislis}
 
 
-class FinatraPromotionSetup(implicit  futurePool: FuturePool) extends Controller with SampleJsonsForCompilation {
+class FinatraPromotionSetup(implicit futurePool: FuturePool) extends Controller with SampleJsonsForCompilation {
   implicit val monad = new AsyncForTwitterFuture
   implicit val httpFactory = new HttpFactory[Future, ServiceRequest, ServiceResponse] {
     override def apply(v1: ServiceName) = { req => Future.value(ServiceResponse(Status(200), Body(s"response; ${req.body.map(_.s).getOrElse("")}"), ContentType("text/html"))) }
   }
   implicit val loggingAdapter = PrintlnLoggingAdapter
-//  implicit val resourceBundle = ResourceBundle.getBundle("messages")
+  //  implicit val resourceBundle = ResourceBundle.getBundle("messages")
   implicit val putMetrics = PrintlnPutMetrics
   implicit val logRequestAndResult: LogRequestAndResult[Throwable] = new AbstractLogRequestAndResult[Throwable] {
     override protected def format(messagePrefix: String, messagePostFix: String)(strings: String*) = messagePostFix + "." + messagePostFix + ":" + strings.mkString(",")
   }
   implicit val cacheFactory = new CacheFactory[Future] {
-//    override def apply[Req: Cachable, Res](name: String, raw: Req => Future[Res]): Req => Future[Res] = raw
+    //    override def apply[Req: Cachable, Res](name: String, raw: Req => Future[Res]): Req => Future[Res] = raw
     override def apply[Req: Cachable, Res](name: String, raw: Req => Future[Res]) = ???
 
   }
@@ -43,12 +42,16 @@ class FinatraPromotionSetup(implicit  futurePool: FuturePool) extends Controller
   //  private val debugLanguage = new DebugEachObjectifyEndpoint(language)
   val setup = new PromotionSetup[interpreter.EndpointK, interpreter.Kleisli, Future, Throwable](language)
 
-  get("/") {
-    request: Request =>
-      //      val serviceRequest = ???
-      //      setup.homePageEndPoint(serviceRequest)
-      response.ok("some test")
+  import FinatraImplicits._
+  def liftEndpoint(fn: ServiceRequest => Option[Future[ServiceResponse]]) = { request: Request =>
+    val serviceRequest = implicitly[ToServiceRequest[Request]] apply (request)
+    val result = fn(serviceRequest).get
+    result.map { serRes =>
+      response.status(serRes.status.code).body(serRes.body.s).contentType(serviceRequest.contentType.map(_.s).getOrElse("text/html"))
+    }
   }
+
+  get("/")(liftEndpoint(setup.homePageEndPoint))
 
 }
 

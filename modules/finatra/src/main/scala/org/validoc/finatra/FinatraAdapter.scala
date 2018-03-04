@@ -1,15 +1,14 @@
 package org.validoc.finatra
 
 import com.twitter.finagle.http.{Method, Request, Response}
+import com.twitter.finatra.http.response.ResponseBuilder
 import com.twitter.util.{Await, FuturePool, Return, Throw, Duration => TDuration, Future => TFuture, Try => TTry}
-import org.validoc.utils.cache.CachableResult
 import org.validoc.utils.functions.{Async, MonadCanFailWithException}
 import org.validoc.utils.http._
-import org.validoc.utils.metrics.NullPutMetrics
 
 import scala.concurrent.duration.Duration
 import scala.language.implicitConversions
-import scala.util.{Failure, Success, Try => STry}
+import scala.util.{Try => STry}
 
 class AsyncForTwitterFuture(implicit futurePool: FuturePool) extends Async[TFuture] with MonadCanFailWithException[TFuture, Throwable] {
   override def async[T](t: => T) = futurePool(t)
@@ -33,6 +32,7 @@ class AsyncForTwitterFuture(implicit futurePool: FuturePool) extends Async[TFutu
 }
 
 object FinatraImplicits {
+
 
   implicit object ToServiceResponseForFinatraResponse extends ToServiceResponse[Response] {
     override def apply(response: Response): ServiceResponse = ServiceResponse(Status(response.statusCode), Body(response.contentString), ContentType(response.mediaType.getOrElse("")))
