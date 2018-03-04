@@ -7,7 +7,7 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FlatSpec, FlatSpecLike, Matchers}
 import org.validoc.utils.local.ExecutionContextWithLocal
-import org.validoc.utils.logging.NullLoggingAdapterWithMdc
+import org.validoc.utils.logging.NullLoggingAdapter
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -31,7 +31,7 @@ trait UtilsSpec extends FlatSpecLike with Matchers with MockitoSugar with Eventu
 }
 
 trait UtilsWithLoggingSpec extends UtilsSpec {
-  implicit val loggingAdapter = NullLoggingAdapterWithMdc
+  implicit val loggingAdapter = NullLoggingAdapter
 }
 
 //class UtilsWithExecutionContextSpec extends UtilsSpec {

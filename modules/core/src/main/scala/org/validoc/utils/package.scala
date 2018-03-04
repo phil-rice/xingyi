@@ -1,5 +1,6 @@
 package org.validoc
 
+import org.validoc.utils.exceptions.Exceptions
 import org.validoc.utils.functions._
 import org.validoc.utils.success.SuccessState
 
@@ -180,7 +181,8 @@ package object utils {
   }
 
   implicit class MonadWithCanFailAndExceptionFunctionPimper[M[_], Req, Res](fn: Req => M[Res]) {
-    def sideEffectWithReq[Fail](mapFn: Req => Try[Either[Fail, Res]] => Unit)(implicit monad: MonadCanFailWithException[M, Fail]) = { req: Req => fn(req).onComplete[Fail](mapFn(req)) }
+    def sideEffectWithReq[Fail](mapFn: Req => Try[Either[Fail, Res]] => Unit)(implicit monad: MonadCanFailWithException[M, Fail]) =
+    { req: Req => Exceptions(fn(req)).onComplete[Fail](mapFn(req)) }
 
   }
 

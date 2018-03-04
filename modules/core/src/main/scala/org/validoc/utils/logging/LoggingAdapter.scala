@@ -14,18 +14,6 @@ trait LoggingAdapter {
 
 }
 
-object LoggingAdapter {
-  implicit lazy val adapter = {
-    NullLoggingAdapterWithMdc
-  }
-}
-
-trait LoggingAdapterWithMdc extends LoggingAdapter {
-  private val map = new ThreadLocal[Map[String, String]] {
-    override def initialValue(): Map[String, String] = Map()
-  }
-
-}
 
 trait LoggingAdapterWithDefaults extends LoggingAdapter {
 
@@ -35,7 +23,6 @@ trait LoggingAdapterWithDefaults extends LoggingAdapter {
 
   override def info(sender: Any)(msg: => String): Unit = log(sender, "INFO", msg)
 
-
   override def error(sender: Any)(msg: => String, t: Throwable): Unit = log(sender, "ERROR", msg, t)
 
   override def debug(sender: Any)(msg: => String): Unit = log(sender, "DEBUG", msg)
@@ -44,8 +31,15 @@ trait LoggingAdapterWithDefaults extends LoggingAdapter {
   override def trace(sender: Any)(msg: => String): Unit = log(sender, "TRACE", msg)
 }
 
+class RememberLoggingAdapter extends LoggingAdapterWithDefaults {
+  private var list = List[LoggingRecord]()
+  def records: List[LoggingRecord] = list.reverse
+  override protected def log(sender: Any, level: String, msg: => String) = list = LoggingRecord(0, level, sender + "/" + msg, None) :: list
+  override protected def log(sender: Any, level: String, msg: => String, t: Throwable) = list = LoggingRecord(0, level, sender + "/" + msg, Some(t)) :: list
+}
 
-object PrintlnLoggingAdapter extends LoggingAdapterWithMdc with LoggingAdapterWithDefaults {
+
+object PrintlnLoggingAdapter extends LoggingAdapterWithDefaults {
   protected def log(sender: Any, level: String, msg: => String): Unit = println(s"[$level] $msg")
 
   protected def log(sender: Any, level: String, msg: => String, t: Throwable): Unit = {
@@ -54,7 +48,7 @@ object PrintlnLoggingAdapter extends LoggingAdapterWithMdc with LoggingAdapterWi
   }
 }
 
-object NullLoggingAdapterWithMdc extends LoggingAdapterWithMdc with LoggingAdapterWithDefaults {
+object NullLoggingAdapter extends LoggingAdapterWithDefaults {
   override protected def log(sender: Any, level: String, msg: => String): Unit = {}
 
   override protected def log(sender: Any, level: String, msg: => String, t: Throwable): Unit = {}

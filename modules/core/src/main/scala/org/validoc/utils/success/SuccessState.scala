@@ -20,11 +20,13 @@ object SuccessState {
     res => fnSuccess(succeeded, res).liftM
   )
   def sideffectWithString[Fail, T](fnThrowable: (String, Throwable) => Unit,
-                                     fnFail: (String, Fail) => Unit,
-                                     fnSuccess: (String, T) => Unit)(tryR: Try[Either[Fail, T]]): Unit = tryR match {
-    case Failure(t) => fnThrowable(exception, t)
-    case Success(Left(fail)) => fnFail(failed, fail)
-    case Success(Right(t)) => fnSuccess(succeeded, t)
+                                   fnFail: (String, Fail) => Unit,
+                                   fnSuccess: (String, T) => Unit)(tryR: Try[Either[Fail, T]]): Unit = {
+    tryR match {
+      case Failure(t) => fnThrowable(exception, t)
+      case Success(Left(fail)) => fnFail(failed, fail)
+      case Success(Right(t)) => fnSuccess(succeeded, t)
+    }
   }
 }
 
