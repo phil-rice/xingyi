@@ -5,7 +5,7 @@ import org.validoc.utils.cache.{Cachable, ShouldCache}
 import org.validoc.utils.functions.{Liftable, MonadCanFail}
 import org.validoc.utils.http._
 import org.validoc.utils.json.{FromJson, ToJson}
-import org.validoc.utils.tagless.{TaglessInterpreterForToString, TaglessLanguage}
+import org.validoc.utils.tagless.{ProfileEachEndpointLanguage, TaglessInterpreterForToString, TaglessLanguage}
 
 import scala.concurrent.Future
 import scala.language.{higherKinds, postfixOps}
@@ -53,7 +53,7 @@ class PromotionSetup[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail](interpret
   val homePage = (merge(enrichedPromotion) and enrichedMostPopular into[HomePageQuery, HomePage] ((hpq, ep, emp) => HomePage(emp, ep)))
 
   val mostPopularEndPoint = enrichedMostPopular |+| logging("homepage") |++| endpoint[MostPopularQuery, EnrichedMostPopular]("/mostpopular", fixedPath(Get))
-  val homePageEndPoint = homePage  |+| logging("homepage")|++| endpoint[HomePageQuery, HomePage]("/", fixedPath(Get))
+  val homePageEndPoint = homePage |+| logging("homepage") |++| endpoint[HomePageQuery, HomePage]("/", fixedPath(Get))
   val microservice = chain(mostPopularEndPoint, homePageEndPoint)
 
 }
@@ -68,6 +68,6 @@ object PromotionSetup extends App with SampleJsonsForCompilation {
   import org.validoc.utils.functions.AsyncForScalaFuture._
   import ImplicitsForTest._
 
-  val setup = new PromotionSetup[StringHolder, StringHolder, Future, Throwable](language.forToString)
+  val setup = new PromotionSetup[StringHolder, StringHolder, Future, Throwable](new ProfileEachEndpointLanguage(language.forToString))
   println(setup.microservice.invertIndent)
 }

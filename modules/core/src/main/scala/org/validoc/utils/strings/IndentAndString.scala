@@ -1,5 +1,7 @@
 package org.validoc.utils.strings
 
+import javax.swing.JToolBar.Separator
+
 import org.validoc.utils.functions.{Monoid, SemiGroup}
 import org.validoc.utils.service.html.ToHtml
 
@@ -14,7 +16,8 @@ case class IndentAndString(indent: Int, lines: List[(Int, String)]) {
     IndentAndString(0, lines.map { case (i, s) => (max - i, s) })
   }
   def offset(by: Int) = IndentAndString(indent, lines.map { case (i, s) => (i + by, s) })
-  override def toString: String = lines.map { case (i, s) => List.fill(i)("  ").mkString("") + s }.mkString("\n")
+  def toString(filler: String, separator: String): String = lines.map { case (i, s) => List.fill(i)(filler).mkString("") + s }.mkString(separator)
+  override def toString: String = toString("  ", "\n")
 }
 
 object IndentAndString {

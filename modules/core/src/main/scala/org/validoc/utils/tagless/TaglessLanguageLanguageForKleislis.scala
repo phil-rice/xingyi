@@ -23,6 +23,8 @@ trait HttpFactory[M[_], HttpReq, HttpRes] extends (ServiceName => HttpReq => M[H
 
 trait CommonForKleislis[M[_]] {
   type Kleisli[Req, Res] = Req => M[Res]
+  type EndpointK[Req, Res] = ServiceRequest => Option[M[ServiceResponse]]
+
 }
 
 trait HttpKlesili[M[_]] extends CommonForKleislis[M] {
@@ -42,9 +44,7 @@ trait MetricsKleisli[M[_], Fail] extends MetricsLanguageBase[Fail] with CommonFo
 }
 
 
-class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail] {
-  type EndpointK[Req, Res] = ServiceRequest => Option[M[ServiceResponse]]
-  type Kleisli[Req, Res] = Req => M[Res]
+class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail] extends CommonForKleislis[M] {
 
   case class NonFunctionalLanguageService(implicit monadCanFail: MonadCanFailWithException[M, Fail],
                                           protected val httpFactory: HttpFactory[M, ServiceRequest, ServiceResponse],
@@ -88,10 +88,10 @@ class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail] {
       new RetryService[M, Fail, Req, Res](raw, retryConfig)
 
     override def profile[Req: ClassTag, Res: ClassTag](profileData: TryProfileData)(raw: Kleisli[Req, Res]) =
-      raw.onEnterAndExitM(_ => timeService(), profileData.event)
+      raw.onEnterAndExitM(_ => timeService(), profileData.eventFromStartTime)
 
 
-    override protected def enrichPrim[ReqP, ResP, ReqC, ResC, ResE](parentService: Kleisli[ReqP, ResP], childService: Kleisli[ReqC, ResC])(implicit findChildIds: HasChildren[ResP, ReqC], enricher: Enricher[ReqP, ResP, ReqC, ResC, ResE]) =
+    override  def enrichPrim[ReqP, ResP, ReqC, ResC, ResE](parentService: Kleisli[ReqP, ResP], childService: Kleisli[ReqC, ResC])(implicit findChildIds: HasChildren[ResP, ReqC], enricher: Enricher[ReqP, ResP, ReqC, ResC, ResE]) =
       parentService |=++> { reqP => resP => findChildIds ~+> childService |=> (seq => enricher(reqP, resP, seq)) }
 
 

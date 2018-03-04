@@ -2,8 +2,9 @@ package org.validoc.utils.tagless
 
 import org.validoc.utils.cache.{Cachable, ShouldCache}
 import org.validoc.utils.endpoint.MatchesServiceRequest
+import org.validoc.utils.functions.MonadCanFail
 import org.validoc.utils.http._
-import org.validoc.utils.logging.{DetailedLogging, LogRequestAndResult, SummaryLogging}
+import org.validoc.utils.logging.{DetailedLogging, SummaryLogging}
 import org.validoc.utils.profiling.TryProfileData
 import org.validoc.utils.retry.{NeedsRetry, RetryConfig}
 import org.validoc.utils.strings.IndentAndString
@@ -13,9 +14,24 @@ import scala.reflect.ClassTag
 
 class TaglessInterpreterForToString {
 
+
   import org.validoc.utils.reflection.ClassTags._
 
   type StringHolder[Req, Res] = IndentAndString
+
+  def systemToString[M[_], Fail](fn: TaglessLanguage[StringHolder, StringHolder, M, Fail] => StringHolder[ServiceRequest, ServiceResponse])(implicit monadCanFail: MonadCanFail[M, Fail]) = {
+    val toStringLanguage = new ForToString[M, Fail]()
+    fn(toStringLanguage).invertIndent.toString("&nbsp;&nbsp;", "<br />")
+  }
+
+  def systemToEndpoint[EndpointWrapper[_, _], Wrapper[_, __], M[_], Fail](endpointPath: String, language: TaglessLanguage[EndpointWrapper, Wrapper, M, Fail])(fn: TaglessLanguage[StringHolder, StringHolder, M, Fail] => StringHolder[ServiceRequest, ServiceResponse])(implicit monadCanFail: MonadCanFail[M, Fail]) = {
+    val html = systemToString[M, Fail](fn)
+
+    import language._
+
+    val htmlFn = { s: ServiceRequest => ServiceResponse(Status(200), Body(html), ContentType("text/html")) }
+    function[ServiceRequest, ServiceResponse]("html")(htmlFn) |++| endpoint[ServiceRequest, ServiceResponse](endpointPath, MatchesServiceRequest.fixedPath(Get))
+  }
 
   implicit def forToString[M[_], Fail] = new ForToString[M, Fail]
   class ForToString[M[_], Fail] extends TaglessLanguage[StringHolder, StringHolder, M, Fail] {
@@ -43,7 +59,7 @@ class TaglessInterpreterForToString {
     override def logging[Req: ClassTag : DetailedLogging : SummaryLogging, Res: ClassTag : DetailedLogging : SummaryLogging](messagePrefix: String)(raw: StringHolder[Req, Res]) =
       raw.insertLineAndIndent(s"logging(Using $messagePrefix)")
 
-    override protected def enrichPrim[ReqP, ResP, ReqC, ResC, ResE](parent: StringHolder[ReqP, ResP], child: StringHolder[ReqC, ResC])(implicit findChildIds: HasChildren[ResP, ReqC], enricher: Enricher[ReqP, ResP, ReqC, ResC, ResE]) =
+    override def enrichPrim[ReqP, ResP, ReqC, ResC, ResE](parent: StringHolder[ReqP, ResP], child: StringHolder[ReqC, ResC])(implicit findChildIds: HasChildren[ResP, ReqC], enricher: Enricher[ReqP, ResP, ReqC, ResC, ResE]) =
       IndentAndString.merge("enrich", parent, child)
 
     override def merge2Prim[ReqM, ResM, Req1, Res1, Req2, Res2](firstService: StringHolder[Req1, Res1], secondService: StringHolder[Req2, Res2], merger: (ReqM, Res1, Res2) => ResM)(implicit reqMtoReq1: ReqM => Req1, reqMtoReq2: ReqM => Req2): StringHolder[ReqM, ResM] =

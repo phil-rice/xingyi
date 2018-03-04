@@ -3,21 +3,43 @@ package org.validoc.sampleServer
 import java.util.ResourceBundle
 import java.util.concurrent.Executors
 
+import org.omg.CORBA.StringHolder
 import org.validoc.caffeine.CaffeineCache
 import org.validoc.sample._
 import org.validoc.sample.domain.SampleJsonsForCompilation
+import org.validoc.sampleServer.AllProducers.interpreter
 import org.validoc.simpleServer.{EndpointHandler, SimpleHttpServer}
+import org.validoc.utils.endpoint.MatchesServiceRequest
+import org.validoc.utils.functions.MonadCanFail
 import org.validoc.utils.http._
+import org.validoc.utils.local.ExecutionContextWithLocal
 import org.validoc.utils.logging.{AbstractLogRequestAndResult, LogRequestAndResult, PrintlnLoggingAdapter}
 import org.validoc.utils.metrics.PrintlnPutMetrics
-import org.validoc.utils.tagless.{HttpFactory, TaglessLanguageLanguageForKleislis}
+import org.validoc.utils.tagless.{TaglessInterpreterForToString, _}
+import org.validoc.utils.functions.AsyncForScalaFuture._
 
 import scala.concurrent.{ExecutionContext, Future}
-import org.validoc.utils.functions.AsyncForScalaFuture._
-import org.validoc.utils.local.ExecutionContextWithLocal
+import scala.language.higherKinds
+
+class AllProducers[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail](language: TaglessLanguage[EndpointWrapper, Wrapper, M, Fail])(implicit
+                                                                                                                                   monadCanFail: MonadCanFail[M, Fail],
+                                                                                                                                   failer: Failer[Fail],
+                                                                                                                                   jsonBundle: JsonBundle
+) {
+  val vogueSetup = new VogueSetup(language)
+  val billboardSetup = new BillboardSetup(language)
+  val fnordSetup = new FnordSetup(language)
+  val endpoints = Seq[EndpointWrapper[_, _]](
+    vogueSetup.mostpopularEndpoint,
+    billboardSetup.billboardEndpoint,
+    fnordSetup.productionEndpoint,
+    fnordSetup.programmeEndpoint)
+  val rawMicroservice = language.chain(endpoints: _*)
+  def allEndpoints(otherEndpoints: EndpointWrapper[_, _]*): Wrapper[ServiceRequest, ServiceResponse] = language.chain((endpoints ++ otherEndpoints): _*)
+}
 
 object AllProducers extends App with SampleJsonsForCompilation {
-println("All producers")
+  println("All producers")
   implicit val executors = Executors.newFixedThreadPool(10)
   implicit val exc = ExecutionContextWithLocal.default(ExecutionContext.fromExecutor(executors))
 
@@ -32,16 +54,19 @@ println("All producers")
   }
   implicit val cacheFactory = CaffeineCache.cacheFactoryForFuture(CaffeineCache.defaultCacheBuilder)
 
-  val interpreter = new TaglessLanguageLanguageForKleislis[Future, Throwable]
 
   implicit val jsonBundle = JsonBundle()
-  private val language = interpreter.NonFunctionalLanguageService()
-  val vogueSetup = new VogueSetup(language)
-  val billboardSetup = new BillboardSetup(language)
-  val fnordSetup = new FnordSetup(language)
 
-  val microService = language.chain(vogueSetup.mostpopularEndpoint, billboardSetup.billboardEndpoint, fnordSetup.productionEndpoint, fnordSetup.programmeEndpoint)
+  //TODO It would be nice to make this nicer!
+  //The types are horrific!
+  //This is where we are turning the language description into useful endpoints. So It's pretty cool.
+  private val forTostring = new TaglessInterpreterForToString()
+  val interpreter = new TaglessLanguageLanguageForKleislis[Future, Throwable]
+  val kleisliLanguage: interpreter.NonFunctionalLanguageService = interpreter.NonFunctionalLanguageService()
+  val profileLanguage = new ProfileEachEndpointLanguage(kleisliLanguage)
+  val htmlEndpoint = forTostring.systemToEndpoint[interpreter.EndpointK, interpreter.Kleisli, Future, Throwable]("/html", profileLanguage)(language => new AllProducers[forTostring.StringHolder, forTostring.StringHolder, Future, Throwable](language).allEndpoints())
+  private val microservice: interpreter.Kleisli[ServiceRequest, ServiceResponse] = new AllProducers(profileLanguage).allEndpoints(htmlEndpoint, profileLanguage.profileMetricsEndpoint)
 
 
-  new SimpleHttpServer(9000, new EndpointHandler[Future, Throwable](microService)).start()
+  new SimpleHttpServer(9000, new EndpointHandler[Future, Throwable](microservice)).start()
 }

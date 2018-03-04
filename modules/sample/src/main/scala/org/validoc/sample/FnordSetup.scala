@@ -18,7 +18,7 @@ class FnordSetup[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail](interpreter: 
   import interpreter._
 
   val production = function[ProductionId, Production]("production")(id => Production(s"from ${id.id}"))
-  val program = function[ProgrammeId, Programme]("progreamme")(id => Programme(s"from ${id.id}"))
+  val program = function[ProgrammeId, Programme]("programme")(id => Programme(s"from ${id.id}"))
 
   val x = ProgrammeId.fromServiceRequest[M]
   val programmeEndpoint = program |++| endpoint[ProgrammeId, Programme]("/programme", MatchesServiceRequest.idAtEnd(Get))
