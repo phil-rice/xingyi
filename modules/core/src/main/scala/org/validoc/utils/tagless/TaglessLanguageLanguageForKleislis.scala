@@ -46,7 +46,7 @@ class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail] {
 
   case class NonFunctionalLanguageService(implicit monadCanFail: MonadCanFailWithException[M, Fail],
                                           protected val httpFactory: HttpFactory[M, ServiceRequest, ServiceResponse],
-                                          protected val logReqAndResult: LogRequestAndResult[M, Fail],
+                                          protected val logReqAndResult: LogRequestAndResult[Fail],
                                           protected val timeService: NanoTimeService,
                                           protected val putMetrics: PutMetrics,
                                           cacheFactory: CacheFactory[M],

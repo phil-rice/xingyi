@@ -10,15 +10,18 @@ import scala.reflect.ClassTag
 import org.mockito.Mockito._
 import org.validoc.utils._
 
-class AbstractObjectifySpec[M[_] : Async, Fail](implicit val monad: MonadCanFail[M, Fail]) extends UtilsSpec with ObjectifyKleisli[M, Fail] with FunctionFixture {
-
-  behavior of "Objectify"
-  type ServiceKleisli = Kleisli[ServiceRequest, ServiceResponse]
-  type StringKleisli = Kleisli[String, String]
+trait ServiceResponseFixture {
   val serviceRequest = ServiceRequest(Get, Uri("/someUri"))
   val serviceResponse = ServiceResponse(Status(1), Body("someBody"), ContentType("something"))
   val serviceResponse2 = ServiceResponse(Status(1), Body("someBody2"), ContentType("somethingElse"))
   val reqAndServiceResponse = RequestAndServiceResponse("input", serviceResponse2)
+
+}
+class AbstractObjectifySpec[M[_] : Async, Fail](implicit val monad: MonadCanFail[M, Fail]) extends UtilsSpec with ObjectifyKleisli[M, Fail] with FunctionFixture with ServiceResponseFixture {
+
+  behavior of "Objectify"
+  type ServiceKleisli = Kleisli[ServiceRequest, ServiceResponse]
+  type StringKleisli = Kleisli[String, String]
 
   def setup[X](fn: (StringKleisli, ToServiceRequest[String], ServiceKleisli, ResponseCategoriser[M, String], ResponseParser[Fail, String, String]) => X): X = {
     implicit val toRequest = mock[ToServiceRequest[String]]

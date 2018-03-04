@@ -9,9 +9,9 @@ import scala.reflect.ClassTag
 
 trait LoggingKleisli[M[_], Fail] extends CommonForKleislis[M] {
   implicit def monad: MonadCanFailWithException[M, Fail]
-  protected val logReqAndResult: LogRequestAndResult[M, Fail]
+  protected val logReqAndResult: LogRequestAndResult[Fail]
 
   def logging[Req: ClassTag : DetailedLogging : SummaryLogging, Res: ClassTag : DetailedLogging : SummaryLogging](messagePrefix: String)(raw: Kleisli[Req, Res]) =
-    raw |==*+> logReqAndResult[Req, Res](messagePrefix, messagePrefix)
+    raw.sideEffectWithReq[Fail](logReqAndResult[Req, Res](messagePrefix, messagePrefix))
 
 }

@@ -139,8 +139,6 @@ package object utils {
     def |=>[Res2](mapFn: Res => Res2): (Req => M[Res2]) = req => monad.map(fn(req), mapFn)
     def |=+>[Res2](mapFn: (Req => Res => Res2)): (Req => M[Res2]) = req => monad.map(fn(req), mapFn(req))
     def |==+>[Res2](mapFn: (Req => Res => M[Res2])): (Req => M[Res2]) = req => monad.flatMap(fn(req), mapFn(req))
-    def |==*+>[Res2](mapFn: (Req => M[Res] => M[Res2])): (Req => M[Res2]) = { req => mapFn(req)(fn(req))
-    }
     def |=++>[Res2](mapFn: (Req => Res => Res => M[Res2])): (Req => M[Res2]) = { req => monad.flatMap(fn(req), { res: Res => mapFn(req)(res)(res) }) }
     def |==>[Res2](mapFn: Res => M[Res2]): (Req => M[Res2]) = req => monad.flatMap(fn(req), mapFn)
 
@@ -179,6 +177,11 @@ package object utils {
     def onEnterAndExitM[Mid](mid: Req => Mid, after: Mid => Try[Res] => Unit) = { req: Req =>
       withValue(mid(req))(m => fn(req).registerSideeffect(after(m)))
     }
+  }
+
+  implicit class MonadWithCanFailAndExceptionFunctionPimper[M[_], Req, Res](fn: Req => M[Res]) {
+    def sideEffectWithReq[Fail](mapFn: Req => Try[Either[Fail, Res]] => Unit)(implicit monad: MonadCanFailWithException[M, Fail]) = { req: Req => fn(req).onComplete[Fail](mapFn(req)) }
+
   }
 
   implicit class MonadSeqFunctionPimper[M[_], Req, Res](fn: Req => M[Seq[Res]])(implicit async: Monad[M]) {

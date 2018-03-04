@@ -26,7 +26,7 @@ object SampleServer extends App with SampleJsonsForCompilation {
   implicit val loggingAdapter = PrintlnLoggingAdapter
   implicit val resourceBundle = ResourceBundle.getBundle("messages")
   implicit val putMetrics = PrintlnPutMetrics
-  implicit val logRequestAndResult: LogRequestAndResult[Future, Throwable] = new LogRequestAndResultForBundle[Future, Throwable]
+  implicit val logRequestAndResult: LogRequestAndResult[Throwable] = new LogRequestAndResultForBundle[Throwable]
   implicit val cacheFactory = CaffeineCache.cacheFactoryForFuture(CaffeineCache.defaultCacheBuilder)
   val interpreter = new TaglessLanguageLanguageForKleislis[Future, Throwable]
   //  type K = interpreter.K

@@ -60,7 +60,7 @@ case class LoggingReport[X](result: Try[X], records: LoggingRecords) {
 }
 
 
-case class LoggingRecord(time: Long, level: LogLevel, msg: Any, throwable: Option[Throwable]) {
+case class LoggingRecord(time: Long, level: String, msg: Any, throwable: Option[Throwable]) {
   def forJson(startTime: Long) = {
     val sinceStart = (time - startTime) / 1000000.0
     val rawMap = Map("time" -> f"$sinceStart%-3.2f", "level" -> level, "msg" -> msg, "summary" -> Strings.ellipses(500)(msg.toString))

@@ -1,5 +1,6 @@
 package org.validoc.utils.logging
 
+import java.text.MessageFormat
 import java.util.concurrent.atomic.AtomicReference
 
 import org.validoc.utils.UtilsSpec
@@ -7,6 +8,10 @@ import org.validoc.utils.functions.{Async, Functions, MonadCanFailWithException}
 
 import scala.concurrent.Future
 import scala.language.higherKinds
+import scala.util.{Success, Try}
+import org.validoc.utils._
+import org.validoc.utils.objectify.ServiceResponseFixture
+import org.mockito.Mockito._
 
 abstract class LoggingKleisliSpec[M[_] : Async, Fail](implicit m: MonadCanFailWithException[M, Fail]) extends UtilsSpec {
 
@@ -21,30 +26,31 @@ abstract class LoggingKleisliSpec[M[_] : Async, Fail](implicit m: MonadCanFailWi
   }
 
 
-  def setup[X](fn: (StringKleisli, StringKleisli, AtomicReference[Any]) => X): X = {
-    val state = new AtomicReference[Any]()
+  def setup[X](fn: (StringKleisli, StringKleisli, AtomicReference[Try[Either[Fail, _]]]) => X): X = {
+    val state = new AtomicReference[Try[Either[Fail, _]]]()
     val loggingKleisli = new LoggingKleisli[M, Fail] {
       override implicit def monad: MonadCanFailWithException[M, Fail] = m
-      override protected val logReqAndResult = new LogRequestAndResult[M, Fail] {
+      override protected val logReqAndResult = new LogRequestAndResult[Fail] {
         override def apply[Req: DetailedLogging : SummaryLogging, Res: DetailedLogging : SummaryLogging](sender: Any, messagePrefix: String)(req: Req) = {
           req shouldBe "input"
           messagePrefix shouldBe "someMessagePrefix"
           sender shouldBe messagePrefix //for now. We may improve this later
-
-          //Need to think about how to test. Might end up splitting Report Data... it has two responsiblities at the moment...
-          Functions.identify
+          state.set _
         }
+        override protected def format(messagePrefix: String, messagePostFix: String)(strings: String*) =
+          MessageFormat.format(messagePrefix + "." + messagePrefix + "{1}{2}{3}{4}", strings: _*)
       }
     }
     val raw = mock[String => M[String]]
-    fn(loggingKleisli.logging[String, String]("")(raw), raw, state)
+    fn(loggingKleisli.logging[String, String]("someMessagePrefix")(raw), raw, state)
   }
 
 
   it should "pass a logging message to the logReqAndResult when " in {
-    setup {
-      (logging, raw, remembered) =>
-      //      raw.sideeffect(logReqAndResult[Req, Res](messagePrefix, messagePrefix))
+    setup { (logging, raw, remembered) =>
+      when(raw.apply("input")) thenReturn "output".liftM
+      logging("input").await() shouldBe "output"
+      remembered.get shouldBe Success(Right("output"))
     }
   }
 }
