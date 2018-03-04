@@ -10,6 +10,7 @@ import org.validoc.utils.metrics.PutMetrics
 import org.validoc.utils.objectify.ObjectifyKleisli
 import org.validoc.utils.profiling.TryProfileData
 import org.validoc.utils.retry.{NeedsRetry, RetryConfig, RetryService}
+import org.validoc.utils.success.SuccessState
 import org.validoc.utils.time.NanoTimeService
 
 import scala.annotation.tailrec
@@ -33,8 +34,9 @@ trait MetricsKleisli[M[_], Fail] extends MetricsLanguageBase[Fail] with CommonFo
   implicit def monad: MonadCanFailWithException[M, Fail]
   protected def putMetrics: PutMetrics
   protected def timeService: NanoTimeService
-  def metrics[Req: ClassTag, Res: ClassTag](prefix: String)(raw: Kleisli[Req, Res])(implicit makeReportData: RD[Res]) =
-    raw.enterAndExit[Fail, Long]({ r: Req => timeService() }, makeReportData(prefix) ~> putMetrics)
+  def metrics[Req: ClassTag, Res: ClassTag](prefix: String)(raw: Kleisli[Req, Res])(implicit rd: RD[Res]) =
+    raw.onExit[Long](_ => timeService(), (duration, mRes) => mRes.onComplete(rd.apply(prefix, duration) ~> putMetrics))
+
 }
 
 
@@ -44,7 +46,7 @@ class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail] {
 
   case class NonFunctionalLanguageService(implicit monadCanFail: MonadCanFailWithException[M, Fail],
                                           protected val httpFactory: HttpFactory[M, ServiceRequest, ServiceResponse],
-                                          protected val logReqAndResult: LogRequestAndResult[Fail],
+                                          protected val logReqAndResult: LogRequestAndResult[M, Fail],
                                           protected val timeService: NanoTimeService,
                                           protected val putMetrics: PutMetrics,
                                           cacheFactory: CacheFactory[M],

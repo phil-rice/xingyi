@@ -56,9 +56,9 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
     val retryConfig = RetryConfig(10, RandomDelay(FiniteDuration(100, TimeUnit.MILLISECONDS)))
 
-    implicit object logRequestAndResult extends LogRequestAndResult[Fail] {
-      override def apply[Req: DetailedLogging : SummaryLogging, Res: DetailedLogging : SummaryLogging](sender: Any, messagePrefix: String)(req: Req) = ???
-    }
+//    implicit object logRequestAndResult extends LogRequestAndResult[M, Fail] {
+//      override def apply[Req: DetailedLogging : SummaryLogging, Res: DetailedLogging : SummaryLogging](sender: Any, messagePrefix: String)(req: Req) = ???
+//    }
 
     ResponseParser.defaultDirtyParser[M, Fail, String, String]
     def s1: Wrapper[String, String] = http("s1") |+| objectify[String, String] |+| logging("prefix1") |+| metrics("service1")
