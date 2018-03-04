@@ -3,19 +3,17 @@ package org.validoc.utils.tagless
 import org.validoc.utils._
 import org.validoc.utils.cache._
 import org.validoc.utils.endpoint.MatchesServiceRequest
-import org.validoc.utils.functions.{Async, Monad, MonadCanFailWithException}
+import org.validoc.utils.functions.{Async, MonadCanFailWithException}
 import org.validoc.utils.http._
 import org.validoc.utils.logging._
 import org.validoc.utils.metrics.PutMetrics
 import org.validoc.utils.objectify.ObjectifyKleisli
 import org.validoc.utils.profiling.TryProfileData
 import org.validoc.utils.retry.{NeedsRetry, RetryConfig, RetryService}
-import org.validoc.utils.success.MessageName
 import org.validoc.utils.time.NanoTimeService
 
 import scala.annotation.tailrec
-import scala.language.higherKinds
-import scala.language.implicitConversions
+import scala.language.{higherKinds, implicitConversions}
 import scala.reflect.ClassTag
 
 trait HttpFactory[M[_], HttpReq, HttpRes] extends (ServiceName => HttpReq => M[HttpRes])

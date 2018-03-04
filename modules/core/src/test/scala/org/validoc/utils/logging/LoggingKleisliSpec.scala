@@ -4,10 +4,9 @@ import java.util.concurrent.atomic.AtomicReference
 
 import org.validoc.utils.UtilsSpec
 import org.validoc.utils.functions.{Async, MonadCanFailWithException}
-import org.validoc.utils.success.{MessageName, SucceededState}
+import org.validoc.utils.success.{SucceededState, SuccessState}
 
 import scala.language.higherKinds
-import scala.reflect.ClassTag
 
 class LoggingKleisliSpec[M[_] : Async, Fail](implicit val monad: MonadCanFailWithException[M, Fail]) extends UtilsSpec with LoggingKleisli[M, Fail] {
 
@@ -21,19 +20,19 @@ class LoggingKleisliSpec[M[_] : Async, Fail](implicit val monad: MonadCanFailWit
     override def apply(v1: String) = s"((($v1)))"
   }
 
-  implicit val someMessageName = MessageName[String, String]("someMessageName")
-
-  implicit val someSender = mock[AnyRef]
 
   def setup[X](fn: (StringKleisli, StringKleisli, AtomicReference[Any]) => X): X = {
     val state = new AtomicReference[Any]()
     implicit val logRequestAndResult: LogRequestAndResult[Fail] = new LogRequestAndResult[Fail] {
-      override def apply[Req: DetailedLogging : SummaryLogging, Res: DetailedLogging : SummaryLogging](sender: Any)(req: Req)(implicit messageName: MessageName[Req, Res]): SucceededState[Fail, Res] => Unit = {
+      override def apply[Req: DetailedLogging : SummaryLogging, Res: DetailedLogging : SummaryLogging](sender: Any, messagePrefix: String)(req: Req): SucceededState[Fail, Res] => Unit = {
         req shouldBe "input"
-        messageName shouldBe someMessageName
-        sender shouldBe someSender
+        messagePrefix shouldBe "someMessagePrefix"
+        sender shouldBe messagePrefix //for now. We may improve this later
 
-        { s => state.set(s) }
+        {
+          case SuccessState(x) => x shouldBe "result"
+          case _ => fail
+        }
       }
     }
     val raw = mock[Kleisli[String, String]]
@@ -43,5 +42,6 @@ class LoggingKleisliSpec[M[_] : Async, Fail](implicit val monad: MonadCanFailWit
 
   it should "" in {
 
+    fail
   }
 }

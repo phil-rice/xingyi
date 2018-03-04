@@ -2,24 +2,19 @@ package org.validoc.utils.tagless
 
 import java.util.concurrent.TimeUnit
 
-import org.validoc.utils.UtilsSpec
-import org.validoc.utils.endpoint.IdAtEndAndVerb
+import org.validoc.utils.{UtilsSpec, _}
+import org.validoc.utils.endpoint.MatchesServiceRequest._
+import org.validoc.utils.functions.MonadCanFail
 import org.validoc.utils.http._
+import org.validoc.utils.logging.{DetailedLogging, LogRequestAndResult, SummaryLogging}
 import org.validoc.utils.profiling.TryProfileData
 import org.validoc.utils.retry.RetryConfig
 import org.validoc.utils.strings.Strings
-import org.validoc.utils.success.MessageName
 import org.validoc.utils.time.RandomDelay
 
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.language.{higherKinds, implicitConversions}
-import org.validoc.utils.endpoint.MatchesServiceRequest._
-import org.validoc.utils.functions.{Liftable, MonadCanFail}
-
-import scala.concurrent.Future
-import scala.language.higherKinds
-import org.validoc.utils._
-import org.validoc.utils.logging.{DetailedLogging, LogRequestAndResult, SummaryLogging}
 
 class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
@@ -30,7 +25,6 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
     implicit def fn(s: String) = s;
 
-    implicit val messageName = MessageName[String, String]("someMessageName")
 
     implicit object ParserForStringString extends ResponseParser[Fail, String, String] {
       override def apply(req: String) = { res => Right(req + "=>" + res) }
@@ -62,7 +56,7 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
     val retryConfig = RetryConfig(10, RandomDelay(FiniteDuration(100, TimeUnit.MILLISECONDS)))
 
     implicit object logRequestAndResult extends LogRequestAndResult[Fail] {
-      override def apply[Req: DetailedLogging : SummaryLogging, Res: DetailedLogging : SummaryLogging](sender: Any)(req: Req)(implicit messageName: MessageName[Req, Res]) = ???
+      override def apply[Req: DetailedLogging : SummaryLogging, Res: DetailedLogging : SummaryLogging](sender: Any, messagePrefix: String)(req: Req) = ???
     }
     def s1: Wrapper[String, String] = http("s1") |+| objectify[String, String] |+| logging("") |+| metrics("service1")
 
@@ -102,9 +96,9 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
   it should "handle" in {
     implicit val stringlanguage = new TaglessInterpreterForToString
-    import stringlanguage._
     import org.validoc.utils.functions.AsyncForScalaFuture._
     import ImplicitsForTest._
+    import stringlanguage._
 
     val sample = new Sample[StringHolder, StringHolder, Future, Throwable]()
     sample.s1.lines shouldBe List((3, "metrics(service1)"), (2, "logging(service1 using prefix someMessageName)"), (1, "objectify[String,String]"), (0, "http(s1)"))

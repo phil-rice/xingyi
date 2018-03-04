@@ -28,16 +28,16 @@ object SummaryLogging {
   }
 }
 
-trait LogRequestAndResult[Fail]{
-  def apply[Req: DetailedLogging : SummaryLogging, Res: DetailedLogging : SummaryLogging](sender: Any)(req: Req)(implicit messageName: MessageName[Req, Res]): SucceededState[Fail, Res] => Unit
+trait LogRequestAndResult[Fail] {
+  def apply[Req: DetailedLogging : SummaryLogging, Res: DetailedLogging : SummaryLogging](sender: Any, messagePrefix: String)(req: Req): SucceededState[Fail, Res] => Unit
 }
 
 
-class LogRequestAndResultForBundle[Fail: DetailedLogging : SummaryLogging](implicit bundle: ResourceBundle, log: LoggingAdapter)  extends LogRequestAndResult[Fail]{
+class LogRequestAndResultForBundle[Fail: DetailedLogging : SummaryLogging](implicit bundle: ResourceBundle, log: LoggingAdapter) extends LogRequestAndResult[Fail] {
   def details[T](t: T)(implicit detailedLogging: DetailedLogging[T]) = detailedLogging(t)
   def summary[T](t: T)(implicit summaryLogging: SummaryLogging[T]) = summaryLogging(t)
 
-  def apply[Req: DetailedLogging : SummaryLogging, Res: DetailedLogging : SummaryLogging](sender: Any)(req: Req)(implicit messageName: MessageName[Req, Res]): SucceededState[Fail, Res] => Unit = {
+  def apply[Req: DetailedLogging : SummaryLogging, Res: DetailedLogging : SummaryLogging](sender: Any, messagePrefix: String)(req: Req): SucceededState[Fail, Res] => Unit = {
     case state@SuccessState(res) => log.debug(sender, state.format[Req, Res](summary(req), summary(res)))
     case state@FailedState(fail) => log.debug(sender, state.format[Req, Res](summary(req), details(req), summary(fail), details(fail)))
     case state@ExceptionState(t) => log.error(sender, state.format[Req, Res](summary(req), details(req), t.getClass.getSimpleName, t.getMessage), t)

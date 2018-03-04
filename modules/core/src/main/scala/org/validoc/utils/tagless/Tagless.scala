@@ -7,8 +7,6 @@ import org.validoc.utils.logging._
 import org.validoc.utils.metrics.ReportData
 import org.validoc.utils.profiling.TryProfileData
 import org.validoc.utils.retry.{NeedsRetry, RetryConfig}
-import org.validoc.utils.success.MessageName
-import org.validoc.utils.time.NanoTimeService
 
 import scala.language.higherKinds
 import scala.reflect.ClassTag
@@ -25,7 +23,7 @@ trait HasChildren[Main, Children] extends (Main => Seq[Children])
 
 trait Enricher[Req, Parent, ChildId, Child, Res] extends ((Req, Parent, Seq[(ChildId, Child)]) => Res)
 
-trait MetricsLanguageBase[ Fail] {
+trait MetricsLanguageBase[Fail] {
   type RD[T] = ReportData[Fail, T]
 }
 trait TaglessLanguage[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail] extends HttpLanguage[Wrapper, M, Fail]
@@ -33,15 +31,15 @@ trait TaglessLanguage[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail] extends 
 
 trait HttpLanguage[Wrapper[_, _], M[_], Fail] extends NonfunctionalLanguage[Wrapper, Fail] {
   def http(name: ServiceName): Wrapper[ServiceRequest, ServiceResponse]
-  def objectify[Req: ClassTag , Res: ClassTag](http: Wrapper[ServiceRequest, ServiceResponse])
-                                                                                      (implicit toRequest: ToServiceRequest[Req],
-                                                                                       categoriser: ResponseCategoriser[Req],
-                                                                                       responseProcessor: ResponseProcessor[M, Req, Res]): Wrapper[Req, Res]
+  def objectify[Req: ClassTag, Res: ClassTag](http: Wrapper[ServiceRequest, ServiceResponse])
+                                             (implicit toRequest: ToServiceRequest[Req],
+                                              categoriser: ResponseCategoriser[Req],
+                                              responseProcessor: ResponseProcessor[M, Req, Res]): Wrapper[Req, Res]
   //  def endpoint[Req: ClassTag:EndpointPath, Res: ClassTag:ToServiceResponse]()
 }
 
-trait NonfunctionalLanguage[Wrapper[_, _], Fail] extends MetricsLanguageBase[ Fail] {
-  def logging[Req: ClassTag : DetailedLogging : SummaryLogging, Res: ClassTag : DetailedLogging : SummaryLogging](s: String)(raw: Wrapper[Req, Res])(implicit logReqAndResult: LogRequestAndResult[Fail], messageName: MessageName[Req, Res]): Wrapper[Req, Res]
+trait NonfunctionalLanguage[Wrapper[_, _], Fail] extends MetricsLanguageBase[Fail] {
+  def logging[Req: ClassTag : DetailedLogging : SummaryLogging, Res: ClassTag : DetailedLogging : SummaryLogging](messagePrefix: String)(raw: Wrapper[Req, Res])(implicit logReqAndResult: LogRequestAndResult[Fail]): Wrapper[Req, Res]
   def metrics[Req: ClassTag, Res: ClassTag : RD](prefix: String)(raw: Wrapper[Req, Res]): Wrapper[Req, Res]
   def cache[Req: ClassTag : Cachable : ShouldCache, Res: ClassTag](name: String)(raw: Wrapper[Req, Res]): Wrapper[Req, Res]
   def retry[Req: ClassTag, Res: ClassTag](retryConfig: RetryConfig)(raw: Wrapper[Req, Res])(implicit retry: NeedsRetry[Fail, Res]): Wrapper[Req, Res]

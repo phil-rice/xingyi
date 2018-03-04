@@ -4,14 +4,12 @@ import org.validoc.utils.cache.{Cachable, ShouldCache}
 import org.validoc.utils.endpoint.MatchesServiceRequest
 import org.validoc.utils.http._
 import org.validoc.utils.logging.{DetailedLogging, LogRequestAndResult, SummaryLogging}
-import org.validoc.utils.profiling.{ProfileData, TryProfileData}
+import org.validoc.utils.profiling.TryProfileData
 import org.validoc.utils.retry.{NeedsRetry, RetryConfig}
 import org.validoc.utils.strings.IndentAndString
-import org.validoc.utils.success.MessageName
-import org.validoc.utils.time.NanoTimeService
 
-import scala.reflect.ClassTag
 import scala.language.higherKinds
+import scala.reflect.ClassTag
 
 class TaglessInterpreterForToString {
 
@@ -23,7 +21,7 @@ class TaglessInterpreterForToString {
   class ForToString[M[_], Fail] extends TaglessLanguage[StringHolder, StringHolder, M, Fail] {
     override def http(name: ServiceName): StringHolder[ServiceRequest, ServiceResponse] =
       IndentAndString(0, List()).insertLineAndIndent(s"http(${name.name})")
-    override def objectify[Req: ClassTag , Res: ClassTag](http: StringHolder[ServiceRequest, ServiceResponse])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[Req], responseProcessor: ResponseProcessor[M, Req, Res]) =
+    override def objectify[Req: ClassTag, Res: ClassTag](http: StringHolder[ServiceRequest, ServiceResponse])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[Req], responseProcessor: ResponseProcessor[M, Req, Res]) =
       http.insertLineAndIndent(s"objectify[${nameOf[Req]},${nameOf[Res]}]")
     override def chain(endpoints: StringHolder[_, _]*) =
       IndentAndString.merge("chain", endpoints: _*)
@@ -39,8 +37,8 @@ class TaglessInterpreterForToString {
     override def profile[Req: ClassTag, Res: ClassTag](profileData: TryProfileData)(raw: StringHolder[Req, Res]) =
       raw.insertLineAndIndent(s"profile")
 
-    override def logging[Req: ClassTag : DetailedLogging : SummaryLogging, Res: ClassTag : DetailedLogging : SummaryLogging](s: String)(raw: StringHolder[Req, Res])(implicit logRequestAndResult: LogRequestAndResult[Fail], messageName: MessageName[Req, Res]) =
-      raw.insertLineAndIndent(s"logging(Using ${messageName.name})")
+    override def logging[Req: ClassTag : DetailedLogging : SummaryLogging, Res: ClassTag : DetailedLogging : SummaryLogging](messagePrefix: String)(raw: StringHolder[Req, Res])(implicit logRequestAndResult: LogRequestAndResult[Fail]) =
+      raw.insertLineAndIndent(s"logging(Using $messagePrefix)")
 
     override protected def enrichPrim[ReqP, ResP, ReqC, ResC, ResE](parent: StringHolder[ReqP, ResP], child: StringHolder[ReqC, ResC])(implicit findChildIds: HasChildren[ResP, ReqC], enricher: Enricher[ReqP, ResP, ReqC, ResC, ResE]) =
       IndentAndString.merge("enrich", parent, child)
