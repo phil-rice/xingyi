@@ -1,7 +1,7 @@
 package org.validoc.utils.objectify
 
 import org.validoc.utils._
-import org.validoc.utils.functions.{Monad, MonadCanFail}
+import org.validoc.utils.functions.MonadCanFail
 import org.validoc.utils.http._
 import org.validoc.utils.tagless.CommonForKleislis
 

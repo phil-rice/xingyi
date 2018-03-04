@@ -58,6 +58,17 @@ class ProfileEachEndpointLanguage[Endpoint[_, _], Wrapper[_, _], M[_] : Monad, F
 }
 
 
-class DebugEachObjectifyEndpoint[Endpoint[_, _], Wrapper[_, _], M[_] : Monad, Fail](interpreter: TaglessLanguage[Endpoint, Wrapper, M, Fail]) extends DelegatesTaglessLanguage[Endpoint, Wrapper, M, Fail](interpreter) {
-  override def objectify[Req: ClassTag, Res: ClassTag](http: Wrapper[ServiceRequest, ServiceResponse])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[M, Req], responseParser: ResponseParser[Fail, Req, Res]) = super.objectify(http)
-}
+//case class WrapperAndDebugInfo[Wrapper[_, _], M[_], Req, Res: ClassTag](wrapper: Wrapper[Req, Res], debugInfo: HasDebugInfo[M, Req, Res])(implicit val reqClassTag: ClassTag[Res])
+//
+//class DebugEachObjectifyEndpoint[Endpoint[_, _], Wrapper[_, _], M[_] : Monad, Fail](interpreter: TaglessLanguage[Endpoint, Wrapper, M, Fail]) extends DelegatesTaglessLanguage[Endpoint, Wrapper, M, Fail](interpreter) {
+//  val map = TrieMap[DebugInfo[M, _, _], WrapperAndDebugInfo[Wrapper, M, _, _]]()
+//  def dump = map.values.map { case d@WrapperAndDebugInfo(t, f) => d.reqClassTag.getClass.getSimpleName }.mkString("\n")
+//  override def objectify[Req: ClassTag, Res: ClassTag](http: Wrapper[ServiceRequest, ServiceResponse])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[M, Req], responseParser: ResponseParser[Fail, Req, Res], debugInfo: DebugInfo[M, Req, Res]) = {
+//    val result = interpreter.objectify[Req, Res](http)
+//    debugInfo match {
+//      case d@HasDebugInfo(from, to) => map.getOrElseUpdate(d, WrapperAndDebugInfo(result, d))
+//      case _ =>
+//    }
+//    result
+//  }
+//}

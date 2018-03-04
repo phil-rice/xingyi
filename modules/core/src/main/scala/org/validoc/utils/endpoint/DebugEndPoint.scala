@@ -1,7 +1,7 @@
 package org.validoc.utils.endpoint
 
 import org.validoc.utils.Service
-import org.validoc.utils.functions.Monad
+import org.validoc.utils.functions.{Liftable, Monad}
 import org.validoc.utils.http._
 import org.validoc.utils.json.ToJson
 
@@ -22,7 +22,7 @@ trait SamplePathOps[T] {
 trait DebugEndPointReqOps[M[_], T] extends FromServiceRequest[M, T] with SamplePathOps[T]
 
 object DebugEndPointReqOps {
-  implicit def endPointReqOpsFromSamplePathOpsAndDebugEndPointsOps[M[_], T](implicit samplePathOps: SamplePathOps[T], fromServiceRequest: FromServiceRequest[M, T]) = new DebugEndPointReqOps[M, T] {
+  implicit def endPointReqOpsFromSamplePathOpsAndDebugEndPointsOps[M[_]:Liftable, T](implicit samplePathOps: SamplePathOps[T], fromServiceRequest: FromServiceRequest[M, T]) = new DebugEndPointReqOps[M, T] {
     override def samplePath(serviceId: Int)(implicit debugBasePath: DebugBasePath): String = samplePathOps.samplePath(serviceId)
 
     override def apply(v1: ServiceRequest) = fromServiceRequest(v1)

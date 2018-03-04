@@ -33,13 +33,6 @@ trait SimpleLanguage[Wrapper[_, _]] {
 trait TaglessLanguage[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail] extends HttpLanguage[Wrapper, M, Fail]
   with SimpleLanguage[Wrapper] with NonfunctionalLanguage[Wrapper, Fail] with ComposeLanguage[Wrapper] with EndpointLanguage[EndpointWrapper, Wrapper, M, Fail]
 
-sealed trait DebugInfo[M[_], Req, Res]
-case class HasDebugInfo[M[_], Req, Res](implicit val fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]) extends DebugInfo[M, Req, Res]
-case class NoDebugInfo[M[_], Req, Res](comment: String = "No debug info available") extends DebugInfo[M, Req, Res]
-
-object DebugInfo {
-  implicit def default[M[_], Req, Res] = new NoDebugInfo[M, Req, Res]
-}
 
 
 trait HttpLanguage[Wrapper[_, _], M[_], Fail] extends NonfunctionalLanguage[Wrapper, Fail] {

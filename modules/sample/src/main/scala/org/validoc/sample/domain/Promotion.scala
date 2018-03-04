@@ -7,8 +7,7 @@ import org.validoc.utils.http._
 import org.validoc.utils.json.ToJson
 import org.validoc.utils.tagless.{Enricher, HasChildren}
 
-import scala.language.implicitConversions
-import scala.language.higherKinds
+import scala.language.{higherKinds, implicitConversions}
 
 case class PromotionQuery(bypassCache: Boolean) extends BypassCache
 
@@ -39,6 +38,7 @@ object Promotion extends DomainCompanionObject[PromotionQuery, Promotion] {
   implicit object ToJsonFoPromotion extends ToJson[Promotion] {
     override def apply(v1: Promotion) = s"""{id: [${v1.productionIds.map(id => s""""$id"""").mkString(",")}]"""
   }
+
 }
 
 case class EnrichedPromotion(productions: Seq[Production])

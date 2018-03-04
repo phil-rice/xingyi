@@ -63,9 +63,10 @@ object AllProducers extends App with SampleJsonsForCompilation {
   private val forTostring = new TaglessInterpreterForToString()
   val interpreter = new TaglessLanguageLanguageForKleislis[Future, Throwable]
   val kleisliLanguage: interpreter.NonFunctionalLanguageService = interpreter.NonFunctionalLanguageService()
-  val profileLanguage = new ProfileEachEndpointLanguage(kleisliLanguage)
-  val htmlEndpoint = forTostring.systemToEndpoint[interpreter.EndpointK, interpreter.Kleisli, Future, Throwable]("/html", profileLanguage)(language => new AllProducers[forTostring.StringHolder, forTostring.StringHolder, Future, Throwable](language).allEndpoints())
-  private val microservice: interpreter.Kleisli[ServiceRequest, ServiceResponse] = new AllProducers(profileLanguage).allEndpoints(htmlEndpoint, profileLanguage.profileMetricsEndpoint)
+  val language = new ProfileEachEndpointLanguage(kleisliLanguage)
+  //  val language = new DebugEachObjectifyEndpoint(profileLanguage)
+  val htmlEndpoint = forTostring.systemToEndpoint[interpreter.EndpointK, interpreter.Kleisli, Future, Throwable]("/html", language)(language => new AllProducers[forTostring.StringHolder, forTostring.StringHolder, Future, Throwable](language).allEndpoints())
+  private val microservice: interpreter.Kleisli[ServiceRequest, ServiceResponse] = new AllProducers(language).allEndpoints(htmlEndpoint, language.profileMetricsEndpoint)
 
 
   new SimpleHttpServer(9000, new EndpointHandler[Future, Throwable](microservice)).start()
