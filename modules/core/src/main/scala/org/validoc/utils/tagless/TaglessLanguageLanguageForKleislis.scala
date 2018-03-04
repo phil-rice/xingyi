@@ -1,8 +1,10 @@
 package org.validoc.utils.tagless
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import org.validoc.utils._
 import org.validoc.utils.cache._
-import org.validoc.utils.endpoint.MatchesServiceRequest
+import org.validoc.utils.endpoint.{EndPoint, MatchesServiceRequest}
 import org.validoc.utils.functions.{Async, MonadCanFailWithException}
 import org.validoc.utils.http._
 import org.validoc.utils.logging._
@@ -55,13 +57,20 @@ class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail] {
     with ObjectifyKleisli[M, Fail] with HttpKlesili[M] with MetricsKleisli[M, Fail] with LoggingKleisli[M, Fail] {
 
     override def monad = monadCanFail
+    override def function[Req, Res](name: String)(fn: Req => Res) = fn.liftFn
 
-    override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: Kleisli[Req, Res])(implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]): EndpointK[Req, Res] = { serviceRequest: ServiceRequest => matchesServiceRequest(normalisedPath)(serviceRequest).toOption((fromServiceRequest |==> raw |=> toServiceResponse) (serviceRequest)) }
+    override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: Kleisli[Req, Res])(implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]): EndpointK[Req, Res] =
+      EndPoint(normalisedPath, matchesServiceRequest)(raw)
+    val count = new AtomicInteger()
+    //      { serviceRequest: ServiceRequest => matchesServiceRequest(normalisedPath)(serviceRequest).toOption((fromServiceRequest |==> raw |=> toServiceResponse) (serviceRequest)) }
     override def chain(endpoints: EndpointK[_, _]*): Kleisli[ServiceRequest, ServiceResponse] = { req: ServiceRequest =>
+      count.incrementAndGet()
       @tailrec
       def recurse(seq: List[EndpointK[_, _]]): M[ServiceResponse] = {
+
         seq match {
           case head :: tail =>
+            println(head.asInstanceOf[EndPoint[M, _, _]].debugInfo(req))
             head(req) match {
               case Some(result) => result
               case None => recurse(tail)

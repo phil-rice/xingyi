@@ -46,7 +46,6 @@ abstract class AbstractLogRequestAndResult[Fail: DetailedLogging : SummaryLoggin
       (state, res) => log.debug(sender)(string(state, res)))
   }
 }
-//TODO This is two responsibilities. Consider how best to split it
 class LogRequestAndResultForBundle[Fail: DetailedLogging : SummaryLogging](implicit bundle: ResourceBundle, log: LoggingAdapter) extends AbstractLogRequestAndResult[Fail] {
   override protected def format(messagePrefix: String, messagePostFix: String)(strings: String*) =
     MessageFormat.format(bundle.getString(messagePrefix + "." + messagePrefix), strings: _*)

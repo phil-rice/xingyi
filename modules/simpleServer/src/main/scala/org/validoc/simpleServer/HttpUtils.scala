@@ -18,12 +18,11 @@ object HttpUtils {
     Streams.sendAll(exchange.getResponseBody, bytes)
   }
 
-  def process(exchange: HttpExchange)(response: ServiceResponse): Unit = {
+  def process(exchange: HttpExchange)(response: => ServiceResponse): Unit = {
     try
       write(exchange, response)
     catch {
-      case e: Exception =>
-        write(exchange, new ServiceResponse(Status(500), Body(e.getClass.getName + "\n" + e.getMessage), ContentType("text/plain")))
+      case e: Exception => write(exchange, new ServiceResponse(Status(500), Body(e.getClass.getName + "\n" + e.getMessage), ContentType("text/plain")))
     }
   }
 

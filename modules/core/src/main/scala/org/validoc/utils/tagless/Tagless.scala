@@ -26,8 +26,12 @@ trait Enricher[Req, Parent, ChildId, Child, Res] extends ((Req, Parent, Seq[(Chi
 trait MetricsLanguageBase[Fail] {
   type RD[T] = ReportData[Fail, T]
 }
+
+trait SimpleLanguage[Wrapper[_, _]] {
+  def function[Req, Res](name: String)(fn: Req => Res): Wrapper[Req, Res]
+}
 trait TaglessLanguage[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail] extends HttpLanguage[Wrapper, M, Fail]
-  with NonfunctionalLanguage[Wrapper, Fail] with ComposeLanguage[Wrapper] with EndpointLanguage[EndpointWrapper, Wrapper, M, Fail]
+  with SimpleLanguage[Wrapper] with NonfunctionalLanguage[Wrapper, Fail] with ComposeLanguage[Wrapper] with EndpointLanguage[EndpointWrapper, Wrapper, M, Fail]
 
 trait HttpLanguage[Wrapper[_, _], M[_], Fail] extends NonfunctionalLanguage[Wrapper, Fail] {
   def http(name: ServiceName): Wrapper[ServiceRequest, ServiceResponse]

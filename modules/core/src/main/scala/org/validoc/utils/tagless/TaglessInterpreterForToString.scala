@@ -19,6 +19,9 @@ class TaglessInterpreterForToString {
 
   implicit def forToString[M[_], Fail] = new ForToString[M, Fail]
   class ForToString[M[_], Fail] extends TaglessLanguage[StringHolder, StringHolder, M, Fail] {
+    override def function[Req, Res](name: String)(fn: Req => Res) =
+      IndentAndString(0, List()).insertLineAndIndent(s"function-$name)")
+
     override def http(name: ServiceName): StringHolder[ServiceRequest, ServiceResponse] =
       IndentAndString(0, List()).insertLineAndIndent(s"http(${name.name})")
     override def objectify[Req: ClassTag, Res: ClassTag](http: StringHolder[ServiceRequest, ServiceResponse])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[M, Req], responseParser: ResponseParser[Fail, Req, Res]) =

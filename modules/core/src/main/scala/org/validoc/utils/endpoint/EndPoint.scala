@@ -15,8 +15,12 @@ trait MatchesServiceRequest {
 
 case class EndPoint[M[_] : Monad, Req, Res](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(kleisli: Req => M[Res])
                                            (implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]) extends (ServiceRequest => Option[M[ServiceResponse]]) {
+  def debugInfo(req: ServiceRequest) = s"Endpoint($normalisedPath, $matchesServiceRequest) called with $req results in ${isDefinedAt(req)}"
+
   override def apply(serviceRequest: ServiceRequest): Option[M[ServiceResponse]] =
-    matchesServiceRequest(normalisedPath)(serviceRequest).toOption((fromServiceRequest |==> kleisli |=> toServiceResponse) (serviceRequest))
+    isDefinedAt(serviceRequest).toOption((fromServiceRequest |==> kleisli |=> toServiceResponse) (serviceRequest))
+  def isDefinedAt(serviceRequest: ServiceRequest): Boolean = matchesServiceRequest(normalisedPath)(serviceRequest)
+  override def toString() = s"Endpoint($normalisedPath, $matchesServiceRequest)"
 }
 
 object MatchesServiceRequest {

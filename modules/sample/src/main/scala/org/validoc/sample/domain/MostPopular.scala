@@ -3,6 +3,7 @@ package org.validoc.sample.domain
 import org.validoc.utils.cache.Cachable
 import org.validoc.utils.domain.{BypassCache, DomainCompanionObject, DomainCompanionQuery}
 import org.validoc.utils.functions.Liftable
+import org.validoc.utils.json.ToJson
 import org.validoc.utils.tagless.{Enricher, HasChildren}
 //needs to be here import io.circe.generic.auto._
 import org.validoc.utils.http._
@@ -24,9 +25,9 @@ object MostPopularQuery extends DomainCompanionQuery[MostPopularQuery] {
   }
 
 
-  implicit def fromServiceRequest[M[_]:Liftable] = new fromServiceRequestForMostPopularQuery[M]
+  implicit def fromServiceRequest[M[_] : Liftable] = new fromServiceRequestForMostPopularQuery[M]
 
-  class fromServiceRequestForMostPopularQuery[M[_]:Liftable] extends FromServiceRequest[M, MostPopularQuery] {
+  class fromServiceRequestForMostPopularQuery[M[_] : Liftable] extends FromServiceRequest[M, MostPopularQuery] {
     override def apply(v1: ServiceRequest) = MostPopularQuery(false).liftM
   }
 
@@ -42,6 +43,9 @@ object MostPopular extends DomainCompanionObject[MostPopularQuery, MostPopular] 
 
   implicit object HasChildrenForMostPopular extends HasChildren[MostPopular, ProgrammeId] {
     override def apply(p: MostPopular): Seq[ProgrammeId] = p.programmeIds
+  }
+  implicit object ToJsonForMostPopular extends ToJson[MostPopular] {
+    override def apply(v1: MostPopular) = s"""{id: [${v1.programmeIds.map(id => s""""$id"""").mkString(",")}]"""
   }
 
 }

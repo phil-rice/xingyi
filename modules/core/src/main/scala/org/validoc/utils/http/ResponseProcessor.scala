@@ -33,7 +33,7 @@ object Failer {
     override def unexpected[Req](req: Req, response: ServiceResponse) = ???
     override def exception[Req](req: Req, throwable: Throwable) = ???
     override def idNotFind(serviceRequest: ServiceRequest): Throwable = ???
-    override def pathNotFound(serviceRequest: ServiceRequest): Throwable = ???
+    override def pathNotFound(serviceRequest: ServiceRequest): Throwable = throw new RuntimeException(s"Path not found $serviceRequest")
   }
 
 }

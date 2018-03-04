@@ -51,6 +51,7 @@ package object utils {
   }
 
   implicit class FunctionPimper[Req, Res](fn: Req => Res) {
+    def liftFn[M[_]](implicit monad: Monad[M]) = { req: Req => fn(req).liftM }
     def ~>[Res2](fn2: Res => Res2): (Req) => Res2 = { res: Req => fn2(fn(res)) }
     def ~^>(fn2: Res => Unit): (Req => Res) = { req: Req => sideeffect(fn(req))(fn2) }
     def ~+>[Res2](fn2: Req => Res => Res2): (Req => Res2) = { req: Req => fn2(req)(fn(req)) }
@@ -181,8 +182,7 @@ package object utils {
   }
 
   implicit class MonadWithCanFailAndExceptionFunctionPimper[M[_], Req, Res](fn: Req => M[Res]) {
-    def sideEffectWithReq[Fail](mapFn: Req => Try[Either[Fail, Res]] => Unit)(implicit monad: MonadCanFailWithException[M, Fail]) =
-    { req: Req => Exceptions(fn(req)).onComplete[Fail](mapFn(req)) }
+    def sideEffectWithReq[Fail](mapFn: Req => Try[Either[Fail, Res]] => Unit)(implicit monad: MonadCanFailWithException[M, Fail]) = { req: Req => Exceptions(fn(req)).onComplete[Fail](mapFn(req)) }
 
   }
 

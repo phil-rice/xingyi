@@ -26,10 +26,10 @@ case class JsonBundle(implicit
                       val fromJsonForProgramme: FromJson[Programme],
                       val fromJsonForProduction: FromJson[Production])
 
-class PromotionSetup[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail, HttpReq: ClassTag : Cachable : ShouldCache, HttpRes: ClassTag](interpreter: TaglessLanguage[EndpointWrapper, Wrapper, M, Fail])(implicit
-                                                                                                                                                                                                       monadCanFail: MonadCanFail[M, Fail],
-                                                                                                                                                                                                       failer: Failer[Fail],
-                                                                                                                                                                                                       jsonBundle: JsonBundle
+class PromotionSetup[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail](interpreter: TaglessLanguage[EndpointWrapper, Wrapper, M, Fail])(implicit
+                                                                                                                                        monadCanFail: MonadCanFail[M, Fail],
+                                                                                                                                        failer: Failer[Fail],
+                                                                                                                                        jsonBundle: JsonBundle
 ) extends PromotionServiceNames {
 
   import interpreter._
@@ -42,7 +42,6 @@ class PromotionSetup[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail, HttpReq: 
   val fnord = http(programmeAndProductionServiceName)
 
   val rawMostPopularService = vogue |+| objectify[MostPopularQuery, MostPopular]
-  // |+| cache("vogue")
   val rawPromotionService = billboard |+| cache("Promotion") |+| objectify[PromotionQuery, Promotion]
   val rawProductionService = fnord |+| objectify[ProductionId, Production]
   val rawProgrammeService = fnord |+| objectify[ProgrammeId, Programme]
@@ -51,15 +50,11 @@ class PromotionSetup[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail, HttpReq: 
   val enrichedPromotion = enrich(rawPromotionService).withChild(rawProductionService).mergeInto[EnrichedPromotion]
   val enrichedMostPopular = enrich(rawMostPopularService).withChild(rawProgrammeService).mergeInto[EnrichedMostPopular]
 
-  val homePage1 = merge(enrichedPromotion).and(enrichedMostPopular).into[HomePageQuery, HomePage]((hpq, ep, emp) => HomePage(emp, ep))
-  val homePage: Wrapper[HomePageQuery, HomePage] = merge(enrichedPromotion) and enrichedMostPopular into[HomePageQuery, HomePage] ((hpq, ep, emp) => HomePage(emp, ep))
+  val homePage = (merge(enrichedPromotion) and enrichedMostPopular into[HomePageQuery, HomePage] ((hpq, ep, emp) => HomePage(emp, ep)))
 
-
-  val mostPopularEndPoint = enrichedMostPopular |++| endpoint[MostPopularQuery, EnrichedMostPopular]("/", fixedPath(Get))
-
-  val homePageEndPoint = homePage |++| endpoint[HomePageQuery, HomePage]("/", fixedPath(Get))
+  val mostPopularEndPoint = enrichedMostPopular |+| logging("homepage") |++| endpoint[MostPopularQuery, EnrichedMostPopular]("/mostpopular", fixedPath(Get))
+  val homePageEndPoint = homePage  |+| logging("homepage")|++| endpoint[HomePageQuery, HomePage]("/", fixedPath(Get))
   val microservice = chain(mostPopularEndPoint, homePageEndPoint)
-
 
 }
 
@@ -73,6 +68,6 @@ object PromotionSetup extends App with SampleJsonsForCompilation {
   import org.validoc.utils.functions.AsyncForScalaFuture._
   import ImplicitsForTest._
 
-  val setup = new PromotionSetup[StringHolder, StringHolder, Future, Throwable, String, String](language.forToString)
+  val setup = new PromotionSetup[StringHolder, StringHolder, Future, Throwable](language.forToString)
   println(setup.microservice.invertIndent)
 }
