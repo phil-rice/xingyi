@@ -31,10 +31,7 @@ trait TaglessLanguage[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail] extends 
 
 trait HttpLanguage[Wrapper[_, _], M[_], Fail] extends NonfunctionalLanguage[Wrapper, Fail] {
   def http(name: ServiceName): Wrapper[ServiceRequest, ServiceResponse]
-  def objectify[Req: ClassTag, Res: ClassTag](http: Wrapper[ServiceRequest, ServiceResponse])
-                                             (implicit toRequest: ToServiceRequest[Req],
-                                              categoriser: ResponseCategoriser[Req],
-                                              responseProcessor: ResponseProcessor[M, Req, Res]): Wrapper[Req, Res]
+  def objectify[Req: ClassTag, Res: ClassTag](http: Wrapper[ServiceRequest, ServiceResponse])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[M, Req], responseParser: ResponseParser[Fail, Req, Res]): Wrapper[Req, Res]
   //  def endpoint[Req: ClassTag:EndpointPath, Res: ClassTag:ToServiceResponse]()
 }
 

@@ -50,7 +50,7 @@ class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail] {
                                           cacheFactory: CacheFactory[M],
                                           failer: Failer[Fail]) extends
     TaglessLanguage[EndpointK, Kleisli, M, Fail]
-    with ObjectifyKleisli[M] with HttpKlesili[M] with MetricsKleisli[M, Fail] with LoggingKleisli[M, Fail] {
+    with ObjectifyKleisli[M, Fail] with HttpKlesili[M] with MetricsKleisli[M, Fail] with LoggingKleisli[M, Fail] {
 
     override def monad = monadCanFail
 

@@ -132,6 +132,7 @@ package object utils {
 
     def |=>[Res2](mapFn: Res => Res2): (Req => M[Res2]) = req => monad.map(fn(req), mapFn)
     def |=+>[Res2](mapFn: (Req => Res => Res2)): (Req => M[Res2]) = req => monad.map(fn(req), mapFn(req))
+    def |==+>[Res2](mapFn: (Req => Res => M[Res2])): (Req => M[Res2]) = req => monad.flatMap(fn(req), mapFn(req))
     def |=++>[Res2](mapFn: (Req => Res => Res => M[Res2])): (Req => M[Res2]) = { req => monad.flatMap(fn(req), { res: Res => mapFn(req)(res)(res) }) }
     def |==>[Res2](mapFn: Res => M[Res2]): (Req => M[Res2]) = req => monad.flatMap(fn(req), mapFn)
 
@@ -150,7 +151,7 @@ package object utils {
 
 
   implicit class MonadCanFailFunctionPimper[M[_], Req, Res](fn: Req => M[Res]) {
-    def |=|>[Fail, Res2](mapFn: Res => Either[Fail, Res2])(implicit monad: MonadCanFailWithException[M, Fail]) = { req: Req =>
+    def |=|>[Fail, Res2](mapFn: Res => Either[Fail, Res2])(implicit monad: MonadCanFail[M, Fail]): Req => M[Res2] = { req: Req =>
       fn(req).flatMap(res => mapFn(res).fold[M[Res2]]({ fail: Fail => monad.fail(fail) }, { res2: Res2 => monad.liftM(res2) }))
     }
     def enterAndExit[Fail, Mid](midFn: Req => Mid, sideeffectFn: (Mid, SucceededState[Fail, Res]) => Unit)(implicit monad: MonadCanFailWithException[M, Fail]): Req => M[Res] = { req: Req =>
