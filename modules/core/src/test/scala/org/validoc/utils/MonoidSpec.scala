@@ -97,6 +97,12 @@ class MonoidForSeqSpec extends MonoidSpec[Seq[String]] {
   override def zeroValue = List()
   override def one = List("1")
   override def two = List("2")
-  override def three = List("1","2")
+  override def three = List("1", "2")
+}
+class MonoidForMapSpec extends MonoidSpec[Map[Int, Int]] {
+  override def zeroValue = Map()
+  override def one = Map(1 -> 1)
+  override def two = Map(2 -> 2)
+  override def three = Map(1 -> 1, 2 -> 2)
 }
 
