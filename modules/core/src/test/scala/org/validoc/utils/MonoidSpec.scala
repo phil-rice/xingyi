@@ -83,6 +83,10 @@ abstract class MonoidSpec[T](implicit monoid: Monoid[T], val classTag: ClassTag[
     add(zeroValue, three) shouldBe three
   }
 
+  it should "allow lists to added" in {
+    import Monoid._
+    List(one, two).addAll shouldBe three
+  }
 
 }
 
@@ -92,6 +96,12 @@ class MonoidForIntSpec extends MonoidSpec[Int] {
   override def one = 1
   override def two = 2
   override def three = 3
+
+  it should "add up even if the list is very large and uses pararray" in {
+    import Monoid._
+    List.fill(2000)(10).addAll shouldBe 20000
+  }
+
 }
 class MonoidForSeqSpec extends MonoidSpec[Seq[String]] {
   override def zeroValue = List()
