@@ -1,23 +1,24 @@
 package org.validoc.sample.domain
 
-import org.validoc.utils.cache.Cachable
+import org.validoc.utils.cache.{CachableKey, UnitId}
 import org.validoc.utils.domain.{BypassCache, DomainCompanionObject, DomainCompanionQuery}
 import org.validoc.utils.functions.Liftable
 import org.validoc.utils.json.ToJson
 import org.validoc.utils.tagless.{Enricher, HasChildren}
 //needs to be here import io.circe.generic.auto._
 import org.validoc.utils.http._
-
-import scala.language.implicitConversions
-import scala.language.higherKinds
 import org.validoc.utils.language.Language._
+
+import scala.language.{higherKinds, implicitConversions}
 
 case class MostPopularQuery(bypassCache: Boolean) extends BypassCache
 
 object MostPopularQuery extends DomainCompanionQuery[MostPopularQuery] {
 
-  implicit object CachableKeyForMostPopularQuery extends Cachable[MostPopularQuery] {
-    override def apply(v1: MostPopularQuery) = ()
+  implicit object CachableKeyForMostPopularQuery extends CachableKey[MostPopularQuery] {
+//    override def apply(v1: MostPopularQuery) = ()
+    override def id(req: MostPopularQuery) = UnitId
+    override def bypassCache(req: MostPopularQuery) = req.bypassCache
   }
 
 

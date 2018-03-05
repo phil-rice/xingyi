@@ -33,7 +33,7 @@ case class MapParserFinder[M[_], Fail, T](map: Map[Option[ContentType], Parser[T
 }
 
 object ParserFinder {
-  implicit def alwaysSameParser[M[_]:Functor, T](implicit fromJson: FromJson[T]) = always[M, T](fromJson)
+  implicit def alwaysSameParser[M[_]:Functor, T](implicit fromJson: FromJson[T]):ParserFinder[M, T] = always[M, T](fromJson)
   def always[M[_]: Functor,T](parser: Parser[T]) = AlwaysParserFinder[M, T](parser)
   def fromMap[M[_], Fail, T](map: Map[Option[ContentType], Parser[T]]) (implicit monadCanFail: MonadCanFail[M, Fail],parserFailer: ParserFailer[Fail])= MapParserFinder[M, Fail, T](map)
 }

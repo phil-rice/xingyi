@@ -33,17 +33,17 @@ object DelayedFuture {
     prom.future
   }
 
-  def apply[T](delay: Long)(body: => T)(implicit ctx: ExecutionContext): Future[T] = {
-    makeTask(body)(timer.schedule(_, delay))
-  }
-
-  def apply[T](date: Date)(body: => T)(implicit ctx: ExecutionContext): Future[T] = {
-    makeTask(body)(timer.schedule(_, date))
-  }
-
-  def apply[T](delay: FiniteDuration)(body: => T)(implicit ctx: ExecutionContext): Future[T] = {
-    makeTask(body)(timer.schedule(_, delay.toMillis))
-  }
+//  def apply[T](delay: Long)(body: => T)(implicit ctx: ExecutionContext): Future[T] = {
+//    makeTask(body)(timer.schedule(_, delay))
+//  }
+//
+//  def apply[T](date: Date)(body: => T)(implicit ctx: ExecutionContext): Future[T] = {
+//    makeTask(body)(timer.schedule(_, date))
+//  }
+//
+//  def apply[T](delay: FiniteDuration)(body: => T)(implicit ctx: ExecutionContext): Future[T] = {
+//    makeTask(body)(timer.schedule(_, delay.toMillis))
+//  }
   def apply[T](delay: Duration)(body: => Future[T])(implicit ctx: ExecutionContext): Future[T] = {
     makeTask()(timer.schedule(_, delay.toMillis)).flatMap(_ => body)
   }

@@ -27,6 +27,7 @@ abstract class AbstractLowLevelSafeMapTest extends UtilsWithLoggingSpec {
     }
   }
 
+
   it should "allow a value to be transformed" in {
     setup { map =>
       map("one")(_ + 1) shouldBe 2
@@ -53,11 +54,11 @@ abstract class AbstractLowLevelSafeMapTest extends UtilsWithLoggingSpec {
       }
       threads.foreach(_.setDaemon(true))
       threads.foreach(_.start)
-      eventually (timeout(Span(5, Seconds))) {
+      eventually(timeout(Span(5, Seconds))) {
         threads.forall(!_.isAlive)
         withClue("one")(map.get("one") shouldBe 1000)
-        withClue("two")( map.get("two") shouldBe 1001)
-        withClue("three")(  map.get("three") shouldBe 1002)
+        withClue("two")(map.get("two") shouldBe 1001)
+        withClue("three")(map.get("three") shouldBe 1002)
       }
     }
   }

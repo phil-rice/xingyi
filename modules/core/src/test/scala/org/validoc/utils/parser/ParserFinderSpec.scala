@@ -3,6 +3,7 @@ package org.validoc.utils.parser
 import org.mockito.Mockito._
 import org.validoc.utils.functions.{ContainerSpec, Functor, MonadCanFail}
 import org.validoc.utils.http.ContentType
+import org.validoc.utils.json.FromJson
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
@@ -52,6 +53,14 @@ abstract class AlwaysParserFinderTest[M[_] : Functor] extends AbstractParserFind
     }
   }
 
+  it should "be the default" in {
+    implicit object FromJsonForString extends FromJson[String] {
+      override def apply(v1: String) = v1 + " someString"
+    }
+    getT(implicitly[ParserFinder[M, String]].apply(None, "someInput")) shouldBe "someInput someString"
+  }
+
+
   override def makeParserFinderForCtMain(parser: Parser[String]): ParserFinder[M, String] = ParserFinder.always(parser)
 }
 
@@ -85,12 +94,14 @@ abstract class FromMapParserFinderTest[M[_], Fail <: AnyRef : ClassTag](implicit
   }
 
 }
+
 import org.validoc.utils.functions.AsyncForScalaFuture.ImplicitsForTest._
 import org.validoc.utils.functions.AsyncForScalaFuture._
 
 class AlwaysParserFinderForScalaFuture extends AlwaysParserFinderTest[Future] {
   override def liftA[T](t: T) = Future.successful(t)
   override def getT[X](a: Future[X]) = Await.result(a, 5 seconds)
+
 }
 class FromMapParserFinderTestForFuture extends FromMapParserFinderTest[Future, Throwable] {
   override def liftA[T](t: T) = Future.successful(t)

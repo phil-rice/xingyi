@@ -58,7 +58,9 @@ class CachingServiceTests extends UtilsWithLoggingSpec with Eventually {
       val delegateService = new DelegateService[Future]()
       implicit val timeService = mock[NanoTimeService]
       val cachingStrategy = DurationStaleCacheStategy(100, 1000)
-      val cachingService = new CachingService[Future, DelegateRequest, String]("someName", delegateService, cachingStrategy, cacheSizeStrategy)
+      val cachingServiceFactory = new CachingServiceFactory[Future](cachingStrategy, cacheSizeStrategy)
+      val cachingService = cachingServiceFactory("someName",delegateService).asInstanceOf[CService]
+      //       = new CachingService[Future, DelegateRequest, String]("someName", delegateService, cachingStrategy, cacheSizeStrategy)
       fn(cachingService)(delegateService)(timeService)
       threadPool.shutdown()
     }
@@ -90,6 +92,16 @@ class CachingServiceTests extends UtilsWithLoggingSpec with Eventually {
       inTransitWithoutResults.foreach(i => withClue(s"$fullPrefix inTransitWithoutResults")(metrics.inTransitWithoutResults shouldBe i))
       cacheSize.foreach(i => withClue(s"$fullPrefix cacheSize")(metrics.cacheSize shouldBe i))
     }
+
+
+  behavior of "CachedValue"
+
+  it should "should blow up if you try and get the future value" in {
+    val cv = CachedValue(1, CachedId(123), None, None)
+    intercept[RuntimeException](cv.valueToUse).getMessage shouldBe "Should not get this. trying to return future from CachedValue"
+
+  }
+
 
   behavior of "CachingService"
 

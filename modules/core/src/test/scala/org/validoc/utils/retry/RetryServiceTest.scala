@@ -25,6 +25,12 @@ class RetryServiceTest extends UtilsWithLoggingSpec {
     fn(new RetryService[Future, Throwable, Req, Res](delegate, RetryConfig(2, delay)), delegate, retry, delay)
   }
 
+it should "blowUp if retries are 0" in {
+  val delay = mock[Delay]
+  when(delay.apply()) thenReturn (1 milli)
+  val delegate = mock[(Req => Future[Res]) ]
+  intercept[IllegalArgumentException](new RetryService[Future, Throwable, Req, Res](delegate, RetryConfig(0, delay)))
+}
 
   it should "just call the delegate once if it returns and the retry strategy says 'it's OK' " in {
     setup { (retryService, delegate, needsRetry, delay) =>

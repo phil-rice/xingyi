@@ -1,12 +1,12 @@
 package org.validoc.caffeine
 
 import com.github.blemale.scaffeine.Scaffeine
-import org.validoc.utils.cache.{Cachable, Cache, CacheFactory, ShouldCacheResult}
+import org.validoc.utils.cache.{CachableKey, Cache, CacheFactory, ShouldCacheResult}
 import org.validoc.utils.functions.MonadConvertor
 import org.validoc.utils.local.ExecutionContextWithLocal
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.language.{higherKinds, postfixOps}
 
 //Has a req and a key, but equals delegates to key equals.
@@ -20,7 +20,7 @@ class CacheKey[Req](val req: Req, val key: Any) {
 }
 
 object CacheKey {
-  def apply[Req](req: Req)(implicit cachable: Cachable[Req]) = new CacheKey(req, cachable(req))
+  def apply[Req](req: Req)(implicit cachable: CachableKey[Req]) = new CacheKey(req, cachable.id(req))
   def getReqFromKey[Req] = { cacheKey: CacheKey[Req] => cacheKey.req }
 }
 //Note this ignores the ShouldCacheResult at the moment
@@ -35,7 +35,7 @@ object CaffeineCache {
 
 
   def cacheFactoryForFuture(scaffeine: Scaffeine[Any, Any])(implicit executionContext: ExecutionContextWithLocal) = new CacheFactory[Future] {
-    override def apply[Req: Cachable, Res: ShouldCacheResult](name: String, rawFn: Req => Future[Res]) = new Cache[Future, Req, Res] {
+    override def apply[Req: CachableKey, Res: ShouldCacheResult](name: String, rawFn: Req => Future[Res]) = new Cache[Future, Req, Res] {
       val cache = scaffeine.buildAsyncFuture[CacheKey[Req], Res](CacheKey.getReqFromKey andThen rawFn)
       override def clear() = cache.underlying.synchronous().invalidateAll()
       override def apply(v1: Req) = cache.get(CacheKey(v1))
@@ -44,7 +44,7 @@ object CaffeineCache {
   }
 
   def cacheFactory[M[_]](scaffeine: Scaffeine[Any, Any])(implicit executionContext: ExecutionContextWithLocal, toFuture: MonadConvertor[M, Future], fromFuture: MonadConvertor[Future, M]) = new CacheFactory[M] {
-    override def apply[Req: Cachable, Res:ShouldCacheResult](name: String, rawFn: Req => M[Res]) = new Cache[M, Req, Res] {
+    override def apply[Req: CachableKey, Res: ShouldCacheResult](name: String, rawFn: Req => M[Res]) = new Cache[M, Req, Res] {
       val cache = scaffeine.buildAsyncFuture[CacheKey[Req], Res](key => toFuture[Res](raw(key.req)))
       override def apply(req: Req) = fromFuture(cache.get(CacheKey(req)))
       override def clear() = cache.underlying.synchronous().invalidateAll()

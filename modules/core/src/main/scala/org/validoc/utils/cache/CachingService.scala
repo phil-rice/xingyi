@@ -2,8 +2,8 @@ package org.validoc.utils.cache
 
 import java.util.concurrent.atomic.AtomicLong
 
-import org.validoc.utils.language.Language._
 import org.validoc.utils.functions.MonadWithException
+import org.validoc.utils.language.Language._
 import org.validoc.utils.map.{MapSizeStrategy, SafeMap}
 import org.validoc.utils.time.NanoTimeService
 
@@ -41,7 +41,7 @@ trait CachingInfoAndOps {
 
 class CachingServiceFactory[M[_] : MonadWithException](cachingStrategy: StaleCacheStrategy,
                                                        sizeStrategy: MapSizeStrategy)(implicit timeService: NanoTimeService) extends CacheFactory[M] {
-  override def apply[Req: Cachable, Res: ShouldCacheResult](name: String, raw: Req => M[Res]): Cache[M, Req, Res] = {
+  override def apply[Req: CachableKey, Res: ShouldCacheResult](name: String, raw: Req => M[Res]): Cache[M, Req, Res] = {
     new CachingService[M, Req, Res](name, raw, cachingStrategy, sizeStrategy)
   }
 }

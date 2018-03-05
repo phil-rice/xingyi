@@ -13,8 +13,8 @@ trait ClassTags {
 
   def collectAll[T: ClassTag](i: Seq[Any]): Seq[T] = i.collect { case r if isA[T](r) => r.asInstanceOf[T] }
 
-  implicit class AnyPimperForClassTags(a: Any) {
-    def is[T: ClassTag]: Boolean = isA[T](a)
+  implicit class AnyPimperForClassTags[T](a: T) {
+    def is[T1: ClassTag]: Boolean = isA[T1](a)
   }
 
   implicit class IterablePimperForClassTags(s: Seq[Any]) {

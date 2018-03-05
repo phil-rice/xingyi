@@ -28,7 +28,7 @@ class StringsTest extends UtilsWithLoggingSpec {
     Strings.lastSection("/")("a") shouldBe "a"
   }
   "Strings.allButlastSection" should "return the last section" in {
-    Strings.allButlastSection("/")("a/b/c") shouldBe "a/b/c"
+    Strings.allButlastSection("/")("a/b/c") shouldBe "a/b"
     Strings.allButlastSection("/")("") shouldBe ""
     Strings.allButlastSection("/")("a") shouldBe ""
     Strings.allButlastSection("/")("a/b") shouldBe "a"

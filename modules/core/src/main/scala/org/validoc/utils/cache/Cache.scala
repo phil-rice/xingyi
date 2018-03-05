@@ -6,10 +6,10 @@ import scala.util.Try
 case class CacheStats(size: Int)
 
 
-trait ShouldCache[Req] extends (Req => Boolean)
+trait ShouldUseCache[Req] extends (Req => Boolean)
 
-object ShouldCache {
-  implicit def shouldCache[Req] = new ShouldCache[Req] {
+object ShouldUseCache {
+  implicit def shouldCache[Req] = new ShouldUseCache[Req] {
     override def apply(v1: Req): Boolean = true
   }
 }
@@ -29,16 +29,9 @@ object ShouldCacheResult {
 }
 
 
-trait Cachable[Req] extends (Req => Any)
-
-object Cachable {
-  implicit def defaultIsAll[Req] = new Cachable[Req] {
-    override def apply(v1: Req): Any = v1
-  }
-}
 
 trait CacheFactory[M[_]] {
-  def apply[Req: Cachable, Res: ShouldCacheResult](name: String, raw: Req => M[Res]): Cache[M, Req, Res]
+  def apply[Req: CachableKey, Res: ShouldCacheResult](name: String, raw: Req => M[Res]): Cache[M, Req, Res]
 }
 
 
@@ -48,7 +41,7 @@ trait Cache[M[_], Req, Res] extends (Req => M[Res]) {
 }
 
 object Cache {
-  def apply[M[_], Req, Res](cache: Cache[M, Req, Res])(implicit shouldCache: ShouldCache[Req], cachable: Cachable[Req]): Req => M[Res] = { req =>
+  def apply[M[_], Req, Res](cache: Cache[M, Req, Res])(implicit shouldCache: ShouldUseCache[Req], cachable: CachableKey[Req]): Req => M[Res] = { req =>
     if (shouldCache(req)) cache(req) else cache.raw(req)
   }
 }

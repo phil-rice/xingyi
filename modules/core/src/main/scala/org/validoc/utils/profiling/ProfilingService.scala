@@ -15,18 +15,14 @@ class TryProfileData {
   val failedData = new ProfileData
 
   def event(nanos: Long)(result: Try[_]): Unit = {
-     result match {
+    result match {
       case Success(_) => succeededData.event(nanos)
       case Failure(_) => failedData.event(nanos)
     }
   }
-  def eventFromStartTime(startTime: Long)(result: Try[_])(implicit nanoTimeService: NanoTimeService): Unit = {
-    val nanos = nanoTimeService() - startTime
-     result match {
-      case Success(_) => succeededData.event(nanos)
-      case Failure(_) => failedData.event(nanos)
-    }
-  }
+  def eventFromStartTime(startTime: Long)(result: Try[_])(implicit nanoTimeService: NanoTimeService): Unit =
+    event(nanoTimeService() - startTime)(result)
+
 
   def toShortString = succeededData.shortToString + "  " + failedData.shortToString
 }

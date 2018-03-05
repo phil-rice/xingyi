@@ -1,15 +1,13 @@
 package org.validoc.sample
 
 import org.validoc.sample.domain._
-import org.validoc.utils.cache.{Cachable, ShouldCache}
-import org.validoc.utils.functions.{Liftable, MonadCanFail}
+import org.validoc.utils.functions.MonadCanFail
 import org.validoc.utils.http._
 import org.validoc.utils.json.{FromJson, ToJson}
 import org.validoc.utils.tagless.{ProfileEachEndpointLanguage, TaglessInterpreterForToString, TaglessLanguage}
 
 import scala.concurrent.Future
 import scala.language.{higherKinds, postfixOps}
-import scala.reflect.ClassTag
 
 
 trait PromotionServiceNames {
@@ -34,7 +32,6 @@ class PromotionSetup[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail](interpret
 
   import interpreter._
   import jsonBundle._
-
   import org.validoc.utils.endpoint.MatchesServiceRequest._
 
   val vogue = http(mostPopularServiceName)

@@ -1,6 +1,6 @@
 package org.validoc.utils.tagless
 
-import org.validoc.utils.cache.{Cachable, ShouldCache, ShouldCacheResult}
+import org.validoc.utils.cache.{CachableKey, ShouldCacheResult, ShouldUseCache}
 import org.validoc.utils.endpoint.MatchesServiceRequest
 import org.validoc.utils.functions.Monad
 import org.validoc.utils.http._
@@ -23,7 +23,7 @@ class DelegatesTaglessLanguage[Endpoint[_, _], Wrapper[_, _], M[_], Fail](interp
     interpreter.logging(messagePrefix)(raw)
   override def metrics[Req: ClassTag, Res: ClassTag : RD](prefix: String)(raw: Wrapper[Req, Res]) =
     interpreter.metrics(prefix)(raw)
-  override def cache[Req: ClassTag : Cachable : ShouldCache, Res: ClassTag:ShouldCacheResult](name: String)(raw: Wrapper[Req, Res]) =
+  override def cache[Req: ClassTag : CachableKey : ShouldUseCache, Res: ClassTag:ShouldCacheResult](name: String)(raw: Wrapper[Req, Res]) =
     interpreter.cache(name)(raw)
   override def retry[Req: ClassTag, Res: ClassTag](retryConfig: RetryConfig)(raw: Wrapper[Req, Res])(implicit retry: NeedsRetry[Fail, Res]) =
     interpreter.retry(retryConfig)(raw)
@@ -48,8 +48,6 @@ class ProfileEachEndpointLanguage[Endpoint[_, _], Wrapper[_, _], M[_] : Monad, F
     val data = map.getOrElseUpdate(normalisedPath + matchesServiceRequest, new TryProfileData)
     interpreter.endpoint(normalisedPath, matchesServiceRequest)(raw |+| profile(data))
   }
-
-  import interpreter._
 
   def dump = ServiceResponse(Status(200), Body(map.map { case (k, v) => (f"$k%-40s" + " " + v.toShortString).replaceAll(" ", "&nbsp;") }.mkString("<br />")), ContentType("text/html "))
 

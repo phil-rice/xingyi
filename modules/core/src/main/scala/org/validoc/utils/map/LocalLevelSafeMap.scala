@@ -75,7 +75,7 @@ class LowLevelSafeMap[M[_], K, V](threadSafeDataManips: ThreadSafeDataManips[M, 
 
   def clear = initialValueLock(true)(_map = empty())
 
-  def copyOfMap = _map
+//  def copyOfMap: Map[K, M[V]] = _map
 
 
   private def makeSureKExists(k: K) = {

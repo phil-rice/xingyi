@@ -12,10 +12,6 @@ class IndentSpec extends UtilsSpec {
     IndentAndString(3, oneTwo).toString("...", ",") shouldBe "...one,......two"
     IndentAndString(3, List()).toString("...", ",") shouldBe ""
   }
-  it should "have a toString method" in {
-    IndentAndString(3, oneTwo).toString() shouldBe "  one\n    two"
-    IndentAndString(3, List()).toString() shouldBe ""
-  }
 
   it should "have a addLineAndIndent" in {
     IndentAndString(30, oneTwo).addLineAndIndent("new") shouldBe IndentAndString(31, oneTwo :+ ((30, "new")))
@@ -42,10 +38,4 @@ class IndentSpec extends UtilsSpec {
       IndentAndString(201, List((200, "new"), (3, "one"), (4, "two"), (3, "three"), (4, "four")))
   }
 
-}
-
-class MonoidForInsertAndStringSpec extends MonoidSpec[IndentAndString] {
-  override def one: IndentAndString = IndentAndString(1, List((0, "one")))
-  override def two: IndentAndString = IndentAndString(2, List((1, "two")))
-  override def three: IndentAndString = IndentAndString(3, List((0, "one"), (1, "two")))
 }

@@ -3,6 +3,7 @@ package org.validoc.utils.metrics
 import scala.language.higherKinds
 import org.validoc.utils._
 import org.validoc.utils.functions.MonadCanFailWithException
+import org.validoc.utils.strings.Strings
 import org.validoc.utils.success.SuccessState
 
 import scala.util.{Failure, Success, Try}
@@ -18,7 +19,9 @@ object PrintlnPutMetrics extends PutMetrics {
 
 trait MetricValue
 
-object CountMetricValue extends MetricValue
+object CountMetricValue extends MetricValue{
+  override def toString = Strings.classNameOfObject(CountMetricValue)
+}
 case class HistogramMetricValue(name: Long) extends MetricValue
 
 trait ReportData[Fail, T] extends ((String, Long) => Try[Either[Fail, T]] => Map[String, MetricValue]) {

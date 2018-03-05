@@ -1,6 +1,6 @@
 package org.validoc.sample.domain
 
-import org.validoc.utils.cache.Cachable
+import org.validoc.utils.cache.{CachableKey, UnitId}
 import org.validoc.utils.domain.{BypassCache, DomainCompanionObject, DomainCompanionQuery}
 import org.validoc.utils.functions.Liftable
 import org.validoc.utils.http._
@@ -10,8 +10,9 @@ import scala.language.higherKinds
 
 
 // need this, but it may be removed by 'organise imports' import io.circe.generic.auto._
-import scala.language.implicitConversions
 import org.validoc.utils.language.Language._
+
+import scala.language.implicitConversions
 
 case class HomePage(mostPopular: EnrichedMostPopular, promotions: EnrichedPromotion)
 
@@ -35,8 +36,10 @@ object HomePageQuery extends DomainCompanionQuery[HomePageQuery] {
     override def apply(v1: HomePageQuery): MostPopularQuery = MostPopularQuery(v1.bypassCache)
   }
 
-  implicit object CachableKeyForHomePage extends Cachable[HomePageQuery] {
-    override def apply(v1: HomePageQuery) = ()
+  implicit object CachableKeyForHomePage extends CachableKey[HomePageQuery] {
+//    override def apply(v1: HomePageQuery) = ()
+    override def id(req: HomePageQuery) = UnitId
+    override def bypassCache(req: HomePageQuery) = req.bypassCache
   }
 
 }

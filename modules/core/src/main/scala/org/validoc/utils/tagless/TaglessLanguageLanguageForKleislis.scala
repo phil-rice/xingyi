@@ -78,7 +78,7 @@ class TaglessLanguageLanguageForKleislis[M[_] : Async, Fail] extends CommonForKl
       recurse(endpoints.toList)
     }
 
-    override def cache[Req: ClassTag : Cachable : ShouldCache, Res: ClassTag : ShouldCacheResult](name: String)(raw: Kleisli[Req, Res]): Kleisli[Req, Res] =
+    override def cache[Req: ClassTag : CachableKey : ShouldUseCache, Res: ClassTag : ShouldCacheResult](name: String)(raw: Kleisli[Req, Res]): Kleisli[Req, Res] =
       Cache[M, Req, Res](cacheFactory[Req, Res](name, raw))
 
     override def retry[Req: ClassTag, Res: ClassTag](retryConfig: RetryConfig)(raw: Kleisli[Req, Res])(implicit retry: NeedsRetry[Fail, Res]): Kleisli[Req, Res] =

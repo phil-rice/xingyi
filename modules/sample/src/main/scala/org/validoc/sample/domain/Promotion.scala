@@ -1,21 +1,22 @@
 package org.validoc.sample.domain
 
-import org.validoc.utils.cache.Cachable
+import org.validoc.utils.cache.{CachableKey, ObjectId}
 import org.validoc.utils.domain.{BypassCache, DomainCompanionObject, DomainCompanionQuery}
 import org.validoc.utils.functions.Monad
 import org.validoc.utils.http._
 import org.validoc.utils.json.ToJson
+import org.validoc.utils.language.Language._
 import org.validoc.utils.tagless.{Enricher, HasChildren}
 
 import scala.language.{higherKinds, implicitConversions}
-import org.validoc.utils.language.Language._
 
 case class PromotionQuery(bypassCache: Boolean) extends BypassCache
 
 object PromotionQuery extends DomainCompanionQuery[PromotionQuery] {
 
-  implicit object CachableKeyForPromotionQuery extends Cachable[PromotionQuery] {
-    override def apply(v1: PromotionQuery) = ()
+  implicit object CachableKeyForPromotionQuery extends CachableKey[PromotionQuery] {
+    override def id(req: PromotionQuery) = ObjectId(req)
+    override def bypassCache(req: PromotionQuery) = req.bypassCache
   }
 
   implicit object ToServiceRequestForPromotionQuery extends ToServiceRequest[PromotionQuery] {

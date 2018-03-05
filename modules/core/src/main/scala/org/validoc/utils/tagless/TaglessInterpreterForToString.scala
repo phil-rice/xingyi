@@ -1,6 +1,6 @@
 package org.validoc.utils.tagless
 
-import org.validoc.utils.cache.{Cachable, ShouldCache, ShouldCacheResult}
+import org.validoc.utils.cache.{CachableKey, ShouldCacheResult, ShouldUseCache}
 import org.validoc.utils.endpoint.MatchesServiceRequest
 import org.validoc.utils.functions.MonadCanFail
 import org.validoc.utils.http._
@@ -49,7 +49,7 @@ class TaglessInterpreterForToString {
       raw.insertLineAndIndent(s"endpoint[${nameOf[Req]},${nameOf[Res]}]($normalisedPath,$matchesServiceRequest)")
     override def metrics[Req: ClassTag, Res: ClassTag : RD](prefix: String)(raw: StringHolder[Req, Res]) =
       raw.insertLineAndIndent(s"metrics($prefix)")
-    override def cache[Req: ClassTag : Cachable : ShouldCache, Res: ClassTag : ShouldCacheResult](name: String)(raw: StringHolder[Req, Res]) =
+    override def cache[Req: ClassTag : CachableKey : ShouldUseCache, Res: ClassTag : ShouldCacheResult](name: String)(raw: StringHolder[Req, Res]) =
       raw.insertLineAndIndent(s"cache($name)")
     override def retry[Req: ClassTag, Res: ClassTag](retryConfig: RetryConfig)(raw: StringHolder[Req, Res])(implicit retry: NeedsRetry[Fail, Res]): StringHolder[Req, Res] =
       raw.insertLineAndIndent(s"retry($retryConfig)")

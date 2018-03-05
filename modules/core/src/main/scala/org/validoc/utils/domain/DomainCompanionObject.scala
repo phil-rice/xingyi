@@ -1,6 +1,6 @@
 package org.validoc.utils.domain
 
-import org.validoc.utils.cache.ShouldCache
+import org.validoc.utils.cache.ShouldUseCache
 import org.validoc.utils.http._
 import org.validoc.utils.json.ToJson
 import org.validoc.utils.parser.{Parser, ParserFinder}
@@ -20,7 +20,7 @@ abstract class DomainCompanionQuery[T <: BypassCache] {
     //    override def apply(serviceResponse: ServiceResponse): T =
 //    override def apply(serviceRequest: ServiceRequest) = parserFinder.find(defaultContentType).valueOrException(serviceRequest.body.s)
 //  }
-  implicit def shouldCache = new ShouldCache[T] {
+  implicit def shouldCache = new ShouldUseCache[T] {
     override def apply(v1: T) = !v1.bypassCache
   }
 }

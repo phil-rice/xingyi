@@ -8,10 +8,6 @@ import scala.util.{Failure, Success, Try}
 
 case class ServiceResponse(status: Status, body: Body, contentType: ContentType)
 
-object ServiceResponse {
-  def fromJson[T](t: T)(implicit toJson: ToJson[T]) = ServiceResponse(Status(200), Body(toJson(t)), ContentType("application/json"))
-
-}
 
 
 @implicitNotFound(

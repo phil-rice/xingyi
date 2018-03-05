@@ -28,7 +28,7 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
     implicit def fn(s: String) = s;
 
 
-    implicit object ParserForStringString extends Parser[ String] {
+    implicit object ParserForStringString extends Parser[String] {
       override def apply(req: String) = req
     }
 
@@ -57,9 +57,9 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
     val retryConfig = RetryConfig(10, RandomDelay(FiniteDuration(100, TimeUnit.MILLISECONDS)))
 
-//    implicit object logRequestAndResult extends LogRequestAndResult[M, Fail] {
-//      override def apply[Req: DetailedLogging : SummaryLogging, Res: DetailedLogging : SummaryLogging](sender: Any, messagePrefix: String)(req: Req) = ???
-//    }
+    //    implicit object logRequestAndResult extends LogRequestAndResult[M, Fail] {
+    //      override def apply[Req: DetailedLogging : SummaryLogging, Res: DetailedLogging : SummaryLogging](sender: Any, messagePrefix: String)(req: Req) = ???
+    //    }
 
     ResponseParser.defaultDirtyParser[M, Fail, String, String]
     def s1: Wrapper[String, String] = http("s1") |+| objectify[String, String] |+| logging("prefix1") |+| metrics("service1")
@@ -83,27 +83,29 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
     def microservice: Wrapper[ServiceRequest, ServiceResponse] = chain(endpoint1, endpoint2)
 
-    //    def endPointx: Wrapper[String, String] => EndpointWrapper[String, String] = endpoint[String, String]("/endpoint2", idAtEnd(Get)) _
-    //    def endPointy = endpoint[String, String]("/endpoint2", idAtEnd(Get)) _ <++> objectify[String, String] _
-    //    def endPointz = endpoint[String, String]("/endpoint2", idAtEnd(Get)) _ <++> objectify[String,String] _ <++> http("s6")
-    //
-    //
-    //    def endPointw: EndpointWrapper[String, String] = endpoint[String,String]("/endpoint2", idAtEnd(Get)) _ <++> objectify _ <+> http("s6")
-    //
-
-    //    def endPointz: EndpointWrapper[String, String] = endpoint[String, String]("/endpoint2", idAtEnd(Get)) _ <+> objectify[String,String] <++> http("sa1")
-    //    def endPointe = endpoint[String, String]("/endpoint2", idAtEnd(Get)) _ <+> objectify <++> http("sa1")
-
   }
 
   behavior of "Tagless with toString Interpreter"
+  implicit val stringlanguage: TaglessInterpreterForToString = new TaglessInterpreterForToString
 
-  it should "handle" in {
-    implicit val stringlanguage = new TaglessInterpreterForToString
-    import org.validoc.utils.functions.AsyncForScalaFuture._
+  import org.validoc.utils.functions.AsyncForScalaFuture._
     import ImplicitsForTest._
+
+  it should "turn a sample language into a string with the 'for to string'" in {
     import stringlanguage._
 
+    checkTaglessToString(new TaglessInterpreterForToString)
+  }
+
+//  behavior of "Tagless with default delegate Interpreter"
+
+//  it should "delegate" in {
+//    checkTaglessToString(new DelegatesTaglessLanguage(new TaglessInterpreterForToString))
+//
+//  }
+
+  private def checkTaglessToString(implicit stringlanguage: TaglessInterpreterForToString) = {
+    import stringlanguage._
     val sample = new Sample[StringHolder, StringHolder, Future, Throwable]()
     sample.s1.lines shouldBe List((3, "metrics(service1)"), (2, "logging(Using prefix1)"), (1, "objectify[String,String]"), (0, "http(s1)"))
 
@@ -148,7 +150,5 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
       (3, "profile"), (2, "logging(Using prefix2)"), (1, "objectify[String,String]"), (0, "http(s2)"),
       (5, "endpoint[String,String](/endpoint2,IdAtEndAndVerb(Get))"), (4, "metrics(service1)"), (3, "logging(Using prefix1)"), (2, "objectify[String,String]"), (1, "http(s1)")
     )
-
   }
-
 }
