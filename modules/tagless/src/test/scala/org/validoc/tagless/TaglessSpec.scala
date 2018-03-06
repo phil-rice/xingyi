@@ -3,7 +3,7 @@ package org.validoc.tagless
 import java.util.concurrent.TimeUnit
 
 import org.validoc.utils.UtilsSpec
-import org.validoc.utils.aggregate.{Enricher, HasChildren}
+import org.validoc.utils.aggregate.{Enricher, FindReq, HasChildren}
 import org.validoc.utils.endpoint.MatchesServiceRequest._
 import org.validoc.utils.functions.MonadCanFail
 import org.validoc.utils.http._
@@ -38,10 +38,6 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
     implicit object HasChildrenForString extends HasChildren[String, String] {
       override def apply(v1: String) = v1.split(",")
-    }
-
-    implicit object FindReqForString extends FindReq[String, String] {
-      override def apply(v1: String) = v1
     }
 
     implicit object FromServiceRequestForString extends FromServiceRequest[M, String] {
