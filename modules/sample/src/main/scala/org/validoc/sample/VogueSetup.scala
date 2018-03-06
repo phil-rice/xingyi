@@ -4,7 +4,7 @@ import org.validoc.sample.domain._
 import org.validoc.utils.endpoint.MatchesServiceRequest
 import org.validoc.utils.functions.MonadCanFail
 import org.validoc.utils.http.{Failer, Get}
-import org.validoc.utils.tagless.TaglessLanguage
+import org.validoc.tagless.TaglessLanguage
 import org.validoc.utils._
 import scala.language.higherKinds
 import scala.language.implicitConversions

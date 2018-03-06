@@ -4,18 +4,17 @@ import java.util.concurrent.Executors
 
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
-import com.twitter.finatra.http.response.ResponseBuilder
 import com.twitter.finatra.utils.FuturePools
 import com.twitter.util.{Future, FuturePool}
 import org.validoc.finatra._
 import org.validoc.sample.domain._
 import org.validoc.sample.{JsonBundle, PromotionServiceNames, PromotionSetup}
+import org.validoc.tagless.TaglessLanguageLanguageForKleislis
 import org.validoc.utils.cache._
 import org.validoc.utils.http._
 import org.validoc.utils.logging.{AbstractLogRequestAndResult, LogRequestAndResult, PrintlnLoggingAdapter}
-import org.validoc.utils.map.{MapSizeStrategy, MaxMapSizeStrategy}
+import org.validoc.utils.map.MaxMapSizeStrategy
 import org.validoc.utils.metrics.PrintlnPutMetrics
-import org.validoc.utils.tagless.{HttpFactory, TaglessLanguageLanguageForKleislis}
 
 
 class FinatraPromotionSetup(implicit futurePool: FuturePool) extends Controller with SampleJsonsForCompilation {

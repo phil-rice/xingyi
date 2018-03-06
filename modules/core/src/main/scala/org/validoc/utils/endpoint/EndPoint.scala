@@ -1,11 +1,43 @@
 package org.validoc.utils.endpoint
 
-import org.validoc.utils.functions.Monad
+import org.validoc.utils.functions.{Async, Monad, MonadCanFail}
 import org.validoc.utils.http._
 import org.validoc.utils.language.Language._
 import org.validoc.utils.strings.Strings
 
+import scala.annotation.tailrec
 import scala.language.higherKinds
+import scala.reflect.ClassTag
+
+trait EndpointKleisli[M[_]] {
+  protected implicit def monad: Monad[M]
+  def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: Req => M[Res])
+                                            (implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]): EndPoint[M, Req, Res] =
+    EndPoint(normalisedPath, matchesServiceRequest)(raw)
+}
+
+trait ChainKleisli[M[_], Fail] {
+  protected implicit def monad: MonadCanFail[M, Fail]
+  protected def failer: Failer[Fail]
+
+  def chain(endpoints: EndPoint[M, _, _]*): ServiceRequest => M[ServiceResponse] = { req: ServiceRequest =>
+    @tailrec
+    def recurse(seq: List[EndPoint[M, _, _]]): M[ServiceResponse] = {
+
+      seq match {
+        case head :: tail =>
+          println(head.asInstanceOf[EndPoint[M, _, _]].debugInfo(req))
+          head(req) match {
+            case Some(result) => result
+            case None => recurse(tail)
+          }
+        case Nil => failer.pathNotFound(req).fail[M, ServiceResponse]
+      }
+    }
+    recurse(endpoints.toList)
+  }
+
+}
 
 case class EndPoint[M[_] : Monad, Req, Res](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(kleisli: Req => M[Res])
                                            (implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]) extends (ServiceRequest => Option[M[ServiceResponse]]) {

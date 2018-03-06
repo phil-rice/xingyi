@@ -1,15 +1,13 @@
 package org.validoc.utils.objectify
 
-import org.validoc.utils.UtilsSpec
-import org.validoc.utils.functions.{Async, Monad, MonadCanFail}
+import org.mockito.Mockito._
+import org.validoc.utils.{UtilsSpec, _}
+import org.validoc.utils.functions.{Async, MonadCanFail}
 import org.validoc.utils.http._
+import org.validoc.utils.language.Language._
 
 import scala.concurrent.Future
 import scala.language.higherKinds
-import scala.reflect.ClassTag
-import org.mockito.Mockito._
-import org.validoc.utils._
-import org.validoc.utils.language.Language._
 
 trait ServiceResponseFixture {
   val serviceRequest = ServiceRequest(Get, Uri("/someUri"))
@@ -21,8 +19,8 @@ trait ServiceResponseFixture {
 class AbstractObjectifySpec[M[_] : Async, Fail](implicit val monad: MonadCanFail[M, Fail]) extends UtilsSpec with ObjectifyKleisli[M, Fail] with FunctionFixture with ServiceResponseFixture {
 
   behavior of "Objectify"
-  type ServiceKleisli = Kleisli[ServiceRequest, ServiceResponse]
-  type StringKleisli = Kleisli[String, String]
+  type ServiceKleisli = ServiceRequest => M[ServiceResponse]
+  type StringKleisli = String => M[String]
 
   def setup[X](fn: (StringKleisli, ToServiceRequest[String], ServiceKleisli, ResponseCategoriser[M, String], ResponseParser[Fail, String, String]) => X): X = {
     implicit val toRequest = mock[ToServiceRequest[String]]
@@ -46,7 +44,7 @@ class AbstractObjectifySpec[M[_] : Async, Fail](implicit val monad: MonadCanFail
   }
 }
 
+import org.validoc.utils.functions.AsyncForScalaFuture.ImplicitsForTest._
 import org.validoc.utils.functions.AsyncForScalaFuture._
-import ImplicitsForTest._
 
 class FutureObjectifySpec extends AbstractObjectifySpec[Future, Throwable]

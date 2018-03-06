@@ -7,12 +7,12 @@ import org.validoc.caffeine.CaffeineCache
 import org.validoc.sample.domain.SampleJsonsForCompilation
 import org.validoc.sample.{JsonBundle, PromotionSetup}
 import org.validoc.simpleServer.{EndpointHandler, SimpleHttpServer}
+import org.validoc.tagless.TaglessLanguageLanguageForKleislis
 import org.validoc.utils.functions.AsyncForScalaFuture.ImplicitsForTest._
 import org.validoc.utils.functions.AsyncForScalaFuture._
 import org.validoc.utils.http._
 import org.validoc.utils.logging.{AbstractLogRequestAndResult, LogRequestAndResult, PrintlnLoggingAdapter}
 import org.validoc.utils.metrics.PrintlnPutMetrics
-import org.validoc.utils.tagless.{HttpFactory, TaglessLanguageLanguageForKleislis}
 
 import scala.concurrent.Future
 

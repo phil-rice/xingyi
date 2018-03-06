@@ -1,10 +1,10 @@
 package org.validoc.sample.domain
 
+import org.validoc.utils.aggregate.{Enricher, HasChildren}
 import org.validoc.utils.cache.{CachableKey, UnitId}
-import org.validoc.utils.domain.{BypassCache, DomainResponseCompanionObject, DomainRequestCompanionQuery}
+import org.validoc.utils.domain.{BypassCache, DomainRequestCompanionQuery, DomainResponseCompanionObject}
 import org.validoc.utils.functions.Liftable
 import org.validoc.utils.json.ToJson
-import org.validoc.utils.tagless.{Enricher, HasChildren}
 //needs to be here import io.circe.generic.auto._
 import org.validoc.utils.http._
 import org.validoc.utils.language.Language._

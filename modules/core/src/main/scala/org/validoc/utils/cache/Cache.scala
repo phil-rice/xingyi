@@ -1,8 +1,17 @@
 package org.validoc.utils.cache
 
 import scala.language.higherKinds
+import scala.reflect.ClassTag
 import scala.util.Try
 
+
+trait CacheKleisli[M[_]] {
+
+  protected def cacheFactory: CacheFactory[M]
+  def cache[Req: ClassTag : CachableKey : ShouldUseCache, Res: ClassTag : ShouldCacheResult](name: String)(raw: Req => M[Res]): Req => M[Res] =
+    Cache[M, Req, Res](cacheFactory[Req, Res](name, raw))
+
+}
 case class CacheStats(size: Int)
 
 
@@ -27,7 +36,6 @@ object ShouldCacheResult {
   implicit object ShouldCacheResultForString$ extends ShouldCacheResultUsingSucesses[String]
 
 }
-
 
 
 trait CacheFactory[M[_]] {

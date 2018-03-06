@@ -10,6 +10,17 @@ import scala.language.higherKinds
 import scala.util.{Success, Try}
 import org.validoc.utils.language.Language._
 
+import scala.reflect.ClassTag
+
+
+trait RetryKleisli[M[_], Fail] {
+  protected implicit def async: Async[M]
+  protected implicit def monad: MonadCanFailWithException[M, Fail]
+
+  def retry[Req: ClassTag, Res: ClassTag](retryConfig: RetryConfig)(raw: Req => M[Res])(implicit retry: NeedsRetry[Fail, Res]): Req => M[Res] =
+    new RetryService[M, Fail, Req, Res](raw, retryConfig)
+}
+
 trait NeedsRetry[Fail, T] {
   def apply(t: Try[Either[Fail, T]]): Boolean
 }
@@ -43,7 +54,7 @@ trait RetryInfo {
 case class RetryConfig(retries: Int, delay: Delay)
 
 
-class RetryService[M[_], Fail, Req, Res](delegate: (Req => M[Res]) , retryConfig: RetryConfig)(implicit async: Async[M], monad: MonadCanFailWithException[M, Fail], resRetry: NeedsRetry[Fail, Res]) extends (Req => M[Res])  with RetryInfo {
+class RetryService[M[_], Fail, Req, Res](delegate: (Req => M[Res]), retryConfig: RetryConfig)(implicit async: Async[M], monad: MonadCanFailWithException[M, Fail], resRetry: NeedsRetry[Fail, Res]) extends (Req => M[Res]) with RetryInfo {
 
   import retryConfig._
 

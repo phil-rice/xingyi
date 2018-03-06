@@ -1,9 +1,20 @@
 package org.validoc.utils.profiling
 
+import org.validoc.utils.functions.MonadWithException
+import org.validoc.utils.language.Language._
 import org.validoc.utils.time.NanoTimeService
 
 import scala.language.higherKinds
+import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
+
+trait ProfileKleisli[M[_], Fail] {
+  protected implicit def monad: MonadWithException[M]
+  protected implicit def timeService: NanoTimeService
+
+  def profile[Req: ClassTag, Res: ClassTag](profileData: TryProfileData)(raw: Req => M[Res]): Req => M[Res] =
+    raw.onEnterAndExitM(_ => timeService(), profileData.eventFromStartTime)
+}
 
 class TryProfileData {
   def clearData = {

@@ -65,6 +65,10 @@ lazy val caffeineSettings = commonSettings ++ Seq(
 lazy val core = (project in file("modules/core")).
   settings(commonSettings: _*)
 
+lazy val tagless = (project in file("modules/tagless")).
+  settings(commonSettings: _*) .
+  dependsOn(core % "test->test;compile->compile").aggregate(core)
+
 lazy val simpleServer = (project in file("modules/simpleServer")).
   settings(commonSettings: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core)
@@ -72,6 +76,7 @@ lazy val simpleServer = (project in file("modules/simpleServer")).
 lazy val sampleServer = (project in file("modules/sampleServer")).
   settings(commonSettings: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
+  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   dependsOn(simpleServer % "test->test;compile->compile").aggregate(simpleServer).
   dependsOn(sample % "test->test;compile->compile").aggregate(sample).
   dependsOn(caffeine % "test->test;compile->compile").aggregate(caffeine)
@@ -104,6 +109,7 @@ lazy val finatra = (project in file("modules/finatra")).
 
 lazy val sample = (project in file("modules/sample")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
+  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   settings(commonSettings: _*).
   settings(pactSettings: _*)
 

@@ -1,12 +1,13 @@
-package org.validoc.utils.tagless
+package org.validoc.tagless
 
 import java.util.concurrent.TimeUnit
 
-import org.validoc.utils.{UtilsSpec, _}
+import org.validoc.utils.UtilsSpec
+import org.validoc.utils.aggregate.{Enricher, HasChildren}
 import org.validoc.utils.endpoint.MatchesServiceRequest._
 import org.validoc.utils.functions.MonadCanFail
 import org.validoc.utils.http._
-import org.validoc.utils.logging.{DetailedLogging, LogRequestAndResult, SummaryLogging}
+import org.validoc.utils.language.Language._
 import org.validoc.utils.parser.Parser
 import org.validoc.utils.profiling.TryProfileData
 import org.validoc.utils.retry.RetryConfig
@@ -16,7 +17,6 @@ import org.validoc.utils.time.RandomDelay
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.language.{higherKinds, implicitConversions}
-import org.validoc.utils.language.Language._
 
 class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
@@ -89,10 +89,9 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
   implicit val stringlanguage: TaglessInterpreterForToString = new TaglessInterpreterForToString
 
   import org.validoc.utils.functions.AsyncForScalaFuture._
-    import ImplicitsForTest._
+  import ImplicitsForTest._
 
   it should "turn a sample language into a string with the 'for to string'" in {
-    import stringlanguage._
 
     checkTaglessToString(new TaglessInterpreterForToString)
   }

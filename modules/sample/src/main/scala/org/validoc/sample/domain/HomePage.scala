@@ -4,7 +4,7 @@ import org.validoc.utils.cache.{CachableKey, UnitId}
 import org.validoc.utils.domain.{BypassCache, DomainResponseCompanionObject, DomainRequestCompanionQuery}
 import org.validoc.utils.functions.Liftable
 import org.validoc.utils.http._
-import org.validoc.utils.tagless.FindReq
+import org.validoc.tagless.FindReq
 //import io.circe.syntax._
 import scala.language.higherKinds
 

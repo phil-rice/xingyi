@@ -1,5 +1,6 @@
-package org.validoc.utils.tagless
+package org.validoc.tagless
 
+import org.validoc.utils.aggregate.{Enricher, HasChildren}
 import org.validoc.utils.cache.{CachableKey, ShouldCacheResult, ShouldUseCache}
 import org.validoc.utils.endpoint.MatchesServiceRequest
 import org.validoc.utils.functions.MonadCanFail

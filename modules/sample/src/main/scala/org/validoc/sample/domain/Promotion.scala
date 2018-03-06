@@ -1,12 +1,12 @@
 package org.validoc.sample.domain
 
+import org.validoc.utils.aggregate.{Enricher, HasChildren}
 import org.validoc.utils.cache.{CachableKey, ObjectId}
-import org.validoc.utils.domain.{BypassCache, DomainResponseCompanionObject, DomainRequestCompanionQuery}
+import org.validoc.utils.domain.{BypassCache, DomainRequestCompanionQuery, DomainResponseCompanionObject}
 import org.validoc.utils.functions.Monad
 import org.validoc.utils.http._
 import org.validoc.utils.json.ToJson
 import org.validoc.utils.language.Language._
-import org.validoc.utils.tagless.{Enricher, HasChildren}
 
 import scala.language.{higherKinds, implicitConversions}
 

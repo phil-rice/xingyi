@@ -4,7 +4,7 @@ import org.validoc.sample.domain.{Production, ProductionId, Programme, Programme
 import org.validoc.utils.endpoint.MatchesServiceRequest
 import org.validoc.utils.functions.MonadCanFail
 import org.validoc.utils.http.{Failer, Get}
-import org.validoc.utils.tagless.TaglessLanguage
+import org.validoc.tagless.TaglessLanguage
 
 import scala.language.higherKinds
 
