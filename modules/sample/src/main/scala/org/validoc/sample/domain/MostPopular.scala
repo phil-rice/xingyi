@@ -1,7 +1,7 @@
 package org.validoc.sample.domain
 
 import org.validoc.utils.cache.{CachableKey, UnitId}
-import org.validoc.utils.domain.{BypassCache, DomainCompanionObject, DomainCompanionQuery}
+import org.validoc.utils.domain.{BypassCache, DomainResponseCompanionObject, DomainRequestCompanionQuery}
 import org.validoc.utils.functions.Liftable
 import org.validoc.utils.json.ToJson
 import org.validoc.utils.tagless.{Enricher, HasChildren}
@@ -13,7 +13,7 @@ import scala.language.{higherKinds, implicitConversions}
 
 case class MostPopularQuery(bypassCache: Boolean) extends BypassCache
 
-object MostPopularQuery extends DomainCompanionQuery[MostPopularQuery] {
+object MostPopularQuery extends DomainRequestCompanionQuery[MostPopularQuery] {
 
   implicit object CachableKeyForMostPopularQuery extends CachableKey[MostPopularQuery] {
 //    override def apply(v1: MostPopularQuery) = ()
@@ -41,7 +41,7 @@ object MostPopularQuery extends DomainCompanionQuery[MostPopularQuery] {
 case class MostPopular(programmeIds: Seq[ProgrammeId])
 
 
-object MostPopular extends DomainCompanionObject[MostPopularQuery, MostPopular] {
+object MostPopular extends DomainResponseCompanionObject[MostPopularQuery, MostPopular] {
 
   implicit object HasChildrenForMostPopular extends HasChildren[MostPopular, ProgrammeId] {
     override def apply(p: MostPopular): Seq[ProgrammeId] = p.programmeIds
@@ -54,7 +54,7 @@ object MostPopular extends DomainCompanionObject[MostPopularQuery, MostPopular] 
 
 case class EnrichedMostPopular(programmes: Seq[Programme])
 
-object EnrichedMostPopular extends DomainCompanionObject[MostPopularQuery, EnrichedMostPopular] {
+object EnrichedMostPopular extends DomainResponseCompanionObject[MostPopularQuery, EnrichedMostPopular] {
   implicit object EnricherFor extends Enricher[MostPopularQuery, MostPopular, ProgrammeId, Programme, EnrichedMostPopular] {
     override def apply(v1: MostPopularQuery, v2: MostPopular, v3: Seq[(ProgrammeId, Programme)]) = EnrichedMostPopular(v3.map(_._2))
   }

@@ -1,7 +1,7 @@
 package org.validoc.sample.domain
 
 import org.validoc.utils.cache.{CachableKey, UnitId}
-import org.validoc.utils.domain.{BypassCache, DomainCompanionObject, DomainCompanionQuery}
+import org.validoc.utils.domain.{BypassCache, DomainResponseCompanionObject, DomainRequestCompanionQuery}
 import org.validoc.utils.functions.Liftable
 import org.validoc.utils.http._
 import org.validoc.utils.tagless.FindReq
@@ -16,11 +16,11 @@ import scala.language.implicitConversions
 
 case class HomePage(mostPopular: EnrichedMostPopular, promotions: EnrichedPromotion)
 
-object HomePage extends DomainCompanionObject[HomePageQuery, HomePage]
+object HomePage extends DomainResponseCompanionObject[HomePageQuery, HomePage]
 
 case class HomePageQuery(bypassCache: Boolean) extends BypassCache
 
-object HomePageQuery extends DomainCompanionQuery[HomePageQuery] {
+object HomePageQuery extends DomainRequestCompanionQuery[HomePageQuery] {
 
   implicit def fromServiceRequestForHomePageQuery[M[_] : Liftable] = new FromServiceRequestForHomePageQuery[M]
 

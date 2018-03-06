@@ -41,7 +41,7 @@ class AllProducers[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail](language: T
 object AllProducers extends App with SampleJsonsForCompilation {
   println("All producers")
   implicit val executors = Executors.newFixedThreadPool(10)
-  implicit val exc = ExecutionContextWithLocal.default(ExecutionContext.fromExecutor(executors))
+  implicit val exc = new ExecutionContextWithLocal(ExecutionContext.fromExecutor(executors))
 
   implicit val httpFactory = new HttpFactory[Future, ServiceRequest, ServiceResponse] {
     override def apply(v1: ServiceName) = { req => Future.successful(ServiceResponse(Status(200), Body(s"response; ${req.body.map(_.s).getOrElse("")}"), ContentType("text/html"))) }

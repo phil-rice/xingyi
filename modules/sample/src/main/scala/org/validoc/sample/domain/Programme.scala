@@ -1,6 +1,6 @@
 package org.validoc.sample.domain
 
-import org.validoc.utils.domain.{BypassCache, DomainCompanionObject, DomainCompanionQuery}
+import org.validoc.utils.domain.{BypassCache, DomainResponseCompanionObject, DomainRequestCompanionQuery}
 import org.validoc.utils.functions.Monad
 import org.validoc.utils.http._
 import org.validoc.utils.json.ToJson
@@ -12,7 +12,7 @@ import org.validoc.utils.language.Language._
 
 case class ProgrammeId(id: String, bypassCache: Boolean) extends BypassCache
 
-object ProgrammeId extends DomainCompanionQuery[ProgrammeId] {
+object ProgrammeId extends DomainRequestCompanionQuery[ProgrammeId] {
 
   implicit object toRequestForProgrammeId extends ToServiceRequest[ProgrammeId] {
     override def apply(req: ProgrammeId): ServiceRequest = ServiceRequest(Get, Uri(s"/programme/${req.id}"))
@@ -27,7 +27,7 @@ object ProgrammeId extends DomainCompanionQuery[ProgrammeId] {
 case class Programme(info: String)
 
 
-object Programme extends DomainCompanionObject[ProgrammeId, Programme]{
+object Programme extends DomainResponseCompanionObject[ProgrammeId, Programme]{
 
   implicit object ToJsonForProgramme extends ToJson[Programme] {
     override def apply(v1: Programme) = s"""{programmeInfo: "${v1.info}"}"""

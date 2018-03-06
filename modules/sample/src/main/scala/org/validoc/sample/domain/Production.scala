@@ -1,7 +1,7 @@
 package org.validoc.sample.domain
 
 import org.validoc.utils.cache.{CachableKey, ObjectId}
-import org.validoc.utils.domain.{BypassCache, DomainCompanionObject, DomainCompanionQuery}
+import org.validoc.utils.domain.{BypassCache, DomainResponseCompanionObject, DomainRequestCompanionQuery}
 import org.validoc.utils.functions.Monad
 import org.validoc.utils.http._
 import org.validoc.utils.json.ToJson
@@ -12,7 +12,7 @@ import scala.language.{higherKinds, implicitConversions}
 
 case class ProductionId(id: String, bypassCache: Boolean) extends BypassCache
 
-object ProductionId extends DomainCompanionQuery[ProductionId] {
+object ProductionId extends DomainRequestCompanionQuery[ProductionId] {
 
   implicit object toRequestForProductionId extends ToServiceRequest[ProductionId] {
     override def apply(v1: ProductionId): ServiceRequest = ServiceRequest(Get, Uri(s"/production/${v1.id}"))
@@ -30,7 +30,7 @@ object ProductionId extends DomainCompanionQuery[ProductionId] {
 
 case class Production(info: String)
 
-object Production extends DomainCompanionObject[ProductionId, Production] {
+object Production extends DomainResponseCompanionObject[ProductionId, Production] {
 
   implicit object ToJsonForPromotion extends ToJson[Production] {
     override def apply(v1: Production) = s"""{productionInfo: "${v1.info}"}"""

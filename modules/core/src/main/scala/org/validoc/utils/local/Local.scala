@@ -1,12 +1,11 @@
 package org.validoc.utils.local
 
-import scala.collection.concurrent.TrieMap
-import scala.language.higherKinds
-import scala.reflect.ClassTag
-import org.validoc.utils._
 import org.validoc.utils.language.Language._
 
+import scala.collection.concurrent.TrieMap
 import scala.concurrent.Future
+import scala.language.higherKinds
+import scala.reflect.ClassTag
 
 trait LocalOps[M[_]] {
   def get[V: ClassTag](): Option[V]
@@ -41,16 +40,16 @@ class SimpleLocalOps[M[_], H[_]](holder: Holder[H]) extends LocalOps[M] {
 
 trait LocalOpsPimper[M[_]] {
 
-  def getFromLocalStore[V: ClassTag]()(implicit localOps: LocalOps[M]): Option[V] = localOps.get[V]
-  def putInlocalStore[V: ClassTag](v: V)(implicit localOps: LocalOps[M]): Unit = localOps.put[V](v)
-  def clearlocalStore[V: ClassTag]()(implicit localOps: LocalOps[M]): Unit = localOps.clear[V]
+  protected def getFromLocalStore[V: ClassTag]()(implicit localOps: LocalOps[M]): Option[V] = localOps.get[V]
+  protected def putInlocalStore[V: ClassTag](v: V)(implicit localOps: LocalOps[M]): Unit = localOps.put[V](v)
+  protected def clearlocalStore[V: ClassTag]()(implicit localOps: LocalOps[M]): Unit = localOps.clear[V]
 
-//  def getOrCreateLocalStore[V: ClassTag](default: => V)(implicit localOps: LocalOps[M]): V = localOps.get[V].getOrElse {
-//    val v = default
-//    localOps.put(v)
-//    v
-//  }
-//  def modifyLocalStore[V: ClassTag](fn: V => V)(implicit localOps: LocalOps[M]): Unit = getFromLocalStore[V]().foreach(v => putInlocalStore(fn(v)))
-//  def useLocalStore[V: ClassTag](fn: V => Unit)(implicit localOps: LocalOps[M]): Unit = getFromLocalStore[V].foreach(fn)
+  //  def getOrCreateLocalStore[V: ClassTag](default: => V)(implicit localOps: LocalOps[M]): V = localOps.get[V].getOrElse {
+  //    val v = default
+  //    localOps.put(v)
+  //    v
+  //  }
+  //  def modifyLocalStore[V: ClassTag](fn: V => V)(implicit localOps: LocalOps[M]): Unit = getFromLocalStore[V]().foreach(v => putInlocalStore(fn(v)))
+  //  def useLocalStore[V: ClassTag](fn: V => Unit)(implicit localOps: LocalOps[M]): Unit = getFromLocalStore[V].foreach(fn)
 }
 

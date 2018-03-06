@@ -47,7 +47,7 @@ abstract class AbstractLogRequestAndResult[Fail: DetailedLogging : SummaryLoggin
   }
 }
 class LogRequestAndResultForBundle[Fail: DetailedLogging : SummaryLogging](implicit bundle: ResourceBundle, log: LoggingAdapter) extends AbstractLogRequestAndResult[Fail] {
-  override protected def format(messagePrefix: String, messagePostFix: String)(strings: String*) =
-    MessageFormat.format(bundle.getString(messagePrefix + "." + messagePrefix), strings: _*)
+  override  def format(messagePrefix: String, messagePostFix: String)(strings: String*) =
+    MessageFormat.format(bundle.getString(messagePrefix + "." + messagePostFix), strings: _*)
 }
 

@@ -19,7 +19,6 @@ object LocalOpsForScalaFuture{
   implicit val localOpsForScalaFuture = new LocalOpsForScalaFuture
 }
 
-@implicitNotFound("""ExecutionContextWithLocal not found. Usually this is because there isn't an execution context is scope.""")
 class ExecutionContextWithLocal(executionContext: ExecutionContext)(implicit localOps: LocalOpsForScalaFuture) extends ExecutionContext {
   override def execute(task: Runnable) {
     val copyValue = localOps.localValues.value
@@ -32,6 +31,3 @@ class ExecutionContextWithLocal(executionContext: ExecutionContext)(implicit loc
   override def reportFailure(cause: Throwable) = executionContext.reportFailure(cause)
 }
 
-object ExecutionContextWithLocal {
-  implicit def default(executionContext: ExecutionContext) = new ExecutionContextWithLocal(executionContext)
-}

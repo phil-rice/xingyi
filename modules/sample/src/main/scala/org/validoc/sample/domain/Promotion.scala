@@ -1,7 +1,7 @@
 package org.validoc.sample.domain
 
 import org.validoc.utils.cache.{CachableKey, ObjectId}
-import org.validoc.utils.domain.{BypassCache, DomainCompanionObject, DomainCompanionQuery}
+import org.validoc.utils.domain.{BypassCache, DomainResponseCompanionObject, DomainRequestCompanionQuery}
 import org.validoc.utils.functions.Monad
 import org.validoc.utils.http._
 import org.validoc.utils.json.ToJson
@@ -12,7 +12,7 @@ import scala.language.{higherKinds, implicitConversions}
 
 case class PromotionQuery(bypassCache: Boolean) extends BypassCache
 
-object PromotionQuery extends DomainCompanionQuery[PromotionQuery] {
+object PromotionQuery extends DomainRequestCompanionQuery[PromotionQuery] {
 
   implicit object CachableKeyForPromotionQuery extends CachableKey[PromotionQuery] {
     override def id(req: PromotionQuery) = ObjectId(req)
@@ -31,7 +31,7 @@ object PromotionQuery extends DomainCompanionQuery[PromotionQuery] {
 
 case class Promotion(productionIds: List[ProductionId])
 
-object Promotion extends DomainCompanionObject[PromotionQuery, Promotion] {
+object Promotion extends DomainResponseCompanionObject[PromotionQuery, Promotion] {
 
   implicit object HasChildrenForPromotion extends HasChildren[Promotion, ProductionId] {
     override def apply(p: Promotion): Seq[ProductionId] = p.productionIds
@@ -45,7 +45,7 @@ object Promotion extends DomainCompanionObject[PromotionQuery, Promotion] {
 
 case class EnrichedPromotion(productions: Seq[Production])
 
-object EnrichedPromotion extends DomainCompanionObject[PromotionQuery, EnrichedPromotion] {
+object EnrichedPromotion extends DomainResponseCompanionObject[PromotionQuery, EnrichedPromotion] {
   implicit object EnricherForEP extends Enricher[PromotionQuery, Promotion, ProductionId, Production, EnrichedPromotion] {
     override def apply(v1: PromotionQuery, v2: Promotion, v3: Seq[(ProductionId, Production)]) = EnrichedPromotion(v3.map(_._2))
   }
