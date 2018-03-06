@@ -1,7 +1,9 @@
 package org.validoc.utils.aggregate
 
-import org.validoc.utils.functions.{Monad, MonadCanFailWithException}
+import org.validoc.utils.functions.Monad
 import org.validoc.utils.language.Language._
+
+import scala.language.higherKinds
 
 trait HasChildren[Main, Children] extends (Main => Seq[Children])
 

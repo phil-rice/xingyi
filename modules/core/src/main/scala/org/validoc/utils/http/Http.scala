@@ -1,5 +1,7 @@
 package org.validoc.utils.http
 
+import scala.language.higherKinds
+
 trait HttpFactory[M[_], HttpReq, HttpRes] extends (ServiceName => HttpReq => M[HttpRes])
 
 trait HttpKlesili[M[_]] {

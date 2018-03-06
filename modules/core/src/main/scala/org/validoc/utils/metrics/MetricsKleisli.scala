@@ -4,6 +4,7 @@ import org.validoc.utils.functions.MonadCanFailWithException
 import org.validoc.utils.time.NanoTimeService
 import org.validoc.utils.language.Language._
 import scala.reflect.ClassTag
+import scala.language.higherKinds
 
 trait MetricsKleisli[M[_], Fail] {
   protected implicit def monad: MonadCanFailWithException[M, Fail]

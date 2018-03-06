@@ -3,6 +3,8 @@ package org.validoc.utils.aggregate
 import org.validoc.utils.functions.Monad
 import org.validoc.utils.language.Language.{join2WithReq, join3WithReq, join4WithReq, _}
 
+import scala.language.higherKinds
+
 trait FindReq[Main, Req] extends (Main => Req)
 
 object FindReq {

@@ -12,6 +12,7 @@ import org.validoc.utils.profiling.ProfileKleisli
 import org.validoc.utils.retry.RetryKleisli
 import org.validoc.utils.time.NanoTimeService
 
+import scala.language.higherKinds
 trait MicroserviceComposers[M[_]] {
   implicit class ComposeWrapperPimper[RawReq, RawRes](wrapper: RawReq => M[RawRes]) {
     def |+|[Req, Res](fn: (RawReq => M[RawRes]) => (Req => M[Res])): (Req => M[Res]) = fn(wrapper)

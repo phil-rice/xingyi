@@ -2,6 +2,8 @@ package org.validoc.utils.functions
 
 import org.validoc.utils.language.Language._
 
+import scala.language.higherKinds
+
 trait LiftFunctionKleisli[M[_]] {
   protected implicit def monad: Monad[M]
 
