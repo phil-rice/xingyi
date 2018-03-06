@@ -2,8 +2,7 @@ package org.validoc.utils.retry
 
 import org.mockito.Mockito._
 import org.validoc.utils.UtilsWithLoggingSpec
-import org.validoc.utils.functions.AsyncForScalaFuture.ImplicitsForTest._
-import org.validoc.utils.functions.AsyncForScalaFuture._
+import org.validoc.utils.functions.ScalaFutureAsAsyncAndMonad
 import org.validoc.utils.time.Delay
 
 import scala.concurrent.Future
@@ -11,26 +10,26 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.Success
 
-class RetryServiceTest extends UtilsWithLoggingSpec {
+class RetryServiceTest extends UtilsWithLoggingSpec with ScalaFutureAsAsyncAndMonad with RetryKleisli[Future, Throwable] {
   type Req = String
   type Res = String
 
   behavior of "RetryService"
 
-  def setup(fn: (RetryService[Future, Throwable, Req, Res], (Req => Future[Res]) , NeedsRetry[Throwable, Res], Delay) => Unit) = {
-   implicit  val retry = mock[NeedsRetry[Throwable, Res]]
+  def setup(fn: (RetryService[Future, Throwable, Req, Res], (Req => Future[Res]), NeedsRetry[Throwable, Res], Delay) => Unit) = {
+    implicit val needsRetry = mock[NeedsRetry[Throwable, Res]]
     val delay = mock[Delay]
     when(delay.apply()) thenReturn (1 milli)
-    val delegate = mock[(Req => Future[Res]) ]
-    fn(new RetryService[Future, Throwable, Req, Res](delegate, RetryConfig(2, delay)), delegate, retry, delay)
+    val delegate = mock[(Req => Future[Res])]
+    fn(retry(RetryConfig(2, delay))(delegate).asInstanceOf[RetryService[Future, Throwable, Req, Res]], delegate, needsRetry, delay)
   }
 
-it should "blowUp if retries are 0" in {
-  val delay = mock[Delay]
-  when(delay.apply()) thenReturn (1 milli)
-  val delegate = mock[(Req => Future[Res]) ]
-  intercept[IllegalArgumentException](new RetryService[Future, Throwable, Req, Res](delegate, RetryConfig(0, delay)))
-}
+  it should "blowUp if retries are 0" in {
+    val delay = mock[Delay]
+    when(delay.apply()) thenReturn (1 milli)
+    val delegate = mock[(Req => Future[Res])]
+    intercept[IllegalArgumentException](new RetryService[Future, Throwable, Req, Res](delegate, RetryConfig(0, delay)))
+  }
 
   it should "just call the delegate once if it returns and the retry strategy says 'it's OK' " in {
     setup { (retryService, delegate, needsRetry, delay) =>

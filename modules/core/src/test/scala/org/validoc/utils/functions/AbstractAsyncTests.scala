@@ -21,6 +21,15 @@ trait ContainerSpec[A[_]] extends UtilsWithLoggingSpec {
 
 }
 
+trait ScalaFutureAsAsyncAndMonad {
+
+  import AsyncForScalaFuture.ImplicitsForTest._
+
+  private val a = AsyncForScalaFuture.defaultAsyncForScalaFuture
+  implicit def async: Async[Future] = a
+  implicit def monad: MonadCanFailWithException[Future, Throwable] = a
+}
+
 trait AbstractAsyncTests[A[_]] extends ContainerSpec[A] {
   def async: Async[A]
   override def getT[X](a: A[X]) = async.await(a)
@@ -288,7 +297,7 @@ abstract class AbstractMonadCanFailWithFailWithExceptionNotAsThrowableTests[A[_]
   }
 
   it should "have a flatMap that returns the fail" in {
-    callOnComplete(monad.flatMap[String, String](monad.fail(makeFail("someValue")),_ => throw new RuntimeException)) shouldBe Success(Left(makeFail("someValue")))
+    callOnComplete(monad.flatMap[String, String](monad.fail(makeFail("someValue")), _ => throw new RuntimeException)) shouldBe Success(Left(makeFail("someValue")))
   }
 
 

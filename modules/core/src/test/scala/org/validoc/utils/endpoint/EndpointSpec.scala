@@ -1,7 +1,7 @@
 package org.validoc.utils.endpoint
 
 import org.validoc.utils.UtilsSpec
-import org.validoc.utils.functions.{Functions, Monad}
+import org.validoc.utils.functions.{Functions, Monad, ScalaFutureAsAsyncAndMonad}
 import org.validoc.utils.http._
 import org.validoc.utils.language.Language._
 
@@ -24,7 +24,8 @@ class EndpointSpec extends UtilsSpec with ServiceRequestForEndpointFixture {
     implicit object toServiceResponseForString extends ToServiceResponse[String] {
       override def apply(v1: String) = ServiceResponse(Status(123), Body(v1 + "_toSR"), ContentType("someContentType"))
     }
-    val endPoint = EndPoint[Future, String, String]("/some/path", matchesServiceRequest)(delegate)
+    val endPointKleisli = new EndpointKleisli[Future] with ScalaFutureAsAsyncAndMonad
+    val endPoint = endPointKleisli.endpoint[String, String]("/some/path", matchesServiceRequest)(delegate)
     fn(endPoint, matchesServiceRequest, delegate)
   }
 

@@ -91,3 +91,5 @@ object AsyncForScalaFuture {
   implicit def defaultAsyncForScalaFuture(implicit ec: ExecutionContextWithLocal) = new AsyncForScalaFuture
 
 }
+
+

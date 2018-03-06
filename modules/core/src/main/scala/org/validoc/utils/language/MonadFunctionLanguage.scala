@@ -41,7 +41,8 @@ trait MonadFunctionLanguage extends MonadLanguage {
   implicit class MonadWithExceptionFunctionPimper[M[_], Req, Res](fn: Req => M[Res])(implicit monad: MonadWithException[M]) {
     def foldException[Res2](fnThrowable: Throwable => M[Res2], fnMap: Res => M[Res2]): (Req => M[Res2]) = { req => monad.foldException[Res, Res2](fn(req), fnThrowable, fnMap) }
     def onEnterAndExitM[Mid](mid: Req => Mid, after: Mid => Try[Res] => Unit): Req => M[Res] = { req: Req =>
-      withValue(mid(req))(m => fn(req).registerSideeffect(after(m)))
+
+      withValue(mid(req))(m => Exceptions(fn(req)).registerSideeffect(after(m)))
     }
   }
 

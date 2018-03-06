@@ -3,7 +3,9 @@ package org.validoc.utils.functions
 import org.validoc.utils.strings.Strings
 import org.validoc.utils.{FunctionFixture, UtilsSpec}
 
-class FunctionsSpec extends UtilsSpec with FunctionFixture {
+import scala.concurrent.Future
+
+class FunctionsSpec extends UtilsSpec with FunctionFixture with LiftFunctionKleisli[Future] with ScalaFutureAsAsyncAndMonad {
 
   "Functions.print" should "wrap a function, also printing the mssage" in {
     val f = fn("in", "out")
@@ -18,4 +20,7 @@ class FunctionsSpec extends UtilsSpec with FunctionFixture {
     Functions.identify("a") shouldBe "a"
   }
 
+  "LiftFunctionKleisli" should "turn function into kleisli" in {
+    async.await(function("someName") { x: Int => x.toString } apply (3)) shouldBe "3"
+  }
 }
