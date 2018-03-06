@@ -47,9 +47,9 @@ abstract class AbstractAsyncPimperTests[M[_] : Async : MonadWithException] exten
   behavior of "MonadWithExceptionPimper"
 
   implicit class MonadWithExceptionPimper[M[_], T](m: M[T])(implicit monad: MonadWithException[M]) {
-    def foldException[T1](fnE: Exception => M[T1], fn: T => M[T1]): M[T1] = monad.foldException(m, fnE, fn)
+    def foldException[T1](fnE: Throwable => M[T1], fn: T => M[T1]): M[T1] = monad.foldException(m, fnE, fn)
     def mapTry[T1](fn: Try[T] => M[T1]): M[T1] = monad.foldException(m, t => fn(Failure(t)), { t: T => fn(Success(t)) })
-    def registerSideeffect(fn: Try[T] => Unit): M[T] = monad.foldException(m, { e: Exception => fn(Failure(e)); monad.exception(e) }, { t: T => fn(Success(t)); monad.liftM(t) })
+    def registerSideeffect(fn: Try[T] => Unit): M[T] = monad.foldException(m, { e: Throwable => fn(Failure(e)); monad.exception(e) }, { t: T => fn(Success(t)); monad.liftM(t) })
   }
 
   it should "add foldException to a monad executing happy path when have value" in {

@@ -6,10 +6,17 @@ import scala.reflect.ClassTag
 import org.validoc.utils._
 import org.validoc.utils.language.Language._
 
-trait LocalOps {
+import scala.concurrent.Future
+
+trait LocalOps[M[_]] {
   def get[V: ClassTag](): Option[V]
   def put[V: ClassTag](v: V)
   def clear[V: ClassTag]()
+}
+
+object LocalOps {
+  implicit val localOpsForScalaFuture: LocalOps[Future] = LocalOpsForScalaFuture.localOpsForScalaFuture
+
 }
 
 trait Holder[H[_]] {
@@ -19,7 +26,7 @@ trait Holder[H[_]] {
 
 }
 
-class SimpleLocalOps[H[_]](holder: Holder[H]) extends LocalOps {
+class SimpleLocalOps[M[_], H[_]](holder: Holder[H]) extends LocalOps[M] {
 
   import holder._
 
@@ -32,19 +39,18 @@ class SimpleLocalOps[H[_]](holder: Holder[H]) extends LocalOps {
   override def clear[V: ClassTag](): Unit = getHolder[V] |> putValueInHolder(None)
 }
 
-trait LocalOpsPimper {
+trait LocalOpsPimper[M[_]] {
 
-  def getFromLocalStore[V: ClassTag]()(implicit localOps: LocalOps): Option[V] = localOps.get[V]
-  def putInlocalStore[V: ClassTag](v: V)(implicit localOps: LocalOps): Unit = localOps.put[V](v)
-  def clearlocalStore[V: ClassTag]()(implicit localOps: LocalOps): Unit = localOps.clear[V]
+  def getFromLocalStore[V: ClassTag]()(implicit localOps: LocalOps[M]): Option[V] = localOps.get[V]
+  def putInlocalStore[V: ClassTag](v: V)(implicit localOps: LocalOps[M]): Unit = localOps.put[V](v)
+  def clearlocalStore[V: ClassTag]()(implicit localOps: LocalOps[M]): Unit = localOps.clear[V]
 
-  def getOrCreateLocalStore[V: ClassTag](default: => V)(implicit localOps: LocalOps): V = localOps.get[V].getOrElse {
-    val v = default
-    localOps.put(v)
-    v
-  }
-  def modifyLocalStore[V: ClassTag](fn: V => V)(implicit localOps: LocalOps): Unit = getFromLocalStore[V]().foreach(v => putInlocalStore(fn(v)))
-  def useLocalStore[V: ClassTag](fn: V => Unit)(implicit localOps: LocalOps): Unit = getFromLocalStore[V].foreach(fn)
+//  def getOrCreateLocalStore[V: ClassTag](default: => V)(implicit localOps: LocalOps[M]): V = localOps.get[V].getOrElse {
+//    val v = default
+//    localOps.put(v)
+//    v
+//  }
+//  def modifyLocalStore[V: ClassTag](fn: V => V)(implicit localOps: LocalOps[M]): Unit = getFromLocalStore[V]().foreach(v => putInlocalStore(fn(v)))
+//  def useLocalStore[V: ClassTag](fn: V => Unit)(implicit localOps: LocalOps[M]): Unit = getFromLocalStore[V].foreach(fn)
 }
 
-object LocalOpsPimper extends LocalOpsPimper

@@ -2,12 +2,14 @@ package org.validoc.finatra
 
 import com.twitter.finagle.http.{Method, Request, Response}
 import com.twitter.finatra.utils.FuturePools
-import com.twitter.util.{Await, FuturePool, Return, Throw, Duration => TDuration, Future => TFuture, Try => TTry}
+import com.twitter.util.{Await, FuturePool, Local, Return, Throw, Duration => TDuration, Future => TFuture, Try => TTry}
 import org.validoc.utils.functions.{Async, MonadCanFailWithException}
 import org.validoc.utils.http._
+import org.validoc.utils.local.{Holder, LocalOps, SimpleLocalOps}
 
 import scala.concurrent.duration.Duration
 import scala.language.implicitConversions
+import scala.reflect.ClassTag
 import scala.util.{Try => STry}
 
 class AsyncForTwitterFuture(implicit futurePool: FuturePool) extends Async[TFuture] with MonadCanFailWithException[TFuture, Throwable] {
@@ -20,10 +22,13 @@ class AsyncForTwitterFuture(implicit futurePool: FuturePool) extends Async[TFutu
     case Throw(t) => fnE(t)
   }
   override def exception[T](t: Throwable) = TFuture.exception(t)
-  override def recover[T](m: TFuture[T], fn: Exception => TFuture[T]) = m.rescue { case e: Exception => fn(e) }
-  override def mapEither[T, T1](m: TFuture[T], fn: Either[Throwable, T] => TFuture[T1]) = m.transform {
-    case Return(t) => fn(Right(t))
-    case Throw(t) => fn(Left(t))
+  override def recover[T](m: TFuture[T], fn: Throwable => TFuture[T]): TFuture[T] = m.rescue { case e: Throwable => fn(e) }
+  override def mapEither[T, T1](m: TFuture[T], fn: Either[Throwable, T] => TFuture[T1]): TFuture[T1] = {
+    m.transform {
+      case Return(t) => fn(Right(t))
+      case Throw(t) =>
+        fn(Left(t))
+    }
   }
   override def flatMap[T, T1](m: TFuture[T], fn: T => TFuture[T1]) = m.flatMap(fn)
   override def map[T, T1](m: TFuture[T], fn: T => T1) = m.map(fn)
@@ -34,7 +39,13 @@ class AsyncForTwitterFuture(implicit futurePool: FuturePool) extends Async[TFutu
 object FinatraImplicits {
 
   implicit def asyncForTwitter(implicit futurePool: FuturePool) = new AsyncForTwitterFuture
+  val localHolder = new Holder[Local] {
+    override def makeHolder[V: ClassTag]: Local[V] = new Local()
+    override def getValueOutOfHolder[V](holder: Local[V]): Option[V] = holder()
+    override def putValueInHolder[V](v: Option[V])(holder: Local[V]): Unit = holder.set(v)
+  }
 
+  implicit val localOps = new SimpleLocalOps[TFuture, Local](localHolder)
   object ImplicitsForTest {
     implicit val futurePool = FuturePools.fixedPool("Future pool for tests", 20)
 

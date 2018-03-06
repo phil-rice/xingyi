@@ -39,11 +39,7 @@ trait UriFragment {
 case class ServiceName(name: String) extends AnyVal
 
 case class ProtocolHostAndPort(protocol: Protocol, hostName: HostName, port: Port)
-object ProtocolHostAndPort {
-  def apply(hostName: HostName, port: Port): ProtocolHostAndPort = ProtocolHostAndPort(Protocol("http"), hostName, port)
 
-  def apply(hostName: String, port: Int): ProtocolHostAndPort = ProtocolHostAndPort(Protocol("http"), HostName(hostName), Port(port))
-}
 
 case class HostName(host: String) extends UriFragment {
   override def asUriString: String = host
@@ -86,7 +82,7 @@ object QueryParam {
         parts.toSeq.map {
           part =>
             val nameValue = part.split("=")
-            if (nameValue.size != 2) throw new QueryParamException(s"QueryParam part must have one and only one equals in it. This part is [$nameValue] from url $s")
+            if (nameValue.size != 2) throw new QueryParamException(s"QueryParam part must have one and only one equals in it. This part is [${nameValue.toList}] from url $s")
             QueryParam(QueryParamName(nameValue(0)), QueryParamValue(nameValue(1)))
         }
     }

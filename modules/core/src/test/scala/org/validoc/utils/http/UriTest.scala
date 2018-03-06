@@ -49,4 +49,21 @@ class UriTest extends UtilsWithLoggingSpec {
     intercept[ProtocolException](Uri("ftp://someHost"))
   }
 
+  behavior of "Protocol"
+
+  it should "enforce protocol is all letters" in {
+    Protocol("some")
+    intercept[IllegalArgumentException](Protocol("123"))
+    intercept[IllegalArgumentException]( Protocol("som/one"))
+  }
+  it should "return the string as the asUriString" in {
+    Protocol("some").asUriString shouldBe "some"
+  }
+
+  behavior of "port"
+
+  it should "return the port as the asUriString" in {
+    Port(123).asUriString shouldBe "123"
+  }
+
 }

@@ -10,8 +10,3 @@ class FutureMonadCanFailWithExceptionAndAsyncTest extends AbstractMonadCanFailWi
   override def async = AsyncForScalaFuture.defaultAsyncForScalaFuture
   override def monad = AsyncForScalaFuture.defaultAsyncForScalaFuture
 }
-
-object thing extends App {
-  org.scalatest.run.apply(new FutureMonadCanFailWithExceptionAndAsyncTest)
-  println("done")
-}

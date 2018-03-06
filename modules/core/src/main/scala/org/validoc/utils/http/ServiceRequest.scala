@@ -22,9 +22,6 @@ object ToServiceRequest {
   implicit object ToServiceRequestForServiceRequest extends ToServiceRequest[ServiceRequest] {
     override def apply(v1: ServiceRequest): ServiceRequest = v1
   }
-  implicit def fromServiceRequest[M[_] : Monad] = new FromServiceRequest[M, ServiceRequest] {
-    override def apply(v1: ServiceRequest) = v1.liftM
-  }
 }
 
 @implicitNotFound("Missing FromServiceRequest[${T}]This is how we create a query/request (${T}) from an external clients HTTP request. It is isolated from exactly which webframework we are using.")

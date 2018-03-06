@@ -1,16 +1,13 @@
 package org.validoc.utils
 
-import java.util.concurrent.Executors
-
 import org.mockito.ArgumentCaptor
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{FlatSpec, FlatSpecLike, Matchers}
-import org.validoc.utils.local.ExecutionContextWithLocal
+import org.scalatest.{FlatSpecLike, Matchers}
 import org.validoc.utils.logging.NullLoggingAdapter
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{Await, Future}
 import scala.language.{higherKinds, postfixOps}
 import scala.reflect.ClassTag
 

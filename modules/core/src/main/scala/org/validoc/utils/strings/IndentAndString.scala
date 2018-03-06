@@ -25,7 +25,6 @@ object IndentAndString {
   def merge(title: String, indentAndStrings: IndentAndString*): IndentAndString = {
     val depth = indentAndStrings.map(_.indent).max
     val maxIndent = indentAndStrings.map(_.maxIndent).max
-    println(s"Max indent is $maxIndent")
     val normalised = indentAndStrings.map { case i@IndentAndString(indent, lines) => i.offset(maxIndent - i.maxIndent) }
     IndentAndString(depth + 1, (depth, title) :: normalised.flatMap(_.lines).toList)
   }

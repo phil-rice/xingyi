@@ -16,4 +16,7 @@ class QueryParamTest extends UtilsWithLoggingSpec {
 
   }
 
+  it should "die if the params aren't a mutple of 2" in {
+    intercept[QueryParamException](QueryParam("?a=1=justwrong&b=2"))
+  }
 }

@@ -16,3 +16,4 @@ object Exceptions {
 
 class NotFoundException(val req: Any, val response: ServiceResponse) extends Exception(s"Not found: $response")
 class UnexpectedStatusCodeException(val req: Any, val response: ServiceResponse) extends Exception(s"unexpected status code: $response")
+class EndpointNotFoundException(val serviceRequest: ServiceRequest) extends Exception(serviceRequest.toString)
