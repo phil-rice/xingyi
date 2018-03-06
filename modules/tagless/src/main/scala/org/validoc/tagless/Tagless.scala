@@ -32,9 +32,6 @@ trait TaglessLanguage[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail] extends 
 
   implicit class ComposeWrapperPimper[RawReq, RawRes](wrapper: Wrapper[RawReq, RawRes]) {
     def |+|[Req, Res](fn: Wrapper[RawReq, RawRes] => Wrapper[Req, Res]): Wrapper[Req, Res] = fn(wrapper)
-  }
-
-  implicit class ComposeWrapper2Pimper[RawReq, RawRes](wrapper: Wrapper[RawReq, RawRes]) {
     def |++|[Req, Res](fn: Wrapper[RawReq, RawRes] => EndpointWrapper[Req, Res]): EndpointWrapper[Req, Res] = fn(wrapper)
   }
 

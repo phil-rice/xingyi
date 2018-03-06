@@ -15,8 +15,6 @@ import org.validoc.utils.time.NanoTimeService
 trait MicroserviceComposers[M[_]] {
   implicit class ComposeWrapperPimper[RawReq, RawRes](wrapper: RawReq => M[RawRes]) {
     def |+|[Req, Res](fn: (RawReq => M[RawRes]) => (Req => M[Res])): (Req => M[Res]) = fn(wrapper)
-  }
-  implicit class ComposeWrapper2Pimper[RawReq, RawRes](wrapper: RawReq => M[RawRes]) {
     def |++|[Req, Res](fn: (RawReq => M[RawRes]) => EndPoint[M, Req, Res]): EndPoint[M, Req, Res] = fn(wrapper)
   }
 }
