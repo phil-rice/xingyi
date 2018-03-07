@@ -7,13 +7,16 @@ import org.mockito.Mockito._
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
+import org.validoc.utils.UtilsSpec
+import org.validoc.utils.functions.ScalaFutureAsAsyncAndMonadAndFailer
 import org.validoc.utils.time.MockTimeService
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.language.postfixOps
+import scala.util.{Failure, Success}
 
-class MetricServiceTest extends FlatSpec with Matchers with MockitoSugar with Eventually {
+class MetricServiceTest extends UtilsSpec {
   implicit val ec = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
 
   behavior of "Metrics"
@@ -22,39 +25,40 @@ class MetricServiceTest extends FlatSpec with Matchers with MockitoSugar with Ev
 
   val someMetrics = Map("someKey" -> CountMetricValue, "someOtherKey" -> HistogramMetricValue(100))
 
-  def await[X](f: Future[X]) = Await.result(f, 5 seconds)
 
-  def setup(fn: (String => Future[String], PutMetrics, ReportData[Throwable, String]) => Unit): Unit = {
+  def setup(fn: (String => Future[String], (String => Future[String]), PutMetrics) => Unit): Unit = {
     implicit val timeService = new MockTimeService
-    implicit val reportData = mock[ReportData[Throwable,String]]
-    implicit val putMetrics = mock[PutMetrics]
-
-    when(putMetrics.apply(any[Map[String, MetricValue]])) thenReturn()
-
-    val delegate: String => Future[String] = {
-      case "fail" => Future.failed(exception)
-      case s: String => Future(s + "_result")
+    val reportData = new DefaultReportData[Throwable, String] {
+      override def apply(prefix: String, duration: Long) = {
+        case Success(t) => Map("markerS" -> CountMetricValue)
+        case Failure(t) => Map("markerF" -> CountMetricValue)
+      }
     }
-
-//    fn(new MetricsService[Future, Throwable].metrics("prefix", delegate), putMetrics, reportData)
+    val mockPutMetrics = mock[PutMetrics]
+    val delegate = mock[String => Future[String]]
+    val metricsKleisli = new MetricsKleisli[Future, Throwable] with ScalaFutureAsAsyncAndMonadAndFailer {
+      override protected def putMetrics = mockPutMetrics
+      override protected def timeService = new MockTimeService
+    }
+    fn(metricsKleisli.metrics("metricsPrefix")(delegate), delegate, mockPutMetrics)
   }
 
-  it should "record the metrics from a successful delegate call" ignore  {
-    fail()
-//    setup { (metrics, putMetrics, reportData) =>
-//      when(reportData.apply("prefix", Success("succeed_result"), 100l)) thenReturn someMetrics
-//      await(metrics("succeed")) shouldBe "succeed_result"
-//      eventually(verify(putMetrics, times(1)).apply(someMetrics))
-//    }
+  it should "return the result of the delegate, sending the result of the reportData to the putMetrics when successful" in {
+    setup { (metrics, delegate, putMetrics) =>
+      when(delegate.apply("input")) thenReturn Future.successful("output")
+      await(metrics("input")) shouldBe "output"
+      verify(putMetrics, times(1)).apply(Map("markerS" -> CountMetricValue))
+    }
   }
 
   it should "record the metrics from a  delegate call that throws an Exception" ignore {
-    fail()
-//    setup { (metrics, putMetrics, reportData) =>
-//      when(reportData.apply("prefix", Failure(exception), 100l)) thenReturn someMetrics
-//      intercept[RuntimeException](await(metrics("fail"))) shouldBe exception
-//      eventually(verify(putMetrics, times(1)).apply(someMetrics))
-//    }
+    setup { (metrics, delegate, putMetrics) =>
+      when(delegate.apply("input")) thenReturn Future.failed(exception)
+      val m = metrics("input")
+      intercept[Exception](await(m)) shouldBe exception
+
+      verify(putMetrics, times(1)).apply(Map("markerF" -> CountMetricValue))
+    }
   }
 }
 

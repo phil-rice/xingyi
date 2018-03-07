@@ -19,7 +19,7 @@ object PrintlnPutMetrics extends PutMetrics {
 
 trait MetricValue
 
-object CountMetricValue extends MetricValue{
+object CountMetricValue extends MetricValue {
   override def toString = Strings.classNameOfObject(CountMetricValue)
 }
 case class HistogramMetricValue(name: Long) extends MetricValue
@@ -35,14 +35,15 @@ trait ReportData[Fail, T] extends ((String, Long) => Try[Either[Fail, T]] => Map
   def exception(prefix: String, duration: Long, exception: Throwable): Map[String, MetricValue]
 }
 
-object ReportData {
-  implicit def defaultReportData[Fail, T] = new ReportData[Fail, T] {
-    def report(prefix: String, suffix: String, duration: Long)() =
-      Map(prefix + "." + suffix -> CountMetricValue, prefix + "." + "duration" -> HistogramMetricValue(duration))
+class DefaultReportData[Fail, T] extends ReportData[Fail, T] {
+  def report(prefix: String, suffix: String, duration: Long)() =
+    Map(prefix + "." + suffix -> CountMetricValue, prefix + "." + "duration" -> HistogramMetricValue(duration))
 
-    override def succeeded(prefix: String, duration: Long, t: T) = report(prefix, SuccessState.succeeded, duration)
-    override def failed(prefix: String, duration: Long, fail: Fail) = report(prefix, SuccessState.failed, duration)
-    override def exception(prefix: String, duration: Long, exception: Throwable) = report(prefix, SuccessState.exception, duration)
-  }
+  override def succeeded(prefix: String, duration: Long, t: T) = report(prefix, SuccessState.succeeded, duration)
+  override def failed(prefix: String, duration: Long, fail: Fail) = report(prefix, SuccessState.failed, duration)
+  override def exception(prefix: String, duration: Long, exception: Throwable) = report(prefix, SuccessState.exception, duration)
+}
+object ReportData {
+  implicit def defaultReportData[Fail, T] = new DefaultReportData[Fail, T]
 }
 
