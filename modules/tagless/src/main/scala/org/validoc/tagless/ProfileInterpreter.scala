@@ -3,15 +3,69 @@ package org.validoc.tagless
 import org.validoc.utils.aggregate.{Enricher, HasChildren}
 import org.validoc.utils.cache.{CachableKey, ShouldCacheResult, ShouldUseCache}
 import org.validoc.utils.endpoint.MatchesServiceRequest
-import org.validoc.utils.functions.Monad
+import org.validoc.utils.functions.{Monad, MonadWithException}
 import org.validoc.utils.http._
 import org.validoc.utils.logging.{DetailedLogging, SummaryLogging}
-import org.validoc.utils.profiling.TryProfileData
+import org.validoc.utils.profiling.{ProfileKleisli, TryProfileData}
 import org.validoc.utils.retry.{NeedsRetry, RetryConfig}
+import org.validoc.utils.time.NanoTimeService
 
 import scala.collection.concurrent.TrieMap
 import scala.language.higherKinds
 import scala.reflect.ClassTag
+
+
+class Profile2[M[_] : MonadWithException, Fail] {
+  type Kleisli[Req, Res] = Req => M[Res]
+
+  //TODO Need to add children to this so that we can do an HTML dump of it.
+  // But this looks like it will work!
+  //So this wraps every node in out tree, and we should be able to see the web page with the profiles of everything!
+  case class ProfilingWrapper[Req: ClassTag, Res: ClassTag](name: String, kleisli: Req => M[Res])(implicit nanoTimeService: NanoTimeService) extends PartialFunction[Req, M[Res]] {
+    val tryProfileData = new TryProfileData
+    override def apply(v1: Req) = ProfileKleisli(tryProfileData)(kleisli) apply v1
+    override def isDefinedAt(x: Req) = kleisli match {
+      case pf: PartialFunction[Req, M[Res]] => pf.isDefinedAt(x)
+      case _ => true
+    }
+  }
+
+  case class Language(interpreter: TaglessLanguage[Kleisli, M, Fail]) extends TaglessLanguage[ProfilingWrapper, M, Fail] {
+    override def http(name: ServiceName) =
+      ProfilingWrapper("http", interpreter.http(name))
+    override def function[Req: ClassTag, Res: ClassTag](name: String)(fn: Req => Res) =
+      ProfilingWrapper("function", interpreter.function(name)(fn))
+
+    override def logging[Req: ClassTag : DetailedLogging : SummaryLogging, Res: ClassTag : DetailedLogging : SummaryLogging](messagePrefix: String)(raw: ProfilingWrapper[Req, Res]) =
+      ProfilingWrapper("logging", interpreter.logging(messagePrefix)(raw))
+    override def metrics[Req: ClassTag, Res: ClassTag : RD](prefix: String)(raw: ProfilingWrapper[Req, Res]) =
+      ProfilingWrapper("metrics", interpreter.metrics(prefix)(raw))
+    override def cache[Req: ClassTag : CachableKey : ShouldUseCache, Res: ClassTag : ShouldCacheResult](name: String)(raw: ProfilingWrapper[Req, Res]) =
+      ProfilingWrapper("cache", interpreter.cache(name)(raw))
+    override def retry[Req: ClassTag, Res: ClassTag](retryConfig: RetryConfig)(raw: ProfilingWrapper[Req, Res])(implicit retry: NeedsRetry[Fail, Res]) =
+      ProfilingWrapper("retry", interpreter.retry(retryConfig)(raw))
+    override def profile[Req: ClassTag, Res: ClassTag](profileData: TryProfileData)(raw: ProfilingWrapper[Req, Res]) =
+      ProfilingWrapper("profile", interpreter.profile(profileData)(raw))
+    override def chain(endpoints: ProfilingWrapper[ServiceRequest, ServiceResponse]*) =
+      ProfilingWrapper("chain", interpreter.chain(endpoints: _*))
+    override def objectify[Req: ClassTag, Res: ClassTag](http: ProfilingWrapper[ServiceRequest, ServiceResponse])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[M, Req], responseParser: ResponseParser[Fail, Req, Res]) =
+      ProfilingWrapper("objectify", interpreter.objectify(http))
+
+    //TODO Is this a compiler bug the need for the asInstanceOf???
+    override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: ProfilingWrapper[Req, Res])(implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]) =
+      ProfilingWrapper("endpoint", interpreter.endpoint(normalisedPath, matchesServiceRequest)(raw.asInstanceOf[Kleisli[Req, Res]]))
+    //
+    override def enrichPrim[ReqP: ClassTag, ResP, ReqC, ResC, ResE: ClassTag](parent: ProfilingWrapper[ReqP, ResP], child: ProfilingWrapper[ReqC, ResC])(implicit findChildIds: HasChildren[ResP, ReqC], enricher: Enricher[ReqP, ResP, ReqC, ResC, ResE]) =
+      ProfilingWrapper("enrich", interpreter.enrichPrim(parent, child.asInstanceOf[Kleisli[ReqC, ResC]]))
+    override def merge2Prim[ReqM: ClassTag, ResM: ClassTag, Req1, Res1, Req2, Res2](firstService: ProfilingWrapper[Req1, Res1], secondService: ProfilingWrapper[Req2, Res2], merger: (ReqM, Res1, Res2) => ResM)(implicit reqMtoReq1: ReqM => Req1, reqMtoReq2: ReqM => Req2) =
+      ProfilingWrapper("merge2", interpreter.merge2Prim(firstService.asInstanceOf[Kleisli[Req1, Res1]], secondService.asInstanceOf[Kleisli[Req2, Res2]], merger))
+    override def merge3Prim[ReqM: ClassTag, ResM: ClassTag, Req1, Res1, Req2, Res2, Req3, Res3](firstService: ProfilingWrapper[Req1, Res1], secondService: ProfilingWrapper[Req2, Res2], thirdService: ProfilingWrapper[Req3, Res3], merger: (ReqM, Res1, Res2, Res3) => ResM)(implicit reqMtoReq1: ReqM => Req1, reqMtoReq2: ReqM => Req2, reqMtoReq3: ReqM => Req3) =
+      ProfilingWrapper("merge3", interpreter.merge3Prim(firstService.asInstanceOf[Kleisli[Req1, Res1]], secondService.asInstanceOf[Kleisli[Req2, Res2]], thirdService.asInstanceOf[Kleisli[Req3, Res3]], merger))
+    override def merge4Prim[ReqM: ClassTag, ResM: ClassTag, Req1, Res1, Req2, Res2, Req3, Res3, Req4, Res4](firstService: ProfilingWrapper[Req1, Res1], secondService: ProfilingWrapper[Req2, Res2], thirdService: ProfilingWrapper[Req3, Res3], fourthService: ProfilingWrapper[Req4, Res4], merger: (ReqM, Res1, Res2, Res3, Res4) => ResM)(implicit reqMtoReq1: ReqM => Req1, reqMtoReq2: ReqM => Req2, reqMtoReq3: ReqM => Req3, reqMtoReq4: ReqM => Req4) =
+      ProfilingWrapper("merge4", interpreter.merge4Prim(firstService.asInstanceOf[Kleisli[Req1, Res1]], secondService.asInstanceOf[Kleisli[Req2, Res2]], thirdService.asInstanceOf[Kleisli[Req3, Res3]], fourthService.asInstanceOf[Kleisli[Req4, Res4]], merger))
+  }
+
+}
 
 object DelegatesTaglessLanguage {
 }
@@ -105,7 +159,7 @@ class DelegatesTaglessLanguage[Wrapper[_, _], M[_], Fail](interpreter: TaglessLa
 //}
 //
 //
-class ProfileEachEndpointLanguage[Wrapper[_, _], M[_] : Monad, Fail](interpreter: TaglessLanguage[ Wrapper, M, Fail]) extends DelegatesTaglessLanguage[Wrapper, M, Fail](interpreter) {
+class ProfileEachEndpointLanguage[Wrapper[_, _], M[_] : Monad, Fail](interpreter: TaglessLanguage[Wrapper, M, Fail]) extends DelegatesTaglessLanguage[Wrapper, M, Fail](interpreter) {
   //TODO So here we have an interesting example of where a State monad would actually help. I think it would mean we didn't have mutable code and the interpreter wasn't stateless
   //This code is remarkably easier though...
   val map = TrieMap[String, TryProfileData]()
