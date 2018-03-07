@@ -22,7 +22,7 @@ import scala.language.{higherKinds, implicitConversions}
 class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
 
-  class Sample[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail](implicit monadCanFail: MonadCanFail[M, Fail], httpLanguage: TaglessLanguage[EndpointWrapper, Wrapper, M, Fail], failer: Failer[M, Fail]) {
+  class Sample[Wrapper[_, _], M[_], Fail](implicit monadCanFail: MonadCanFail[M, Fail], httpLanguage: TaglessLanguage[Wrapper, M, Fail], failer: Failer[M, Fail]) {
 
     import httpLanguage._
 
@@ -76,8 +76,8 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
     //    def m3 = merge3(s1, s2, s3, (_: String, _: String, _: String, _: String) => "someFn")
     //    def m4 = merge4(s1, s2, s3, s4, (_: String, _: String, _: String, _: String, _: String) => "someFn")
 
-    def endpoint1: EndpointWrapper[String, String] = endpoint("/endpoint1", idAtEnd(Get))(e1)
-    def endpoint2: EndpointWrapper[String, String] = endpoint("/endpoint2", idAtEnd(Get))(s1)
+    def endpoint1 = endpoint("/endpoint1", idAtEnd(Get))(e1)
+    def endpoint2 = endpoint("/endpoint2", idAtEnd(Get))(s1)
 
     def microservice: Wrapper[ServiceRequest, ServiceResponse] = chain(endpoint1, endpoint2)
 
@@ -109,7 +109,7 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
   }
 
   it should "be able to turn a system definition into an endpoint in some interpreter's world with the html in it" in {
-    val endPointInStringLanguageWorld = stringlanguage.systemHtmlEndpoint[StringHolder, StringHolder, Future, Throwable]("/endPoints", stringlanguage.forToString)(implicit langauge => new Sample().microservice)
+    val endPointInStringLanguageWorld = stringlanguage.systemHtmlEndpoint[StringHolder, Future, Throwable]("/endPoints", stringlanguage.forToString)(implicit langauge => new Sample().microservice)
     endPointInStringLanguageWorld.lines shouldBe List((1, "endpoint[ServiceRequest,ServiceResponse](/endPoints,FixedPathAndVerb(Get))"), (0, "function-html"))
 
     //TODO we should be able to call this but need helper code to make that happen. Then we can check the actual string is generated.
@@ -119,7 +119,7 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
   }
 
   it should "have a delegate interpreter that delegates 'for to string'" in {
-    checkTaglessToString(new DelegatesTaglessLanguage[StringHolder, StringHolder, Future, Throwable](toStringLanguage))
+    checkTaglessToString(new DelegatesTaglessLanguage[StringHolder, Future, Throwable](toStringLanguage))
   }
   //  behavior of "Tagless with default delegate Interpreter"
 
@@ -128,9 +128,9 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
   //
   //  }
 
-  private def checkTaglessToString(implicit stringlanguage: TaglessLanguage[StringHolder, StringHolder, Future, Throwable]) = {
+  private def checkTaglessToString(implicit stringlanguage: TaglessLanguage[StringHolder, Future, Throwable]) = {
     import stringlanguage._
-    val sample = new Sample[StringHolder, StringHolder, Future, Throwable]()
+    val sample = new Sample[StringHolder, Future, Throwable]()
     sample.s1.lines shouldBe List((3, "metrics(service1)"), (2, "logging(Using prefix1)"), (1, "objectify[String,String]"), (0, "http(s1)"))
 
     sample.m2.lines shouldBe List(

@@ -38,10 +38,10 @@ object SampleServer extends App with SampleJsonsForCompilation {
 
 
   private val language = interpreter.NonFunctionalLanguageService()
-//  private val debugLanguage = new DebugEachObjectifyEndpoint(language)
-  val setup = new PromotionSetup[interpreter.EndpointK, interpreter.Kleisli, Future, Throwable](language)
+  //  private val debugLanguage = new DebugEachObjectifyEndpoint(language)
+  val setup = new PromotionSetup[interpreter.Kleisli, Future, Throwable](language)
 
-//  println("Dumping")
-//  println(debugLanguage.dump)
+  //  println("Dumping")
+  //  println(debugLanguage.dump)
   new SimpleHttpServer(9000, new EndpointHandler[Future, Throwable](setup.microservice)).start()
 }

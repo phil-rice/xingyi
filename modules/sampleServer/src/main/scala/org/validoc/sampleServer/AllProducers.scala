@@ -19,21 +19,21 @@ import org.validoc.utils.metrics.PrintlnPutMetrics
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.higherKinds
 
-class AllProducers[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail](language: TaglessLanguage[EndpointWrapper, Wrapper, M, Fail])(implicit
-                                                                                                                                   monadCanFail: MonadCanFail[M, Fail],
-                                                                                                                                   failer: Failer[M, Fail],
-                                                                                                                                   jsonBundle: JsonBundle
+class AllProducers[Wrapper[_, _], M[_], Fail](language: TaglessLanguage[Wrapper, M, Fail])(implicit
+                                                                                           monadCanFail: MonadCanFail[M, Fail],
+                                                                                           failer: Failer[M, Fail],
+                                                                                           jsonBundle: JsonBundle
 ) {
   val vogueSetup = new VogueSetup(language)
   val billboardSetup = new BillboardSetup(language)
   val fnordSetup = new FnordSetup(language)
-  val endpoints = Seq[EndpointWrapper[_, _]](
+  val endpoints = Seq(
     vogueSetup.mostpopularEndpoint,
     billboardSetup.billboardEndpoint,
     fnordSetup.productionEndpoint,
     fnordSetup.programmeEndpoint)
   val rawMicroservice = language.chain(endpoints: _*)
-  def allEndpoints(otherEndpoints: EndpointWrapper[_, _]*): Wrapper[ServiceRequest, ServiceResponse] = language.chain((endpoints ++ otherEndpoints): _*)
+  def allEndpoints(otherEndpoints: Wrapper[ServiceRequest, ServiceResponse]*): Wrapper[ServiceRequest, ServiceResponse] = language.chain((endpoints ++ otherEndpoints): _*)
 }
 
 object AllProducers extends App with SampleJsonsForCompilation {
@@ -63,7 +63,7 @@ object AllProducers extends App with SampleJsonsForCompilation {
   val kleisliLanguage: interpreter.NonFunctionalLanguageService = interpreter.NonFunctionalLanguageService()
   val language = new ProfileEachEndpointLanguage(kleisliLanguage)
   //  val language = new DebugEachObjectifyEndpoint(profileLanguage)
-  val htmlEndpoint = forTostring.systemHtmlEndpoint[interpreter.EndpointK, interpreter.Kleisli, Future, Throwable]("/html", language)(language => new AllProducers[forTostring.StringHolder, forTostring.StringHolder, Future, Throwable](language).allEndpoints())
+  val htmlEndpoint = forTostring.systemHtmlEndpoint[interpreter.Kleisli, Future, Throwable]("/html", language)(language => new AllProducers[forTostring.StringHolder, Future, Throwable](language).allEndpoints())
   private val microservice: interpreter.Kleisli[ServiceRequest, ServiceResponse] = new AllProducers(language).allEndpoints(htmlEndpoint, language.profileMetricsEndpoint)
 
 

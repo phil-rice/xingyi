@@ -16,10 +16,10 @@ import scala.reflect.ClassTag
 object DelegatesTaglessLanguage {
 }
 
-class DelegatesTaglessLanguage[Endpoint[_, _], Wrapper[_, _], M[_], Fail](interpreter: TaglessLanguage[Endpoint, Wrapper, M, Fail]) extends TaglessLanguage[Endpoint, Wrapper, M, Fail] {
+class DelegatesTaglessLanguage[Wrapper[_, _], M[_], Fail](interpreter: TaglessLanguage[Wrapper, M, Fail]) extends TaglessLanguage[Wrapper, M, Fail] {
   override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: Wrapper[Req, Res])(implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]) =
     interpreter.endpoint[Req, Res](normalisedPath, matchesServiceRequest)(raw)
-  override def chain(endpoints: Endpoint[_, _]*) = interpreter.chain(endpoints: _*)
+  override def chain(endpoints: Wrapper[ServiceRequest, ServiceResponse]*) = interpreter.chain(endpoints: _*)
   override def http(name: ServiceName) = interpreter.http(name)
   override def objectify[Req: ClassTag, Res: ClassTag](http: Wrapper[ServiceRequest, ServiceResponse])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[M, Req], responseParser: ResponseParser[Fail, Req, Res]) =
     interpreter.objectify(http)
@@ -105,7 +105,7 @@ class DelegatesTaglessLanguage[Endpoint[_, _], Wrapper[_, _], M[_], Fail](interp
 //}
 //
 //
-class ProfileEachEndpointLanguage[Endpoint[_, _], Wrapper[_, _], M[_] : Monad, Fail](interpreter: TaglessLanguage[Endpoint, Wrapper, M, Fail]) extends DelegatesTaglessLanguage[Endpoint, Wrapper, M, Fail](interpreter) {
+class ProfileEachEndpointLanguage[Wrapper[_, _], M[_] : Monad, Fail](interpreter: TaglessLanguage[ Wrapper, M, Fail]) extends DelegatesTaglessLanguage[Wrapper, M, Fail](interpreter) {
   //TODO So here we have an interesting example of where a State monad would actually help. I think it would mean we didn't have mutable code and the interpreter wasn't stateless
   //This code is remarkably easier though...
   val map = TrieMap[String, TryProfileData]()
@@ -116,9 +116,10 @@ class ProfileEachEndpointLanguage[Endpoint[_, _], Wrapper[_, _], M[_] : Monad, F
 
   def dump = ServiceResponse(Status(200), Body(map.map { case (k, v) => (f"$k%-40s" + " " + v.toShortString).replaceAll(" ", "&nbsp;") }.mkString("<br />")), ContentType("text/html "))
 
-  def profileMetricsEndpoint = function[ServiceRequest, ServiceResponse]("profileMetricsEndpoint")(_ => dump) |++| endpoint[ServiceRequest, ServiceResponse]("/profile", MatchesServiceRequest.fixedPath(Get))
+  def profileMetricsEndpoint = function[ServiceRequest, ServiceResponse]("profileMetricsEndpoint")(_ => dump) |+| endpoint[ServiceRequest, ServiceResponse]("/profile", MatchesServiceRequest.fixedPath(Get))
 
 }
+
 //
 //
 //case class WrapperAndDebugInfo[Wrapper[_, _], M[_], Req, Res: ClassTag](wrapper: Wrapper[Req, Res], debugInfo: HasDebugInfo[M, Req, Res])(implicit val reqClassTag: ClassTag[Res])

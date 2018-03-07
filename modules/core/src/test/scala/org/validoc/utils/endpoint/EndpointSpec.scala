@@ -25,7 +25,7 @@ class EndpointSpec extends UtilsSpec with ServiceRequestForEndpointFixture {
       override def apply(v1: String) = ServiceResponse(Status(123), Body(v1 + "_toSR"), ContentType("someContentType"))
     }
     val endPointKleisli = new EndpointKleisli[Future] with ScalaFutureAsAsyncAndMonadAndFailer
-    val endPoint = endPointKleisli.endpoint[String, String]("/some/path", matchesServiceRequest)(delegate)
+    val endPoint = endPointKleisli.endpoint[String, String]("/some/path", matchesServiceRequest)(delegate).asInstanceOf[EndPoint[Future, String, String]]
     fn(endPoint, matchesServiceRequest, delegate)
   }
 

@@ -12,7 +12,7 @@ import scala.reflect.ClassTag
 trait EndpointKleisli[M[_]] {
   protected implicit def monad: Monad[M]
   def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: Req => M[Res])
-                                            (implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]): EndPoint[M, Req, Res] =
+                                            (implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]): ServiceRequest => M[ServiceResponse] =
     EndPoint(normalisedPath, matchesServiceRequest)(raw)
 }
 
@@ -20,8 +20,11 @@ trait ChainKleisli[M[_], Fail] {
   protected implicit def monad: MonadCanFail[M, Fail]
   protected def failer: Failer[M, Fail]
 
-  def chain(endpoints: EndPoint[M, _, _]*): ServiceRequest => M[ServiceResponse] = { req: ServiceRequest =>
-    endpoints.collectFirst { case endPoint if endPoint.isDefinedAt(req) => endPoint(req) } match {
+  def chain(endpoints: (ServiceRequest => M[ServiceResponse])*): ServiceRequest => M[ServiceResponse] = { req: ServiceRequest =>
+    endpoints.collectFirst {
+      case endPoint: PartialFunction[ServiceRequest, M[ServiceResponse]] if endPoint.isDefinedAt(req) => endPoint(req)
+      case endPoint if !endPoint.isInstanceOf[PartialFunction[ServiceRequest, M[ServiceResponse]]] => endPoint(req)
+    } match {
       case Some(result) => result
       case None => failer.pathNotFound(req)
     }

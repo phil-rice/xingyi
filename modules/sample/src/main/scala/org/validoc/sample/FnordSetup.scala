@@ -8,12 +8,12 @@ import org.validoc.tagless.TaglessLanguage
 
 import scala.language.higherKinds
 
-class FnordSetup[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail](interpreter: TaglessLanguage[EndpointWrapper, Wrapper, M, Fail])
-                                                                  (implicit
-                                                                   monadCanFail: MonadCanFail[M, Fail],
-                                                                   failer: Failer[M, Fail],
-                                                                   jsonBundle: JsonBundle
-                                                                  ) extends PromotionServiceNames {
+class FnordSetup[Wrapper[_, _], M[_], Fail](interpreter: TaglessLanguage[Wrapper, M, Fail])
+                                           (implicit
+                                            monadCanFail: MonadCanFail[M, Fail],
+                                            failer: Failer[M, Fail],
+                                            jsonBundle: JsonBundle
+                                           ) extends PromotionServiceNames {
 
   import interpreter._
 
@@ -21,8 +21,8 @@ class FnordSetup[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail](interpreter: 
   val program = function[ProgrammeId, Programme]("programme")(id => Programme(s"from ${id.id}"))
 
   val x = ProgrammeId.fromServiceRequest[M]
-  val programmeEndpoint = program |++| endpoint[ProgrammeId, Programme]("/programme", MatchesServiceRequest.idAtEnd(Get))
-  val productionEndpoint = production |++| endpoint[ProductionId, Production]("/production", MatchesServiceRequest.idAtEnd(Get))
+  val programmeEndpoint = program |+| endpoint[ProgrammeId, Programme]("/programme", MatchesServiceRequest.idAtEnd(Get))
+  val productionEndpoint = production |+| endpoint[ProductionId, Production]("/production", MatchesServiceRequest.idAtEnd(Get))
 
   val microservice = chain(productionEndpoint, productionEndpoint)
 }

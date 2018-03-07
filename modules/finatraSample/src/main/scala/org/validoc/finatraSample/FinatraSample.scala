@@ -36,7 +36,7 @@ class FinatraPromotionSetup(implicit futurePool: FuturePool) extends Controller 
   implicit val executors = Executors.newFixedThreadPool(10)
   private val language = interpreter.NonFunctionalLanguageService()
   //  private val debugLanguage = new DebugEachObjectifyEndpoint(language)
-  val setup = new PromotionSetup[interpreter.EndpointK, interpreter.Kleisli, Future, Throwable](language)
+  val setup = new PromotionSetup[interpreter.Kleisli, Future, Throwable](language)
 
   import FinatraImplicits._
 

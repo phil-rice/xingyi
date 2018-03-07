@@ -20,23 +20,23 @@ class TaglessInterpreterForToString {
 
   type StringHolder[Req, Res] = IndentAndString
 
-  def systemToString[M[_], Fail](block: TaglessLanguage[StringHolder, StringHolder, M, Fail] => StringHolder[ServiceRequest, ServiceResponse])(implicit monadCanFail: MonadCanFail[M, Fail]) = {
+  def systemToString[M[_], Fail](block: TaglessLanguage[StringHolder, M, Fail] => StringHolder[ServiceRequest, ServiceResponse])(implicit monadCanFail: MonadCanFail[M, Fail]) = {
     val toStringLanguage = new ForToString[M, Fail]()
     block(toStringLanguage).invertIndent.toString("&nbsp;&nbsp;", "<br />")
-}
+  }
 
-  def systemHtmlEndpoint[EndpointWrapper[_, _], Wrapper[_, __], M[_], Fail](endpointPath: String, language: TaglessLanguage[EndpointWrapper, Wrapper, M, Fail])(block: TaglessLanguage[StringHolder, StringHolder, M, Fail] => StringHolder[ServiceRequest, ServiceResponse])(implicit monadCanFail: MonadCanFail[M, Fail]): EndpointWrapper[ServiceRequest, ServiceResponse] = {
+  def systemHtmlEndpoint[Wrapper[_, __], M[_], Fail](endpointPath: String, language: TaglessLanguage[Wrapper, M, Fail])(block: TaglessLanguage[StringHolder, M, Fail] => StringHolder[ServiceRequest, ServiceResponse])(implicit monadCanFail: MonadCanFail[M, Fail]): Wrapper[ServiceRequest, ServiceResponse] = {
     val html = systemToString[M, Fail](block)
 
     import language._
 
     val htmlFn = { s: ServiceRequest => ServiceResponse(Status(200), Body(html), ContentType("text/html")) }
-    function[ServiceRequest, ServiceResponse]("html")(htmlFn) |++| endpoint[ServiceRequest, ServiceResponse](endpointPath, MatchesServiceRequest.fixedPath(Get))
+    function[ServiceRequest, ServiceResponse]("html")(htmlFn) |+| endpoint[ServiceRequest, ServiceResponse](endpointPath, MatchesServiceRequest.fixedPath(Get))
   }
 
   implicit def forToString[M[_], Fail] = new ForToString[M, Fail]
 
-  class ForToString[M[_], Fail] extends TaglessLanguage[StringHolder, StringHolder, M, Fail] {
+  class ForToString[M[_], Fail] extends TaglessLanguage[StringHolder, M, Fail] {
     override def function[Req: ClassTag, Res: ClassTag](name: String)(fn: Req => Res) =
       IndentAndString(0, List()).insertLineAndIndent(s"function-$name")
 
@@ -44,7 +44,7 @@ class TaglessInterpreterForToString {
       IndentAndString(0, List()).insertLineAndIndent(s"http(${name.name})")
     override def objectify[Req: ClassTag, Res: ClassTag](http: StringHolder[ServiceRequest, ServiceResponse])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[M, Req], responseParser: ResponseParser[Fail, Req, Res]) =
       http.insertLineAndIndent(s"objectify[${nameOf[Req]},${nameOf[Res]}]")
-    override def chain(endpoints: StringHolder[_, _]*) =
+    override def chain(endpoints: StringHolder[ServiceRequest, ServiceResponse]*) =
       IndentAndString.merge("chain", endpoints: _*)
     override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: StringHolder[Req, Res])(implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]): StringHolder[Req, Res] =
       raw.insertLineAndIndent(s"endpoint[${nameOf[Req]},${nameOf[Res]}]($normalisedPath,$matchesServiceRequest)")

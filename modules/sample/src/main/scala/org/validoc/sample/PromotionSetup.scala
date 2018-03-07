@@ -24,10 +24,10 @@ case class JsonBundle(implicit
                       val fromJsonForProgramme: FromJson[Programme],
                       val fromJsonForProduction: FromJson[Production])
 
-class PromotionSetup[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail](interpreter: TaglessLanguage[EndpointWrapper, Wrapper, M, Fail])(implicit
-                                                                                                                                        monadCanFail: MonadCanFail[M, Fail],
-                                                                                                                                        failer: Failer[M, Fail],
-                                                                                                                                        jsonBundle: JsonBundle
+class PromotionSetup[Wrapper[_, _], M[_], Fail](interpreter: TaglessLanguage[Wrapper, M, Fail])(implicit
+                                                                                                monadCanFail: MonadCanFail[M, Fail],
+                                                                                                failer: Failer[M, Fail],
+                                                                                                jsonBundle: JsonBundle
 ) extends PromotionServiceNames {
 
   import interpreter._
@@ -49,8 +49,8 @@ class PromotionSetup[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail](interpret
 
   val homePage = (merge(enrichedPromotion) and enrichedMostPopular into[HomePageQuery, HomePage] ((hpq, ep, emp) => HomePage(emp, ep)))
 
-  val mostPopularEndPoint = enrichedMostPopular |+| logging("homepage") |++| endpoint[MostPopularQuery, EnrichedMostPopular]("/mostpopular", fixedPath(Get))
-  val homePageEndPoint = homePage |+| logging("homepage") |++| endpoint[HomePageQuery, HomePage]("/", fixedPath(Get))
+  val mostPopularEndPoint = enrichedMostPopular |+| logging("homepage") |+| endpoint[MostPopularQuery, EnrichedMostPopular]("/mostpopular", fixedPath(Get))
+  val homePageEndPoint = homePage |+| logging("homepage") |+| endpoint[HomePageQuery, HomePage]("/", fixedPath(Get))
   val microservice = chain(mostPopularEndPoint, homePageEndPoint)
 
 }
@@ -65,6 +65,6 @@ object PromotionSetup extends App with SampleJsonsForCompilation {
   import org.validoc.utils.functions.AsyncForScalaFuture._
   import ImplicitsForTest._
 
-  val setup = new PromotionSetup[StringHolder, StringHolder, Future, Throwable](new ProfileEachEndpointLanguage(language.forToString))
+  val setup = new PromotionSetup[StringHolder, Future, Throwable](new ProfileEachEndpointLanguage(language.forToString))
   println(setup.microservice.invertIndent)
 }

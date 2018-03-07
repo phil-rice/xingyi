@@ -14,7 +14,6 @@ import scala.language.{higherKinds, implicitConversions}
 
 class TaglessLanguageLanguageForKleislis[M[_], Fail] {
   type Kleisli[Req, Res] = Req => M[Res]
-  type EndpointK[Req, Res] = EndPoint[M, Req, Res]
 
   case class NonFunctionalLanguageService(implicit
                                           protected val async: Async[M],
@@ -25,5 +24,5 @@ class TaglessLanguageLanguageForKleislis[M[_], Fail] {
                                           protected val putMetrics: PutMetrics,
                                           protected val cacheFactory: CacheFactory[M],
                                           protected val failer: Failer[M, Fail]) extends
-    TaglessLanguage[EndpointK, Kleisli, M, Fail] with MicroserviceBuilder[M, Fail]
+    TaglessLanguage[ Kleisli, M, Fail] with MicroserviceBuilder[M, Fail]
 }
