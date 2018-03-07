@@ -9,7 +9,7 @@ import scala.util.{Failure, Success}
 import org.validoc.utils.language.Language._
 import sun.nio.cs.ext.DoubleByteEncoder
 
-abstract class MergeKleisliSpec[M[_], Fail](implicit monadCanFail: MonadCanFailWithException[M, Fail], async: Async[M]) extends UtilsSpec with AsyncFixture[M] with MergeKleisli[M] {
+abstract class MergeKleisliSpec[M[_], Fail](implicit monadCanFail: MonadCanFailWithException[M, Fail], async: Async[M]) extends UtilsSpec with AsyncFixture[M] {
 
   type Kleisli[Req, Res] = Req => M[Res]
   val merger = new MergeLanguage[Kleisli] with MergeKleisli[M] {
