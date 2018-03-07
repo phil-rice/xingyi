@@ -78,13 +78,13 @@ lazy val sampleServer = (project in file("modules/sampleServer")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   dependsOn(simpleServer % "test->test;compile->compile").aggregate(simpleServer).
-  dependsOn(sample % "test->test;compile->compile").aggregate(sample).
-  dependsOn(caffeine % "test->test;compile->compile").aggregate(caffeine)
+  dependsOn(sample % "test->test;compile->compile").aggregate(sample)
+//  dependsOn(caffeine % "test->test;compile->compile").aggregate(caffeine)
 
 
-lazy val caffeine = (project in file("modules/caffeine")).
-  settings(caffeineSettings: _*).
-  dependsOn(core % "test->test;compile->compile").aggregate(core)
+//lazy val caffeine = (project in file("modules/caffeine")).
+//  settings(caffeineSettings: _*).
+//  dependsOn(core % "test->test;compile->compile").aggregate(core)
 //lazy val language = (project in file("modules/language")).
 //  settings(commonSettings: _*).
 //  dependsOn(core % "test->test;compile->compile").aggregate(core)

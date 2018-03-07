@@ -31,7 +31,7 @@ class EnricherKleisliSpec[M[_], Fail](implicit monadCanFail: MonadCanFailWithExc
         s"$parentReq/$parent/[${childIdsAndValues.mkString(",")}]"
     }
     val x: Kleisli[Int, String] = enrich[Int, String](getIds).withChild(getValue).mergeInto[String]
-    x(1).await shouldBe ""
+    x(1).await shouldBe "1/1,2,3/[(1,value(1)),(2,value(2)),(3,value(3))]"
   }
 }
 import org.validoc.utils.functions.AsyncForScalaFuture._

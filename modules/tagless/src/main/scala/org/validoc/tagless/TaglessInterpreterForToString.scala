@@ -20,13 +20,13 @@ class TaglessInterpreterForToString {
 
   type StringHolder[Req, Res] = IndentAndString
 
-  def systemToString[M[_], Fail](fn: TaglessLanguage[StringHolder, StringHolder, M, Fail] => StringHolder[ServiceRequest, ServiceResponse])(implicit monadCanFail: MonadCanFail[M, Fail]) = {
+  def systemToString[M[_], Fail](block: TaglessLanguage[StringHolder, StringHolder, M, Fail] => StringHolder[ServiceRequest, ServiceResponse])(implicit monadCanFail: MonadCanFail[M, Fail]) = {
     val toStringLanguage = new ForToString[M, Fail]()
-    fn(toStringLanguage).invertIndent.toString("&nbsp;&nbsp;", "<br />")
+    block(toStringLanguage).invertIndent.toString("&nbsp;&nbsp;", "<br />")
   }
 
-  def systemToEndpoint[EndpointWrapper[_, _], Wrapper[_, __], M[_], Fail](endpointPath: String, language: TaglessLanguage[EndpointWrapper, Wrapper, M, Fail])(fn: TaglessLanguage[StringHolder, StringHolder, M, Fail] => StringHolder[ServiceRequest, ServiceResponse])(implicit monadCanFail: MonadCanFail[M, Fail]) = {
-    val html = systemToString[M, Fail](fn)
+  def systemHtmlEndpoint[EndpointWrapper[_, _], Wrapper[_, __], M[_], Fail](endpointPath: String, language: TaglessLanguage[EndpointWrapper, Wrapper, M, Fail])(block: TaglessLanguage[StringHolder, StringHolder, M, Fail] => StringHolder[ServiceRequest, ServiceResponse])(implicit monadCanFail: MonadCanFail[M, Fail]): EndpointWrapper[ServiceRequest, ServiceResponse] = {
+    val html = systemToString[M, Fail](block)
 
     import language._
 
@@ -38,7 +38,7 @@ class TaglessInterpreterForToString {
 
   class ForToString[M[_], Fail] extends TaglessLanguage[StringHolder, StringHolder, M, Fail] {
     override def function[Req, Res](name: String)(fn: Req => Res) =
-      IndentAndString(0, List()).insertLineAndIndent(s"function-$name)")
+      IndentAndString(0, List()).insertLineAndIndent(s"function-$name")
 
     override def http(name: ServiceName): StringHolder[ServiceRequest, ServiceResponse] =
       IndentAndString(0, List()).insertLineAndIndent(s"http(${name.name})")

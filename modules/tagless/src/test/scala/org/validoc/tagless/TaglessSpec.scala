@@ -11,7 +11,7 @@ import org.validoc.utils.language.Language._
 import org.validoc.utils.parser.Parser
 import org.validoc.utils.profiling.TryProfileData
 import org.validoc.utils.retry.RetryConfig
-import org.validoc.utils.strings.Strings
+import org.validoc.utils.strings.{IndentAndString, Strings}
 import org.validoc.utils.time.RandomDelay
 
 import scala.concurrent.Future
@@ -66,6 +66,7 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
     def s3 = http("s3") |+| objectify[String, String]
     def s4 = http("s4") |+| objectify[String, String] |+| retry(retryConfig)
 
+    def f1 = function("f1"){x: Int=> x.toString} |+| cache("f1 cache")
     val e1: Wrapper[String, String] = enrich(s1).withChild(s2).mergeInto[String]
 
     def m2 = merge(s1) and s2 into ((_: String, _: String, _: String) => "someFn")
@@ -87,19 +88,24 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
   import org.validoc.utils.functions.AsyncForScalaFuture._
   import ImplicitsForTest._
 
-  it should "turn a sample language into a string with the 'for to string'" in {
+  type StringHolder[Req, Res] = IndentAndString
 
-    checkTaglessToString(new TaglessInterpreterForToString)
+  private val toStringLanguage = new TaglessInterpreterForToString().forToString[Future, Throwable]
+  it should "turn a sample language into a string with the 'for to string'" in {
+    checkTaglessToString(toStringLanguage)
+  }
+  it should "have a delegate interpreter that delegates 'for to string'" in {
+    checkTaglessToString(new DelegatesTaglessLanguage[StringHolder, StringHolder, Future, Throwable](toStringLanguage))
   }
 
-//  behavior of "Tagless with default delegate Interpreter"
+  //  behavior of "Tagless with default delegate Interpreter"
 
-//  it should "delegate" in {
-//    checkTaglessToString(new DelegatesTaglessLanguage(new TaglessInterpreterForToString))
-//
-//  }
+  //  it should "delegate" in {
+  //    checkTaglessToString(new DelegatesTaglessLanguage(new TaglessInterpreterForToString))
+  //
+  //  }
 
-  private def checkTaglessToString(implicit stringlanguage: TaglessInterpreterForToString) = {
+  private def checkTaglessToString(implicit stringlanguage: TaglessLanguage[StringHolder, StringHolder, Future, Throwable]) = {
     import stringlanguage._
     val sample = new Sample[StringHolder, StringHolder, Future, Throwable]()
     sample.s1.lines shouldBe List((3, "metrics(service1)"), (2, "logging(Using prefix1)"), (1, "objectify[String,String]"), (0, "http(s1)"))
@@ -145,5 +151,7 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
       (3, "profile"), (2, "logging(Using prefix2)"), (1, "objectify[String,String]"), (0, "http(s2)"),
       (5, "endpoint[String,String](/endpoint2,IdAtEndAndVerb(Get))"), (4, "metrics(service1)"), (3, "logging(Using prefix1)"), (2, "objectify[String,String]"), (1, "http(s1)")
     )
+
+    sample.f1.lines shouldBe List((1,"cache(f1 cache)"), (0,"function-f1"))
   }
 }
