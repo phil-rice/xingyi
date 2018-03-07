@@ -17,10 +17,9 @@ trait AsyncLanguage{
 
 
   implicit class AsyncPimper[M[_], T](m: M[T])(implicit async: Async[M]) {
-    def respond(fn: Try[T] => Unit): M[T] = async.respond(m, fn)
     def await(): T = async.await(m)
   }
-  implicit class AsyncFailurePimper[Failure](f: Failure) {
+  implicit class FailurePimper[Failure](f: Failure) {
     def fail[M[_], T](implicit async: MonadCanFail[M, Failure]): M[T] = async.fail[T](f)
   }
 

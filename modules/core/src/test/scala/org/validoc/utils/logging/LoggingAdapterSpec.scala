@@ -17,6 +17,6 @@ class LoggingAdapterSpec extends UtilsSpec {
     Strings.recordPrintln(PrintlnLoggingAdapter.info("sender")("message"))._2.trim shouldBe "[INFO] message"
     Strings.recordPrintln(PrintlnLoggingAdapter.debug("sender")("message"))._2.trim shouldBe "[DEBUG] message"
     Strings.recordPrintln(PrintlnLoggingAdapter.trace("sender")("message"))._2.trim shouldBe "[TRACE] message"
-    Strings.recordPrintln(PrintlnLoggingAdapter.error("sender")("message", new RuntimeException("somemessage")))._2.trim shouldBe "[ERROR]message   --  RuntimeException somemessage"
+    Strings.recordPrintln(PrintlnLoggingAdapter.error("sender")("message", new RuntimeException("somemessage")))._2.trim should startWith ("[ERROR]message   --  RuntimeException somemessage")
   }
 }

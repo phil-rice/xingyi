@@ -27,20 +27,12 @@ trait AnyLanguage {
   }
 
   implicit class BooleanPimper(boolean: Boolean) {
-    def toOption[T](value: => T) = if (boolean) Some(value) else None
+    def toOption[T](value: => T): Option[T] = if (boolean) Some(value) else None
   }
 
-  implicit class EitherPimper[L, R](either: Either[L, R]) {
-    def liftEither[M[_]](implicit monad: MonadCanFail[M, L]): M[R] = either.fold(monad.fail(_), monad.liftM(_))
-    def getOrException(exceptionCreator: L => Throwable): R =
-      either match {
-        case Right(r) => r
-        case Left(l) => throw exceptionCreator(l)
-      }
-  }
 
   implicit class TryPimper[T](tryT: Try[T]) {
-    def liftTry[M[_]](implicit monadWithException: MonadWithException[M]) = monadWithException.liftTry(tryT)
+    def liftTry[M[_]](implicit monadWithException: MonadWithException[M]): M[T] = monadWithException.liftTry(tryT)
   }
 
 }

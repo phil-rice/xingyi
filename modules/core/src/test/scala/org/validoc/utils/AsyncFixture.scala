@@ -13,4 +13,10 @@ trait AsyncFixture[M[_]] extends Matchers {
     req shouldBe expected
     liftTry(result)
   }
+
+  def kleisliTransformer[T1, T2, T3, T4](k1: T1 => M[T2], k2: T3 => M[T4]): (T1 => M[T2]) => (T3 => M[T4]) = {
+    actual1 =>
+      actual1 shouldBe k1
+      k2
+  }
 }

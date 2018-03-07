@@ -28,7 +28,7 @@ class MetricServiceTest extends UtilsSpec {
 
   def setup(fn: (String => Future[String], (String => Future[String]), PutMetrics) => Unit): Unit = {
     implicit val timeService = new MockTimeService
-    val reportData = new DefaultReportData[Throwable, String] {
+    implicit val reportData = new DefaultReportData[Throwable, String] {
       override def apply(prefix: String, duration: Long) = {
         case Success(t) => Map("markerS" -> CountMetricValue)
         case Failure(t) => Map("markerF" -> CountMetricValue)
@@ -47,17 +47,17 @@ class MetricServiceTest extends UtilsSpec {
     setup { (metrics, delegate, putMetrics) =>
       when(delegate.apply("input")) thenReturn Future.successful("output")
       await(metrics("input")) shouldBe "output"
-      verify(putMetrics, times(1)).apply(Map("markerS" -> CountMetricValue))
+     eventually( verify(putMetrics, times(1)).apply(Map("markerS" -> CountMetricValue)))
     }
   }
 
-  it should "record the metrics from a  delegate call that throws an Exception" ignore {
+  it should "record the metrics from a  delegate call that throws an Exception" in {
     setup { (metrics, delegate, putMetrics) =>
       when(delegate.apply("input")) thenReturn Future.failed(exception)
       val m = metrics("input")
       intercept[Exception](await(m)) shouldBe exception
 
-      verify(putMetrics, times(1)).apply(Map("markerF" -> CountMetricValue))
+      eventually(verify(putMetrics, times(1)).apply(Map("markerF" -> CountMetricValue)))
     }
   }
 }

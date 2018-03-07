@@ -49,8 +49,5 @@ trait FunctionLanguage {
     def ~+>[M[_], Res2](fn2: Res => M[Res2])(implicit monad: Monad[M]): Req => M[Seq[(Res, Res2)]] = { req: Req => monad.flattenM(fn(req).map(r => monad.map[Res2, (Res, Res2)](fn2(r), res2 => (r, res2)))) }
   }
 
-  implicit class FunctionToSeqPimper[Req, Res](fn: Req => Seq[Res]) {
-    def withReq[Res2](fn2: Res => Res2): (Req => Seq[(Res, Res2)]) = fn andThen (_.map(res => (res, fn2(res))))
-  }
 
 }

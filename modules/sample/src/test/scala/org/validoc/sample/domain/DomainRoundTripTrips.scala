@@ -3,7 +3,7 @@ package org.validoc.sample.domain
 import scala.language.higherKinds
 
 trait DomainFixture {
-  val programmeId1 = ProgrammeId("1",false)
+  val programmeId1 =  ProgrammeId("1",false)
   val programmeId2 = ProgrammeId("2",false)
 
   val programme1 = Programme("this is programme1")

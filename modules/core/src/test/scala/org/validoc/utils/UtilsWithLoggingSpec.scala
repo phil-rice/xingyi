@@ -25,6 +25,7 @@ trait UtilsSpec extends FlatSpecLike with Matchers with MockitoSugar with Eventu
     }
   }
 
+
 }
 
 trait UtilsWithLoggingSpec extends UtilsSpec {

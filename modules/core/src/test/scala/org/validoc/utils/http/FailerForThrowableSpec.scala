@@ -4,8 +4,6 @@ import org.validoc.utils.UtilsSpec
 import org.validoc.utils.exceptions.{EndpointNotFoundException, NotFoundException, UnexpectedStatusCodeException}
 import org.validoc.utils.functions.ScalaFutureAsAsyncAndMonadAndFailer
 
-import scala.concurrent.Future
-
 class FailerForThrowableSpec extends UtilsSpec with ScalaFutureAsAsyncAndMonadAndFailer {
 
 

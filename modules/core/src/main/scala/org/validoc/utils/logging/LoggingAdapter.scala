@@ -66,7 +66,7 @@ object PrintlnLoggingAdapter extends LoggingAdapterWithDefaults {
 
   protected def log(sender: Any, level: String, msg: => String, t: Throwable): Unit = {
     println(s"[$level]$msg   --  ${t.getClass.getSimpleName} ${t.getMessage}\n")
-    t.printStackTrace(System.out)
+    t.printStackTrace(Console.out)
   }
 }
 

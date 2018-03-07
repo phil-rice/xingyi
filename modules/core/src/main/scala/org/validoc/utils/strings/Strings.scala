@@ -14,7 +14,7 @@ object Strings {
 
   def lastSection(marker: String)(s: String) = s.split(marker).last
   def allButlastSection(marker: String)(s: String) = s.split(marker).dropRight(1).mkString(marker)
-  def recordPrintln[X](x: => X): (X, String) = {
+  def  recordPrintln[X](x: => X): (X, String) = {
     val bytes = new ByteArrayOutputStream()
     val result = Console.withOut(new PrintStream(bytes))(x)
     (result, bytes.toString("UTF-8"))
