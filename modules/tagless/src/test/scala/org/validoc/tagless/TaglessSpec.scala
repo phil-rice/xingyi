@@ -1,6 +1,7 @@
 package org.validoc.tagless
 
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 import org.validoc.utils.UtilsSpec
 import org.validoc.utils.aggregate.{Enricher, FindReq, HasChildren}
@@ -66,7 +67,7 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
     def s3 = http("s3") |+| objectify[String, String]
     def s4 = http("s4") |+| objectify[String, String] |+| retry(retryConfig)
 
-    def f1 = function("f1"){x: Int=> x.toString} |+| cache("f1 cache")
+    def f1 = function("f1") { x: Int => x.toString } |+| cache("f1 cache")
     val e1: Wrapper[String, String] = enrich(s1).withChild(s2).mergeInto[String]
 
     def m2 = merge(s1) and s2 into ((_: String, _: String, _: String) => "someFn")
@@ -82,6 +83,7 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
   }
 
+
   behavior of "Tagless with toString Interpreter"
   implicit val stringlanguage: TaglessInterpreterForToString = new TaglessInterpreterForToString
 
@@ -94,10 +96,31 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
   it should "turn a sample language into a string with the 'for to string'" in {
     checkTaglessToString(toStringLanguage)
   }
+  it should "be able to turn a system definition into a crude html dump" in {
+    val ref = new AtomicReference[IndentAndString]()
+    val actual = stringlanguage.systemToString[Future, Throwable] { implicit int =>
+      val microservice = new Sample().microservice
+      ref.set(microservice)
+      microservice
+    }
+    val expected = ref.get().invertIndent.toString("&nbsp;&nbsp;", "<br />")
+    actual shouldBe expected
+    actual should startWith("chain<br />&nbsp;&nbsp;endpoint[String,String](/endpoint1,IdAt")
+  }
+
+  it should "be able to turn a system definition into an endpoint in some interpreter's world with the html in it" in {
+    val endPointInStringLanguageWorld = stringlanguage.systemHtmlEndpoint[StringHolder, StringHolder, Future, Throwable]("/endPoints", stringlanguage.forToString)(implicit langauge => new Sample().microservice)
+    endPointInStringLanguageWorld.lines shouldBe List((1, "endpoint[ServiceRequest,ServiceResponse](/endPoints,FixedPathAndVerb(Get))"), (0, "function-html"))
+
+    //TODO we should be able to call this but need helper code to make that happen. Then we can check the actual string is generated.
+    //    val actualLanguage = new TaglessLanguageLanguageForKleislis[Future, Throwable]
+    //    val endPointInKleisliWorld = stringlanguage.systemHtmlEndpoint[actualLanguage.EndpointK, actualLanguage.Kleisli, Future, Throwable]("/endpoints", actualLanguage.NonFunctionalLanguageService())
+
+  }
+
   it should "have a delegate interpreter that delegates 'for to string'" in {
     checkTaglessToString(new DelegatesTaglessLanguage[StringHolder, StringHolder, Future, Throwable](toStringLanguage))
   }
-
   //  behavior of "Tagless with default delegate Interpreter"
 
   //  it should "delegate" in {
@@ -152,6 +175,6 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
       (5, "endpoint[String,String](/endpoint2,IdAtEndAndVerb(Get))"), (4, "metrics(service1)"), (3, "logging(Using prefix1)"), (2, "objectify[String,String]"), (1, "http(s1)")
     )
 
-    sample.f1.lines shouldBe List((1,"cache(f1 cache)"), (0,"function-f1"))
+    sample.f1.lines shouldBe List((1, "cache(f1 cache)"), (0, "function-f1"))
   }
 }

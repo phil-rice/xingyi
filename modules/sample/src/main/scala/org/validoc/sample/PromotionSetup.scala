@@ -1,11 +1,10 @@
 package org.validoc.sample
 
 import org.validoc.sample.domain._
-import org.validoc.tagless.{ProfileEachEndpointLanguage, TaglessInterpreterForToString}
+import org.validoc.tagless.{ProfileEachEndpointLanguage, TaglessInterpreterForToString, TaglessLanguage}
 import org.validoc.utils.functions.MonadCanFail
 import org.validoc.utils.http._
 import org.validoc.utils.json.{FromJson, ToJson}
-import org.validoc.tagless.TaglessLanguage
 
 import scala.concurrent.Future
 import scala.language.{higherKinds, postfixOps}
