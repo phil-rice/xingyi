@@ -4,6 +4,7 @@ import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
 import org.scalatest.BeforeAndAfter
 import org.validoc.utils.UtilsWithLoggingSpec
+import org.validoc.utils.http.Failer
 import org.validoc.utils.reflection.ClassTags
 
 import scala.concurrent.Future
@@ -21,13 +22,14 @@ trait ContainerSpec[A[_]] extends UtilsWithLoggingSpec {
 
 }
 
-trait ScalaFutureAsAsyncAndMonad {
+trait ScalaFutureAsAsyncAndMonadAndFailer {
 
   import AsyncForScalaFuture.ImplicitsForTest._
 
   private val a = AsyncForScalaFuture.defaultAsyncForScalaFuture
-  implicit def async: Async[Future] = a
-  implicit def monad: MonadCanFailWithException[Future, Throwable] = a
+  implicit protected def async: Async[Future] = a
+  implicit protected def monad: MonadCanFailWithException[Future, Throwable] = a
+  implicit protected def failer = implicitly[Failer[Future, Throwable]]
 }
 
 trait AbstractAsyncTests[A[_]] extends ContainerSpec[A] {

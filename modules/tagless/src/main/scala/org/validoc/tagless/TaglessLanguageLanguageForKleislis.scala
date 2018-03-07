@@ -24,6 +24,6 @@ class TaglessLanguageLanguageForKleislis[M[_], Fail] {
                                           protected val timeService: NanoTimeService,
                                           protected val putMetrics: PutMetrics,
                                           protected val cacheFactory: CacheFactory[M],
-                                          protected val failer: Failer[Fail]) extends
+                                          protected val failer: Failer[M, Fail]) extends
     TaglessLanguage[EndpointK, Kleisli, M, Fail] with MicroserviceBuilder[M, Fail]
 }

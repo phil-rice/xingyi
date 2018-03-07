@@ -39,9 +39,10 @@ class FinatraPromotionSetup(implicit futurePool: FuturePool) extends Controller 
   val setup = new PromotionSetup[interpreter.EndpointK, interpreter.Kleisli, Future, Throwable](language)
 
   import FinatraImplicits._
-  def liftEndpoint(fn: ServiceRequest => Option[Future[ServiceResponse]]) = { request: Request =>
+
+  def liftEndpoint(fn: ServiceRequest => Future[ServiceResponse]) = { request: Request =>
     val serviceRequest = implicitly[ToServiceRequest[Request]] apply (request)
-    val result = fn(serviceRequest).get
+    val result = fn(serviceRequest)
     result.map { serRes =>
       response.status(serRes.status.code).body(serRes.body.s).contentType(serviceRequest.contentType.map(_.s).getOrElse("text/html"))
     }

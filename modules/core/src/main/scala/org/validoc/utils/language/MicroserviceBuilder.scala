@@ -29,7 +29,7 @@ trait MicroserviceBuilder[M[_], Fail] extends ObjectifyKleisli[M, Fail] with Htt
   protected def cacheFactory: CacheFactory[M]
   protected implicit def timeService: NanoTimeService
   protected def logReqAndResult: LogRequestAndResult[Fail]
-  protected def failer: Failer[Fail]
+  protected def failer: Failer[M, Fail]
   protected def putMetrics: PutMetrics
 
 }
@@ -42,7 +42,7 @@ class KleisliMicroserviceBuilder[M[_], Fail] {
                        protected val httpFactory: HttpFactory[M, ServiceRequest, ServiceResponse],
                        protected val cacheFactory: CacheFactory[M],
                        protected val logReqAndResult: LogRequestAndResult[Fail],
-                       protected val failer: Failer[Fail],
+                       protected val failer: Failer[M, Fail],
                        protected val putMetrics: PutMetrics,
   ) extends MicroserviceBuilder[M, Fail] with MergeLanguage[Klesli] with EnrichLanguage[Klesli] with MicroserviceComposers[M]
 }

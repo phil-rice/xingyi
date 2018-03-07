@@ -3,7 +3,7 @@ package org.validoc.utils.profiling
 import java.util.concurrent.atomic.AtomicReference
 
 import org.validoc.utils.UtilsSpec
-import org.validoc.utils.functions.ScalaFutureAsAsyncAndMonad
+import org.validoc.utils.functions.ScalaFutureAsAsyncAndMonadAndFailer
 import org.validoc.utils.time.{MockTimeService, NanoTimeService}
 
 import scala.concurrent.Future
@@ -12,14 +12,14 @@ import org.mockito.Mockito._
 
 import scala.util.{Failure, Success, Try}
 
-class ProfilingServiceSpec extends UtilsSpec with ScalaFutureAsAsyncAndMonad {
+class ProfilingServiceSpec extends UtilsSpec with ScalaFutureAsAsyncAndMonadAndFailer {
 
   val runtimeException = new RuntimeException
 
   def setup(fn: (Int => Future[String], AtomicReference[(Long, Try[_])]) => Unit) = {
     implicit val mainNanoTimeService = new MockTimeService
     val ref = new AtomicReference[(Long, Try[_])]()
-    val service = new ProfileKleisli[Future, Throwable] with ScalaFutureAsAsyncAndMonad {
+    val service = new ProfileKleisli[Future, Throwable] with ScalaFutureAsAsyncAndMonadAndFailer {
       override protected implicit def timeService: NanoTimeService = mainNanoTimeService
     }
     val profileData = new TryProfileData {

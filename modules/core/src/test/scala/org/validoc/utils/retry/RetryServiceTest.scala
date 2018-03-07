@@ -2,7 +2,7 @@ package org.validoc.utils.retry
 
 import org.mockito.Mockito._
 import org.validoc.utils.UtilsWithLoggingSpec
-import org.validoc.utils.functions.ScalaFutureAsAsyncAndMonad
+import org.validoc.utils.functions.ScalaFutureAsAsyncAndMonadAndFailer
 import org.validoc.utils.time.Delay
 
 import scala.concurrent.Future
@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.Success
 
-class RetryServiceTest extends UtilsWithLoggingSpec with ScalaFutureAsAsyncAndMonad with RetryKleisli[Future, Throwable] {
+class RetryServiceTest extends UtilsWithLoggingSpec with ScalaFutureAsAsyncAndMonadAndFailer with RetryKleisli[Future, Throwable] {
   type Req = String
   type Res = String
 

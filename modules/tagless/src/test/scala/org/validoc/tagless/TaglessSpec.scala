@@ -21,7 +21,7 @@ import scala.language.{higherKinds, implicitConversions}
 class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
 
-  class Sample[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail](implicit monadCanFail: MonadCanFail[M, Fail], httpLanguage: TaglessLanguage[EndpointWrapper, Wrapper, M, Fail], failer: Failer[Fail]) {
+  class Sample[EndpointWrapper[_, _], Wrapper[_, _], M[_], Fail](implicit monadCanFail: MonadCanFail[M, Fail], httpLanguage: TaglessLanguage[EndpointWrapper, Wrapper, M, Fail], failer: Failer[M, Fail]) {
 
     import httpLanguage._
 

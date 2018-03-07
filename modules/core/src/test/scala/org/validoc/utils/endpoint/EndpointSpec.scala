@@ -1,7 +1,7 @@
 package org.validoc.utils.endpoint
 
 import org.validoc.utils.UtilsSpec
-import org.validoc.utils.functions.{Functions, Monad, ScalaFutureAsAsyncAndMonad}
+import org.validoc.utils.functions.{Functions, Monad, ScalaFutureAsAsyncAndMonadAndFailer}
 import org.validoc.utils.http._
 import org.validoc.utils.language.Language._
 
@@ -24,7 +24,7 @@ class EndpointSpec extends UtilsSpec with ServiceRequestForEndpointFixture {
     implicit object toServiceResponseForString extends ToServiceResponse[String] {
       override def apply(v1: String) = ServiceResponse(Status(123), Body(v1 + "_toSR"), ContentType("someContentType"))
     }
-    val endPointKleisli = new EndpointKleisli[Future] with ScalaFutureAsAsyncAndMonad
+    val endPointKleisli = new EndpointKleisli[Future] with ScalaFutureAsAsyncAndMonadAndFailer
     val endPoint = endPointKleisli.endpoint[String, String]("/some/path", matchesServiceRequest)(delegate)
     fn(endPoint, matchesServiceRequest, delegate)
   }
@@ -36,15 +36,15 @@ class EndpointSpec extends UtilsSpec with ServiceRequestForEndpointFixture {
     }
   }
 
-  it should "have a apply method that doesn't call the kleisli if the service request doesn't match" in {
+  it should "have a apply method that immediatly throws IllegalStateException if the service request doesn't match" in {
     setup { (endpoint, matcher, delegate) =>
-      endpoint(srGetPathWithId) shouldBe None
+      intercept[IllegalStateException](endpoint(srGetPathWithId))
     }
   }
   it should "have a apply method that calls the kleisli if the service request  matchs" in {
     setup { (endpoint, matcher, delegate) =>
       when(delegate.apply("someGetPathBody_fromSR")) thenReturn Future.successful("someResult")
-      endpoint(srGetPath).get.await shouldBe ServiceResponse(Status(123), Body("someResult_toSR"), ContentType("someContentType"))
+      endpoint(srGetPath).await shouldBe ServiceResponse(Status(123), Body("someResult_toSR"), ContentType("someContentType"))
     }
   }
 

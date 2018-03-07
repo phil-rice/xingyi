@@ -59,7 +59,10 @@ class CachingServiceTests extends UtilsWithLoggingSpec with Eventually {
       implicit val timeService = mock[NanoTimeService]
       val cachingStrategy = DurationStaleCacheStategy(100, 1000)
       val cachingServiceFactory = new CachingServiceFactory[Future](cachingStrategy, cacheSizeStrategy)
-      val cachingService = cachingServiceFactory("someName",delegateService).asInstanceOf[CService]
+      val cachingKleisli = new CacheKleisli[Future] {
+        override protected def cacheFactory = cachingServiceFactory
+      }
+      val cachingService = (cachingKleisli.cache[DelegateRequest, String]("someName")(delegateService)).asInstanceOf[CachingService[Future, DelegateRequest, String]]
       //       = new CachingService[Future, DelegateRequest, String]("someName", delegateService, cachingStrategy, cacheSizeStrategy)
       fn(cachingService)(delegateService)(timeService)
       threadPool.shutdown()

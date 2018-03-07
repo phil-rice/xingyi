@@ -5,7 +5,7 @@ import org.validoc.utils.{FunctionFixture, UtilsSpec}
 
 import scala.concurrent.Future
 
-class FunctionsSpec extends UtilsSpec with FunctionFixture with LiftFunctionKleisli[Future] with ScalaFutureAsAsyncAndMonad {
+class FunctionsSpec extends UtilsSpec with FunctionFixture with LiftFunctionKleisli[Future] with ScalaFutureAsAsyncAndMonadAndFailer {
 
   "Functions.print" should "wrap a function, also printing the mssage" in {
     val f = fn("in", "out")
