@@ -8,7 +8,7 @@ import org.validoc.utils.http.{Failer, Get}
 
 import scala.language.{higherKinds, implicitConversions}
 
-class VogueSetup[ Wrapper[_, _], M[_], Fail](interpreter: TaglessLanguage[ Wrapper, M, Fail])
+class VogueSetup[ Wrapper[_, _], M[_], Fail](interpreter: TaglessLanguage[ Wrapper, M])
                                                                   (implicit
                                                                    monadCanFail: MonadCanFail[M, Fail],
                                                                    failer: Failer[Fail],
@@ -18,7 +18,7 @@ class VogueSetup[ Wrapper[_, _], M[_], Fail](interpreter: TaglessLanguage[ Wrapp
   import interpreter._
 
   implicit def toProgrammeId(id: Int) = ProgrammeId(id.toString, false)
-  val mostpopular = function[MostPopularQuery, MostPopular]("production")(query => MostPopular(List(1, 2, 3)))
+  val mostpopular = function[MostPopularQuery, MostPopular]("mostpopular")(query => MostPopular(List(1, 2, 3)))
   val mostpopularEndpoint = mostpopular |+| endpoint[MostPopularQuery, MostPopular]("/mostpopular", MatchesServiceRequest.idAtEnd(Get))
 
   val microservice = chain(mostpopularEndpoint)

@@ -20,6 +20,11 @@ trait MonadFunctionLanguage extends MonadLanguage {
 
 
   implicit class MonadCanFailFunctionPimper[M[_], Req, Res](fn: Req => M[Res]) {
+    def |=|+>[Fail, Res2](mapFn: (Req => Res => Either[Fail, Res2]))(implicit monad: MonadCanFail[M, Fail]): (Req => M[Res2]) = req =>
+      monad.flatMap[Res, Res2](fn(req), res => mapFn(req)(res) match {
+        case Left(f) => monad.fail(f)
+        case Right(t) => monad.liftM(t)
+      })
     def |=|>[Fail, Res2](mapFn: Res => Either[Fail, Res2])(implicit monad: MonadCanFail[M, Fail]): Req => M[Res2] = { req: Req =>
       fn(req).flatMap(res => mapFn(res).fold[M[Res2]]({ fail: Fail => monad.fail(fail) }, { res2: Res2 => monad.liftM(res2) }))
     }

@@ -15,15 +15,15 @@ import org.validoc.utils.local.ExecutionContextWithLocal
 import org.validoc.utils.logging.{AbstractLogRequestAndResult, LogRequestAndResult, PrintlnLoggingAdapter}
 import org.validoc.utils.map.NoMapSizeStrategy
 import org.validoc.utils.metrics.PrintlnPutMetrics
+import org.validoc.utils.strings.IndentAnd
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.higherKinds
 
-class AllProducers[Wrapper[_, _], M[_], Fail](language: TaglessLanguage[Wrapper, M, Fail])(implicit
-                                                                                           monadCanFail: MonadCanFail[M, Fail],
-                                                                                           failer: Failer[Fail],
-                                                                                           jsonBundle: JsonBundle
-) {
+class AllProducers[Wrapper[_, _], M[_], Fail](language: TaglessLanguage[Wrapper, M])(implicit
+                                                                                     monadCanFail: MonadCanFail[M, Fail],
+                                                                                     failer: Failer[Fail],
+                                                                                     jsonBundle: JsonBundle) {
   val vogueSetup = new VogueSetup(language)
   val billboardSetup = new BillboardSetup(language)
   val fnordSetup = new FnordSetup(language)
@@ -33,7 +33,7 @@ class AllProducers[Wrapper[_, _], M[_], Fail](language: TaglessLanguage[Wrapper,
     fnordSetup.productionEndpoint,
     fnordSetup.programmeEndpoint)
   val rawMicroservice = language.chain(endpoints: _*)
-  def allEndpoints(otherEndpoints: Wrapper[ServiceRequest, ServiceResponse]*): Wrapper[ServiceRequest, ServiceResponse] = language.chain((endpoints ++ otherEndpoints): _*)
+  def allEndpoints(otherEndpoints: Wrapper[ServiceRequest, ServiceResponse]*): Wrapper[ServiceRequest, ServiceResponse] = language.chain(language.chain(endpoints: _*), language.chain(otherEndpoints: _*))
 }
 
 object AllProducers extends App with SampleJsonsForCompilation {
@@ -53,19 +53,27 @@ object AllProducers extends App with SampleJsonsForCompilation {
   //  implicit val cacheFactory = CaffeineCache.cacheFactoryForFuture(CaffeineCache.defaultCacheBuilder)
   implicit val cacheFactory = new CachingServiceFactory[Future](DurationStaleCacheStategy(10000000000L, 10000000000000L), NoMapSizeStrategy)
 
+  import org.validoc.utils.http.Failer.failerForThrowable
+
   implicit val jsonBundle = JsonBundle()
 
   //TODO It would be nice to make this nicer!
-  //The types are horrific!
-  //This is where we are turning the language description into useful endpoints. So It's pretty cool.
-  private val forTostring = new TaglessInterpreterForToString()
-  val interpreter = new TaglessLanguageLanguageForKleislis[Future, Throwable]
-  val kleisliLanguage: interpreter.NonFunctionalLanguageService = interpreter.NonFunctionalLanguageService()
-  val language = new ProfileEachEndpointLanguage(kleisliLanguage)
-  //  val language = new DebugEachObjectifyEndpoint(profileLanguage)
-  val htmlEndpoint = forTostring.systemHtmlEndpoint[interpreter.Kleisli, Future, Throwable]("/html", language)(language => new AllProducers[forTostring.StringHolder, Future, Throwable](language).allEndpoints())
-  private val microservice: interpreter.Kleisli[ServiceRequest, ServiceResponse] = new AllProducers(language).allEndpoints(htmlEndpoint, language.profileMetricsEndpoint)
 
+  def microservice: ServiceRequest => Future[ServiceResponse] = {
+    val interpreter = new TaglessLanguageLanguageForKleislis[Future, Throwable]
+    val kleisliLanguage: interpreter.NonFunctionalLanguageService = interpreter.NonFunctionalLanguageService()
+    val profile2 = new Profile2[Future]
+    val profiledAllLanguage = profile2.Language(kleisliLanguage)
+
+    val htmlEndpoint = TaglessInterpreterForToString.systemHtmlEndpoint("/html", profiledAllLanguage)(new AllProducers(_).allEndpoints())
+
+    val (allProducers, profileEndpoint) = profile2.makeSystemAndProfileEndpoint(kleisliLanguage, "/profiles", new AllProducers(_), { allProducers: AllProducers[profile2.ProfilingWrapper, Future, _] => allProducers.allEndpoints() })
+
+    val microservice = allProducers.allEndpoints(htmlEndpoint, profileEndpoint)
+    val indentAndString = microservice.indents(pf => (s"${pf.name} ${pf.description}", pf.tryProfileData.toShortString))
+    println(indentAndString.invertIndent.toString("\n", IndentAnd.tupleToString(" ", 40)))
+    microservice
+  }
 
   new SimpleHttpServer(9000, new EndpointHandler[Future, Throwable](microservice)).start()
 }

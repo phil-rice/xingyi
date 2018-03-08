@@ -8,7 +8,7 @@ import org.validoc.tagless.TaglessLanguage
 
 import scala.language.higherKinds
 
-class FnordSetup[Wrapper[_, _], M[_], Fail](interpreter: TaglessLanguage[Wrapper, M, Fail])
+class FnordSetup[Wrapper[_, _], M[_], Fail](interpreter: TaglessLanguage[Wrapper, M])
                                            (implicit
                                             monadCanFail: MonadCanFail[M, Fail],
                                             failer: Failer[Fail],

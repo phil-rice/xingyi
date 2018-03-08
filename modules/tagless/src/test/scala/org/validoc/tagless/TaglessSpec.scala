@@ -12,7 +12,7 @@ import org.validoc.utils.language.Language._
 import org.validoc.utils.parser.Parser
 import org.validoc.utils.profiling.TryProfileData
 import org.validoc.utils.retry.RetryConfig
-import org.validoc.utils.strings.{IndentAndString, Strings}
+import org.validoc.utils.strings.{IndentAnd, Strings}
 import org.validoc.utils.time.RandomDelay
 
 import scala.concurrent.Future
@@ -22,7 +22,7 @@ import scala.language.{higherKinds, implicitConversions}
 class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
 
-  class Sample[Wrapper[_, _], M[_], Fail](implicit monadCanFail: MonadCanFail[M, Fail], httpLanguage: TaglessLanguage[Wrapper, M, Fail], failer: Failer[Fail]) {
+  class Sample[Wrapper[_, _], M[_], Fail](implicit monadCanFail: MonadCanFail[M, Fail], httpLanguage: TaglessLanguage[Wrapper, M], failer: Failer[Fail]) {
 
     import httpLanguage._
 
@@ -54,11 +54,6 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
     val retryConfig = RetryConfig(10, RandomDelay(FiniteDuration(100, TimeUnit.MILLISECONDS)))
 
-    //    implicit object logRequestAndResult extends LogRequestAndResult[M, Fail] {
-    //      override def apply[Req: DetailedLogging : SummaryLogging, Res: DetailedLogging : SummaryLogging](sender: Any, messagePrefix: String)(req: Req) = ???
-    //    }
-
-    ResponseParser.defaultDirtyParser[M, Fail, String, String]
     def s1: Wrapper[String, String] = http("s1") |+| objectify[String, String] |+| logging("prefix1") |+| metrics("service1")
 
     val data = new TryProfileData
@@ -90,26 +85,26 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
   import org.validoc.utils.functions.AsyncForScalaFuture._
   import ImplicitsForTest._
 
-  type StringHolder[Req, Res] = IndentAndString
+  type StringHolder[Req, Res] = IndentAnd[String]
 
-  private val toStringLanguage = new TaglessInterpreterForToString().forToString[Future, Throwable]
+  //  private val toStringLanguage = new TaglessInterpreterForToString().forToString[Future]
   it should "turn a sample language into a string with the 'for to string'" in {
-    checkTaglessToString(toStringLanguage)
+    checkTaglessToString(new TaglessInterpreterForToString().forToString[Future])
   }
   it should "be able to turn a system definition into a crude html dump" in {
-    val ref = new AtomicReference[IndentAndString]()
-    val actual = stringlanguage.systemToString[Future, Throwable] { implicit int =>
+    val ref = new AtomicReference[IndentAnd[String]]()
+    val actual = TaglessInterpreterForToString.systemToString[Future, Throwable] { implicit int =>
       val microservice = new Sample().microservice
       ref.set(microservice)
       microservice
     }
-    val expected = ref.get().invertIndent.toString("&nbsp;&nbsp;", "<br />")
+    val expected = ref.get().invertIndent.defaultToString("&nbsp;&nbsp;", "<br />")
     actual shouldBe expected
     actual should startWith("chain<br />&nbsp;&nbsp;endpoint[String,String](/endpoint1,IdAt")
   }
 
   it should "be able to turn a system definition into an endpoint in some interpreter's world with the html in it" in {
-    val endPointInStringLanguageWorld = stringlanguage.systemHtmlEndpoint[StringHolder, Future, Throwable]("/endPoints", stringlanguage.forToString)(implicit langauge => new Sample().microservice)
+    val endPointInStringLanguageWorld = TaglessInterpreterForToString.systemHtmlEndpoint[StringHolder, Future, Throwable]("/endPoints", stringlanguage.forToString)(implicit langauge => new Sample().microservice)
     endPointInStringLanguageWorld.lines shouldBe List((1, "endpoint[ServiceRequest,ServiceResponse](/endPoints,FixedPathAndVerb(Get))"), (0, "function-html"))
 
     //TODO we should be able to call this but need helper code to make that happen. Then we can check the actual string is generated.
@@ -119,7 +114,7 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
   }
 
   it should "have a delegate interpreter that delegates 'for to string'" in {
-    checkTaglessToString(new DelegatesTaglessLanguage[StringHolder, Future, Throwable](toStringLanguage))
+    checkTaglessToString(new DelegatesTaglessLanguage[StringHolder, Future](stringlanguage.forToString))
   }
   //  behavior of "Tagless with default delegate Interpreter"
 
@@ -128,7 +123,7 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
   //
   //  }
 
-  private def checkTaglessToString(implicit stringlanguage: TaglessLanguage[StringHolder, Future, Throwable]) = {
+  private def checkTaglessToString(implicit stringlanguage: TaglessLanguage[StringHolder, Future]) = {
     import stringlanguage._
     val sample = new Sample[StringHolder, Future, Throwable]()
     sample.s1.lines shouldBe List((3, "metrics(service1)"), (2, "logging(Using prefix1)"), (1, "objectify[String,String]"), (0, "http(s1)"))

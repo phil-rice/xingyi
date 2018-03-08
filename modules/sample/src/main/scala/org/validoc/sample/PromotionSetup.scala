@@ -24,7 +24,7 @@ case class JsonBundle(implicit
                       val fromJsonForProgramme: FromJson[Programme],
                       val fromJsonForProduction: FromJson[Production])
 
-class PromotionSetup[Wrapper[_, _], M[_], Fail](interpreter: TaglessLanguage[Wrapper, M, Fail])(implicit
+class PromotionSetup[Wrapper[_, _], M[_], Fail](interpreter: TaglessLanguage[Wrapper, M])(implicit
                                                                                                 monadCanFail: MonadCanFail[M, Fail],
                                                                                                 failer: Failer[Fail],
                                                                                                 jsonBundle: JsonBundle
@@ -58,7 +58,7 @@ class PromotionSetup[Wrapper[_, _], M[_], Fail](interpreter: TaglessLanguage[Wra
 object PromotionSetup extends App with SampleJsonsForCompilation {
   implicit val language: TaglessInterpreterForToString = new TaglessInterpreterForToString
 
-  import language._
+  import TaglessInterpreterForToString._
 
   implicit val jsonBundle: JsonBundle = JsonBundle()
 

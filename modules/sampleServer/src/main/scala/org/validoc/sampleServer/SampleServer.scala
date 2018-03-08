@@ -36,6 +36,7 @@ object SampleServer extends App with SampleJsonsForCompilation {
 
   implicit val executors = Executors.newFixedThreadPool(10)
 
+  import org.validoc.utils.http.Failer.failerForThrowable
 
   private val language = interpreter.NonFunctionalLanguageService()
   //  private val debugLanguage = new DebugEachObjectifyEndpoint(language)

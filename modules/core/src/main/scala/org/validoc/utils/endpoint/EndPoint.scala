@@ -16,19 +16,32 @@ trait EndpointKleisli[M[_]] {
     EndPoint(normalisedPath, matchesServiceRequest)(raw)
 }
 
-trait ChainKleisli[M[_], Fail] {
-  protected implicit def monad: MonadCanFail[M, Fail]
-  protected def failer: Failer[Fail]
+case class Chain[M[_], Fail](failer: Failer[Fail], endpoints: Seq[ServiceRequest => M[ServiceResponse]])(implicit monadCanFail: MonadCanFail[M, Fail]) extends (ServiceRequest => M[ServiceResponse]) {
+  val allEndpoints: List[ServiceRequest => M[ServiceResponse]] = endpoints.flatMap {
+    case c: Chain[M, Fail] => c.allEndpoints
+    case x => Seq(x)
+  }.toList
 
-  def chain(endpoints: (ServiceRequest => M[ServiceResponse])*): ServiceRequest => M[ServiceResponse] = { req: ServiceRequest =>
-    endpoints.collectFirst {
+  println(s"Chain " + allEndpoints)
+
+  def apply(req: ServiceRequest) =
+    allEndpoints.collectFirst {
       case endPoint: PartialFunction[ServiceRequest, M[ServiceResponse]] if endPoint.isDefinedAt(req) => endPoint(req)
       case endPoint if !endPoint.isInstanceOf[PartialFunction[ServiceRequest, M[ServiceResponse]]] => endPoint(req)
     } match {
       case Some(result) => result
       case None => failer.pathNotFound(req).fail
     }
-  }
+
+}
+
+
+trait ChainKleisli[M[_], Fail] {
+  protected implicit def monad: MonadCanFail[M, Fail]
+  protected def failer: Failer[Fail]
+
+  def chain(endpoints: (ServiceRequest => M[ServiceResponse])*): ServiceRequest => M[ServiceResponse] = Chain(failer, endpoints)
+
 
 }
 

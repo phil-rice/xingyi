@@ -11,6 +11,19 @@ import org.validoc.utils.time.NanoTimeService
 
 import scala.language.{higherKinds, implicitConversions}
 
+object TaglessLanguageLanguageForKleislis {
+  def apply[M[_], Fail](implicit
+                        async: Async[M],
+                        monad: MonadCanFailWithException[M, Fail],
+                        httpFactory: HttpFactory[M, ServiceRequest, ServiceResponse],
+                        logReqAndResult: LogRequestAndResult[Fail],
+                        timeService: NanoTimeService,
+                        putMetrics: PutMetrics,
+                        cacheFactory: CacheFactory[M],
+                        failer: Failer[Fail],
+                        responseParserFailer: ResponseParserFailer[Fail],
+                        detailsLoggingForSR: DetailedLogging[ServiceResponse]) = new TaglessLanguageLanguageForKleislis[M, Fail]().NonFunctionalLanguageService()
+}
 
 class TaglessLanguageLanguageForKleislis[M[_], Fail] {
   type Kleisli[Req, Res] = Req => M[Res]
@@ -23,6 +36,9 @@ class TaglessLanguageLanguageForKleislis[M[_], Fail] {
                                           protected val timeService: NanoTimeService,
                                           protected val putMetrics: PutMetrics,
                                           protected val cacheFactory: CacheFactory[M],
-                                          protected val failer: Failer[Fail]) extends
-    TaglessLanguage[ Kleisli, M, Fail] with MicroserviceBuilder[M, Fail]
+                                          protected val failer: Failer[Fail],
+                                          protected val responseParserFailer: ResponseParserFailer[Fail],
+                                          protected val detailsLoggingForSR: DetailedLogging[ServiceResponse]) extends
+    TaglessLanguage[Kleisli, M] with MicroserviceBuilder[M, Fail]
+
 }

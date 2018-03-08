@@ -8,7 +8,9 @@ import scala.util.{Failure, Success, Try}
 
 case class ServiceResponse(status: Status, body: Body, contentType: ContentType)
 
-
+object ServiceResponse{
+  def apply(html: String): ServiceResponse = ServiceResponse(Status(200), Body(html), ContentType("text/html"))
+}
 
 @implicitNotFound(
   """Missing ToServiceResponse[${T}] This turns ${T} into a service response so that it can be shown to the user. The simplest way to implement this is to have a 'ToJson[${T}]' in the scope.

@@ -24,6 +24,6 @@ trait DomainRequestCompanionQuery[T <: BypassCache] extends AbstractDomain[T] {
 
 trait DomainResponseCompanionObject[Req, Res] extends AbstractDomain[Res] {
 
-  implicit def responseParser[M[_], Fail](implicit parser: Parser[Res]): ResponseParser[Fail, Req, Res] = ResponseParser.defaultDirtyParser[M, Fail, Req, Res]
+  implicit def responseParser[M[_], Fail](implicit parser: Parser[Res]): ResponseParser[ Req, Res] = ResponseParser.defaultDirtyParser[M,  Req, Res]
 
 }

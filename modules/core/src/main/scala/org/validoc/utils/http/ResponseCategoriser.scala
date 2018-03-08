@@ -9,19 +9,22 @@ import scala.language.higherKinds
 
 case class RequestAndServiceResponse[Req](req: Req, serviceResponse: ServiceResponse)
 
-trait ResponseCategoriser[M[_], Req] extends (Req => ServiceResponse => M[RequestAndServiceResponse[Req]])
+trait ResponseCategoriser[Req] {
+  def categorise[Fail](implicit failer: Failer[Fail]): Req => ServiceResponse => Either[Fail, RequestAndServiceResponse[Req]]
+}
 
 object ResponseCategoriser {
-  def apply[M[_], Fail, Req](implicit monadCanFail: MonadCanFail[M, Fail], failer: Failer[ Fail]): ResponseCategoriser[M, Req] = new ResponseCategoriser[M, Req] {
-    override def apply(req: Req) = { serviceResponse =>
-      serviceResponse.status.code match {
-        case x if x / 100 == 2 => RequestAndServiceResponse(req, serviceResponse).liftM
-        case 404 => failer.notFound(req, serviceResponse).fail
-        case _ => failer.unexpected(req, serviceResponse).fail
-      }
-    }
+  def apply[Req]: ResponseCategoriser[Req] = new ResponseCategoriser[Req] {
+    override def categorise[Fail](implicit failer: Failer[Fail]): Req => ServiceResponse => Either[Fail, RequestAndServiceResponse[Req]] =
+      req => serviceResponse =>
+        serviceResponse.status.code match {
+          case x if x / 100 == 2 => Right(RequestAndServiceResponse(req, serviceResponse))
+          case 404 => Left(failer.notFound(req, serviceResponse))
+          case _ => Left(failer.unexpected(req, serviceResponse))
+        }
+
   }
 
-  implicit def default[M[_], Fail, Req](implicit monadCanFail: MonadCanFail[M, Fail], failer: Failer[Fail]) = apply[M, Fail, Req]
+  implicit def default[Req] = apply[Req]
 
 }

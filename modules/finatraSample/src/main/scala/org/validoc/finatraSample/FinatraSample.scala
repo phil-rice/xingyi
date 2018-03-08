@@ -34,6 +34,8 @@ class FinatraPromotionSetup(implicit futurePool: FuturePool) extends Controller 
 
   implicit val jsonBundle: JsonBundle = JsonBundle()
   implicit val executors = Executors.newFixedThreadPool(10)
+  import org.validoc.utils.http.Failer.failerForThrowable
+
   private val language = interpreter.NonFunctionalLanguageService()
   //  private val debugLanguage = new DebugEachObjectifyEndpoint(language)
   val setup = new PromotionSetup[interpreter.Kleisli, Future, Throwable](language)

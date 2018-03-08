@@ -9,7 +9,7 @@ import org.validoc.utils.http.ResponseCategoriserSpec
 import org.validoc.utils.local.AbstractLocalOpsSpec
 import org.validoc.utils.objectify.AbstractObjectifySpec
 
-
+import org.validoc.utils.http.Failer.failerForThrowable
 
 class TwitterFutureSpec extends AbstractMonadCanFailWithFailWithExceptionAsThrowableTests[TFuture] with FlatSpecLike with AbstractAsyncTests[TFuture] {
   override def async = asyncForTwitter

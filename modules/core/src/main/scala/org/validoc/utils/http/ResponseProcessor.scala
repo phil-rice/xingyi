@@ -1,24 +1,28 @@
 package org.validoc.utils.http
 
-import org.validoc.utils.functions.{Liftable, MonadCanFail, MonadWithException}
+import org.validoc.utils.exceptions.{EndpointNotFoundException, NotFoundException, ResponseParserException, UnexpectedStatusCodeException}
+import org.validoc.utils.logging.DetailedLogging
 import org.validoc.utils.parser.Parser
 
-import scala.annotation.implicitNotFound
 import scala.language.higherKinds
-import org.validoc.utils._
-import org.validoc.utils.exceptions.{EndpointNotFoundException, NotFoundException, UnexpectedStatusCodeException}
 
-trait ResponseParser[Fail, Req, Res] extends (RequestAndServiceResponse[Req] => Either[Fail, Res])
+trait ResponseParser[Req, Res] {
+  def parse[Fail](requestAndServiceResponse: RequestAndServiceResponse[Req])(implicit failer: ResponseParserFailer[Fail], reqDetails: DetailedLogging[Req], srDetails: DetailedLogging[ServiceResponse]): Either[Fail, Res]
+}
 
 object ResponseParser {
-  implicit def defaultDirtyParser[M[_], Fail, Req, Res](implicit parser: Parser[Res]) = new ResponseParser[Fail, Req, Res] {
-    override def apply(req: RequestAndServiceResponse[Req]) = req match {
-      case RequestAndServiceResponse(req, sr) => Right(parser(sr.body.s))
-    }
+  implicit def defaultDirtyParser[M[_], Req: DetailedLogging, Res](implicit parser: Parser[Res], srDetails: DetailedLogging[ServiceResponse]) = new ResponseParser[Req, Res] {
+    override def parse[Fail](requestAndServiceResponse: RequestAndServiceResponse[Req])(implicit failer: ResponseParserFailer[Fail], reqDetails: DetailedLogging[Req], srDetails: DetailedLogging[ServiceResponse]): Either[Fail, Res] =
+      Right(parser(requestAndServiceResponse.serviceResponse.body.s))
+
   }
 }
 
-trait Failer[Fail] {
+trait ResponseParserFailer[Fail] {
+  def responseParserfailer[Req](requestAndServiceResponse: RequestAndServiceResponse[Req], info: String): Fail
+}
+
+trait Failer[Fail] extends ResponseParserFailer[Fail] {
   def notFound[Req](req: Req, response: ServiceResponse): Fail
   def unexpected[Req](req: Req, response: ServiceResponse): Fail
   def pathNotFound(serviceRequest: ServiceRequest): Fail
@@ -31,6 +35,8 @@ object Failer {
     override def notFound[Req](req: Req, response: ServiceResponse) = new NotFoundException(req, response)
     override def unexpected[Req](req: Req, response: ServiceResponse) = new UnexpectedStatusCodeException(req, response)
     override def pathNotFound(serviceRequest: ServiceRequest) = new EndpointNotFoundException(serviceRequest)
+    override def responseParserfailer[Req](requestAndServiceResponse: RequestAndServiceResponse[Req], info: String): Throwable =
+      new ResponseParserException(requestAndServiceResponse.req, info, requestAndServiceResponse.serviceResponse)
   }
 
 }
