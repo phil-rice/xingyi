@@ -21,7 +21,7 @@ import scala.language.higherKinds
 
 class AllProducers[Wrapper[_, _], M[_], Fail](language: TaglessLanguage[Wrapper, M, Fail])(implicit
                                                                                            monadCanFail: MonadCanFail[M, Fail],
-                                                                                           failer: Failer[M, Fail],
+                                                                                           failer: Failer[Fail],
                                                                                            jsonBundle: JsonBundle
 ) {
   val vogueSetup = new VogueSetup(language)

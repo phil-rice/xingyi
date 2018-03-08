@@ -29,7 +29,7 @@ trait ScalaFutureAsAsyncAndMonadAndFailer {
   private val a = AsyncForScalaFuture.defaultAsyncForScalaFuture
   implicit protected def async: Async[Future] = a
   implicit protected def monad: MonadCanFailWithException[Future, Throwable] = a
-  implicit protected def failer = implicitly[Failer[Future, Throwable]]
+  implicit protected def failer = implicitly[Failer[Throwable]]
 }
 
 trait AbstractAsyncTests[A[_]] extends ContainerSpec[A] {

@@ -13,21 +13,21 @@ class FailerForThrowableSpec extends UtilsSpec with ScalaFutureAsAsyncAndMonadAn
 
   it should "Future.exception a NotFoundException when notFound" in {
     val m = failer.notFound("someReq", serviceResponse)
-    val e = intercept[NotFoundException](await(m))
+    val e = m.asInstanceOf[NotFoundException]
     e.response shouldBe serviceResponse
     e.req shouldBe "someReq"
   }
 
   it should "Future.exception a UnexpectedStatusCodeException when unexpected statusCode" in {
     val m = failer.unexpected("someReq", serviceResponse)
-    val e = intercept[UnexpectedStatusCodeException](await(m))
+    val e = m.asInstanceOf[UnexpectedStatusCodeException]
     e.response shouldBe serviceResponse
     e.req shouldBe "someReq"
   }
 
   it should "Future.exception a EndpointNotFoundException when pathNotFound" in {
     val m = failer.pathNotFound(serviceRequest)
-    val e = intercept[EndpointNotFoundException](await(m))
+    val e = m.asInstanceOf[EndpointNotFoundException]
     e.serviceRequest shouldBe serviceRequest
   }
 

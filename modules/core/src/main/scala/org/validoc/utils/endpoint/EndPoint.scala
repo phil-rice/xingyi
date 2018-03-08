@@ -18,7 +18,7 @@ trait EndpointKleisli[M[_]] {
 
 trait ChainKleisli[M[_], Fail] {
   protected implicit def monad: MonadCanFail[M, Fail]
-  protected def failer: Failer[M, Fail]
+  protected def failer: Failer[Fail]
 
   def chain(endpoints: (ServiceRequest => M[ServiceResponse])*): ServiceRequest => M[ServiceResponse] = { req: ServiceRequest =>
     endpoints.collectFirst {
@@ -26,7 +26,7 @@ trait ChainKleisli[M[_], Fail] {
       case endPoint if !endPoint.isInstanceOf[PartialFunction[ServiceRequest, M[ServiceResponse]]] => endPoint(req)
     } match {
       case Some(result) => result
-      case None => failer.pathNotFound(req)
+      case None => failer.pathNotFound(req).fail
     }
   }
 

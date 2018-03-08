@@ -9,7 +9,7 @@ import org.validoc.utils.language.Language._
 
 import scala.concurrent.Future
 
-class ResponseCategoriserSpec[M[_], Fail](implicit monadCanFail: MonadCanFail[M, Fail], failer: Failer[M, Fail], async: Async[M]) extends UtilsSpec {
+class ResponseCategoriserSpec[M[_], Fail](implicit monadCanFail: MonadCanFail[M, Fail], failer: Failer[Fail], async: Async[M]) extends UtilsSpec {
 
   behavior of "default ResponseCategoriser"
 

@@ -26,7 +26,7 @@ case class JsonBundle(implicit
 
 class PromotionSetup[Wrapper[_, _], M[_], Fail](interpreter: TaglessLanguage[Wrapper, M, Fail])(implicit
                                                                                                 monadCanFail: MonadCanFail[M, Fail],
-                                                                                                failer: Failer[M, Fail],
+                                                                                                failer: Failer[Fail],
                                                                                                 jsonBundle: JsonBundle
 ) extends PromotionServiceNames {
 

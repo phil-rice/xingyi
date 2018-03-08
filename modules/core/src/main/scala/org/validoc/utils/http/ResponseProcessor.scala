@@ -18,19 +18,19 @@ object ResponseParser {
   }
 }
 
-trait Failer[M[_], Fail] {
-  def notFound[Req](req: Req, response: ServiceResponse): M[RequestAndServiceResponse[Req]]
-  def unexpected[Req](req: Req, response: ServiceResponse): M[RequestAndServiceResponse[Req]]
-  def pathNotFound(serviceRequest: ServiceRequest): M[ServiceResponse]
+trait Failer[Fail] {
+  def notFound[Req](req: Req, response: ServiceResponse): Fail
+  def unexpected[Req](req: Req, response: ServiceResponse): Fail
+  def pathNotFound(serviceRequest: ServiceRequest): Fail
 }
 
 object Failer {
 
 
-  implicit def failerForThrowable[M[_]](implicit monad: MonadWithException[M]) = new Failer[M, Throwable] {
-    override def notFound[Req](req: Req, response: ServiceResponse) = monad.exception(new NotFoundException(req, response))
-    override def unexpected[Req](req: Req, response: ServiceResponse) = monad.exception(new UnexpectedStatusCodeException(req, response))
-    override def pathNotFound(serviceRequest: ServiceRequest) = monad.exception(new EndpointNotFoundException(serviceRequest))
+  implicit def failerForThrowable = new Failer[Throwable] {
+    override def notFound[Req](req: Req, response: ServiceResponse) = new NotFoundException(req, response)
+    override def unexpected[Req](req: Req, response: ServiceResponse) = new UnexpectedStatusCodeException(req, response)
+    override def pathNotFound(serviceRequest: ServiceRequest) = new EndpointNotFoundException(serviceRequest)
   }
 
 }

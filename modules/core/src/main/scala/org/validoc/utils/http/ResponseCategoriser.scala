@@ -12,16 +12,16 @@ case class RequestAndServiceResponse[Req](req: Req, serviceResponse: ServiceResp
 trait ResponseCategoriser[M[_], Req] extends (Req => ServiceResponse => M[RequestAndServiceResponse[Req]])
 
 object ResponseCategoriser {
-  def apply[M[_], Fail, Req](implicit monadCanFail: MonadCanFail[M, Fail], failer: Failer[M, Fail]): ResponseCategoriser[M, Req] = new ResponseCategoriser[M, Req] {
+  def apply[M[_], Fail, Req](implicit monadCanFail: MonadCanFail[M, Fail], failer: Failer[ Fail]): ResponseCategoriser[M, Req] = new ResponseCategoriser[M, Req] {
     override def apply(req: Req) = { serviceResponse =>
       serviceResponse.status.code match {
         case x if x / 100 == 2 => RequestAndServiceResponse(req, serviceResponse).liftM
-        case 404 => failer.notFound(req, serviceResponse)
-        case _ => failer.unexpected(req, serviceResponse)
+        case 404 => failer.notFound(req, serviceResponse).fail
+        case _ => failer.unexpected(req, serviceResponse).fail
       }
     }
   }
 
-  implicit def default[M[_], Fail, Req](implicit monadCanFail: MonadCanFail[M, Fail], failer: Failer[M, Fail]) = apply[M, Fail, Req]
+  implicit def default[M[_], Fail, Req](implicit monadCanFail: MonadCanFail[M, Fail], failer: Failer[Fail]) = apply[M, Fail, Req]
 
 }
