@@ -43,7 +43,7 @@ class Profile2[M[_] : MonadWithException, Fail] {
       ProfilingWrapper("metrics", interpreter.metrics(prefix)(raw))
     override def cache[Req: ClassTag : CachableKey : ShouldUseCache, Res: ClassTag : ShouldCacheResult](name: String)(raw: ProfilingWrapper[Req, Res]) =
       ProfilingWrapper("cache", interpreter.cache(name)(raw))
-    override def retry[Req: ClassTag, Res: ClassTag](retryConfig: RetryConfig)(raw: ProfilingWrapper[Req, Res])(implicit retry: NeedsRetry[Fail, Res]) =
+    override def retry[Req: ClassTag, Res: ClassTag:NeedsRetry](retryConfig: RetryConfig)(raw: ProfilingWrapper[Req, Res]) =
       ProfilingWrapper("retry", interpreter.retry(retryConfig)(raw))
     override def profile[Req: ClassTag, Res: ClassTag](profileData: TryProfileData)(raw: ProfilingWrapper[Req, Res]) =
       ProfilingWrapper("profile", interpreter.profile(profileData)(raw))
@@ -84,7 +84,7 @@ class DelegatesTaglessLanguage[Wrapper[_, _], M[_], Fail](interpreter: TaglessLa
     interpreter.metrics(prefix)(raw)
   override def cache[Req: ClassTag : CachableKey : ShouldUseCache, Res: ClassTag : ShouldCacheResult](name: String)(raw: Wrapper[Req, Res]) =
     interpreter.cache(name)(raw)
-  override def retry[Req: ClassTag, Res: ClassTag](retryConfig: RetryConfig)(raw: Wrapper[Req, Res])(implicit retry: NeedsRetry[Fail, Res]) =
+  override def retry[Req: ClassTag, Res: ClassTag:NeedsRetry](retryConfig: RetryConfig)(raw: Wrapper[Req, Res]) =
     interpreter.retry(retryConfig)(raw)
   override def profile[Req: ClassTag, Res: ClassTag](profileData: TryProfileData)(raw: Wrapper[Req, Res]) =
     interpreter.profile(profileData)(raw)

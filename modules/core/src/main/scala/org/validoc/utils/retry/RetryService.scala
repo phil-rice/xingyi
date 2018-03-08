@@ -2,32 +2,30 @@ package org.validoc.utils.retry
 
 import java.util.concurrent.atomic.AtomicLong
 
-import org.validoc.utils._
 import org.validoc.utils.functions.{Async, MonadCanFailWithException}
+import org.validoc.utils.language.Language._
 import org.validoc.utils.time.Delay
 
 import scala.language.higherKinds
-import scala.util.{Success, Try}
-import org.validoc.utils.language.Language._
-
 import scala.reflect.ClassTag
+import scala.util.{Success, Try}
 
 
 trait RetryKleisli[M[_], Fail] {
   protected implicit def async: Async[M]
   protected implicit def monad: MonadCanFailWithException[M, Fail]
 
-  def retry[Req: ClassTag, Res: ClassTag](retryConfig: RetryConfig)(raw: Req => M[Res])(implicit retry: NeedsRetry[Fail, Res]): Req => M[Res] =
+  def retry[Req: ClassTag, Res: ClassTag : NeedsRetry](retryConfig: RetryConfig)(raw: Req => M[Res]): Req => M[Res] =
     new RetryService[M, Fail, Req, Res](raw, retryConfig)
 }
 
-trait NeedsRetry[Fail, T] {
-  def apply(t: Try[Either[Fail, T]]): Boolean
+trait NeedsRetry[T] {
+  def apply[Fail](t: Try[Either[Fail, T]]): Boolean
 }
 
 object NeedsRetry {
-  implicit def default[Fail, T] = new NeedsRetry[Fail, T] {
-    override def apply(t: Try[Either[Fail, T]]): Boolean = t match {
+  implicit def default[T] = new NeedsRetry[T] {
+    override def apply[Fail](t: Try[Either[Fail, T]]): Boolean = t match {
       case Success(Right(_)) => false
       case _ => true
     }
@@ -54,7 +52,7 @@ trait RetryInfo {
 case class RetryConfig(retries: Int, delay: Delay)
 
 
-class RetryService[M[_], Fail, Req, Res](delegate: (Req => M[Res]), retryConfig: RetryConfig)(implicit async: Async[M], monad: MonadCanFailWithException[M, Fail], resRetry: NeedsRetry[Fail, Res]) extends (Req => M[Res]) with RetryInfo {
+class RetryService[M[_], Fail, Req, Res](delegate: (Req => M[Res]), retryConfig: RetryConfig)(implicit async: Async[M], monad: MonadCanFailWithException[M, Fail], resRetry: NeedsRetry[Res]) extends (Req => M[Res]) with RetryInfo {
 
   import retryConfig._
 

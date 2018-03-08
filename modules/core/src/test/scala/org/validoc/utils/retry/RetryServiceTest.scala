@@ -16,8 +16,8 @@ class RetryServiceTest extends UtilsWithLoggingSpec with ScalaFutureAsAsyncAndMo
 
   behavior of "RetryService"
 
-  def setup(fn: (RetryService[Future, Throwable, Req, Res], (Req => Future[Res]), NeedsRetry[Throwable, Res], Delay) => Unit) = {
-    implicit val needsRetry = mock[NeedsRetry[Throwable, Res]]
+  def setup(fn: (RetryService[Future, Throwable, Req, Res], (Req => Future[Res]), NeedsRetry[Res], Delay) => Unit) = {
+    implicit val needsRetry = mock[NeedsRetry[Res]]
     val delay = mock[Delay]
     when(delay.apply()) thenReturn (1 milli)
     val delegate = mock[(Req => Future[Res])]

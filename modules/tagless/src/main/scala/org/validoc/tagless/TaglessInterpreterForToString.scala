@@ -53,7 +53,7 @@ class TaglessInterpreterForToString {
       raw.insertLineAndIndent(s"metrics($prefix)")
     override def cache[Req: ClassTag : CachableKey : ShouldUseCache, Res: ClassTag : ShouldCacheResult](name: String)(raw: StringHolder[Req, Res]) =
       raw.insertLineAndIndent(s"cache($name)")
-    override def retry[Req: ClassTag, Res: ClassTag](retryConfig: RetryConfig)(raw: StringHolder[Req, Res])(implicit retry: NeedsRetry[Fail, Res]): StringHolder[Req, Res] =
+    override def retry[Req: ClassTag, Res: ClassTag:NeedsRetry](retryConfig: RetryConfig)(raw: StringHolder[Req, Res]): StringHolder[Req, Res] =
       raw.insertLineAndIndent(s"retry($retryConfig)")
 
     override def profile[Req: ClassTag, Res: ClassTag](profileData: TryProfileData)(raw: StringHolder[Req, Res]) =

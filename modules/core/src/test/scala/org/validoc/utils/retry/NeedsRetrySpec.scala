@@ -8,7 +8,7 @@ class NeedsRetrySpec extends UtilsSpec {
 
   behavior of "Needs default needs retry"
 
-  val needsRetry = implicitly[NeedsRetry[String, String]]
+  val needsRetry = implicitly[NeedsRetry[String]]
   it should "return false if everything was ok" in {
     needsRetry(Success(Right("someValue"))) shouldBe false
   }

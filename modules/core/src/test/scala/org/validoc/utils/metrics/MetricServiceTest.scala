@@ -29,10 +29,10 @@ class MetricServiceTest extends UtilsSpec {
   def setup(fn: (String => Future[String], (String => Future[String]), PutMetrics) => Unit): Unit = {
     implicit val timeService = new MockTimeService
     implicit val reportData = new DefaultReportData[ String] {
-//      override def apply(prefix: String, duration: Long) = {
-//        case Success(t) => Map("markerS" -> CountMetricValue)
-//        case Failure(t) => Map("markerF" -> CountMetricValue)
-//      }
+      override def apply[Fail](prefix: String, duration: Long) = {
+        case Success(t) => Map("markerS" -> CountMetricValue)
+        case Failure(t) => Map("markerF" -> CountMetricValue)
+      }
     }
     val mockPutMetrics = mock[PutMetrics]
     val delegate = mock[String => Future[String]]
