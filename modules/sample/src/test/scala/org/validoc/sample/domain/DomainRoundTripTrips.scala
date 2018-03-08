@@ -20,13 +20,4 @@ trait DomainFixture {
   val homePage = HomePage(enrichedMostPopular, enrichedPromotion)
 }
 
-//class DomainMockServers[M[_] : Async] extends DomainFixture {
-//  val mockProgrammeService = MockHttpService[M, ProgrammeId, Programme] ((programmeId1, programme1), (programmeId2, programme2))
-//  val mockProductionService = MockHttpService[M, ProductionId, Production]((ProductionId("2"), production2))
-//  val mockPromotionService = MockHttpService[M, PromotionQuery, Promotion] ((PromotionQuery, promotion))
-//
-//  val mockMostPopularService = MockHttpService[M, MostPopularQuery, MostPopular] ((MostPopularQuery, mostPopular))
-//
-//  val mockProductionOrProgrammeService = MockHttpService(mockProductionService, mockProgrammeService)
-//}
-//
+

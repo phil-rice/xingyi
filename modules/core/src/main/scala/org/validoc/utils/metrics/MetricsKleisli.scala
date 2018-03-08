@@ -11,7 +11,7 @@ trait MetricsKleisli[M[_], Fail] {
   protected def putMetrics: PutMetrics
   protected def timeService: NanoTimeService
 
-  def metrics[Req: ClassTag, Res: ClassTag](prefix: String)(raw: Req => M[Res])(implicit rd: ReportData[Fail, Res]) =
-    raw.onExit[Long](_ => timeService(), (duration, mRes) => mRes.onComplete(rd.apply(prefix, duration) ~> putMetrics))
+  def metrics[Req: ClassTag, Res: ClassTag](prefix: String)(raw: Req => M[Res])(implicit rd: ReportData[ Res]) =
+    raw.onExit[Long](_ => timeService(), (duration, mRes) => mRes.onComplete[Fail](rd.apply(prefix, duration) ~> putMetrics))
 
 }

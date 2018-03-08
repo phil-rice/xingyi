@@ -6,6 +6,7 @@ import org.validoc.utils.endpoint.MatchesServiceRequest
 import org.validoc.utils.functions.MonadCanFail
 import org.validoc.utils.http._
 import org.validoc.utils.logging.{DetailedLogging, SummaryLogging}
+import org.validoc.utils.metrics.ReportData
 import org.validoc.utils.profiling.TryProfileData
 import org.validoc.utils.retry.{NeedsRetry, RetryConfig}
 import org.validoc.utils.strings.IndentAndString
@@ -48,7 +49,7 @@ class TaglessInterpreterForToString {
       IndentAndString.merge("chain", endpoints: _*)
     override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: StringHolder[Req, Res])(implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]): StringHolder[Req, Res] =
       raw.insertLineAndIndent(s"endpoint[${nameOf[Req]},${nameOf[Res]}]($normalisedPath,$matchesServiceRequest)")
-    override def metrics[Req: ClassTag, Res: ClassTag : RD](prefix: String)(raw: StringHolder[Req, Res]) =
+    override def metrics[Req: ClassTag, Res: ClassTag : ReportData](prefix: String)(raw: StringHolder[Req, Res]) =
       raw.insertLineAndIndent(s"metrics($prefix)")
     override def cache[Req: ClassTag : CachableKey : ShouldUseCache, Res: ClassTag : ShouldCacheResult](name: String)(raw: StringHolder[Req, Res]) =
       raw.insertLineAndIndent(s"cache($name)")

@@ -6,6 +6,7 @@ import org.validoc.utils.endpoint.MatchesServiceRequest
 import org.validoc.utils.functions.{Monad, MonadWithException}
 import org.validoc.utils.http._
 import org.validoc.utils.logging.{DetailedLogging, SummaryLogging}
+import org.validoc.utils.metrics.ReportData
 import org.validoc.utils.profiling.{ProfileKleisli, TryProfileData}
 import org.validoc.utils.retry.{NeedsRetry, RetryConfig}
 import org.validoc.utils.time.NanoTimeService
@@ -38,7 +39,7 @@ class Profile2[M[_] : MonadWithException, Fail] {
 
     override def logging[Req: ClassTag : DetailedLogging : SummaryLogging, Res: ClassTag : DetailedLogging : SummaryLogging](messagePrefix: String)(raw: ProfilingWrapper[Req, Res]) =
       ProfilingWrapper("logging", interpreter.logging(messagePrefix)(raw))
-    override def metrics[Req: ClassTag, Res: ClassTag : RD](prefix: String)(raw: ProfilingWrapper[Req, Res]) =
+    override def metrics[Req: ClassTag, Res: ClassTag : ReportData](prefix: String)(raw: ProfilingWrapper[Req, Res]) =
       ProfilingWrapper("metrics", interpreter.metrics(prefix)(raw))
     override def cache[Req: ClassTag : CachableKey : ShouldUseCache, Res: ClassTag : ShouldCacheResult](name: String)(raw: ProfilingWrapper[Req, Res]) =
       ProfilingWrapper("cache", interpreter.cache(name)(raw))
@@ -79,7 +80,7 @@ class DelegatesTaglessLanguage[Wrapper[_, _], M[_], Fail](interpreter: TaglessLa
     interpreter.objectify(http)
   override def logging[Req: ClassTag : DetailedLogging : SummaryLogging, Res: ClassTag : DetailedLogging : SummaryLogging](messagePrefix: String)(raw: Wrapper[Req, Res]) =
     interpreter.logging(messagePrefix)(raw)
-  override def metrics[Req: ClassTag, Res: ClassTag : RD](prefix: String)(raw: Wrapper[Req, Res]) =
+  override def metrics[Req: ClassTag, Res: ClassTag : ReportData](prefix: String)(raw: Wrapper[Req, Res]) =
     interpreter.metrics(prefix)(raw)
   override def cache[Req: ClassTag : CachableKey : ShouldUseCache, Res: ClassTag : ShouldCacheResult](name: String)(raw: Wrapper[Req, Res]) =
     interpreter.cache(name)(raw)

@@ -8,7 +8,7 @@ class ReportDataSpec extends UtilsSpec {
 
   behavior of "Default Report Data"
 
-  val rd = implicitly[ReportData[String, String]]
+  val rd = implicitly[ReportData[ String]]
   it should "pass the duration and a count of success when the result was successful" in {
     rd("prefix", 1000)(Success(Right("xxx"))) shouldBe Map("prefix.success" -> CountMetricValue, "prefix.duration" -> HistogramMetricValue(1000))
   }
