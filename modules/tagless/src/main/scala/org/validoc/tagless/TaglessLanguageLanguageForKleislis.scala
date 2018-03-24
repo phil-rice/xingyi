@@ -39,6 +39,7 @@ class TaglessLanguageLanguageForKleislis[M[_], Fail] {
                                           protected val failer: Failer[Fail],
                                           protected val responseParserFailer: ResponseParserFailer[Fail],
                                           protected val detailsLoggingForSR: DetailedLogging[ServiceResponse]) extends
-    TaglessLanguage[Kleisli, M] with MicroserviceBuilder[M, Fail]
+    TaglessLanguage[Kleisli, M] with MicroserviceBuilder[M, Fail] {
+  }
 
 }

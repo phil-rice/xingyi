@@ -64,7 +64,17 @@ class Profile2[M[_] : MonadWithException] {
     override def apply[Req: ClassTag, Res: ClassTag](name: String, description: String, fn: TaglessLanguage[Kleisli, M] => Kleisli[Req, Res], children: ProfilingWrapper[_, _]*): ProfilingWrapper[Req, Res] =
       ProfilingWrapper(name, description, fn(interpreter), children: _*)
 
-  })
+  }) {
+    override def debugEndpoints(endpoints: Map[String, String])(original: ProfilingWrapper[ServiceRequest, Option[ServiceResponse]]) = {
+      val endpointPath = endpoints.get("profiles").getOrElse("/debug/profiles")
+      val kleisli = { serviceRequest: ServiceRequest =>
+        val indentAndString = original.indents(pf => (s"${pf.name} ${pf.description}", pf.tryProfileData.toShortString))
+        val result = "<table><tr>" + indentAndString.invertIndent.toString("</tr><tr>", { case (depth, (l, r)) => s"<td>${Strings.indent("&nbsp;&nbsp;&nbsp;", depth)}$l</td><td>$r</td>" }) + "</tr></table>"
+        ServiceResponse(result).liftM[M]
+      }
+      ProfilingWrapper(endpointPath, "", interpreter.endpoint[ServiceRequest, ServiceResponse](endpointPath, MatchesServiceRequest.fixedPath(Get))(kleisli))
+    }
+  }
 
   def makeSystemAndProfileEndpoint[X](interpreter: TaglessLanguage[Kleisli, M],
                                       name: String,
@@ -107,12 +117,15 @@ class TransformTaglessLanguage[Wrapper[_, _], Wrapper2[_, _], M[_]](transform: W
     transform("cache", name, _.cache(name)(raw))
   override def retry[Req: ClassTag, Res: ClassTag : NeedsRetry](retryConfig: RetryConfig)(raw: Wrapper2[Req, Res]): Wrapper2[Req, Res] =
     transform("retry", retryConfig.toString, _.retry(retryConfig)(raw), raw)
-  override def profile[Req: ClassTag, Res: ClassTag:ProfileAs](profileData: TryProfileData)(raw: Wrapper2[Req, Res]): Wrapper2[Req, Res] =
+  override def profile[Req: ClassTag, Res: ClassTag : ProfileAs](profileData: TryProfileData)(raw: Wrapper2[Req, Res]): Wrapper2[Req, Res] =
     transform("profile", "", _.profile(profileData)(raw), raw)
   override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: Wrapper2[Req, Res])(implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]): Wrapper2[ServiceRequest, Option[ServiceResponse]] =
     transform("endpoint", normalisedPath, _.endpoint[Req, Res](normalisedPath, matchesServiceRequest)(raw), raw)
   override def chain(endpoints: Wrapper2[ServiceRequest, Option[ServiceResponse]]*): Wrapper2[ServiceRequest, Option[ServiceResponse]] =
     transform("chain", "", _.chain(endpoints: _*), endpoints: _*)
+  override def debugEndpoints(endpoints: Map[String, String])(original: Wrapper2[ServiceRequest, Option[ServiceResponse]]): Wrapper2[ServiceRequest, Option[ServiceResponse]] =
+    transform("debugEndpoints", getClass.getSimpleName, _.debugEndpoints(endpoints)(original))
+
   override def enrichPrim[ReqP: ClassTag, ResP, ReqC, ResC, ResE: ClassTag](parent: Wrapper2[ReqP, ResP], child: Wrapper2[ReqC, ResC])(implicit findChildIds: HasChildren[ResP, ReqC], enricher: Enricher[ReqP, ResP, ReqC, ResC, ResE]): Wrapper2[ReqP, ResE] =
     transform("enrich", "", _.enrichPrim[ReqP, ResP, ReqC, ResC, ResE](parent, child), parent, child)
   override def merge2Prim[ReqM: ClassTag, ResM: ClassTag, Req1, Res1, Req2, Res2](firstService: Wrapper2[Req1, Res1], secondService: Wrapper2[Req2, Res2], merger: (ReqM, Res1, Res2) => ResM)(implicit reqMtoReq1: ReqM => Req1, reqMtoReq2: ReqM => Req2): Wrapper2[ReqM, ResM] =
@@ -129,6 +142,7 @@ class DelegatesTaglessLanguage[Wrapper[_, _], M[_]](interpreter: TaglessLanguage
   override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: Wrapper[Req, Res])(implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]) =
     interpreter.endpoint[Req, Res](normalisedPath, matchesServiceRequest)(raw)
   override def chain(endpoints: Wrapper[ServiceRequest, Option[ServiceResponse]]*) = interpreter.chain(endpoints: _*)
+  override def debugEndpoints(endpoints: Map[String, String])(original: Wrapper[ServiceRequest, Option[ServiceResponse]]) = interpreter.debugEndpoints(endpoints)(original)
   override def http(name: ServiceName) = interpreter.http(name)
   override def andAfter[Req: ClassTag, Mid: ClassTag, Res2: ClassTag](raw: Wrapper[Req, Mid], fn: Mid => Res2): Wrapper[Req, Res2] =
     interpreter.andAfter(raw, fn)
@@ -144,7 +158,7 @@ class DelegatesTaglessLanguage[Wrapper[_, _], M[_]](interpreter: TaglessLanguage
     interpreter.cache(name)(raw)
   override def retry[Req: ClassTag, Res: ClassTag : NeedsRetry](retryConfig: RetryConfig)(raw: Wrapper[Req, Res]) =
     interpreter.retry(retryConfig)(raw)
-  override def profile[Req: ClassTag, Res: ClassTag:ProfileAs](profileData: TryProfileData)(raw: Wrapper[Req, Res]) =
+  override def profile[Req: ClassTag, Res: ClassTag : ProfileAs](profileData: TryProfileData)(raw: Wrapper[Req, Res]) =
     interpreter.profile(profileData)(raw)
   override def enrichPrim[ReqP: ClassTag, ResP, ReqC, ResC, ResE: ClassTag](parent: Wrapper[ReqP, ResP], child: Wrapper[ReqC, ResC])(implicit findChildIds: HasChildren[ResP, ReqC], enricher: Enricher[ReqP, ResP, ReqC, ResC, ResE]) =
     interpreter.enrichPrim(parent, child)

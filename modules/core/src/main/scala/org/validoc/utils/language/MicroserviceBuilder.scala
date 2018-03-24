@@ -48,6 +48,9 @@ trait MicroserviceBuilder[M[_], Fail] extends ObjectifyKleisli[M, Fail] with Htt
   protected def failer: Failer[Fail]
   protected def putMetrics: PutMetrics
 
+  def debugEndpoints(endpoints: Map[String, String])(original: ServiceRequest => M[Option[ServiceResponse]]) = original
+
+
 }
 
 class KleisliMicroserviceBuilder[M[_], Fail] {

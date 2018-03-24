@@ -17,6 +17,8 @@ trait EndpointKleisli[M[_]] {
 }
 
 
+
+
 trait ChainKleisli[M[_], Fail] {
   protected implicit def monad: MonadCanFail[M, Fail]
   protected def failer: Failer[Fail]

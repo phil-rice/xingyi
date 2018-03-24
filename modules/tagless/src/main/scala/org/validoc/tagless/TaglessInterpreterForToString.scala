@@ -3,7 +3,7 @@ package org.validoc.tagless
 import org.validoc.utils.aggregate.{Enricher, HasChildren}
 import org.validoc.utils.cache.{CachableKey, ShouldCacheResult, ShouldUseCache}
 import org.validoc.utils.endpoint.MatchesServiceRequest
-import org.validoc.utils.functions.MonadCanFail
+import org.validoc.utils.functions.{Liftable, MonadCanFail}
 import org.validoc.utils.http._
 import org.validoc.utils.logging.{DetailedLogging, SummaryLogging}
 import org.validoc.utils.metrics.ReportData
@@ -15,10 +15,13 @@ import scala.language.higherKinds
 import scala.reflect.ClassTag
 
 object TaglessInterpreterForToString {
+  val structureEndpointName = "structure"
+  val defaultStructureEndpoint = "/debug"
+
 
   type StringHolder[Req, Res] = IndentAnd[String]
 
-  def forToString[M[_]]: TaglessInterpreterForToString#ForToString[M] = new TaglessInterpreterForToString().forToString[M]
+  def forToString[M[_]:Liftable]: TaglessInterpreterForToString#ForToString[M] = new TaglessInterpreterForToString().forToString[M]
 
   def systemToString[M[_], Fail](block: TaglessLanguage[StringHolder, M] => StringHolder[ServiceRequest, ServiceResponse])(implicit monadCanFail: MonadCanFail[M, Fail]): String = {
     block(forToString[M]).invertIndent.defaultToString("&nbsp;&nbsp;", "<br />")
@@ -38,10 +41,10 @@ class TaglessInterpreterForToString {
   import TaglessInterpreterForToString._
   import org.validoc.utils.reflection.ClassTags._
 
-  def forToString[M[_]] = new ForToString[M]
+  def forToString[M[_]:Liftable] = new ForToString[M]
 
 
-  class ForToString[M[_]] extends TaglessLanguage[StringHolder, M] {
+  class ForToString[M[_] : Liftable] extends TaglessLanguage[StringHolder, M] {
     override def function[Req: ClassTag, Res: ClassTag](name: String)(fn: Req => Res) =
       IndentAnd(0, List()).insertLineAndIndent(s"function-$name")
     override def http(name: ServiceName): StringHolder[ServiceRequest, ServiceResponse] =
@@ -56,6 +59,14 @@ class TaglessInterpreterForToString {
       IndentAnd.merge("chain", endpoints: _*)
     override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: StringHolder[Req, Res])(implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]): StringHolder[Req, Res] =
       raw.insertLineAndIndent(s"endpoint[${nameOf[Req]},${nameOf[Res]}]($normalisedPath,$matchesServiceRequest)")
+    override def debugEndpoints(endpoints: Map[String, String])(original: StringHolder[ServiceRequest, Option[ServiceResponse]]) = {
+      import language._
+      val endpointPath = endpoints.get(TaglessInterpreterForToString.structureEndpointName).getOrElse(TaglessInterpreterForToString.defaultStructureEndpoint)
+      val html = original.invertIndent.defaultToString("&nbsp;&nbsp;", "<br />")
+      val htmlFn = { s: ServiceRequest => ServiceResponse(Status(200), Body(html), ContentType("text/html")) }
+      function[ServiceRequest, ServiceResponse]("html")(htmlFn) |+| endpoint[ServiceRequest, ServiceResponse](endpointPath, MatchesServiceRequest.fixedPath(Get))
+    }
+
     override def metrics[Req: ClassTag, Res: ClassTag : ReportData](prefix: String)(raw: StringHolder[Req, Res]) =
       raw.insertLineAndIndent(s"metrics($prefix)")
     override def cache[Req: ClassTag : CachableKey : ShouldUseCache, Res: ClassTag : ShouldCacheResult](name: String)(raw: StringHolder[Req, Res]) =
@@ -63,7 +74,7 @@ class TaglessInterpreterForToString {
     override def retry[Req: ClassTag, Res: ClassTag : NeedsRetry](retryConfig: RetryConfig)(raw: StringHolder[Req, Res]): StringHolder[Req, Res] =
       raw.insertLineAndIndent(s"retry($retryConfig)")
 
-    override def profile[Req: ClassTag, Res: ClassTag:ProfileAs](profileData: TryProfileData)(raw: StringHolder[Req, Res]) =
+    override def profile[Req: ClassTag, Res: ClassTag : ProfileAs](profileData: TryProfileData)(raw: StringHolder[Req, Res]) =
       raw.insertLineAndIndent(s"profile")
 
     override def logging[Req: ClassTag : DetailedLogging : SummaryLogging, Res: ClassTag : DetailedLogging : SummaryLogging](messagePrefix: String)(raw: StringHolder[Req, Res]) =
