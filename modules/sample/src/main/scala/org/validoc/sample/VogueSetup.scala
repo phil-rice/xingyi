@@ -8,7 +8,7 @@ import org.validoc.utils.http.{Failer, Get, ServiceRequest, ServiceResponse}
 
 import scala.language.{higherKinds, implicitConversions}
 
-class VogueSetup[ Wrapper[_, _], M[_], Fail](interpreter: TaglessLanguage[ Wrapper, M])
+class VogueSetup[  M[_],Wrapper[_, _], Fail](interpreter: TaglessLanguage[ M, Wrapper])
                                                                   (implicit
                                                                    monadCanFail: MonadCanFail[M, Fail],
                                                                    failer: Failer[Fail],

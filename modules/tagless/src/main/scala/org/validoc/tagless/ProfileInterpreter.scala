@@ -51,7 +51,7 @@ class Profile2[M[_] : MonadWithException] {
 
   import org.validoc.utils.language.Language._
 
-  def endpointForProfiler[Req, Res](name: String, interpreter: TaglessLanguage[ProfilingWrapper, M], profilingWrapper: ProfilingWrapper[Req, Res]) =
+  def endpointForProfiler[Req, Res](name: String, interpreter: TaglessLanguage[M, ProfilingWrapper], profilingWrapper: ProfilingWrapper[Req, Res]) =
     interpreter.endpoint[ServiceRequest, ServiceResponse](name, MatchesServiceRequest.fixedPath(Get))(
       ProfilingWrapper("endpointForProfiler", name, { serviceRequest: ServiceRequest =>
         val indentAndString = profilingWrapper.indents(pf => (s"${pf.name} ${pf.description}", pf.tryProfileData.toShortString))
@@ -60,12 +60,12 @@ class Profile2[M[_] : MonadWithException] {
         ServiceResponse(result).liftM[M]
       }))
 
-  def profileTransformer = new WrapperTransformer[Kleisli, ProfilingWrapper, M] {
+  def profileTransformer = new WrapperTransformer[M, Kleisli, ProfilingWrapper] {
     override def apply[Req: ClassTag, Res: ClassTag](name: String, description: String, wrapper: Kleisli[Req, Res], children: ProfilingWrapper[_, _]*): ProfilingWrapper[Req, Res] =
       ProfilingWrapper(name, description, wrapper, children: _*)
 
   }
-  def Language(interpreter: TaglessLanguage[Kleisli, M]) = new TransformTaglessLanguage[Kleisli, ProfilingWrapper, M](interpreter, profileTransformer) {
+  def Language(interpreter: TaglessLanguage[M, Kleisli]) = new TransformTaglessLanguage[M, Kleisli, ProfilingWrapper](interpreter, profileTransformer) {
     override def debugEndpoints(endpoints: Map[String, String])(original: ProfilingWrapper[ServiceRequest, Option[ServiceResponse]]) = {
       val endpointPath = endpoints.get("profiles").getOrElse("/debug/profiles")
       val kleisli = { serviceRequest: ServiceRequest =>
@@ -77,18 +77,18 @@ class Profile2[M[_] : MonadWithException] {
     }
   }
 
-  def makeSystemAndProfileEndpoint[X](interpreter: TaglessLanguage[Kleisli, M],
+  def makeSystemAndProfileEndpoint[X](interpreter: TaglessLanguage[M, Kleisli],
                                       name: String,
-                                      maker: TaglessLanguage[ProfilingWrapper, M] => X,
+                                      maker: TaglessLanguage[M, ProfilingWrapper] => X,
                                       endPoints: X => ProfilingWrapper[ServiceRequest, Option[ServiceResponse]]): (X, ProfilingWrapper[ServiceRequest, Option[ServiceResponse]]) = {
-    val profiledAllLanguage: TaglessLanguage[ProfilingWrapper, M] = Language(interpreter)
+    val profiledAllLanguage: TaglessLanguage[M, ProfilingWrapper] = Language(interpreter)
     val result: X = maker(profiledAllLanguage)
     (result, endpointForProfiler(name, profiledAllLanguage, endPoints(result)))
   }
 
 }
 
-abstract class WrapperTransformer[Wrapper[_, _], Wrapper2[_, _], M[_]](implicit evidence: Wrapper2[_, _] <:< Wrapper[_, _]) {
+abstract class WrapperTransformer[M[_], Wrapper[_, _], Wrapper2[_, _]](implicit evidence: Wrapper2[_, _] <:< Wrapper[_, _]) {
   def apply[Req: ClassTag, Res: ClassTag](name: String, description: String, wrapper: Wrapper[Req, Res], children: Wrapper2[_, _]*): Wrapper2[Req, Res]
 
 }
@@ -96,7 +96,7 @@ abstract class WrapperTransformer[Wrapper[_, _], Wrapper2[_, _], M[_]](implicit 
 import org.validoc.utils.reflection.ClassTags._
 
 
-class ProfileEachEndpointLanguage[Wrapper[_, _], M[_] : Monad](interpreter: TaglessLanguage[Wrapper, M]) extends DelegatesTaglessLanguage[Wrapper, M](interpreter) {
+class ProfileEachEndpointLanguage[M[_] : Monad, Wrapper[_, _]](interpreter: TaglessLanguage[M, Wrapper]) extends DelegatesTaglessLanguage[M, Wrapper](interpreter) {
   //TODO So here we have an interesting example of where a State monad would actually help. I think it would mean we didn't have mutable code and the interpreter wasn't stateless
   //This code is remarkably easier though...
   val map = TrieMap[String, TryProfileData]()

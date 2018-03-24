@@ -23,7 +23,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.language.higherKinds
 import scala.util.{Failure, Success, Try}
 
-class AllProducers[Wrapper[_, _], M[_], Fail](language: TaglessLanguage[Wrapper, M])(implicit
+class AllProducers[ M[_],Wrapper[_, _],  Fail](language: TaglessLanguage[M, Wrapper])(implicit
                                                                                      monadCanFail: MonadCanFail[M, Fail],
                                                                                      failer: Failer[Fail],
                                                                                      jsonBundle: JsonBundle) {
@@ -74,7 +74,7 @@ object AllProducers extends App with SampleJsonsForCompilation {
     val htmlEndpoint = TaglessInterpreterForToString.systemHtmlEndpoint("/html", profiledAllLanguage)(new AllProducers(_).allEndpoints())
 
     val (allProducers, profileEndpoint) = profile2.makeSystemAndProfileEndpoint(kleisliLanguage, "/profiles", new AllProducers(_),
-      { allProducers: AllProducers[profile2.ProfilingWrapper, Future, _] => allProducers.allEndpoints() })
+      { allProducers: AllProducers[Future, profile2.ProfilingWrapper, _] => allProducers.allEndpoints() })
 
     val microservice = allProducers.allEndpoints(htmlEndpoint, profileEndpoint)
     val indentAndString = microservice.indents(pf => (s"${pf.name} ${pf.description}", pf.tryProfileData.toShortString))

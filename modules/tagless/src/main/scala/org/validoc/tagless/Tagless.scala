@@ -14,21 +14,21 @@ import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
 object TaglessLanguage {
-  implicit class LanguagePimper[Wrapper1[_, _], M[_]](lang1: TaglessLanguage[Wrapper1, M]) {
-    def <+>[Wrapper2[_, _]](lang2: TaglessLanguage[Wrapper2, M]) = {
-      val l: TwinTaglessLanguage[Wrapper1, Wrapper2, M] = new TwinTaglessLanguage(lang1, lang2)
+  implicit class LanguagePimper[ M[_],Wrapper1[_, _]](lang1: TaglessLanguage[M, Wrapper1]) {
+    def <+>[Wrapper2[_, _]](lang2: TaglessLanguage[M, Wrapper2]) = {
+      val l: TwinTaglessLanguage[M, Wrapper1, Wrapper2] = new TwinTaglessLanguage(lang1, lang2)
       new l.language
     }
-    def <+>[Wrapper2[_, _]](transform: WrapperTransformer[Wrapper1, Wrapper2, M])(implicit evidence: Wrapper2[_, _] <:< Wrapper1[_, _]): TaglessLanguage[Wrapper2, M] = new TransformTaglessLanguage(lang1, transform)
+    def <+>[Wrapper2[_, _]](transform: WrapperTransformer[M, Wrapper1, Wrapper2])(implicit evidence: Wrapper2[_, _] <:< Wrapper1[_, _]): TaglessLanguage[M, Wrapper2] = new TransformTaglessLanguage(lang1, transform)
   }
 
 
 }
 
-trait TaglessLanguage[Wrapper[_, _], M[_]] extends MergeLanguage[Wrapper] with EnrichLanguage[Wrapper] {
+trait TaglessLanguage[M[_],Wrapper[_, _]] extends MergeLanguage[Wrapper] with EnrichLanguage[Wrapper] {
 
 
-  def as[Wrapper2[_, _]](implicit ev: Wrapper[_, _] <:< Wrapper2[_, _]): TaglessLanguage[Wrapper2, M] = this.asInstanceOf[TaglessLanguage[Wrapper2, M]]
+  def as[Wrapper2[_, _]](implicit ev: Wrapper[_, _] <:< Wrapper2[_, _]): TaglessLanguage[M, Wrapper2] = this.asInstanceOf[TaglessLanguage[M, Wrapper2]]
 
 
   def http(name: ServiceName): Wrapper[ServiceRequest, ServiceResponse]
@@ -61,11 +61,11 @@ trait TaglessLanguage[Wrapper[_, _], M[_]] extends MergeLanguage[Wrapper] with E
 
 
 case class TwinTaglessData[Wrapper1[_, _], Wrapper2[_, _], Req, Res](wrapper1: Wrapper1[Req, Res], wrapper2: Wrapper2[Req, Res])
-class TwinTaglessLanguage[Wrapper1[_, _], Wrapper2[_, _], M[_]](lang1: TaglessLanguage[Wrapper1, M], lang2: TaglessLanguage[Wrapper2, M]) {
+class TwinTaglessLanguage[M[_],Wrapper1[_, _], Wrapper2[_, _]](lang1: TaglessLanguage[M, Wrapper1], lang2: TaglessLanguage[M, Wrapper2]) {
 
   type TwinTagless[Req, Res] = TwinTaglessData[Wrapper1, Wrapper2, Req, Res]
 
-  class language extends TaglessLanguage[TwinTagless, M] {
+  class language extends TaglessLanguage[M, TwinTagless] {
     override def http(name: ServiceName) = new TwinTagless(lang1.http(name), lang2.http(name))
     override def function[Req: ClassTag, Res: ClassTag](name: String)(fn: Req => Res) = new TwinTagless(lang1.function(name)(fn), lang2.function(name)(fn))
     override def objectify[Req: ClassTag : DetailedLogging, Res: ClassTag](http: TwinTagless[ServiceRequest, ServiceResponse])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[Req], responseProcessor: ResponseParser[Req, Res]) =
@@ -102,7 +102,7 @@ class TwinTaglessLanguage[Wrapper1[_, _], Wrapper2[_, _], M[_]](lang1: TaglessLa
   }
 }
 
-class TransformTaglessLanguage[Wrapper[_, _], Wrapper2[_, _], M[_]](language: TaglessLanguage[Wrapper, M], transform: WrapperTransformer[Wrapper, Wrapper2, M])(implicit evidence: Wrapper2[_, _] <:< Wrapper[_, _]) extends TaglessLanguage[Wrapper2, M] {
+class TransformTaglessLanguage[M[_],Wrapper[_, _], Wrapper2[_, _]](language: TaglessLanguage[M, Wrapper], transform: WrapperTransformer[M,Wrapper, Wrapper2])(implicit evidence: Wrapper2[_, _] <:< Wrapper[_, _]) extends TaglessLanguage[M, Wrapper2] {
   //TODO I have no idea how to avoid these conversions. It's safe to do because of the evidence provided, but not nice
   implicit def toWrapper[Req, Res](w2: Wrapper2[Req, Res]): Wrapper[Req, Res] = w2.asInstanceOf[Wrapper[Req, Res]]
   implicit def toSeqWrapper[Req, Res](w2: Seq[Wrapper2[Req, Res]]): Seq[Wrapper[Req, Res]] = w2.asInstanceOf[Seq[Wrapper[Req, Res]]]
@@ -146,7 +146,7 @@ class TransformTaglessLanguage[Wrapper[_, _], Wrapper2[_, _], M[_]](language: Ta
 }
 
 
-class DelegatesTaglessLanguage[Wrapper[_, _], M[_]](interpreter: TaglessLanguage[Wrapper, M]) extends TaglessLanguage[Wrapper, M] {
+class DelegatesTaglessLanguage[M[_], Wrapper[_, _]](interpreter: TaglessLanguage[M, Wrapper]) extends TaglessLanguage[M, Wrapper] {
   override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: Wrapper[Req, Res])(implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]) =
     interpreter.endpoint[Req, Res](normalisedPath, matchesServiceRequest)(raw)
   override def chain(endpoints: Wrapper[ServiceRequest, Option[ServiceResponse]]*) = interpreter.chain(endpoints: _*)

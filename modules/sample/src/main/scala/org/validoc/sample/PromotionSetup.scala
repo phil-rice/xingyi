@@ -24,7 +24,7 @@ case class JsonBundle(implicit
                       val fromJsonForProgramme: FromJson[Programme],
                       val fromJsonForProduction: FromJson[Production])
 
-class PromotionSetup[Wrapper[_, _], M[_], Fail](interpreter: TaglessLanguage[Wrapper, M])(implicit
+class PromotionSetup[ M[_],Wrapper[_, _], Fail](interpreter: TaglessLanguage[M, Wrapper])(implicit
                                                                                                 monadCanFail: MonadCanFail[M, Fail],
                                                                                                 failer: Failer[Fail],
                                                                                                 jsonBundle: JsonBundle
@@ -65,6 +65,6 @@ object PromotionSetup extends App with SampleJsonsForCompilation {
   import org.validoc.utils.functions.AsyncForScalaFuture._
   import ImplicitsForTest._
 
-  val setup = new PromotionSetup[StringHolder, Future, Throwable](new ProfileEachEndpointLanguage(language.forToString))
+  val setup = new PromotionSetup[Future, StringHolder,  Throwable](new ProfileEachEndpointLanguage(language.forToString))
   println(setup.microservice.invertIndent)
 }

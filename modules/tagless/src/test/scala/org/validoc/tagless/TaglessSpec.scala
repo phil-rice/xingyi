@@ -22,7 +22,7 @@ import scala.language.{higherKinds, implicitConversions}
 class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
 
-  class Sample[Wrapper[_, _], M[_], Fail](implicit monadCanFail: MonadCanFail[M, Fail], httpLanguage: TaglessLanguage[Wrapper, M], failer: Failer[Fail]) {
+  class Sample[M[_], Wrapper[_, _],  Fail](implicit monadCanFail: MonadCanFail[M, Fail], httpLanguage: TaglessLanguage[M, Wrapper], failer: Failer[Fail]) {
 
     import httpLanguage._
 
@@ -114,7 +114,7 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
   }
 
   it should "have a delegate interpreter that delegates 'for to string'" in {
-    checkTaglessToString(new DelegatesTaglessLanguage[StringHolder, Future](stringlanguage.forToString))
+    checkTaglessToString(new DelegatesTaglessLanguage[Future, StringHolder](stringlanguage.forToString))
   }
   //  behavior of "Tagless with default delegate Interpreter"
 
@@ -123,9 +123,9 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
   //
   //  }
 
-  private def checkTaglessToString(implicit stringlanguage: TaglessLanguage[StringHolder, Future]) = {
+  private def checkTaglessToString(implicit stringlanguage: TaglessLanguage[Future, StringHolder]) = {
     import stringlanguage._
-    val sample = new Sample[StringHolder, Future, Throwable]()
+    val sample = new Sample[Future, StringHolder,  Throwable]()
     sample.s1.lines shouldBe List((3, "metrics(service1)"), (2, "logging(Using prefix1)"), (1, "objectify[String,String]"), (0, "http(s1)"))
 
     sample.m2.lines shouldBe List(

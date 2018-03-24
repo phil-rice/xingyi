@@ -9,7 +9,7 @@ import org.validoc.utils.http.{Failer, Get, ServiceRequest, ServiceResponse}
 import scala.language.{higherKinds, implicitConversions}
 
 //class BillboardSetup[M[_], Fail](interpreter: MicroserviceBuilder[M, Fail] with MicroserviceComposers[M])
-class BillboardSetup[Wrapper[_, _], M[_], Fail](interpreter: TaglessLanguage[Wrapper, M])
+class BillboardSetup[ M[_],Wrapper[_, _], Fail](interpreter: TaglessLanguage[M, Wrapper])
                                                (implicit
                                                 monadCanFail: MonadCanFail[M, Fail],
                                                 failer: Failer[Fail],

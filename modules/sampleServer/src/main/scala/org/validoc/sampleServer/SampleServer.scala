@@ -40,7 +40,7 @@ object SampleServer extends App with SampleJsonsForCompilation {
 
   private val language = interpreter.NonFunctionalLanguageService()
   //  private val debugLanguage = new DebugEachObjectifyEndpoint(language)
-  val setup = new PromotionSetup[interpreter.Kleisli, Future, Throwable](language)
+  val setup = new PromotionSetup[Future, interpreter.Kleisli,  Throwable](language)
 
   //  println("Dumping")
   //  println(debugLanguage.dump)

@@ -23,11 +23,11 @@ object TaglessInterpreterForToString {
 
   def forToString[M[_]:Liftable]: TaglessInterpreterForToString#ForToString[M] = new TaglessInterpreterForToString().forToString[M]
 
-  def systemToString[M[_], Fail](block: TaglessLanguage[StringHolder, M] => StringHolder[ServiceRequest, ServiceResponse])(implicit monadCanFail: MonadCanFail[M, Fail]): String = {
+  def systemToString[M[_], Fail](block: TaglessLanguage[M, StringHolder] => StringHolder[ServiceRequest, ServiceResponse])(implicit monadCanFail: MonadCanFail[M, Fail]): String = {
     block(forToString[M]).invertIndent.defaultToString("&nbsp;&nbsp;", "<br />")
   }
 
-  def systemHtmlEndpoint[Wrapper[_, __], M[_], Fail](endpointPath: String, language: TaglessLanguage[Wrapper, M])(block: TaglessLanguage[StringHolder, M] => StringHolder[ServiceRequest, ServiceResponse])(implicit monadCanFail: MonadCanFail[M, Fail]): Wrapper[ServiceRequest, Option[ServiceResponse]] = {
+  def systemHtmlEndpoint[Wrapper[_, __], M[_], Fail](endpointPath: String, language: TaglessLanguage[M, Wrapper])(block: TaglessLanguage[M, StringHolder] => StringHolder[ServiceRequest, ServiceResponse])(implicit monadCanFail: MonadCanFail[M, Fail]): Wrapper[ServiceRequest, Option[ServiceResponse]] = {
     import language._
     val html = systemToString[M, Fail](block)
     val htmlFn = { s: ServiceRequest => ServiceResponse(Status(200), Body(html), ContentType("text/html")) }
@@ -44,7 +44,7 @@ class TaglessInterpreterForToString {
   def forToString[M[_]:Liftable] = new ForToString[M]
 
 
-  class ForToString[M[_] : Liftable] extends TaglessLanguage[StringHolder, M] {
+  class ForToString[M[_] : Liftable] extends TaglessLanguage[M, StringHolder] {
     override def function[Req: ClassTag, Res: ClassTag](name: String)(fn: Req => Res) =
       IndentAnd(0, List()).insertLineAndIndent(s"function-$name")
     override def http(name: ServiceName): StringHolder[ServiceRequest, ServiceResponse] =
