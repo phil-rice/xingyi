@@ -23,7 +23,7 @@ class ProfilingServiceSpec extends UtilsSpec with ScalaFutureAsAsyncAndMonadAndF
       override protected implicit def timeService: NanoTimeService = mainNanoTimeService
     }
     val profileData = new TryProfileData {
-      override def eventFromStartTime(startTime: Long)(result: Try[_])(implicit nanoTimeService: NanoTimeService) = {
+      override def eventFromStartTime[Res: ProfileAs](startTime: Long)(result: Try[Res])(implicit nanoTimeService: NanoTimeService) = {
         nanoTimeService shouldBe mainNanoTimeService
         ref.set((startTime, result))
       }

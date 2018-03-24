@@ -9,7 +9,7 @@ import org.validoc.utils._
 import scala.language.higherKinds
 import org.validoc.utils.language.Language._
 
-class EndpointHandler[M[_] : Async, Fail](fn: ServiceRequest => M[ServiceResponse])(implicit monadCanFail: MonadCanFailWithException[M, Fail], failer: Failer[Fail]) extends HttpHandler {
+class EndpointHandler[M[_] : Async, Fail](fn: ServiceRequest => M[Option[ServiceResponse]])(implicit monadCanFail: MonadCanFailWithException[M, Fail], failer: Failer[Fail]) extends HttpHandler {
   override def handle(httpExchange: HttpExchange) = {
     HttpUtils.process(httpExchange) {
       val method = Method(httpExchange.getRequestMethod.toLowerCase())

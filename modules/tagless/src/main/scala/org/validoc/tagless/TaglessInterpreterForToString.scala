@@ -7,7 +7,7 @@ import org.validoc.utils.functions.MonadCanFail
 import org.validoc.utils.http._
 import org.validoc.utils.logging.{DetailedLogging, SummaryLogging}
 import org.validoc.utils.metrics.ReportData
-import org.validoc.utils.profiling.TryProfileData
+import org.validoc.utils.profiling.{ProfileAs, TryProfileData}
 import org.validoc.utils.retry.{NeedsRetry, RetryConfig}
 import org.validoc.utils.strings.IndentAnd
 
@@ -24,7 +24,7 @@ object TaglessInterpreterForToString {
     block(forToString[M]).invertIndent.defaultToString("&nbsp;&nbsp;", "<br />")
   }
 
-  def systemHtmlEndpoint[Wrapper[_, __], M[_], Fail](endpointPath: String, language: TaglessLanguage[Wrapper, M])(block: TaglessLanguage[StringHolder, M] => StringHolder[ServiceRequest, ServiceResponse])(implicit monadCanFail: MonadCanFail[M, Fail]): Wrapper[ServiceRequest, ServiceResponse] = {
+  def systemHtmlEndpoint[Wrapper[_, __], M[_], Fail](endpointPath: String, language: TaglessLanguage[Wrapper, M])(block: TaglessLanguage[StringHolder, M] => StringHolder[ServiceRequest, ServiceResponse])(implicit monadCanFail: MonadCanFail[M, Fail]): Wrapper[ServiceRequest, Option[ServiceResponse]] = {
     import language._
     val html = systemToString[M, Fail](block)
     val htmlFn = { s: ServiceRequest => ServiceResponse(Status(200), Body(html), ContentType("text/html")) }
@@ -63,7 +63,7 @@ class TaglessInterpreterForToString {
     override def retry[Req: ClassTag, Res: ClassTag : NeedsRetry](retryConfig: RetryConfig)(raw: StringHolder[Req, Res]): StringHolder[Req, Res] =
       raw.insertLineAndIndent(s"retry($retryConfig)")
 
-    override def profile[Req: ClassTag, Res: ClassTag](profileData: TryProfileData)(raw: StringHolder[Req, Res]) =
+    override def profile[Req: ClassTag, Res: ClassTag:ProfileAs](profileData: TryProfileData)(raw: StringHolder[Req, Res]) =
       raw.insertLineAndIndent(s"profile")
 
     override def logging[Req: ClassTag : DetailedLogging : SummaryLogging, Res: ClassTag : DetailedLogging : SummaryLogging](messagePrefix: String)(raw: StringHolder[Req, Res]) =

@@ -7,7 +7,7 @@ import org.validoc.utils.functions.{Monad, MonadWithException}
 import org.validoc.utils.http._
 import org.validoc.utils.logging.{DetailedLogging, SummaryLogging}
 import org.validoc.utils.metrics.ReportData
-import org.validoc.utils.profiling.{ProfileKleisli, TryProfileData}
+import org.validoc.utils.profiling.{ProfileAs, ProfileKleisli, TryProfileData}
 import org.validoc.utils.retry.{NeedsRetry, RetryConfig}
 import org.validoc.utils.strings.{IndentAnd, Strings}
 import org.validoc.utils.time.NanoTimeService
@@ -35,10 +35,6 @@ class Profile2[M[_] : MonadWithException] {
     val profiledKleisli = ProfileKleisli(tryProfileData)(kleisli)
 
     override def apply(v1: Req) = profiledKleisli(v1)
-    override def isDefinedAt(x: Req) = kleisli match {
-      case pf: PartialFunction[Req, M[Res]] => pf.isDefinedAt(x)
-      case _ => true
-    }
     val allChildren: Seq[Profiled] = children.flatMap(child => Seq(child) ++ child.allChildren)
     def indents[T](fn: ProfilingWrapper[_, _] => T): IndentAnd[T] = {
       IndentAnd.merge(fn(this), children.map(_.indents(fn)): _*)
@@ -47,7 +43,10 @@ class Profile2[M[_] : MonadWithException] {
     import org.validoc.utils.reflection.ClassTags._
 
     override def toString = s"ProfilingWrapper  ${children.size} ${allChildren.size} ($name, $description) [${nameOf[Req]}, ${nameOf[Res]}]  }"
-    println(this)
+    override def isDefinedAt(x: Req) = kleisli match {
+      case pf: PartialFunction[Req, _] => pf.isDefinedAt(x)
+      case _ => true
+    }
   }
 
   import org.validoc.utils.language.Language._
@@ -70,7 +69,7 @@ class Profile2[M[_] : MonadWithException] {
   def makeSystemAndProfileEndpoint[X](interpreter: TaglessLanguage[Kleisli, M],
                                       name: String,
                                       maker: TaglessLanguage[ProfilingWrapper, M] => X,
-                                      endPoints: X => ProfilingWrapper[ServiceRequest, ServiceResponse]): (X, ProfilingWrapper[ServiceRequest, ServiceResponse]) = {
+                                      endPoints: X => ProfilingWrapper[ServiceRequest, Option[ServiceResponse]]): (X, ProfilingWrapper[ServiceRequest, Option[ServiceResponse]]) = {
     val profiledAllLanguage: TaglessLanguage[ProfilingWrapper, M] = Language(interpreter)
     val result: X = maker(profiledAllLanguage)
     (result, endpointForProfiler(name, profiledAllLanguage, endPoints(result)))
@@ -108,11 +107,11 @@ class TransformTaglessLanguage[Wrapper[_, _], Wrapper2[_, _], M[_]](transform: W
     transform("cache", name, _.cache(name)(raw))
   override def retry[Req: ClassTag, Res: ClassTag : NeedsRetry](retryConfig: RetryConfig)(raw: Wrapper2[Req, Res]): Wrapper2[Req, Res] =
     transform("retry", retryConfig.toString, _.retry(retryConfig)(raw), raw)
-  override def profile[Req: ClassTag, Res: ClassTag](profileData: TryProfileData)(raw: Wrapper2[Req, Res]): Wrapper2[Req, Res] =
+  override def profile[Req: ClassTag, Res: ClassTag:ProfileAs](profileData: TryProfileData)(raw: Wrapper2[Req, Res]): Wrapper2[Req, Res] =
     transform("profile", "", _.profile(profileData)(raw), raw)
-  override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: Wrapper2[Req, Res])(implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]): Wrapper2[ServiceRequest, ServiceResponse] =
+  override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: Wrapper2[Req, Res])(implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]): Wrapper2[ServiceRequest, Option[ServiceResponse]] =
     transform("endpoint", normalisedPath, _.endpoint[Req, Res](normalisedPath, matchesServiceRequest)(raw), raw)
-  override def chain(endpoints: Wrapper2[ServiceRequest, ServiceResponse]*): Wrapper2[ServiceRequest, ServiceResponse] =
+  override def chain(endpoints: Wrapper2[ServiceRequest, Option[ServiceResponse]]*): Wrapper2[ServiceRequest, Option[ServiceResponse]] =
     transform("chain", "", _.chain(endpoints: _*), endpoints: _*)
   override def enrichPrim[ReqP: ClassTag, ResP, ReqC, ResC, ResE: ClassTag](parent: Wrapper2[ReqP, ResP], child: Wrapper2[ReqC, ResC])(implicit findChildIds: HasChildren[ResP, ReqC], enricher: Enricher[ReqP, ResP, ReqC, ResC, ResE]): Wrapper2[ReqP, ResE] =
     transform("enrich", "", _.enrichPrim[ReqP, ResP, ReqC, ResC, ResE](parent, child), parent, child)
@@ -129,7 +128,7 @@ class TransformTaglessLanguage[Wrapper[_, _], Wrapper2[_, _], M[_]](transform: W
 class DelegatesTaglessLanguage[Wrapper[_, _], M[_]](interpreter: TaglessLanguage[Wrapper, M]) extends TaglessLanguage[Wrapper, M] {
   override def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: Wrapper[Req, Res])(implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]) =
     interpreter.endpoint[Req, Res](normalisedPath, matchesServiceRequest)(raw)
-  override def chain(endpoints: Wrapper[ServiceRequest, ServiceResponse]*) = interpreter.chain(endpoints: _*)
+  override def chain(endpoints: Wrapper[ServiceRequest, Option[ServiceResponse]]*) = interpreter.chain(endpoints: _*)
   override def http(name: ServiceName) = interpreter.http(name)
   override def andAfter[Req: ClassTag, Mid: ClassTag, Res2: ClassTag](raw: Wrapper[Req, Mid], fn: Mid => Res2): Wrapper[Req, Res2] =
     interpreter.andAfter(raw, fn)
@@ -145,7 +144,7 @@ class DelegatesTaglessLanguage[Wrapper[_, _], M[_]](interpreter: TaglessLanguage
     interpreter.cache(name)(raw)
   override def retry[Req: ClassTag, Res: ClassTag : NeedsRetry](retryConfig: RetryConfig)(raw: Wrapper[Req, Res]) =
     interpreter.retry(retryConfig)(raw)
-  override def profile[Req: ClassTag, Res: ClassTag](profileData: TryProfileData)(raw: Wrapper[Req, Res]) =
+  override def profile[Req: ClassTag, Res: ClassTag:ProfileAs](profileData: TryProfileData)(raw: Wrapper[Req, Res]) =
     interpreter.profile(profileData)(raw)
   override def enrichPrim[ReqP: ClassTag, ResP, ReqC, ResC, ResE: ClassTag](parent: Wrapper[ReqP, ResP], child: Wrapper[ReqC, ResC])(implicit findChildIds: HasChildren[ResP, ReqC], enricher: Enricher[ReqP, ResP, ReqC, ResC, ResE]) =
     interpreter.enrichPrim(parent, child)
@@ -174,19 +173,3 @@ class ProfileEachEndpointLanguage[Wrapper[_, _], M[_] : Monad](interpreter: Tagl
 
 }
 
-//
-//
-//case class WrapperAndDebugInfo[Wrapper[_, _], M[_], Req, Res: ClassTag](wrapper: Wrapper[Req, Res], debugInfo: HasDebugInfo[M, Req, Res])(implicit val reqClassTag: ClassTag[Res])
-//
-//class DebugEachObjectifyEndpoint[Endpoint[_, _], Wrapper[_, _], M[_] : Monad, Fail](interpreter: TaglessLanguage[Endpoint, Wrapper, M, Fail]) extends DelegatesTaglessLanguage[Endpoint, Wrapper, M, Fail](interpreter) {
-//  val map = TrieMap[DebugInfo[M, _, _], WrapperAndDebugInfo[Wrapper, M, _, _]]()
-//  def dump = map.values.map { case d@WrapperAndDebugInfo(t, f) => d.reqClassTag.getClass.getSimpleName }.mkString("\n")
-//  override def objectify[Req: ClassTag, Res: ClassTag](http: Wrapper[ServiceRequest, ServiceResponse])(implicit toRequest: ToServiceRequest[Req], categoriser: ResponseCategoriser[M, Req], responseParser: ResponseParser[Fail, Req, Res], debugInfo: DebugInfo[M, Req, Res]) = {
-//    val result = interpreter.objectify[Req, Res](http)
-//    debugInfo match {
-//      case d@HasDebugInfo(from, to) => map.getOrElseUpdate(d, WrapperAndDebugInfo(result, d))
-//      case _ =>
-//    }
-//    result
-//  }
-//}

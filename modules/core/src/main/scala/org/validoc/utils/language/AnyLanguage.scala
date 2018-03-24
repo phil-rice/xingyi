@@ -8,6 +8,8 @@ import scala.language.higherKinds
 object AnyLanguage extends AnyLanguage
 trait AnyLanguage {
 
+  def toSome[X](x: X): Option[X] = Some(x)
+
   def withValue[X, Y](x: X)(fn: X => Y) = fn(x)
 
   def sideeffect[X, Y](x: X)(fn: X => Y) = {

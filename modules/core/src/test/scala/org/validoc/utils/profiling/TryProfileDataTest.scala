@@ -39,7 +39,7 @@ class TryProfileDataTest extends UtilsWithLoggingSpec {
     val atomicRef = new AtomicReference[Try[_]]()
     implicit val nanoTimeService = new MockTimeService
     val pd = new TryProfileData {
-      override def event(nanos: Long)(result: Try[_]) = {
+      override def event[Res](nanos: Long)(result: Try[Res])(implicit profileAs: ProfileAs[Res]) = {
         atomicLong.set(nanos)
         atomicRef.set(result)
       }

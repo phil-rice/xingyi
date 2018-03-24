@@ -1,8 +1,11 @@
 package org.validoc
 
 import org.validoc.sample.domain._
+import org.validoc.utils.http.ServiceResponse
+import org.validoc.utils.profiling.{DontProfile, ProfileAs, ProfileAsFail, ProfileAsSuccess}
 
 import scala.language.{higherKinds, postfixOps}
+import scala.util.{Failure, Success, Try}
 
 
 package object sample {
@@ -17,4 +20,7 @@ package object sample {
 
   type EnrichPromotionService[M[_]] = Service[M, Unit, List[EnrichedPromotion]]
   type EnrichMostPopularService[M[_]] = Service[M, Unit, EnrichedMostPopular]
+
+
+
 }

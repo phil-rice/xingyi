@@ -12,27 +12,8 @@ import scala.reflect.ClassTag
 trait EndpointKleisli[M[_]] {
   protected implicit def monad: Monad[M]
   def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: Req => M[Res])
-                                            (implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]): ServiceRequest => M[ServiceResponse] =
+                                            (implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]): ServiceRequest => M[Option[ServiceResponse]] =
     EndPoint(normalisedPath, matchesServiceRequest)(raw)
-}
-
-case class Chain[M[_], Fail](failer: Failer[Fail], endpoints: Seq[ServiceRequest => M[ServiceResponse]])(implicit monadCanFail: MonadCanFail[M, Fail]) extends (ServiceRequest => M[ServiceResponse]) {
-  val allEndpoints: List[ServiceRequest => M[ServiceResponse]] = endpoints.flatMap {
-    case c: Chain[M, Fail] => c.allEndpoints
-    case x => Seq(x)
-  }.toList
-
-  println(s"Chain " + allEndpoints)
-
-  def apply(req: ServiceRequest) =
-    allEndpoints.collectFirst {
-      case endPoint: PartialFunction[ServiceRequest, M[ServiceResponse]] if endPoint.isDefinedAt(req) => endPoint(req)
-      case endPoint if !endPoint.isInstanceOf[PartialFunction[ServiceRequest, M[ServiceResponse]]] => endPoint(req)
-    } match {
-      case Some(result) => result
-      case None => failer.pathNotFound(req).fail
-    }
-
 }
 
 
@@ -40,24 +21,40 @@ trait ChainKleisli[M[_], Fail] {
   protected implicit def monad: MonadCanFail[M, Fail]
   protected def failer: Failer[Fail]
 
-  def chain(endpoints: (ServiceRequest => M[ServiceResponse])*): ServiceRequest => M[ServiceResponse] = Chain(failer, endpoints)
-
-
+  def chain(chains: (ServiceRequest => M[Option[ServiceResponse]])*): ServiceRequest => M[Option[ServiceResponse]] = { serviceRequest: ServiceRequest =>
+    chains.foldLeft[M[Option[ServiceResponse]]](monad.liftM(Option.empty[ServiceResponse])) {
+      case (acc, v) => acc.flatMap[Option[ServiceResponse]] {
+        _ match {
+          case s if s.isDefined => monad.liftM(s)
+          case none => v match {
+            case pf: PartialFunction[ServiceRequest, _] =>
+              if (pf.isDefinedAt(serviceRequest))
+                v(serviceRequest)
+              else
+                monad.liftM(None)
+            case _ =>
+              v(serviceRequest)
+          }
+        }
+      }
+    }
+  }
 }
-
 case class EndPoint[M[_] : Monad, Req, Res](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(kleisli: Req => M[Res])
                                            (implicit fromServiceRequest: FromServiceRequest[M, Req],
                                             toServiceResponse: ToServiceResponse[Res],
-                                           ) extends PartialFunction[ServiceRequest, M[ServiceResponse]] {
+                                           ) extends PartialFunction[ServiceRequest, M[Option[ServiceResponse]]] {
   def debugInfo(req: ServiceRequest) = s"Endpoint($normalisedPath, $matchesServiceRequest) called with $req results in ${isDefinedAt(req)}"
 
-  override def apply(serviceRequest: ServiceRequest): M[ServiceResponse] = {
+  override def apply(serviceRequest: ServiceRequest): M[Option[ServiceResponse]] = {
     if (isDefinedAt(serviceRequest))
-      (fromServiceRequest |==> kleisli |=> toServiceResponse) (serviceRequest)
+      (fromServiceRequest |==> kleisli |=> toServiceResponse |=> toSome) (serviceRequest)
     else
-      throw new IllegalStateException(s"Endpoint $this is not defined at $serviceRequest")
+      Option.empty[ServiceResponse].liftM
   }
-  def isDefinedAt(serviceRequest: ServiceRequest): Boolean = matchesServiceRequest(normalisedPath)(serviceRequest)
+  def isDefinedAt(serviceRequest: ServiceRequest): Boolean = {
+    matchesServiceRequest(normalisedPath)(serviceRequest)
+  }
   override def toString() = s"Endpoint($normalisedPath, $matchesServiceRequest)"
 }
 
@@ -73,7 +70,8 @@ object MatchesServiceRequest {
 }
 
 case class FixedPathAndVerb(method: Method) extends MatchesServiceRequest {
-  override def apply(endpointName: String)(serviceRequest: ServiceRequest): Boolean = serviceRequest.method == method && serviceRequest.uri.path.asUriString == endpointName
+  override def apply(endpointName: String)(serviceRequest: ServiceRequest): Boolean =
+    serviceRequest.method == method && serviceRequest.uri.path.asUriString == endpointName
 }
 
 case class IdAtEndAndVerb(method: Method) extends MatchesServiceRequest {

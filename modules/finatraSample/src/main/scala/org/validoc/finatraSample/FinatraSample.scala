@@ -34,6 +34,7 @@ class FinatraPromotionSetup(implicit futurePool: FuturePool) extends Controller 
 
   implicit val jsonBundle: JsonBundle = JsonBundle()
   implicit val executors = Executors.newFixedThreadPool(10)
+
   import org.validoc.utils.http.Failer.failerForThrowable
 
   private val language = interpreter.NonFunctionalLanguageService()
@@ -42,10 +43,10 @@ class FinatraPromotionSetup(implicit futurePool: FuturePool) extends Controller 
 
   import FinatraImplicits._
 
-  def liftEndpoint(fn: ServiceRequest => Future[ServiceResponse]) = { request: Request =>
+  def liftEndpoint(fn: ServiceRequest => Future[Option[ServiceResponse]]) = { request: Request =>
     val serviceRequest = implicitly[ToServiceRequest[Request]] apply (request)
     val result = fn(serviceRequest)
-    result.map { serRes =>
+    result.map { case Some(serRes) =>
       response.status(serRes.status.code).body(serRes.body.s).contentType(serviceRequest.contentType.map(_.s).getOrElse("text/html"))
     }
   }

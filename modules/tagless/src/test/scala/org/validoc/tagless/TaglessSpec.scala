@@ -74,7 +74,7 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
     def endpoint1 = endpoint("/endpoint1", idAtEnd(Get))(e1)
     def endpoint2 = endpoint("/endpoint2", idAtEnd(Get))(s1)
 
-    def microservice: Wrapper[ServiceRequest, ServiceResponse] = chain(endpoint1, endpoint2)
+    def microservice: Wrapper[ServiceRequest, Option[ServiceResponse]] = chain(endpoint1, endpoint2)
 
   }
 

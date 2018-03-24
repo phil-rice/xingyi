@@ -13,12 +13,12 @@ class ChainSpec extends UtilsSpec with ServiceRequestForEndpointFixture {
   behavior of "ChainingKleisli.chain"
 
 
-  def setup(fn: ((ServiceRequest => Future[ServiceResponse]), EndPoint[Future, Int, String], EndPoint[Future, String, Int], EndPoint[Future, String, Double]) => Unit): Unit = {
+  def setup(fn: ((ServiceRequest => Future[Option[ServiceResponse]]), EndPoint[Future, Int, String], EndPoint[Future, String, Int], EndPoint[Future, String, Double]) => Unit): Unit = {
     val chainKleisli = new ChainKleisli[Future, Throwable] with ScalaFutureAsAsyncAndMonadAndFailer
     val endPoint1 = mock[EndPoint[Future, Int, String]]
     val endPoint2 = mock[EndPoint[Future, String, Int]]
     val endPoint3 = mock[EndPoint[Future, String, Double]]
-    val chain: ServiceRequest => Future[ServiceResponse] = chainKleisli.chain(endPoint1, endPoint2, endPoint3)
+    val chain: ServiceRequest => Future[Option[ServiceResponse]] = chainKleisli.chain(endPoint1, endPoint2, endPoint3)
     fn(chain, endPoint1, endPoint2, endPoint3)
   }
   it should "  throw (in future) EndpointNotFoundException if none match" in {
@@ -41,7 +41,7 @@ class ChainSpec extends UtilsSpec with ServiceRequestForEndpointFixture {
       val serviceResponse = ServiceResponse(Status(200), Body("someBody"), ContentType("someContent"))
       when(ep1.isDefinedAt(srGetPath)) thenReturn false
       when(ep2.isDefinedAt(srGetPath)) thenReturn true
-      when(ep2.apply(srGetPath)) thenReturn Future.successful(serviceResponse)
+      when(ep2.apply(srGetPath)) thenReturn Future.successful(Some(serviceResponse))
       when(ep3.isDefinedAt(srGetPath)) thenReturn false
 
       await(chain(srGetPath)) shouldBe serviceResponse

@@ -3,7 +3,7 @@ package org.validoc.sample
 import org.validoc.sample.domain.{Production, ProductionId, Programme, ProgrammeId}
 import org.validoc.utils.endpoint.MatchesServiceRequest
 import org.validoc.utils.functions.MonadCanFail
-import org.validoc.utils.http.{Failer, Get}
+import org.validoc.utils.http.{Failer, Get, ServiceRequest, ServiceResponse}
 import org.validoc.tagless.TaglessLanguage
 
 import scala.language.higherKinds
@@ -21,8 +21,8 @@ class FnordSetup[Wrapper[_, _], M[_], Fail](interpreter: TaglessLanguage[Wrapper
   val program = function[ProgrammeId, Programme]("programme")(id => Programme(s"from ${id.id}"))
 
   val x = ProgrammeId.fromServiceRequest[M]
-  val programmeEndpoint = program |+| endpoint[ProgrammeId, Programme]("/programme", MatchesServiceRequest.idAtEnd(Get))
-  val productionEndpoint = production |+| endpoint[ProductionId, Production]("/production", MatchesServiceRequest.idAtEnd(Get))
+  val programmeEndpoint: Wrapper[ServiceRequest, Option[ServiceResponse]] = program |+| endpoint[ProgrammeId, Programme]("/programme", MatchesServiceRequest.idAtEnd(Get))
+  val productionEndpoint: Wrapper[ServiceRequest, Option[ServiceResponse]] = production |+| endpoint[ProductionId, Production]("/production", MatchesServiceRequest.idAtEnd(Get))
 
   val microservice = chain(productionEndpoint, productionEndpoint)
 }
