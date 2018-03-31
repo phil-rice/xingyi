@@ -21,14 +21,15 @@ class ChainSpec extends UtilsSpec with ServiceRequestForEndpointFixture {
     val chain: ServiceRequest => Future[Option[ServiceResponse]] = chainKleisli.chain(endPoint1, endPoint2, endPoint3)
     fn(chain, endPoint1, endPoint2, endPoint3)
   }
-  it should "  throw (in future) EndpointNotFoundException if none match" in {
+
+  it should "return a future of none if doesn't match" in {
     setup { (chain, ep1, ep2, ep3) =>
       when(ep1.isDefinedAt(srGetPath)) thenReturn false
       when(ep2.isDefinedAt(srGetPath)) thenReturn false
       when(ep3.isDefinedAt(srGetPath)) thenReturn false
 
       val result = chain(srGetPath)
-      intercept[EndpointNotFoundException](await(result))
+      await(result) shouldBe None
 
       verify(ep1, times(0)).apply(srGetPath)
       verify(ep2, times(0)).apply(srGetPath)
@@ -44,7 +45,7 @@ class ChainSpec extends UtilsSpec with ServiceRequestForEndpointFixture {
       when(ep2.apply(srGetPath)) thenReturn Future.successful(Some(serviceResponse))
       when(ep3.isDefinedAt(srGetPath)) thenReturn false
 
-      await(chain(srGetPath)) shouldBe serviceResponse
+      await(chain(srGetPath)) shouldBe Some(serviceResponse)
 
       verify(ep1, times(0)).apply(srGetPath)
       verify(ep2, times(1)).apply(srGetPath)

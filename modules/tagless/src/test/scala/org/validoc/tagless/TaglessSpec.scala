@@ -100,7 +100,7 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
     }
     val expected = ref.get().invertIndent.defaultToString("&nbsp;&nbsp;", "<br />")
     actual shouldBe expected
-    actual should startWith("chain<br />&nbsp;&nbsp;endpoint[String,String](/endpoint1,IdAt")
+    actual should startWith("chain&nbsp;&nbsp;<br />endpoint[String,String](/endpoint1,IdAtEndAndVerb(Get))&nbsp;&nbsp;<br /><br />")
   }
 
   it should "be able to turn a system definition into an endpoint in some interpreter's world with the html in it" in {

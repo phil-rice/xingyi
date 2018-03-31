@@ -36,15 +36,15 @@ class EndpointSpec extends UtilsSpec with ServiceRequestForEndpointFixture {
     }
   }
 
-  it should "have a apply method that immediatly throws IllegalStateException if the service request doesn't match" in {
+  it should "have a apply method that returns None if the service request doesn't match" in {
     setup { (endpoint, matcher, delegate) =>
-      intercept[IllegalStateException](endpoint(srGetPathWithId))
+      await(endpoint(srGetPathWithId)) shouldBe None
     }
   }
   it should "have a apply method that calls the kleisli if the service request  matchs" in {
     setup { (endpoint, matcher, delegate) =>
       when(delegate.apply("someGetPathBody_fromSR")) thenReturn Future.successful("someResult")
-      endpoint(srGetPath).await shouldBe ServiceResponse(Status(123), Body("someResult_toSR"), ContentType("someContentType"))
+      endpoint(srGetPath).await shouldBe Some(ServiceResponse(Status(123), Body("someResult_toSR"), ContentType("someContentType")))
     }
   }
 

@@ -9,8 +9,8 @@ class IndentSpec extends UtilsSpec {
   val oneTwo = List((1, "one"), (2, "two"))
   val threeFour = List((3, "three"), (4, "four"))
   it should "have a toString method with a marker" in {
-    IndentAnd(3, oneTwo).defaultToString("...", ",") shouldBe "...one,......two"
-    IndentAnd(3, List()).defaultToString("...", ",") shouldBe ""
+     IndentAnd(3, oneTwo).defaultToString(",", "..." ) shouldBe "...one,......two"
+    IndentAnd(3, List()).defaultToString(",", "...") shouldBe ""
   }
 
   it should "have a addLineAndIndent" in {
