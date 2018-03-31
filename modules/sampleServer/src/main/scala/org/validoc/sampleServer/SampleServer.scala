@@ -5,7 +5,7 @@ import java.util.concurrent.Executors
 
 import org.validoc.sample.domain.SampleJsonsForCompilation
 import org.validoc.sample.{JsonBundle, PromotionSetup}
-import org.validoc.simpleServer.{EndpointHandler, SimpleHttpServer}
+import org.validoc.utils.simpleServer.{EndpointHandler, SimpleHttpServer}
 import org.validoc.tagless.TaglessLanguageLanguageForKleislis
 import org.validoc.utils.cache.{CachingServiceFactory, DurationStaleCacheStategy}
 import org.validoc.utils.functions.AsyncForScalaFuture.ImplicitsForTest._

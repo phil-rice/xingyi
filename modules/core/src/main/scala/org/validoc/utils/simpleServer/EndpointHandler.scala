@@ -1,4 +1,4 @@
-package org.validoc.simpleServer
+package org.validoc.utils.simpleServer
 
 import com.sun.net.httpserver.{Headers, HttpExchange, HttpHandler}
 import org.validoc.utils.endpoint.MatchesServiceRequest

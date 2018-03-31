@@ -1,4 +1,4 @@
-package org.validoc.simpleServer
+package org.validoc.utils.simpleServer
 
 import java.net.InetSocketAddress
 import java.util.concurrent.Executor

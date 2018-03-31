@@ -1,4 +1,4 @@
-package org.validoc.simpleServer
+package org.validoc.utils.simpleServer
 
 import java.io.{BufferedReader, InputStream, InputStreamReader, OutputStream}
 

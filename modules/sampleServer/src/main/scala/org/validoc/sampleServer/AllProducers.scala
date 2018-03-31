@@ -5,7 +5,7 @@ import java.util.concurrent.Executors
 
 import org.validoc.sample._
 import org.validoc.sample.domain.SampleJsonsForCompilation
-import org.validoc.simpleServer.{EndpointHandler, SimpleHttpServer}
+import org.validoc.utils.simpleServer.{EndpointHandler, SimpleHttpServer}
 import org.validoc.tagless.TaglessInterpreterForToString.StringHolder
 import org.validoc.tagless.{TaglessInterpreterForToString, TaglessLanguageLanguageForKleislis, _}
 import org.validoc.utils.cache.{CachingServiceFactory, DurationStaleCacheStategy}
