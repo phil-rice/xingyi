@@ -68,6 +68,14 @@ object AllProducers extends App with SampleJsonsForCompilation {
   def microservice: ServiceRequest => Future[Option[ServiceResponse]] = {
     val interpreter = new TaglessLanguageLanguageForKleislis[Future, Throwable]
     val kleisliLanguage: interpreter.NonFunctionalLanguageService = interpreter.NonFunctionalLanguageService()
+
+    val experiment = new TaglessModelLanguage[Future] {}
+    val modelLanguage = new experiment.ModelLanguage(kleisliLanguage)
+    val model: AllProducers[Future, experiment.Model, Throwable] = new AllProducers(modelLanguage)
+val x: experiment.Model[ServiceRequest, Option[ServiceResponse]] =     model.rawMicroservice.map(new experiment.ProfileTx("/profile")).map(new experiment.StructureTx("/structure"))
+    //still have the problem of how to add the endpoints, although this feels pretty clean...
+    val k = x.kleisli
+
     val profile2 = new Profile2[Future]
     val profiledAllLanguage = profile2.Language(kleisliLanguage)
 
