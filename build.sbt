@@ -10,10 +10,11 @@ val versions = new {
   val guice = "4.0"
   val play = "2.5.12"
   val scalapact = "2.1.3"
+  val junit ="4.12"
 }
 
 lazy val commonSettings = Seq(
-  version := "1.0",
+  version := "0.1",
   organization := "one.xingyi",
   publishMavenStyle := true,
   scalaVersion := versions.scala,
@@ -72,23 +73,23 @@ lazy val finatraSettings = publishSettings ++ Seq(
   libraryDependencies += "com.twitter" %% "finatra-jackson" % versions.finatra % "test" classifier "tests"
 )
 
-lazy val playSettings = publishSettings ++ Seq(
-  libraryDependencies ++= Seq(jdbc, ehcache, ws, guice)
-
-)
+//lazy val playSettings = publishSettings ++ Seq(
+//  libraryDependencies ++= Seq(jdbc, ehcache, ws, guice)
+//
+//)
 
 lazy val pactSettings = publishSettings ++ Seq(
   libraryDependencies += "com.itv" %% "scalapact-scalatest" % versions.scalapact % "test",
-  libraryDependencies += "junit" % "junit" % "4.12" % "test"
+  libraryDependencies += "junit" % "junit" % versions.junit % "test"
 )
 
 lazy val playJsonSetting = publishSettings ++ Seq(
   libraryDependencies += "com.typesafe.play" %% "play-json" % versions.play
 )
 
-lazy val caffeineSettings = publishSettings ++ Seq(
-  libraryDependencies += "com.github.blemale" %% "scaffeine" % "2.4.0" % "compile"
-)
+//lazy val caffeineSettings = publishSettings ++ Seq(
+//  libraryDependencies += "com.github.blemale" %% "scaffeine" % "2.4.0" % "compile"
+//)
 
 lazy val core = (project in file("modules/core")).
   settings(publishSettings: _*)
@@ -99,6 +100,7 @@ lazy val tagless = (project in file("modules/tagless")).
 
 lazy val sampleServer = (project in file("modules/sampleServer")).
   settings(publishSettings: _*).
+  settings(publishArtifact := false).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   dependsOn(sample % "test->test;compile->compile").aggregate(sample)
@@ -133,14 +135,17 @@ lazy val finatra = (project in file("modules/finatra")).
 lazy val sample = (project in file("modules/sample")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
+  settings(publishArtifact := false).
   settings(pactSettings: _*)
 
 lazy val finatraSample = (project in file("modules/finatraSample")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(finatra % "test->test;compile->compile").aggregate(finatra).
   dependsOn(sample % "test->test;compile->compile").aggregate(sample).
+  settings(publishArtifact := false).
   settings(publishSettings: _*)
 
 val root = (project in file(".")).
+  settings(publishSettings).
   settings(publishArtifact := false).
   aggregate(core, finatra, finatraSample, sample, sampleServer, tagless)
