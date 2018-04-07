@@ -1,4 +1,4 @@
-
+import sbt.url
 
 
 val versions = new {
@@ -22,9 +22,37 @@ lazy val commonSettings = Seq(
   libraryDependencies += "org.scalatest" %% "scalatest" % versions.scalatest % "test"
 )
 
-lazy val finatraSettings = commonSettings ++ Seq(
+lazy val publishSettings = commonSettings ++ Seq(
+  pomIncludeRepository := { _ => false },
+  publishMavenStyle := true,
+  publishArtifact in Test := false,
+  licenses := Seq("BSD-style" -> url("http://www.opensource.org/licenses/bsd-license.php")),
+  homepage := Some(url("http://example.com")),
+  scmInfo := Some(
+    ScmInfo(
+      url("https://github.com/phil-rice/pact-stubber"),
+      "scm:git@github.com/phil-rice/pact-stubber.git"
+    )
+  ),
+  developers := List(
+    Developer(
+      id = "phil",
+      name = "Phil Rice",
+      email = "phil.rice@iee.org",
+      url = url("https://www.linkedin.com/in/phil-rice-53959460")
+    )
+  ),
+  publishTo := {
+    val nexus = "https://oss.sonatype.org/"
+    if (isSnapshot.value)
+      Some("snapshots" at nexus + "content/repositories/snapshots")
+    else
+      Some("releases" at nexus + "service/local/staging/deploy/maven2")
+  })
+
+lazy val finatraSettings = publishSettings ++ Seq(
   // https://mvnrepository.com/artifact/org.apache.thrift/libthrift
-//  libraryDependencies += "org.apache.thrift" % "libthrift" % "0.5.0-1",
+  //  libraryDependencies += "org.apache.thrift" % "libthrift" % "0.5.0-1",
 
   libraryDependencies += "com.twitter" %% "finatra-http" % versions.finatra,
   libraryDependencies += "com.twitter" %% "finatra-http" % versions.finatra % "test",
@@ -44,33 +72,33 @@ lazy val finatraSettings = commonSettings ++ Seq(
   libraryDependencies += "com.twitter" %% "finatra-jackson" % versions.finatra % "test" classifier "tests"
 )
 
-lazy val playSettings = commonSettings ++ Seq(
+lazy val playSettings = publishSettings ++ Seq(
   libraryDependencies ++= Seq(jdbc, ehcache, ws, guice)
 
 )
 
-lazy val pactSettings = commonSettings ++ Seq(
+lazy val pactSettings = publishSettings ++ Seq(
   libraryDependencies += "com.itv" %% "scalapact-scalatest" % versions.scalapact % "test",
   libraryDependencies += "junit" % "junit" % "4.12" % "test"
 )
 
-lazy val playJsonSetting = commonSettings ++ Seq(
+lazy val playJsonSetting = publishSettings ++ Seq(
   libraryDependencies += "com.typesafe.play" %% "play-json" % versions.play
 )
 
-lazy val caffeineSettings = commonSettings ++ Seq(
+lazy val caffeineSettings = publishSettings ++ Seq(
   libraryDependencies += "com.github.blemale" %% "scaffeine" % "2.4.0" % "compile"
 )
 
 lazy val core = (project in file("modules/core")).
-  settings(commonSettings: _*)
+  settings(publishSettings: _*)
 
 lazy val tagless = (project in file("modules/tagless")).
-  settings(commonSettings: _*) .
+  settings(publishSettings: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core)
 
 lazy val sampleServer = (project in file("modules/sampleServer")).
-  settings(commonSettings: _*).
+  settings(publishSettings: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   dependsOn(sample % "test->test;compile->compile").aggregate(sample)
@@ -105,11 +133,14 @@ lazy val finatra = (project in file("modules/finatra")).
 lazy val sample = (project in file("modules/sample")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
-  settings(commonSettings: _*).
   settings(pactSettings: _*)
 
 lazy val finatraSample = (project in file("modules/finatraSample")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(finatra % "test->test;compile->compile").aggregate(finatra).
   dependsOn(sample % "test->test;compile->compile").aggregate(sample).
-  settings(commonSettings: _*)
+  settings(publishSettings: _*)
+
+val root = (project in file(".")).
+  settings(publishArtifact := false).
+  aggregate(core, finatra, finatraSample, sample, sampleServer, tagless)
