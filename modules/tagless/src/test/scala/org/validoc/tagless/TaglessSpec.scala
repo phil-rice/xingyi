@@ -1,19 +1,20 @@
-package org.validoc.tagless
+package one.xingyi.tagless
 
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
-import org.validoc.utils.UtilsSpec
-import org.validoc.utils.aggregate.{Enricher, FindReq, HasChildren}
-import org.validoc.utils.endpoint.MatchesServiceRequest._
-import org.validoc.utils.functions.MonadCanFail
-import org.validoc.utils.http._
-import org.validoc.utils.language.Language._
-import org.validoc.utils.parser.Parser
-import org.validoc.utils.profiling.TryProfileData
-import org.validoc.utils.retry.RetryConfig
-import org.validoc.utils.strings.{IndentAnd, Strings}
-import org.validoc.utils.time.RandomDelay
+import one.xingyi.tagless.{DelegatesTaglessLanguage, TaglessInterpreterForToString, TaglessLanguage}
+import one.xingyi.utils.UtilsSpec
+import one.xingyi.utils.aggregate.{Enricher, FindReq, HasChildren}
+import one.xingyi.utils.endpoint.MatchesServiceRequest._
+import one.xingyi.utils.functions.MonadCanFail
+import one.xingyi.utils.http._
+import one.xingyi.utils.language.Language._
+import one.xingyi.utils.parser.Parser
+import one.xingyi.utils.profiling.TryProfileData
+import one.xingyi.utils.retry.RetryConfig
+import one.xingyi.utils.strings.{IndentAnd, Strings}
+import one.xingyi.utils.time.RandomDelay
 
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -82,7 +83,7 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
   behavior of "Tagless with toString Interpreter"
   implicit val stringlanguage: TaglessInterpreterForToString = new TaglessInterpreterForToString
 
-  import org.validoc.utils.functions.AsyncForScalaFuture._
+  import one.xingyi.utils.functions.AsyncForScalaFuture._
   import ImplicitsForTest._
 
   type StringHolder[Req, Res] = IndentAnd[String]

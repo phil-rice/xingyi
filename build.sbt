@@ -14,7 +14,7 @@ val versions = new {
 
 lazy val commonSettings = Seq(
   version := "1.0",
-  organization := "org.validoc",
+  organization := "one.xingyi",
   publishMavenStyle := true,
   scalaVersion := versions.scala,
   scalacOptions ++= Seq("-feature"),
