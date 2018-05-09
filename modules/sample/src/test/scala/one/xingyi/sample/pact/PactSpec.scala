@@ -1,14 +1,6 @@
 package one.xingyi.sample.pact
 
-import com.itv.scalapact.ScalaPactForger._
-import one.xingyi.sample.domain.SampleJsonsForCompilation
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-import one.xingyi.sample.{PromotionServiceNames, PromotionSetup}
-import one.xingyi.core.http.{FromServiceRequest, ServiceName, ToServiceResponse}
-import one.xingyi.core.{Closable, UtilsSpec}
-
 import scala.language.higherKinds
-import scala.reflect.ClassTag
 //
 //class HttpServiceHolder[M[_] : AsyncLanguage, HttpReq, HttpRes, S <: HttpReq => M[HttpRes] : Closable](makeServiceOnLocalHost: Int => S) extends (HttpReq => M[HttpRes]) {
 //  def clear = service = None
