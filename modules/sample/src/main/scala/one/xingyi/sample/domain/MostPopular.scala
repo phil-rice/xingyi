@@ -1,13 +1,13 @@
 package one.xingyi.sample.domain
 
-import one.xingyi.utils.aggregate.{Enricher, HasChildren}
-import one.xingyi.utils.cache.{CachableKey, UnitId}
-import one.xingyi.utils.domain.{BypassCache, DomainRequestCompanionQuery, DomainResponseCompanionObject}
-import one.xingyi.utils.functions.Liftable
-import one.xingyi.utils.json.ToJson
+import one.xingyi.core.aggregate.{Enricher, HasChildren}
+import one.xingyi.core.cache.{CachableKey, UnitId}
+import one.xingyi.core.domain.{BypassCache, DomainRequestCompanionQuery, DomainResponseCompanionObject}
+import one.xingyi.core.functions.Liftable
+import one.xingyi.core.json.ToJson
 //needs to be here import io.circe.generic.auto._
-import one.xingyi.utils.http._
-import one.xingyi.utils.language.Language._
+import one.xingyi.core.http._
+import one.xingyi.core.language.Language._
 
 import scala.language.{higherKinds, implicitConversions}
 

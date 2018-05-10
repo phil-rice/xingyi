@@ -2,8 +2,8 @@ package one.xingyi.sample
 
 import one.xingyi.sample.domain._
 import one.xingyi.tagless.{ProfileEachEndpointLanguage, TaglessInterpreterForToString, TaglessLanguage}
-import one.xingyi.utils.functions.MonadCanFail
-import one.xingyi.utils.http.{Failer, Get}
+import one.xingyi.core.functions.MonadCanFail
+import one.xingyi.core.http.{Failer, Get}
 import scala.language.higherKinds
 import scala.concurrent.Future
 
@@ -15,7 +15,7 @@ class PromotionSetup[ M[_],Wrapper[_, _], Fail](interpreter: TaglessLanguage[M, 
 
   import interpreter._
   import jsonBundle._
-  import one.xingyi.utils.endpoint.MatchesServiceRequest._
+  import one.xingyi.core.endpoint.MatchesServiceRequest._
 
   val vogue = http(mostPopularServiceName)
   val billboard = http(promotionServiceName)
@@ -45,7 +45,7 @@ object PromotionSetup extends App with SampleJsonsForCompilation {
 
   implicit val jsonBundle: JsonBundle = JsonBundle()
 
-  import one.xingyi.utils.functions.AsyncForScalaFuture._
+  import one.xingyi.core.functions.AsyncForScalaFuture._
   import ImplicitsForTest._
 
   val setup = new PromotionSetup[Future, StringHolder,  Throwable](new ProfileEachEndpointLanguage(language.forToString))

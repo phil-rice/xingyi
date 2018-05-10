@@ -4,8 +4,8 @@ import com.itv.scalapact.ScalaPactForger._
 import one.xingyi.sample.domain.SampleJsonsForCompilation
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import one.xingyi.sample.{PromotionServiceNames, PromotionSetup}
-import one.xingyi.utils.http.{FromServiceRequest, ServiceName, ToServiceResponse}
-import one.xingyi.utils.{Closable, UtilsSpec}
+import one.xingyi.core.http.{FromServiceRequest, ServiceName, ToServiceResponse}
+import one.xingyi.core.{Closable, UtilsSpec}
 
 import scala.language.higherKinds
 import scala.reflect.ClassTag

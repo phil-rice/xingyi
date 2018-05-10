@@ -10,7 +10,8 @@ val versions = new {
   val guice = "4.0"
   val play = "2.5.12"
   val scalapact = "2.1.3"
-  val junit ="4.12"
+  val junit = "4.12"
+  val json4s = "3.5.3"
 }
 
 lazy val commonSettings = Seq(
@@ -91,6 +92,11 @@ lazy val playJsonSetting = publishSettings ++ Seq(
 //  libraryDependencies += "com.github.blemale" %% "scaffeine" % "2.4.0" % "compile"
 //)
 
+
+lazy val json4sSettings = commonSettings ++ Seq(
+  libraryDependencies += "org.json4s" %% "json4s-native" % versions.json4s
+)
+
 lazy val core = (project in file("modules/core")).
   settings(publishSettings: _*)
 
@@ -132,6 +138,10 @@ lazy val finatra = (project in file("modules/finatra")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   settings(finatraSettings: _*)
 
+lazy val json4s = (project in file("modules/json4s")).
+  dependsOn(core % "test->test;compile->compile").aggregate(core).
+  settings(json4sSettings: _*)
+
 lazy val sample = (project in file("modules/sample")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
@@ -148,4 +158,4 @@ lazy val finatraSample = (project in file("modules/finatraSample")).
 val root = (project in file(".")).
   settings(publishSettings).
   settings(publishArtifact := false).
-  aggregate(core, finatra, finatraSample, sample, sampleServer, tagless)
+  aggregate(core, finatra, finatraSample, sample, sampleServer, tagless, json4s)

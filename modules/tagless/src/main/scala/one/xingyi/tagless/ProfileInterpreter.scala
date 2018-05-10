@@ -1,11 +1,11 @@
 package one.xingyi.tagless
 
-import one.xingyi.utils.endpoint.MatchesServiceRequest
-import one.xingyi.utils.functions.{Monad, MonadWithException}
-import one.xingyi.utils.http._
-import one.xingyi.utils.profiling.{ProfileKleisli, TryProfileData}
-import one.xingyi.utils.strings.{IndentAnd, Strings}
-import one.xingyi.utils.time.NanoTimeService
+import one.xingyi.core.endpoint.MatchesServiceRequest
+import one.xingyi.core.functions.{Monad, MonadWithException}
+import one.xingyi.core.http._
+import one.xingyi.core.profiling.{ProfileKleisli, TryProfileData}
+import one.xingyi.core.strings.{IndentAnd, Strings}
+import one.xingyi.core.time.NanoTimeService
 
 import scala.collection.concurrent.TrieMap
 import scala.language.{higherKinds, implicitConversions}
@@ -34,7 +34,7 @@ class Profile2[M[_] : MonadWithException] {
       IndentAnd.merge(fn(this), children.map(_.indents(fn)): _*)
     }
 
-    import one.xingyi.utils.reflection.ClassTags._
+    import one.xingyi.core.reflection.ClassTags._
 
     override def toString = s"ProfilingWrapper  ${children.size} ${allChildren.size} ($name, $description) [${nameOf[Req]}, ${nameOf[Res]}]  }"
     override def isDefinedAt(x: Req) = kleisli match {
@@ -43,7 +43,7 @@ class Profile2[M[_] : MonadWithException] {
     }
   }
 
-  import one.xingyi.utils.language.Language._
+  import one.xingyi.core.language.Language._
 
   def endpointForProfiler[Req, Res](name: String, interpreter: TaglessLanguage[M, ProfilingWrapper], profilingWrapper: ProfilingWrapper[Req, Res]) =
     interpreter.endpoint[ServiceRequest, ServiceResponse](name, MatchesServiceRequest.fixedPath(Get))(

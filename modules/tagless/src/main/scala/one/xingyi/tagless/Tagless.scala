@@ -1,15 +1,15 @@
 package one.xingyi.tagless
 
-import one.xingyi.utils.aggregate._
-import one.xingyi.utils.cache.{CachableKey, ShouldCacheResult, ShouldUseCache}
-import one.xingyi.utils.endpoint.MatchesServiceRequest
-import one.xingyi.utils.functions.MonadWithException
-import one.xingyi.utils.http._
-import one.xingyi.utils.logging._
-import one.xingyi.utils.metrics.ReportData
-import one.xingyi.utils.profiling.{ProfileAs, ProfileKleisli, TryProfileData}
-import one.xingyi.utils.retry.{NeedsRetry, RetryConfig}
-import one.xingyi.utils.strings.{IndentAnd, Strings}
+import one.xingyi.core.aggregate._
+import one.xingyi.core.cache.{CachableKey, ShouldCacheResult, ShouldUseCache}
+import one.xingyi.core.endpoint.MatchesServiceRequest
+import one.xingyi.core.functions.MonadWithException
+import one.xingyi.core.http._
+import one.xingyi.core.logging._
+import one.xingyi.core.metrics.ReportData
+import one.xingyi.core.profiling.{ProfileAs, ProfileKleisli, TryProfileData}
+import one.xingyi.core.retry.{NeedsRetry, RetryConfig}
+import one.xingyi.core.strings.{IndentAnd, Strings}
 
 import scala.language.{higherKinds, implicitConversions}
 import scala.reflect.ClassTag

@@ -4,11 +4,11 @@ import com.twitter.util.{Future => TFuture}
 import one.xingyi.finatra.FinatraImplicits.ImplicitsForTest._
 import one.xingyi.finatra.FinatraImplicits._
 import org.scalatest.FlatSpecLike
-import one.xingyi.utils.functions._
-import one.xingyi.utils.http.Failer.failerForThrowable
-import one.xingyi.utils.http.ResponseCategoriserSpec
-import one.xingyi.utils.local.AbstractLocalOpsSpec
-import one.xingyi.utils.objectify.AbstractObjectifySpec
+import one.xingyi.core.functions._
+import one.xingyi.core.http.Failer.failerForThrowable
+import one.xingyi.core.http.ResponseCategoriserSpec
+import one.xingyi.core.local.AbstractLocalOpsSpec
+import one.xingyi.core.objectify.AbstractObjectifySpec
 
 class TwitterFutureSpec extends AbstractMonadCanFailWithFailWithExceptionAsThrowableTests[TFuture] with FlatSpecLike with AbstractAsyncTests[TFuture] {
   override def async = asyncForTwitter

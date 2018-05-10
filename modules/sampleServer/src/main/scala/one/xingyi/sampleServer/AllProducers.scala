@@ -7,16 +7,16 @@ import one.xingyi.sample.{BillboardSetup, FnordSetup, JsonBundle, VogueSetup}
 import one.xingyi.sample.domain.SampleJsonsForCompilation
 import one.xingyi.tagless._
 import one.xingyi.tagless.{TaglessInterpreterForToString, TaglessLanguageLanguageForKleislis, _}
-import one.xingyi.utils.cache.{CachingServiceFactory, DurationStaleCacheStategy}
-import one.xingyi.utils.functions.AsyncForScalaFuture._
-import one.xingyi.utils.functions.MonadCanFail
-import one.xingyi.utils.http._
-import one.xingyi.utils.local.ExecutionContextWithLocal
-import one.xingyi.utils.logging.{AbstractLogRequestAndResult, LogRequestAndResult, PrintlnLoggingAdapter}
-import one.xingyi.utils.map.NoMapSizeStrategy
-import one.xingyi.utils.metrics.PrintlnPutMetrics
-import one.xingyi.utils.simpleServer.{EndpointHandler, SimpleHttpServer}
-import one.xingyi.utils.strings.IndentAnd
+import one.xingyi.core.cache.{CachingServiceFactory, DurationStaleCacheStategy}
+import one.xingyi.core.functions.AsyncForScalaFuture._
+import one.xingyi.core.functions.MonadCanFail
+import one.xingyi.core.http._
+import one.xingyi.core.local.ExecutionContextWithLocal
+import one.xingyi.core.logging.{AbstractLogRequestAndResult, LogRequestAndResult, PrintlnLoggingAdapter}
+import one.xingyi.core.map.NoMapSizeStrategy
+import one.xingyi.core.metrics.PrintlnPutMetrics
+import one.xingyi.core.simpleServer.{EndpointHandler, SimpleHttpServer}
+import one.xingyi.core.strings.IndentAnd
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.higherKinds
@@ -57,7 +57,7 @@ object AllProducers extends App with SampleJsonsForCompilation {
   //  implicit val cacheFactory = CaffeineCache.cacheFactoryForFuture(CaffeineCache.defaultCacheBuilder)
   implicit val cacheFactory = new CachingServiceFactory[Future](DurationStaleCacheStategy(10000000000L, 10000000000000L), NoMapSizeStrategy)
 
-  import one.xingyi.utils.http.Failer.failerForThrowable
+  import one.xingyi.core.http.Failer.failerForThrowable
 
   implicit val jsonBundle = JsonBundle()
 

@@ -11,11 +11,11 @@ import one.xingyi.sample.domain.SampleJsonsForCompilation
 import one.xingyi.tagless.TaglessLanguageLanguageForKleislis
 import one.xingyi.sample.domain._
 import one.xingyi.sample.{JsonBundle, PromotionServiceNames, PromotionSetup}
-import one.xingyi.utils.cache._
-import one.xingyi.utils.http._
-import one.xingyi.utils.logging.{AbstractLogRequestAndResult, LogRequestAndResult, PrintlnLoggingAdapter}
-import one.xingyi.utils.map.MaxMapSizeStrategy
-import one.xingyi.utils.metrics.PrintlnPutMetrics
+import one.xingyi.core.cache._
+import one.xingyi.core.http._
+import one.xingyi.core.logging.{AbstractLogRequestAndResult, LogRequestAndResult, PrintlnLoggingAdapter}
+import one.xingyi.core.map.MaxMapSizeStrategy
+import one.xingyi.core.metrics.PrintlnPutMetrics
 
 
 class FinatraPromotionSetup(implicit futurePool: FuturePool) extends Controller with SampleJsonsForCompilation {
@@ -36,7 +36,7 @@ class FinatraPromotionSetup(implicit futurePool: FuturePool) extends Controller 
   implicit val jsonBundle: JsonBundle = JsonBundle()
   implicit val executors = Executors.newFixedThreadPool(10)
 
-  import one.xingyi.utils.http.Failer.failerForThrowable
+  import one.xingyi.core.http.Failer.failerForThrowable
 
   private val language = interpreter.NonFunctionalLanguageService()
   //  private val debugLanguage = new DebugEachObjectifyEndpoint(language)

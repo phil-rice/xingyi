@@ -1,15 +1,15 @@
 package one.xingyi.tagless
 
-import one.xingyi.utils.aggregate.{Enricher, HasChildren}
-import one.xingyi.utils.cache.{CachableKey, ShouldCacheResult, ShouldUseCache}
-import one.xingyi.utils.endpoint.MatchesServiceRequest
-import one.xingyi.utils.functions.{Liftable, MonadCanFail}
-import one.xingyi.utils.http._
-import one.xingyi.utils.logging.{DetailedLogging, SummaryLogging}
-import one.xingyi.utils.metrics.ReportData
-import one.xingyi.utils.profiling.{ProfileAs, TryProfileData}
-import one.xingyi.utils.retry.{NeedsRetry, RetryConfig}
-import one.xingyi.utils.strings.IndentAnd
+import one.xingyi.core.aggregate.{Enricher, HasChildren}
+import one.xingyi.core.cache.{CachableKey, ShouldCacheResult, ShouldUseCache}
+import one.xingyi.core.endpoint.MatchesServiceRequest
+import one.xingyi.core.functions.{Liftable, MonadCanFail}
+import one.xingyi.core.http._
+import one.xingyi.core.logging.{DetailedLogging, SummaryLogging}
+import one.xingyi.core.metrics.ReportData
+import one.xingyi.core.profiling.{ProfileAs, TryProfileData}
+import one.xingyi.core.retry.{NeedsRetry, RetryConfig}
+import one.xingyi.core.strings.IndentAnd
 
 import scala.language.higherKinds
 import scala.reflect.ClassTag
@@ -39,7 +39,7 @@ class TaglessInterpreterForToString {
 
 
   import TaglessInterpreterForToString._
-  import one.xingyi.utils.reflection.ClassTags._
+  import one.xingyi.core.reflection.ClassTags._
 
   def forToString[M[_]:Liftable] = new ForToString[M]
 

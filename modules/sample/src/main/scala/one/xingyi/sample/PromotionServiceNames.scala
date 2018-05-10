@@ -1,6 +1,6 @@
 package one.xingyi.sample
 
-import one.xingyi.utils.http.ServiceName
+import one.xingyi.core.http.ServiceName
 
 trait PromotionServiceNames {
   val mostPopularServiceName = ServiceName("mostPopular")

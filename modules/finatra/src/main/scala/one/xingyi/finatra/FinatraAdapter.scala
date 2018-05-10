@@ -3,9 +3,9 @@ package one.xingyi.finatra
 import com.twitter.finagle.http.{Method, Request, Response}
 import com.twitter.finatra.utils.FuturePools
 import com.twitter.util.{Await, FuturePool, Local, Return, Throw, Duration => TDuration, Future => TFuture}
-import one.xingyi.utils.functions.{Async, MonadCanFailWithException}
-import one.xingyi.utils.http._
-import one.xingyi.utils.local.{Holder, SimpleLocalOps}
+import one.xingyi.core.functions.{Async, MonadCanFailWithException}
+import one.xingyi.core.http._
+import one.xingyi.core.local.{Holder, SimpleLocalOps}
 
 import scala.concurrent.duration.Duration
 import scala.language.implicitConversions

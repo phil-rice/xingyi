@@ -1,12 +1,9 @@
 package one.xingyi.sample.domain
 
-import one.xingyi.utils.json.{FromJson, ToJson}
+import one.xingyi.core.json.{FromJson, ToJson}
 
 trait SampleJsonsForCompilation {
 
-  implicit val fromJsonForHomePageQuery = new FromJson[HomePageQuery] {
-    override def apply(v1: String): HomePageQuery = HomePageQuery(false)
-  }
   implicit val toJsonForHomePage = new ToJson[HomePage] {
     override def apply(v1: HomePage): String = v1.toString
   }

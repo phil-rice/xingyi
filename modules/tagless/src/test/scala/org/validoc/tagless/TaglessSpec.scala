@@ -3,18 +3,17 @@ package one.xingyi.tagless
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
-import one.xingyi.tagless.{DelegatesTaglessLanguage, TaglessInterpreterForToString, TaglessLanguage}
-import one.xingyi.utils.UtilsSpec
-import one.xingyi.utils.aggregate.{Enricher, FindReq, HasChildren}
-import one.xingyi.utils.endpoint.MatchesServiceRequest._
-import one.xingyi.utils.functions.MonadCanFail
-import one.xingyi.utils.http._
-import one.xingyi.utils.language.Language._
-import one.xingyi.utils.parser.Parser
-import one.xingyi.utils.profiling.TryProfileData
-import one.xingyi.utils.retry.RetryConfig
-import one.xingyi.utils.strings.{IndentAnd, Strings}
-import one.xingyi.utils.time.RandomDelay
+import one.xingyi.core.UtilsSpec
+import one.xingyi.core.aggregate.{Enricher, FindReq, HasChildren}
+import one.xingyi.core.endpoint.MatchesServiceRequest._
+import one.xingyi.core.functions.MonadCanFail
+import one.xingyi.core.http._
+import one.xingyi.core.language.Language._
+import one.xingyi.core.parser.Parser
+import one.xingyi.core.profiling.TryProfileData
+import one.xingyi.core.retry.RetryConfig
+import one.xingyi.core.strings.{IndentAnd, Strings}
+import one.xingyi.core.time.RandomDelay
 
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -23,7 +22,7 @@ import scala.language.{higherKinds, implicitConversions}
 class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
 
-  class Sample[M[_], Wrapper[_, _],  Fail](implicit monadCanFail: MonadCanFail[M, Fail], httpLanguage: TaglessLanguage[M, Wrapper], failer: Failer[Fail]) {
+  class Sample[M[_], Wrapper[_, _], Fail](implicit monadCanFail: MonadCanFail[M, Fail], httpLanguage: TaglessLanguage[M, Wrapper], failer: Failer[Fail]) {
 
     import httpLanguage._
 
@@ -83,7 +82,7 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
   behavior of "Tagless with toString Interpreter"
   implicit val stringlanguage: TaglessInterpreterForToString = new TaglessInterpreterForToString
 
-  import one.xingyi.utils.functions.AsyncForScalaFuture._
+  import one.xingyi.core.functions.AsyncForScalaFuture._
   import ImplicitsForTest._
 
   type StringHolder[Req, Res] = IndentAnd[String]
@@ -126,7 +125,7 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
 
   private def checkTaglessToString(implicit stringlanguage: TaglessLanguage[Future, StringHolder]) = {
     import stringlanguage._
-    val sample = new Sample[Future, StringHolder,  Throwable]()
+    val sample = new Sample[Future, StringHolder, Throwable]()
     sample.s1.lines shouldBe List((3, "metrics(service1)"), (2, "logging(Using prefix1)"), (1, "objectify[String,String]"), (0, "http(s1)"))
 
     sample.m2.lines shouldBe List(

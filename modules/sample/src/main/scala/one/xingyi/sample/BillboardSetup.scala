@@ -3,9 +3,9 @@ package one.xingyi.sample
 import one.xingyi.sample.domain.{Promotion, PromotionQuery}
 import one.xingyi.tagless.TaglessLanguage
 import one.xingyi.sample.domain._
-import one.xingyi.utils.endpoint.MatchesServiceRequest
-import one.xingyi.utils.functions.MonadCanFail
-import one.xingyi.utils.http.{Failer, Get, ServiceRequest, ServiceResponse}
+import one.xingyi.core.endpoint.MatchesServiceRequest
+import one.xingyi.core.functions.MonadCanFail
+import one.xingyi.core.http.{Failer, Get, ServiceRequest, ServiceResponse}
 
 import scala.language.{higherKinds, implicitConversions}
 

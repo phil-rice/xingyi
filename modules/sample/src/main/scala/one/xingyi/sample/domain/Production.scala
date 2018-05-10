@@ -1,12 +1,12 @@
 package one.xingyi.sample.domain
 
-import one.xingyi.utils.cache.{CachableKey, ObjectId}
-import one.xingyi.utils.domain.{BypassCache, DomainRequestCompanionQuery, DomainResponseCompanionObject}
-import one.xingyi.utils.functions.Monad
-import one.xingyi.utils.http._
-import one.xingyi.utils.json.ToJson
-import one.xingyi.utils.language.Language._
-import one.xingyi.utils.strings.Strings
+import one.xingyi.core.cache.{CachableKey, ObjectId}
+import one.xingyi.core.domain.{BypassCache, DomainRequestCompanionQuery, DomainResponseCompanionObject}
+import one.xingyi.core.functions.Monad
+import one.xingyi.core.http._
+import one.xingyi.core.json.ToJson
+import one.xingyi.core.language.Language._
+import one.xingyi.core.strings.Strings
 
 import scala.language.{higherKinds, implicitConversions}
 
