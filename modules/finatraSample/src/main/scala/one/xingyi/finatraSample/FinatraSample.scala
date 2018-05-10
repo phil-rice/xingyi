@@ -6,19 +6,20 @@ import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 import com.twitter.finatra.utils.FuturePools
 import com.twitter.util.{Future, FuturePool}
-import one.xingyi.finatra.{AsyncForTwitterFuture, FinatraServer, PingController}
-import one.xingyi.sample.domain.SampleJsonsForCompilation
-import one.xingyi.tagless.TaglessLanguageLanguageForKleislis
-import one.xingyi.sample.domain._
-import one.xingyi.sample.{JsonBundle, PromotionServiceNames, PromotionSetup}
 import one.xingyi.core.cache._
 import one.xingyi.core.http._
 import one.xingyi.core.logging.{AbstractLogRequestAndResult, LogRequestAndResult, PrintlnLoggingAdapter}
 import one.xingyi.core.map.MaxMapSizeStrategy
 import one.xingyi.core.metrics.PrintlnPutMetrics
+import one.xingyi.finatra.{AsyncForTwitterFuture, FinatraServer, PingController}
+import one.xingyi.json4s.{Json4sParser, Json4sWriter}
+import one.xingyi.sample.domain.SampleJsonsForCompilation
+import one.xingyi.sample.{PromotionServiceNames, PromotionSetup}
+import one.xingyi.tagless.TaglessLanguageLanguageForKleislis
+import org.json4s.JsonAST.JValue
 
 
-class FinatraPromotionSetup(implicit futurePool: FuturePool) extends Controller with SampleJsonsForCompilation {
+class FinatraPromotionSetup(implicit futurePool: FuturePool) extends Controller with SampleJsonsForCompilation with Json4sParser with Json4sWriter{
   implicit val monad = new AsyncForTwitterFuture
   implicit val httpFactory = new HttpFactory[Future, ServiceRequest, ServiceResponse] {
     override def apply(v1: ServiceName) = { req => Future.value(ServiceResponse(Status(200), Body(s"response; ${req.body.map(_.s).getOrElse("")}"), ContentType("text/html"))) }
@@ -33,14 +34,13 @@ class FinatraPromotionSetup(implicit futurePool: FuturePool) extends Controller 
 
   val interpreter = new TaglessLanguageLanguageForKleislis[Future, Throwable]
 
-  implicit val jsonBundle: JsonBundle = JsonBundle()
   implicit val executors = Executors.newFixedThreadPool(10)
 
   import one.xingyi.core.http.Failer.failerForThrowable
 
   private val language = interpreter.NonFunctionalLanguageService()
   //  private val debugLanguage = new DebugEachObjectifyEndpoint(language)
-  val setup = new PromotionSetup[Future, interpreter.Kleisli, Throwable](language)
+  val setup = new PromotionSetup[Future, interpreter.Kleisli, Throwable, JValue](language)
 
   import one.xingyi.finatra.FinatraImplicits._
 

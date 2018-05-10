@@ -2,12 +2,16 @@ package one.xingyi.core.parser
 
 import one.xingyi.core.functions.{Functor, MonadCanFail}
 import one.xingyi.core.http.ContentType
-import one.xingyi.core.json.FromJson
+import one.xingyi.core.json.{FromJson, FromJsonLib, JsonParser}
 
 import scala.annotation.implicitNotFound
 import scala.language.higherKinds
-
+import one.xingyi.core.language.AnyLanguage._
 trait Parser[T] extends (String => T)
+
+object Parser {
+  implicit def default[J, T](implicit jsonParser: JsonParser[J], fromJsonLib: FromJsonLib[J, T]): FromJson[T] = s => fromJsonLib(jsonParser(s))
+}
 
 trait ParserFailer[Fail] {
   def cannotFindParser(contentType: Option[ContentType]): Fail
@@ -33,7 +37,7 @@ case class MapParserFinder[M[_], Fail, T](map: Map[Option[ContentType], Parser[T
 }
 
 object ParserFinder {
-  implicit def alwaysSameParser[M[_]:Functor, T](implicit fromJson: FromJson[T]):ParserFinder[M, T] = always[M, T](fromJson)
-  def always[M[_]: Functor,T](parser: Parser[T]) = AlwaysParserFinder[M, T](parser)
-  def fromMap[M[_], Fail, T](map: Map[Option[ContentType], Parser[T]]) (implicit monadCanFail: MonadCanFail[M, Fail],parserFailer: ParserFailer[Fail])= MapParserFinder[M, Fail, T](map)
+  implicit def alwaysSameParser[M[_] : Functor, T](implicit fromJson: FromJson[T]): ParserFinder[M, T] = always[M, T](fromJson)
+  def always[M[_] : Functor, T](parser: Parser[T]) = AlwaysParserFinder[M, T](parser)
+  def fromMap[M[_], Fail, T](map: Map[Option[ContentType], Parser[T]])(implicit monadCanFail: MonadCanFail[M, Fail], parserFailer: ParserFailer[Fail]) = MapParserFinder[M, Fail, T](map)
 }

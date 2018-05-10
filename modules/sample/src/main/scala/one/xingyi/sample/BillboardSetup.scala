@@ -13,8 +13,7 @@ import scala.language.{higherKinds, implicitConversions}
 class BillboardSetup[ M[_],Wrapper[_, _], Fail](interpreter: TaglessLanguage[M, Wrapper])
                                                (implicit
                                                 monadCanFail: MonadCanFail[M, Fail],
-                                                failer: Failer[Fail],
-                                                jsonBundle: JsonBundle
+                                                failer: Failer[Fail]
                                                ) extends PromotionServiceNames {
 
   import interpreter._

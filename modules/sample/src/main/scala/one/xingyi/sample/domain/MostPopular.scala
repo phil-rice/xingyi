@@ -4,7 +4,7 @@ import one.xingyi.core.aggregate.{Enricher, HasChildren}
 import one.xingyi.core.cache.{CachableKey, UnitId}
 import one.xingyi.core.domain.{BypassCache, DomainRequestCompanionQuery, DomainResponseCompanionObject}
 import one.xingyi.core.functions.Liftable
-import one.xingyi.core.json.ToJson
+import one.xingyi.core.json._
 //needs to be here import io.circe.generic.auto._
 import one.xingyi.core.http._
 import one.xingyi.core.language.Language._
@@ -16,7 +16,7 @@ case class MostPopularQuery(bypassCache: Boolean) extends BypassCache
 object MostPopularQuery extends DomainRequestCompanionQuery[MostPopularQuery] {
 
   implicit object CachableKeyForMostPopularQuery extends CachableKey[MostPopularQuery] {
-//    override def apply(v1: MostPopularQuery) = ()
+    //    override def apply(v1: MostPopularQuery) = ()
     override def id(req: MostPopularQuery) = UnitId
     override def bypassCache(req: MostPopularQuery) = req.bypassCache
   }
@@ -50,6 +50,7 @@ object MostPopular extends DomainResponseCompanionObject[MostPopularQuery, MostP
     override def apply(v1: MostPopular) = s"""{id: [${v1.programmeIds.map(id => s""""$id"""").mkString(",")}]"""
   }
 
+  implicit def fromJsonMostPopular[J: JsonParser](implicit forProgrammeId: FromJsonLib[J, ProgrammeId]): FromJsonLib[J, MostPopular] = json => MostPopular(json.asList[ProgrammeId])
 }
 
 case class EnrichedMostPopular(programmes: Seq[Programme])
@@ -58,4 +59,6 @@ object EnrichedMostPopular extends DomainResponseCompanionObject[MostPopularQuer
   implicit object EnricherFor extends Enricher[MostPopularQuery, MostPopular, ProgrammeId, Programme, EnrichedMostPopular] {
     override def apply(v1: MostPopularQuery, v2: MostPopular, v3: Seq[(ProgrammeId, Programme)]) = EnrichedMostPopular(v3.map(_._2))
   }
+  implicit def fromJsonForEMP[J: JsonParser](implicit forProgramme: FromJsonLib[J, Programme]): FromJsonLib[J, EnrichedMostPopular] = json => EnrichedMostPopular(json.asList[Programme])
+  implicit def toJsonForEmp[J: JsonWriter](implicit forProgammer: ToJsonLib[Programme]): ToJsonLib[EnrichedMostPopular] = {emp => JsonObject("programmes" -> JsonList(emp.programmes.map(forProgammer)))}
 }

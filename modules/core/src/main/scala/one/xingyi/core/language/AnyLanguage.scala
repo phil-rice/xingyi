@@ -17,7 +17,7 @@ trait AnyLanguage {
     fn(x)
     x
   }
-  implicit class AnyPimper[T](t: T) {
+  implicit class AnyPimper[T](t: => T) {
     def |>[T2](fn: T => T2) = fn(t)
     def liftM[M[_]](implicit container: Liftable[M]): M[T] = container.liftM(t)
     def |+>[T1](fn: T => T => T1): T1 = fn(t)(t)

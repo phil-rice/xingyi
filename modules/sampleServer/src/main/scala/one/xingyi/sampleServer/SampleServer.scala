@@ -3,9 +3,6 @@ package one.xingyi.sampleServer
 import java.util.ResourceBundle
 import java.util.concurrent.Executors
 
-import one.xingyi.sample.{JsonBundle, PromotionSetup}
-import one.xingyi.sample.domain.SampleJsonsForCompilation
-import one.xingyi.tagless.TaglessLanguageLanguageForKleislis
 import one.xingyi.core.cache.{CachingServiceFactory, DurationStaleCacheStategy}
 import one.xingyi.core.functions.AsyncForScalaFuture.ImplicitsForTest._
 import one.xingyi.core.functions.AsyncForScalaFuture._
@@ -14,10 +11,15 @@ import one.xingyi.core.logging.{AbstractLogRequestAndResult, LogRequestAndResult
 import one.xingyi.core.map.NoMapSizeStrategy
 import one.xingyi.core.metrics.PrintlnPutMetrics
 import one.xingyi.core.simpleServer.{EndpointHandler, SimpleHttpServer}
+import one.xingyi.json4s.{Json4sParser, Json4sWriter}
+import one.xingyi.sample.PromotionSetup
+import one.xingyi.sample.domain.SampleJsonsForCompilation
+import one.xingyi.tagless.TaglessLanguageLanguageForKleislis
+import org.json4s.JValue
 
 import scala.concurrent.Future
 
-object SampleServer extends App with SampleJsonsForCompilation {
+object SampleServer extends App with SampleJsonsForCompilation with Json4sWriter with Json4sParser {
 
   implicit val httpFactory = new HttpFactory[Future, ServiceRequest, ServiceResponse] {
     override def apply(v1: ServiceName) = { req => Future.successful(ServiceResponse(Status(200), Body(s"response; ${req.body.map(_.s).getOrElse("")}"), ContentType("text/html"))) }
@@ -32,7 +34,6 @@ object SampleServer extends App with SampleJsonsForCompilation {
 
   val interpreter = new TaglessLanguageLanguageForKleislis[Future, Throwable]
 
-  implicit val jsonBundle: JsonBundle = JsonBundle()
 
   implicit val executors = Executors.newFixedThreadPool(10)
 
@@ -40,7 +41,7 @@ object SampleServer extends App with SampleJsonsForCompilation {
 
   private val language = interpreter.NonFunctionalLanguageService()
   //  private val debugLanguage = new DebugEachObjectifyEndpoint(language)
-  val setup = new PromotionSetup[Future, interpreter.Kleisli,  Throwable](language)
+  val setup = new PromotionSetup[Future, interpreter.Kleisli,  Throwable, JValue](language)
 
   //  println("Dumping")
   //  println(debugLanguage.dump)

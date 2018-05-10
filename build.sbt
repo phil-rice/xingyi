@@ -109,7 +109,8 @@ lazy val sampleServer = (project in file("modules/sampleServer")).
   settings(publishArtifact := false).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
-  dependsOn(sample % "test->test;compile->compile").aggregate(sample)
+  dependsOn(sample % "test->test;compile->compile").aggregate(sample).
+  dependsOn(json4s)
 //  dependsOn(caffeine % "test->test;compile->compile").aggregate(caffeine)
 
 
@@ -152,6 +153,7 @@ lazy val finatraSample = (project in file("modules/finatraSample")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(finatra % "test->test;compile->compile").aggregate(finatra).
   dependsOn(sample % "test->test;compile->compile").aggregate(sample).
+  dependsOn(json4s).
   settings(publishArtifact := false).
   settings(publishSettings: _*)
 

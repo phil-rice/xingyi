@@ -7,6 +7,8 @@ import org.json4s.{DefaultFormats, JValue}
 
 import scala.language.implicitConversions
 import one.xingyi.core.language.FunctionLanguage._
+import one.xingyi.core.language.AnyLanguage._
+
 case class FromJson4sException(msg: String, cause: Throwable) extends Exception(msg, cause)
 
 trait Json4sParser {
@@ -18,7 +20,7 @@ trait Json4sParser {
     override def extractOptString(j: JValue): Option[String] = j.extractOpt[String]
     override def asList(j: JValue): List[JValue] = j.extract[List[JValue]]
     override def \(j: JValue, s: String): JValue = j \ s
-    override def apply(s: String): JValue = JsonMethods.parse(s)
+    override def apply(s: String): JValue = JsonMethods.parse(s).ifError(e => throw new FromJson4sException(s, e))
   }
 
 }
@@ -38,7 +40,7 @@ trait Json4sWriter {
       case JsonInt(i) => i
       case JsonDouble(d) => d
       case j: JsonObject => JObject(j.nameAndValues.map { case (k, v) => (k, toJ(v)) }: _*)
-      case JsonList(list) => JArray(list.map(toJ))
+      case JsonList(list) => JArray(list.map(toJ).toList)
     }
     override def toStringForJ = JsonMethods.render _ ~> JsonMethods.pretty
   }

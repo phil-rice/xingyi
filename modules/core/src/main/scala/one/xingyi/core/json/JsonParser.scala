@@ -4,11 +4,10 @@ import one.xingyi.core.parser.Parser
 
 import scala.language.implicitConversions
 import one.xingyi.core.language.AnyLanguage._
+
 trait FromJson[T] extends Parser[T]
 
 object FromJson {
-  implicit def default[J, T](implicit jsonParser: JsonParser[J], fromJsonLib: FromJsonLib[J, T]): FromJson[T] =
-    s => fromJsonLib(jsonParser(s)).ifError { e => throw new RuntimeException(s"Error json parsing \n$s\n", e) }
 }
 
 trait JsonParser[J] extends (String => J) {
@@ -21,8 +20,9 @@ trait JsonParser[J] extends (String => J) {
 
 trait FromJsonLib[J, T] extends (J => T)
 
+object JsonParserLanguage extends JsonParserLanguage
 trait JsonParserLanguage {
-  implicit def toString[J](j: J)(implicit parser: JsonParser[J]) = parser.extractString(j)
+  implicit def jsonToString[J](j: J)(implicit parser: JsonParser[J]) = parser.extractString(j)
   implicit def toInt[J](j: J)(implicit parser: JsonParser[J]) = parser.extractInt(j)
   implicit def toOptString[J](j: J)(implicit parser: JsonParser[J]) = parser.extractOptString(j)
 

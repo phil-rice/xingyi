@@ -3,7 +3,7 @@ package one.xingyi.sample.domain
 import one.xingyi.core.domain.{BypassCache, DomainRequestCompanionQuery, DomainResponseCompanionObject}
 import one.xingyi.core.functions.Monad
 import one.xingyi.core.http._
-import one.xingyi.core.json.ToJson
+import one.xingyi.core.json._
 import one.xingyi.core.language.Language._
 import one.xingyi.core.strings.Strings
 
@@ -19,6 +19,7 @@ object ProgrammeId extends DomainRequestCompanionQuery[ProgrammeId] {
   implicit def fromServiceRequest[M[_] : Monad] = new FromServiceRequest[M, ProgrammeId] {
     override def apply(v1: ServiceRequest) = ProgrammeId(Strings.lastSection("/")(v1.body.map(_.s).getOrElse("")), false).liftM
   }
+  implicit def fromJson[J: JsonParser]: FromJsonLib[J, ProgrammeId] = { json => ProgrammeId(json, false) }
 
 
 }
@@ -26,10 +27,13 @@ object ProgrammeId extends DomainRequestCompanionQuery[ProgrammeId] {
 case class Programme(info: String)
 
 
-object Programme extends DomainResponseCompanionObject[ProgrammeId, Programme]{
+object Programme extends DomainResponseCompanionObject[ProgrammeId, Programme] {
 
   implicit object ToJsonForProgramme extends ToJson[Programme] {
     override def apply(v1: Programme) = s"""{programmeInfo: "${v1.info}"}"""
   }
+  implicit def toJsonForProg[J: JsonWriter]: ToJsonLib[Programme] = { prog => JsonString(prog.info) }
+
+  implicit def fromJson[J: JsonParser]: FromJsonLib[J, Programme] = { json => Programme(json) }
 
 }
