@@ -13,13 +13,12 @@ import one.xingyi.core.metrics.PrintlnPutMetrics
 import one.xingyi.core.simpleServer.{EndpointHandler, SimpleHttpServer}
 import one.xingyi.json4s.{Json4sParser, Json4sWriter}
 import one.xingyi.sample.PromotionSetup
-import one.xingyi.sample.domain.SampleJsonsForCompilation
 import one.xingyi.tagless.TaglessLanguageLanguageForKleislis
 import org.json4s.JValue
 
 import scala.concurrent.Future
 
-object SampleServer extends App with SampleJsonsForCompilation with Json4sWriter with Json4sParser {
+object SampleServer extends App  with Json4sWriter with Json4sParser {
 
   implicit val httpFactory = new HttpFactory[Future, ServiceRequest, ServiceResponse] {
     override def apply(v1: ServiceName) = { req => Future.successful(ServiceResponse(Status(200), Body(s"response; ${req.body.map(_.s).getOrElse("")}"), ContentType("text/html"))) }

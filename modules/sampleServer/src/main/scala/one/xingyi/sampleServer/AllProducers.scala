@@ -13,14 +13,13 @@ import one.xingyi.core.map.NoMapSizeStrategy
 import one.xingyi.core.metrics.PrintlnPutMetrics
 import one.xingyi.core.simpleServer.{EndpointHandler, SimpleHttpServer}
 import one.xingyi.core.strings.IndentAnd
-import one.xingyi.sample.domain.SampleJsonsForCompilation
 import one.xingyi.sample.{BillboardSetup, FnordSetup, VogueSetup}
 import one.xingyi.tagless.{TaglessInterpreterForToString, TaglessLanguageLanguageForKleislis, _}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.higherKinds
 
-class AllProducers[ M[_],Wrapper[_, _],  Fail](language: TaglessLanguage[M, Wrapper])(implicit
+class AllProducers[M[_], Wrapper[_, _], Fail](language: TaglessLanguage[M, Wrapper])(implicit
                                                                                      monadCanFail: MonadCanFail[M, Fail],
                                                                                      failer: Failer[Fail]) {
   val vogueSetup = new VogueSetup(language)
@@ -38,7 +37,7 @@ class AllProducers[ M[_],Wrapper[_, _],  Fail](language: TaglessLanguage[M, Wrap
       language.chain(language.chain(endpoints: _*), language.chain(otherEndpoints: _*))
 }
 
-object AllProducers extends App with SampleJsonsForCompilation {
+object AllProducers extends App {
   println("All producers")
   implicit val executors = Executors.newFixedThreadPool(10)
   implicit val exc = new ExecutionContextWithLocal(ExecutionContext.fromExecutor(executors))
@@ -66,7 +65,7 @@ object AllProducers extends App with SampleJsonsForCompilation {
     val experiment = new TaglessModelLanguage[Future] {}
     val modelLanguage = new experiment.ModelLanguage(kleisliLanguage)
     val model: AllProducers[Future, experiment.Model, Throwable] = new AllProducers(modelLanguage)
-val x: experiment.Model[ServiceRequest, Option[ServiceResponse]] =     model.rawMicroservice.map(new experiment.ProfileTx("/profile")).map(new experiment.StructureTx("/structure"))
+    val x: experiment.Model[ServiceRequest, Option[ServiceResponse]] = model.rawMicroservice.map(new experiment.ProfileTx("/profile")).map(new experiment.StructureTx("/structure"))
     //still have the problem of how to add the endpoints, although this feels pretty clean...
     val k = x.kleisli
 

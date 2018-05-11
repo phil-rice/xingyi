@@ -13,13 +13,12 @@ import one.xingyi.core.map.MaxMapSizeStrategy
 import one.xingyi.core.metrics.PrintlnPutMetrics
 import one.xingyi.finatra.{AsyncForTwitterFuture, FinatraServer, PingController}
 import one.xingyi.json4s.{Json4sParser, Json4sWriter}
-import one.xingyi.sample.domain.SampleJsonsForCompilation
 import one.xingyi.sample.{PromotionServiceNames, PromotionSetup}
 import one.xingyi.tagless.TaglessLanguageLanguageForKleislis
 import org.json4s.JsonAST.JValue
 
 
-class FinatraPromotionSetup(implicit futurePool: FuturePool) extends Controller with SampleJsonsForCompilation with Json4sParser with Json4sWriter{
+class FinatraPromotionSetup(implicit futurePool: FuturePool) extends Controller  with Json4sParser with Json4sWriter{
   implicit val monad = new AsyncForTwitterFuture
   implicit val httpFactory = new HttpFactory[Future, ServiceRequest, ServiceResponse] {
     override def apply(v1: ServiceName) = { req => Future.value(ServiceResponse(Status(200), Body(s"response; ${req.body.map(_.s).getOrElse("")}"), ContentType("text/html"))) }
@@ -39,7 +38,7 @@ class FinatraPromotionSetup(implicit futurePool: FuturePool) extends Controller 
   import one.xingyi.core.http.Failer.failerForThrowable
 
   private val language = interpreter.NonFunctionalLanguageService()
-  //  private val debugLanguage = new DebugEachObjectifyEndpoint(language)
+//    private val debugLanguage = new DebugEachObjectifyEndpoint(language)
   val setup = new PromotionSetup[Future, interpreter.Kleisli, Throwable, JValue](language)
 
   import one.xingyi.finatra.FinatraImplicits._
