@@ -25,17 +25,7 @@ trait MonadWithException[M[_]] extends Monad[M] {
   def recover[T](m: M[T], fn: Throwable => M[T]): M[T]
 
   def liftTry[T](t: Try[T]): M[T] = t.fold(exception, liftM)
-//  def foldException[T, T1](m: M[T], fnE: Throwable => M[T1], fn: T => M[T1]): M[T1] = recover[T1](flatMap(m, fn), fnE)
 }
-
-//
-//trait CompletableMonad[M[_],H[_]] extends MonadWithException[M]{
-//  def makePromise[T]: H[T]
-//  def monad[T](h: H[T]): M[T];
-//  def complete[T](h: H[T], t: Try[T])
-//
-//}
-
 
 trait LiftFailure[M[_], Fail] {
   def fail[T](f: Fail): M[T]
@@ -60,15 +50,6 @@ object MonadCanFail {
 
 trait MonadCanFailWithException[M[_], Fail] extends MonadWithException[M] with MonadCanFail[M, Fail] {
   def foldWithExceptionAndFail[T, T1](m: M[T], fnE: Throwable => M[T1], fnFailure: Fail => M[T1], fn: T => M[T1]): M[T1]
-  def onComplete[T](m: M[T], fn: Try[Either[Fail, T]] => Unit): M[T] = foldWithExceptionAndFail[T, T](m,
-    { e: Throwable => fn(Failure(e)); exception(e) },
-    { f: Fail => fn(Success(Left(f))); fail(f) },
-    { t: T => fn(Success(Right(t))); liftM(t) }
-  )
-  def mapTryFail[T, T1](m: M[T], fn: Try[Either[Fail, T]] => M[T1]): M[T1] = foldWithExceptionAndFail[T, T1](m,
-    t => fn(Failure(t)),
-    f => fn(Success(Left(f))),
-    t => fn(Success(Right(t))))
 
 }
 

@@ -71,7 +71,7 @@ class RetryService[M[_], Fail, Req, Res](delegate: (Req => M[Res]), retryConfig:
           async.delay(delay())(recurse(count - 1, retryThis))
         }
       }
-      withValue(retryThis)(m => monad.mapTryFail[Res, Res](m, tryRes => if (resRetry(tryRes)) retry(m) else m))
+      withValue(retryThis)(m => m.mapTryFail[Fail, Res](tryRes => if (resRetry(tryRes)) retry(m) else m))
     }
     recurse(retries, delegate(req))
   }

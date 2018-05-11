@@ -218,7 +218,7 @@ abstract class AbstractMonadCanFailWithExceptionTests[A[_], Fail: ClassTag](impl
     val remember = new AtomicReference[Try[Either[Fail, String]]]()
     val count = new AtomicInteger()
     try {
-      getT(monad.mapTryFail(value, { x: Try[Either[Fail, String]] => remember.set(x); count.incrementAndGet(); liftA("result") }))
+      getT(value.mapTryFail { x: Try[Either[Fail, String]] => remember.set(x); count.incrementAndGet(); liftA("result") })
     } catch {
       case e: Exception =>
     }
@@ -229,7 +229,7 @@ abstract class AbstractMonadCanFailWithExceptionTests[A[_], Fail: ClassTag](impl
   def callOnComplete(value: A[String]): Try[Either[Fail, String]] = {
     val remember = new AtomicReference[Try[Either[Fail, String]]]()
     val count = new AtomicInteger()
-    Try(getT(monad.onComplete(value, { x: Try[Either[Fail, String]] => remember.set(x); count.incrementAndGet(); liftA("shouldNotBeUsed") })))
+    Try(getT(value.onComplete { x: Try[Either[Fail, String]] => remember.set(x); count.incrementAndGet(); liftA("shouldNotBeUsed") }))
     count.get shouldBe 1
     remember.get
   }
