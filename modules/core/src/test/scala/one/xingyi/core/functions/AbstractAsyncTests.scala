@@ -162,16 +162,6 @@ abstract class AbstractMonadWithExceptionTests[A[_]](implicit m: MonadWithExcept
   it should "recover from exceptions" in {
     getT(m.recover(liftTryA(Failure(runtimeException)), x => m.liftM(x.getMessage))) shouldBe "someMessage"
   }
-
-  it should "fold when the value is present" in {
-    getT(m.foldException[String, String](liftTryA(Success("value")), x => m.liftM(x.getMessage), x => m.liftM(x + "_happened"))) shouldBe "value_happened"
-
-  }
-
-  it should "fold when the an exception is present" in {
-    getT(m.foldException[String, String](liftTryA(Failure(runtimeException)), x => m.liftM(x.getMessage), x => m.liftM(x))) shouldBe "someMessage"
-
-  }
 }
 
 trait MonadCanFailFixture[A[_], Fail] {

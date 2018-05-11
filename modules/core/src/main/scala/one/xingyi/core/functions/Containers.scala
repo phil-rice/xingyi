@@ -25,7 +25,7 @@ trait MonadWithException[M[_]] extends Monad[M] {
   def recover[T](m: M[T], fn: Throwable => M[T]): M[T]
 
   def liftTry[T](t: Try[T]): M[T] = t.fold(exception, liftM)
-  def foldException[T, T1](m: M[T], fnE: Throwable => M[T1], fn: T => M[T1]): M[T1] = recover[T1](flatMap(m, fn), fnE)
+//  def foldException[T, T1](m: M[T], fnE: Throwable => M[T1], fn: T => M[T1]): M[T1] = recover[T1](flatMap(m, fn), fnE)
 }
 
 //

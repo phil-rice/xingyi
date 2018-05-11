@@ -33,9 +33,9 @@ trait MonadLanguage extends FunctorLanguage {
   def join4WithReq[M[_], Req, Res1, Res2, Res3, Res4](firstService: Req => M[Res1], secondService: Req => M[Res2], thirdService: Req => M[Res3], fouthService: Req => M[Res4])(implicit monad: Monad[M]): Req => M[(Req, Res1, Res2, Res3, Res4)] = { req: Req => join5(monad.liftM(req), firstService(req), secondService(req), thirdService(req), fouthService(req)) }
 
   implicit class MonadWithExceptionPimper[M[_], T](m: M[T])(implicit monad: MonadWithException[M]) {
-    def registerSideeffect(fn: Try[T] => Unit): M[T] = monad.foldException(m, { e => fn(Failure(e)); monad.exception(e) }, { t: T => fn(Success(t)); monad.liftM(t) })
-  }
+    def registerSideeffect(fn: Try[T] => Unit): M[T] = monad.flatMap[T, T](monad.recover(m, { e => fn(Failure(e)); monad.exception[T](e) }), { x => fn(Success(x)); monad.liftM(x) })
 
+  }
 
   implicit class MonadCanFailWithExceptionPimper[M[_], T](m: M[T]) {
     def onComplete[Fail](fn: Try[Either[Fail, T]] => Unit)(implicit monad: MonadCanFailWithException[M, Fail]): M[T] = monad.onComplete(m, fn)

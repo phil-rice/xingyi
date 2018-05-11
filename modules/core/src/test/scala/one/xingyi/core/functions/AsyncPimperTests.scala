@@ -46,26 +46,7 @@ abstract class AbstractAsyncPimperTests[M[_] : Async : MonadWithException] exten
 
   behavior of "MonadWithExceptionPimper"
 
-  implicit class MonadWithExceptionPimper[M[_], T](m: M[T])(implicit monad: MonadWithException[M]) {
-    def foldException[T1](fnE: Throwable => M[T1], fn: T => M[T1]): M[T1] = monad.foldException(m, fnE, fn)
-    def mapTry[T1](fn: Try[T] => M[T1]): M[T1] = monad.foldException(m, t => fn(Failure(t)), { t: T => fn(Success(t)) })
-    def registerSideeffect(fn: Try[T] => Unit): M[T] = monad.foldException(m, { e: Throwable => fn(Failure(e)); monad.exception(e) }, { t: T => fn(Success(t)); monad.liftM(t) })
-  }
 
-  it should "add foldException to a monad executing happy path when have value" in {
-    (1.liftM[M] foldException[Int](_ => new RuntimeException().liftException, fn(1, 2.liftM)) await()) shouldBe 2
-  }
-
-
-  it should "add foldException to a monad executing exception path when have exception" in {
-    val m: M[Int] = runtimeException.liftException[M, Int] foldException(x => throw new RuntimeException(x), _ => fail())
-    intercept[RuntimeException](m.await()).getCause shouldBe runtimeException
-  }
-
-  it should "add mapTry to a monad" in {
-    1.liftM[M].mapTry { case Success(1) => 2.liftM; case _ => 3.liftM }.await() shouldBe 2
-    runtimeException.liftException[M, Int].mapTry { case Success(1) => 2.liftM; case _ => 3.liftM }.await shouldBe 3
-  }
   it should "add registerSideeffect to a monad" in {
     val atomicReference = new AtomicReference[Try[Int]]()
     1.liftM[M].registerSideeffect(sideeffect(atomicReference)).await() shouldBe 1
@@ -76,20 +57,6 @@ abstract class AbstractAsyncPimperTests[M[_] : Async : MonadWithException] exten
 
   }
 
-
-  //  behavior of "Pimpers"
-
-
-  it should "pimp a transform" in {
-    val fn: Try[Int] => M[Int] = {
-      _ match {
-        case Success(i) => (i + 1).liftM
-        case Failure(t) => 999.liftM
-      }
-    }
-    1.liftM[M].mapTry(fn).await() shouldBe 2
-    runtimeException.liftException[M, Int].mapTry(fn).await() shouldBe 999
-  }
 
   it should "pimp a registersideeffect" in {
     val store = new AtomicReference[Try[Int]]()
