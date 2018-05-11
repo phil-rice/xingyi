@@ -5,6 +5,7 @@ import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 import org.scalatest.BeforeAndAfter
 import one.xingyi.core.UtilsWithLoggingSpec
 import one.xingyi.core.http.Failer
+import one.xingyi.core.language.MonadLanguage
 import one.xingyi.core.reflection.ClassTags
 
 import scala.concurrent.Future
@@ -87,8 +88,8 @@ trait AbstractFunctorTests[A[_]] extends ContainerSpec[A] {
   }
 }
 
-trait AbstractMonadTests[A[_]] extends AbstractFunctorTests[A] {
-  def monad: Monad[A]
+trait AbstractMonadTests[A[_]] extends AbstractFunctorTests[A] with MonadLanguage {
+  implicit def monad: Monad[A]
   override def functor: Monad[A] = monad
 
   behavior of s"Monad for ${monad.getClass.getSimpleName}"
@@ -101,18 +102,18 @@ trait AbstractMonadTests[A[_]] extends AbstractFunctorTests[A] {
     getT(monad.flatMap[String, String](monad.liftM("first"), x => monad.liftM(x + "second"))) shouldBe "firstsecond"
   }
   it should "execute join2" in {
-    getT(monad.join2(liftA(1), liftA(2))) shouldBe(1, 2)
+    getT(join2(liftA(1), liftA(2))) shouldBe(1, 2)
   }
 
   it should "execute join3" in {
-    getT(monad.join3(liftA(1), liftA(2), liftA(3))) shouldBe(1, 2, 3)
+    getT(join3(liftA(1), liftA(2), liftA(3))) shouldBe(1, 2, 3)
   }
 
   it should "execute join4" in {
-    getT(monad.join4(liftA(1), liftA(2), liftA(3), liftA(4))) shouldBe(1, 2, 3, 4)
+    getT(join4(liftA(1), liftA(2), liftA(3), liftA(4))) shouldBe(1, 2, 3, 4)
   }
   it should "execute join5" in {
-    getT(monad.join5(liftA(1), liftA(2), liftA(3), liftA(4), liftA(5))) shouldBe(1, 2, 3, 4, 5)
+    getT(join5(liftA(1), liftA(2), liftA(3), liftA(4), liftA(5))) shouldBe(1, 2, 3, 4, 5)
   }
 
 }
