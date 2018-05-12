@@ -1,15 +1,12 @@
 package one.xingyi.core.local
 
-import org.scalatest.{FlatSpec, Matchers}
-import one.xingyi.core.functions.{Async, Monad}
-
-import scala.language.higherKinds
-import scala.reflect.ClassTag
 import one.xingyi.core.language.Language._
-import one.xingyi.core.reflection.ClassTags
+import one.xingyi.core.monad.{Async, Monad}
+import org.scalatest.{FlatSpec, Matchers}
 
 import scala.concurrent.Future
-import scala.util.DynamicVariable
+import scala.language.higherKinds
+import scala.reflect.ClassTag
 
 abstract class AbstractLocalOpsSpec[M[_] : Monad : Async](name: String)(implicit localOps: LocalOps[M]) extends FlatSpec with Matchers with LocalOpsPimper[M] {
 
@@ -46,7 +43,7 @@ abstract class AbstractLocalOpsSpec[M[_] : Monad : Async](name: String)(implicit
   }
 }
 
-import one.xingyi.core.functions.AsyncForScalaFuture._
-import ImplicitsForTest._
+import one.xingyi.core.monad.AsyncForScalaFuture.ImplicitsForTest._
+import one.xingyi.core.monad.AsyncForScalaFuture._
 
 class ScalaFutureLocallOpsSpec extends AbstractLocalOpsSpec[Future]("scala future")

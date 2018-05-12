@@ -1,11 +1,11 @@
 package one.xingyi.core
 
+import one.xingyi.core.language.Language._
+import one.xingyi.core.monad.MonadWithException
 import org.scalatest.Matchers
-import one.xingyi.core.functions.{Async, MonadWithException}
 
 import scala.language.higherKinds
 import scala.util.Try
-import one.xingyi.core.language.Language._
 
 trait AsyncFixture[M[_]] extends Matchers {
 

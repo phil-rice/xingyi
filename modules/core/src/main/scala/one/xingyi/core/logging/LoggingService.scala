@@ -4,7 +4,7 @@ import java.text.MessageFormat
 import java.util.ResourceBundle
 
 import one.xingyi.core._
-import one.xingyi.core.functions.MonadCanFailWithException
+import one.xingyi.core.monad.MonadCanFailWithException
 import one.xingyi.core.success.SuccessState
 
 import scala.language.higherKinds

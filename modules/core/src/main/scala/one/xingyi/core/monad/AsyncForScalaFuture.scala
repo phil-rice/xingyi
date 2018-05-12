@@ -1,9 +1,10 @@
-package one.xingyi.core.functions
+package one.xingyi.core.monad
 
 import java.util.concurrent.TimeUnit
 
 import one.xingyi.core.concurrency.DelayedFuture
-import one.xingyi.core.local.{ExecutionContextWithLocal, LocalOpsForScalaFuture}
+import one.xingyi.core.functions.Functions
+import one.xingyi.core.local.ExecutionContextWithLocal
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}

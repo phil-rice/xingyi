@@ -6,9 +6,9 @@ import java.util.concurrent.atomic.AtomicReference
 import one.xingyi.core.UtilsSpec
 import one.xingyi.core.aggregate.{Enricher, FindReq, HasChildren}
 import one.xingyi.core.endpoint.MatchesServiceRequest._
-import one.xingyi.core.functions.MonadCanFail
 import one.xingyi.core.http._
 import one.xingyi.core.language.Language._
+import one.xingyi.core.monad.MonadCanFail
 import one.xingyi.core.parser.Parser
 import one.xingyi.core.profiling.TryProfileData
 import one.xingyi.core.retry.RetryConfig
@@ -82,7 +82,7 @@ class TaglessSpec extends UtilsSpec with HttpObjectFixture {
   behavior of "Tagless with toString Interpreter"
   implicit val stringlanguage: TaglessInterpreterForToString = new TaglessInterpreterForToString
 
-  import one.xingyi.core.functions.AsyncForScalaFuture._
+  import one.xingyi.core.monad.AsyncForScalaFuture._
   import ImplicitsForTest._
 
   type StringHolder[Req, Res] = IndentAnd[String]

@@ -1,7 +1,6 @@
 package one.xingyi.core.http
-
-import one.xingyi.core.functions.MonadCanFail
 import one.xingyi.core.language.Language._
+import one.xingyi.core.monad.MonadCanFail
 
 import scala.language.higherKinds
 //We are going to lift the service response into the Monad.  So it might 'fail' or throw an exception depending on the monad chosen

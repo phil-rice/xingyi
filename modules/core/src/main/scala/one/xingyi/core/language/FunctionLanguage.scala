@@ -1,7 +1,7 @@
 package one.xingyi.core.language
-
-import one.xingyi.core.functions.Monad
 import one.xingyi.core.language.Language.sideeffect
+import one.xingyi.core.monad.Monad
+
 import scala.language.higherKinds
 
 object FunctionLanguage extends FunctionLanguage

@@ -1,7 +1,8 @@
 package one.xingyi.core.http
 
-import one.xingyi.core.functions.{Liftable, Monad}
 import one.xingyi.core.language.Language._
+import one.xingyi.core.monad.Liftable
+
 import scala.annotation.implicitNotFound
 import scala.language.higherKinds
 

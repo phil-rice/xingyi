@@ -1,14 +1,12 @@
-package one.xingyi.core.monads
+package one.xingyi.core.monad
 
 import one.xingyi.core.UtilsWithLoggingSpec
-import one.xingyi.core._
+import one.xingyi.core.language.Language._
+import one.xingyi.core.monad.AsyncForScalaFuture.ImplicitsForTest._
+import one.xingyi.core.monad.AsyncForScalaFuture._
 
 import scala.concurrent.Future
 import scala.language.higherKinds
-import one.xingyi.core.functions.AsyncForScalaFuture._
-import ImplicitsForTest._
-import one.xingyi.core.functions.{Async, Monad}
-import one.xingyi.core.language.Language._
 
 abstract class AbstractKleisliTest[M[_]: Async:Monad] extends UtilsWithLoggingSpec {
 

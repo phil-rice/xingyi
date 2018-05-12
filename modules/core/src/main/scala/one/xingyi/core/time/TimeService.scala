@@ -1,7 +1,7 @@
 package one.xingyi.core.time
 
 import one.xingyi.core._
-import one.xingyi.core.functions.MonadWithException
+import one.xingyi.core.monad.MonadWithException
 
 import scala.language.higherKinds
 import scala.util.Try

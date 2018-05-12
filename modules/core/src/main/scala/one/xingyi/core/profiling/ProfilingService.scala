@@ -1,7 +1,6 @@
 package one.xingyi.core.profiling
-
-import one.xingyi.core.functions.MonadWithException
 import one.xingyi.core.language.Language._
+import one.xingyi.core.monad.MonadWithException
 import one.xingyi.core.time.NanoTimeService
 
 import scala.language.higherKinds

@@ -1,11 +1,11 @@
 package one.xingyi.core.language
 
 import one.xingyi.core.exceptions.Exceptions
-import one.xingyi.core.functions.{Monad, MonadCanFail, MonadCanFailWithException, MonadWithException}
 import one.xingyi.core.language.Language.withValue
+import one.xingyi.core.monad.{Monad, MonadCanFail, MonadCanFailWithException, MonadWithException}
 
-import scala.util.Try
 import scala.language._
+import scala.util.Try
 
 trait MonadFunctionLanguage extends MonadLanguage {
 

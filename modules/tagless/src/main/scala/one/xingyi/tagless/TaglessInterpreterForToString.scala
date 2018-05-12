@@ -3,10 +3,10 @@ package one.xingyi.tagless
 import one.xingyi.core.aggregate.{Enricher, HasChildren}
 import one.xingyi.core.cache.{CachableKey, ShouldCacheResult, ShouldUseCache}
 import one.xingyi.core.endpoint.MatchesServiceRequest
-import one.xingyi.core.functions.{Liftable, MonadCanFail}
 import one.xingyi.core.http._
 import one.xingyi.core.logging.{DetailedLogging, SummaryLogging}
 import one.xingyi.core.metrics.ReportData
+import one.xingyi.core.monad.{Liftable, MonadCanFail}
 import one.xingyi.core.profiling.{ProfileAs, TryProfileData}
 import one.xingyi.core.retry.{NeedsRetry, RetryConfig}
 import one.xingyi.core.strings.IndentAnd

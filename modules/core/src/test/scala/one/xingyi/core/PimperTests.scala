@@ -3,7 +3,7 @@ package one.xingyi.core
 import java.util.concurrent.atomic.AtomicReference
 
 import one.xingyi.core.functions._
-import AsyncForScalaFuture._
+import one.xingyi.core.monad.AsyncForScalaFuture._
 import ImplicitsForTest._
 import org.scalatest.Matchers
 
@@ -11,6 +11,7 @@ import scala.concurrent.Future
 import scala.language.higherKinds
 import scala.util.{Failure, Success, Try}
 import one.xingyi.core.language.Language._
+import one.xingyi.core.monad.MonadCanFail
 
 trait FunctionFixture extends Matchers{
   def fn[X, Y](expected: X, y: => Y) = { x: X => x shouldBe expected; y }

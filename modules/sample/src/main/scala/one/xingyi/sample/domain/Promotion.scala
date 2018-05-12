@@ -3,10 +3,10 @@ package one.xingyi.sample.domain
 import one.xingyi.core.aggregate.{Enricher, HasChildren}
 import one.xingyi.core.cache.{CachableKey, ObjectId}
 import one.xingyi.core.domain.{BypassCache, DomainRequestCompanionQuery, DomainResponseCompanionObject}
-import one.xingyi.core.functions.Monad
 import one.xingyi.core.http._
 import one.xingyi.core.json._
 import one.xingyi.core.language.Language._
+import one.xingyi.core.monad.Monad
 
 import scala.language.{higherKinds, implicitConversions}
 

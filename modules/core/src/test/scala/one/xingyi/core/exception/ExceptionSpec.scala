@@ -4,7 +4,7 @@ import one.xingyi.core.UtilsSpec
 import one.xingyi.core.exceptions.Exceptions
 
 import scala.concurrent.Future
-import one.xingyi.core.functions.AsyncForScalaFuture._
+import one.xingyi.core.monad.AsyncForScalaFuture._
 import ImplicitsForTest._
 import one.xingyi.core.language.Language._
 

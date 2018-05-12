@@ -1,8 +1,7 @@
 package one.xingyi.core.exceptions
-
-import one.xingyi.core.functions.MonadWithException
 import one.xingyi.core.http.{ServiceRequest, ServiceResponse}
 import one.xingyi.core.logging.{DetailedLogging, RequestDetails}
+import one.xingyi.core.monad.MonadWithException
 
 import scala.language.higherKinds
 

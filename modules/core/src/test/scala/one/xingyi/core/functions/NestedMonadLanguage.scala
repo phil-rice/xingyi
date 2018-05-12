@@ -4,6 +4,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.language.higherKinds
 import one.xingyi.core._
 import one.xingyi.core.language.Language._
+import one.xingyi.core.monad.Monad
 
 trait MonadCleaner[M1[_], M2[_]] {
   def clean[T](value: M2[M1[M2[T]]]): M1[M2[T]]

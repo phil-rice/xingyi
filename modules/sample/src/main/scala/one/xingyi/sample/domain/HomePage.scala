@@ -3,9 +3,9 @@ package one.xingyi.sample.domain
 import one.xingyi.core.aggregate.FindReq
 import one.xingyi.core.cache.{CachableKey, UnitId}
 import one.xingyi.core.domain.{BypassCache, DomainRequestCompanionQuery, DomainResponseCompanionObject}
-import one.xingyi.core.functions.Liftable
 import one.xingyi.core.http._
 import one.xingyi.core.json._
+import one.xingyi.core.monad.Liftable
 //import io.circe.syntax._
 import scala.language.higherKinds
 import JsonParserLanguage._

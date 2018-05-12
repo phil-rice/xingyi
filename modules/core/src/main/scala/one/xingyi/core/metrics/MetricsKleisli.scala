@@ -1,8 +1,8 @@
 package one.xingyi.core.metrics
-
-import one.xingyi.core.functions.MonadCanFailWithException
 import one.xingyi.core.time.NanoTimeService
 import one.xingyi.core.language.Language._
+import one.xingyi.core.monad.MonadCanFailWithException
+
 import scala.reflect.ClassTag
 import scala.language.higherKinds
 

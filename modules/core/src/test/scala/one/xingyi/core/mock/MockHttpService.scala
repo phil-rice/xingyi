@@ -1,10 +1,9 @@
 package one.xingyi.core.mock
-
-import one.xingyi.core.functions.Monad
 import one.xingyi.core.http.{ServiceRequest, ServiceResponse, ToServiceRequest, ToServiceResponse}
 
 import scala.language.higherKinds
 import one.xingyi.core.language.Language._
+import one.xingyi.core.monad.Monad
 
 class MockHttpService[M[_]:Monad, Req, Res](mocks: Map[Req, Res])
                                            (implicit toServiceRequest: ToServiceRequest[Req],

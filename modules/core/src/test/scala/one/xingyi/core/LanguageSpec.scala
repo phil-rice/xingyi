@@ -1,7 +1,8 @@
 package one.xingyi.core
 
-import one.xingyi.core.functions.{MonadCanFail, ScalaFutureAsAsyncAndMonadAndFailer}
+import one.xingyi.core.functions.ScalaFutureAsAsyncAndMonadAndFailer
 import one.xingyi.core.language.Language._
+import one.xingyi.core.monad.MonadCanFail
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}

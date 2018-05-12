@@ -4,13 +4,13 @@ import java.util.ResourceBundle
 import java.util.concurrent.Executors
 
 import one.xingyi.core.cache.{CachingServiceFactory, DurationStaleCacheStategy}
-import one.xingyi.core.functions.AsyncForScalaFuture._
-import one.xingyi.core.functions.MonadCanFail
+import one.xingyi.core.monad.AsyncForScalaFuture._
 import one.xingyi.core.http._
 import one.xingyi.core.local.ExecutionContextWithLocal
 import one.xingyi.core.logging.{AbstractLogRequestAndResult, LogRequestAndResult, PrintlnLoggingAdapter}
 import one.xingyi.core.map.NoMapSizeStrategy
 import one.xingyi.core.metrics.PrintlnPutMetrics
+import one.xingyi.core.monad.MonadCanFail
 import one.xingyi.core.simpleServer.{EndpointHandler, SimpleHttpServer}
 import one.xingyi.core.strings.IndentAnd
 import one.xingyi.sample.{BillboardSetup, FnordSetup, VogueSetup}

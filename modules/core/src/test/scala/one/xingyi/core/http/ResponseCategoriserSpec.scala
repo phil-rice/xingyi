@@ -2,12 +2,10 @@ package one.xingyi.core.http
 
 import one.xingyi.core.UtilsSpec
 import one.xingyi.core.exceptions.{NotFoundException, UnexpectedStatusCodeException}
-import one.xingyi.core.functions.{Async, MonadCanFail}
-
-import scala.language.higherKinds
-import one.xingyi.core.language.Language._
+import one.xingyi.core.monad.{Async, MonadCanFail}
 
 import scala.concurrent.Future
+import scala.language.higherKinds
 
 class ResponseCategoriserSpec[M[_], Fail](implicit monadCanFail: MonadCanFail[M, Fail], failer: Failer[Fail], async: Async[M]) extends UtilsSpec {
 
@@ -46,7 +44,7 @@ class ResponseCategoriserSpec[M[_], Fail](implicit monadCanFail: MonadCanFail[M,
   }
 }
 
-import one.xingyi.core.functions.AsyncForScalaFuture._
-import ImplicitsForTest._
+import one.xingyi.core.monad.AsyncForScalaFuture.ImplicitsForTest._
+import one.xingyi.core.monad.AsyncForScalaFuture._
 
 class ScalaFutureResponseCategoriserSpec extends ResponseCategoriserSpec[Future, Throwable]

@@ -1,8 +1,5 @@
-package one.xingyi.core.functions
-
-import one.xingyi.core.monad.MonadCanFail
-
-import scala.util.Try
+package one.xingyi.core.monad
+import one.xingyi.core.functions.EitherString
 
 //I cannot work out how to make this work: the lamba type isn't great. Hence the inheritor
 class AbstractEitherMonadCanFailTests(implicit val monad: MonadCanFail[EitherString, String]) extends AbstractMonadCanFailTests[EitherString, String] {

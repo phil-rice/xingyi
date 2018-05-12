@@ -1,11 +1,10 @@
 package one.xingyi.core.endpoint
 
-import one.xingyi.core.functions.{Async, Monad, MonadCanFail}
 import one.xingyi.core.http._
 import one.xingyi.core.language.Language._
+import one.xingyi.core.monad.{Monad, MonadCanFail}
 import one.xingyi.core.strings.Strings
 
-import scala.annotation.tailrec
 import scala.language.higherKinds
 import scala.reflect.ClassTag
 

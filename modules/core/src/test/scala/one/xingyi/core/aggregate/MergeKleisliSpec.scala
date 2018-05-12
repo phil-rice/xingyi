@@ -1,13 +1,13 @@
 package one.xingyi.core.aggregate
 
+import one.xingyi.core.functions.ScalaFutureAsAsyncAndMonadAndFailer
+import one.xingyi.core.language.Language._
+import one.xingyi.core.monad.{Async, Monad, MonadCanFailWithException}
 import one.xingyi.core.{AsyncFixture, UtilsSpec}
-import one.xingyi.core.functions.{Async, Monad, MonadCanFailWithException, ScalaFutureAsAsyncAndMonadAndFailer}
 
 import scala.concurrent.Future
 import scala.language.higherKinds
 import scala.util.{Failure, Success}
-import one.xingyi.core.language.Language._
-import sun.nio.cs.ext.DoubleByteEncoder
 
 abstract class MergeKleisliSpec[M[_], Fail](implicit monadCanFail: MonadCanFailWithException[M, Fail], async: Async[M]) extends UtilsSpec with AsyncFixture[M] {
 
@@ -50,7 +50,7 @@ abstract class MergeKleisliSpec[M[_], Fail](implicit monadCanFail: MonadCanFailW
   }
 }
 
-import one.xingyi.core.functions.AsyncForScalaFuture._
-import ImplicitsForTest._
+import one.xingyi.core.monad.AsyncForScalaFuture.ImplicitsForTest._
+import one.xingyi.core.monad.AsyncForScalaFuture._
 
 class ScalaFutureMergeKleisliSpec extends MergeKleisliSpec[Future, Throwable] with ScalaFutureAsAsyncAndMonadAndFailer

@@ -1,9 +1,10 @@
 package one.xingyi.core.parser
 
-import org.mockito.Mockito._
-import one.xingyi.core.functions.{ContainerSpec, Functor, MonadCanFail}
+import one.xingyi.core.functions.ContainerSpec
 import one.xingyi.core.http.ContentType
 import one.xingyi.core.json.FromJson
+import one.xingyi.core.monad.{Functor, MonadCanFail}
+import org.mockito.Mockito._
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
@@ -95,8 +96,8 @@ abstract class FromMapParserFinderTest[M[_], Fail <: AnyRef : ClassTag](implicit
 
 }
 
-import one.xingyi.core.functions.AsyncForScalaFuture.ImplicitsForTest._
-import one.xingyi.core.functions.AsyncForScalaFuture._
+import one.xingyi.core.monad.AsyncForScalaFuture.ImplicitsForTest._
+import one.xingyi.core.monad.AsyncForScalaFuture._
 
 class AlwaysParserFinderForScalaFuture extends AlwaysParserFinderTest[Future] {
   override def liftA[T](t: T) = Future.successful(t)

@@ -1,7 +1,6 @@
 package one.xingyi.core.success
-
-import one.xingyi.core.functions.MonadCanFailWithException
 import one.xingyi.core.language.Language._
+import one.xingyi.core.monad.MonadCanFailWithException
 
 import scala.language.higherKinds
 import scala.util.{Failure, Success, Try}

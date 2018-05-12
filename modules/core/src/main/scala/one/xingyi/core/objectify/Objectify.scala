@@ -1,9 +1,8 @@
 package one.xingyi.core.objectify
-
-import one.xingyi.core.functions.MonadCanFail
 import one.xingyi.core.http._
 import one.xingyi.core.language.Language._
 import one.xingyi.core.logging.DetailedLogging
+import one.xingyi.core.monad.MonadCanFail
 
 import scala.language.higherKinds
 import scala.reflect.ClassTag

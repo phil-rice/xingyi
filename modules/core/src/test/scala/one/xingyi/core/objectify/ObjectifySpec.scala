@@ -1,11 +1,11 @@
 package one.xingyi.core.objectify
 
-import org.mockito.Mockito._
-import one.xingyi.core.{UtilsSpec, _}
-import one.xingyi.core.functions.{Async, MonadCanFail}
 import one.xingyi.core.http._
 import one.xingyi.core.language.Language._
 import one.xingyi.core.logging.DetailedLogging
+import one.xingyi.core.monad.{Async, MonadCanFail}
+import one.xingyi.core.{UtilsSpec, _}
+import org.mockito.Mockito._
 
 import scala.concurrent.Future
 import scala.language.higherKinds
@@ -56,8 +56,8 @@ class AbstractObjectifySpec[M[_] : Async, Fail](implicit protected val monad: Mo
   }
 }
 
-import one.xingyi.core.functions.AsyncForScalaFuture.ImplicitsForTest._
-import one.xingyi.core.functions.AsyncForScalaFuture._
-import Failer.failerForThrowable
+import one.xingyi.core.http.Failer.failerForThrowable
+import one.xingyi.core.monad.AsyncForScalaFuture.ImplicitsForTest._
+import one.xingyi.core.monad.AsyncForScalaFuture._
 
 class FutureObjectifySpec extends AbstractObjectifySpec[Future, Throwable]

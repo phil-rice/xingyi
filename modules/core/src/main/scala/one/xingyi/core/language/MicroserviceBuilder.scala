@@ -3,10 +3,10 @@ package one.xingyi.core.language
 import one.xingyi.core.aggregate.{EnrichKleisli, EnrichLanguage, MergeKleisli, MergeLanguage}
 import one.xingyi.core.cache.{CacheFactory, CacheKleisli}
 import one.xingyi.core.endpoint.{ChainKleisli, EndPoint, EndpointKleisli}
-import one.xingyi.core.functions.{Async, LiftFunctionKleisli, Monad, MonadCanFailWithException}
 import one.xingyi.core.http._
 import one.xingyi.core.logging.{DetailedLogging, LogRequestAndResult, LoggingKleisli}
 import one.xingyi.core.metrics.{MetricsKleisli, PutMetrics}
+import one.xingyi.core.monad.{Async, LiftFunctionKleisli, Monad, MonadCanFailWithException}
 import one.xingyi.core.objectify.ObjectifyKleisli
 import one.xingyi.core.profiling.ProfileKleisli
 import one.xingyi.core.retry.RetryKleisli

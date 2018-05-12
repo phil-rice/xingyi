@@ -3,8 +3,8 @@ package one.xingyi.sample.domain
 import one.xingyi.core.aggregate.{Enricher, HasChildren}
 import one.xingyi.core.cache.{CachableKey, UnitId}
 import one.xingyi.core.domain.{BypassCache, DomainRequestCompanionQuery, DomainResponseCompanionObject}
-import one.xingyi.core.functions.Liftable
 import one.xingyi.core.json._
+import one.xingyi.core.monad.Liftable
 //needs to be here import io.circe.generic.auto._
 import one.xingyi.core.http._
 import one.xingyi.core.language.Language._

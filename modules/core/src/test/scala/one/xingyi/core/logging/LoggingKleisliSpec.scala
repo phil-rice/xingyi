@@ -2,11 +2,11 @@ package one.xingyi.core.logging
 
 import java.text.MessageFormat
 
-import org.mockito.Mockito._
-import one.xingyi.core.functions.{Async, MonadCanFailWithException}
 import one.xingyi.core.language.Language._
+import one.xingyi.core.monad.{Async, MonadCanFailWithException}
 import one.xingyi.core.time.MockTimeService
 import one.xingyi.core.{UtilsSpec, _}
+import org.mockito.Mockito._
 
 import scala.concurrent.Future
 import scala.language.higherKinds
@@ -56,7 +56,7 @@ abstract class LoggingKleisliWhenNoRealFailSpec[M[_] : Async, Fail](implicit m: 
   }
 }
 
-import one.xingyi.core.functions.AsyncForScalaFuture.ImplicitsForTest._
-import one.xingyi.core.functions.AsyncForScalaFuture._
+import one.xingyi.core.monad.AsyncForScalaFuture.ImplicitsForTest._
+import one.xingyi.core.monad.AsyncForScalaFuture._
 
 class ScalaFutureLoggingKleisliSpec extends LoggingKleisliWhenNoRealFailSpec[Future, Throwable]

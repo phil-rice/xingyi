@@ -1,7 +1,6 @@
 package one.xingyi.core.aggregate
-
-import one.xingyi.core.functions.Monad
 import one.xingyi.core.language.Language.{join2WithReq, join3WithReq, join4WithReq, _}
+import one.xingyi.core.monad.Monad
 
 import scala.language.higherKinds
 import scala.reflect.ClassTag

@@ -2,8 +2,8 @@ package one.xingyi.core.retry
 
 import java.util.concurrent.atomic.AtomicLong
 
-import one.xingyi.core.functions.{Async, MonadCanFailWithException}
 import one.xingyi.core.language.Language._
+import one.xingyi.core.monad.{Async, MonadCanFailWithException}
 import one.xingyi.core.time.Delay
 
 import scala.language.higherKinds

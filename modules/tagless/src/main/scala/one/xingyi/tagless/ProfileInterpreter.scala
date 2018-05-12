@@ -1,8 +1,8 @@
 package one.xingyi.tagless
 
 import one.xingyi.core.endpoint.MatchesServiceRequest
-import one.xingyi.core.functions.{Monad, MonadWithException}
 import one.xingyi.core.http._
+import one.xingyi.core.monad.{Monad, MonadWithException}
 import one.xingyi.core.profiling.{ProfileKleisli, TryProfileData}
 import one.xingyi.core.strings.{IndentAnd, Strings}
 import one.xingyi.core.time.NanoTimeService

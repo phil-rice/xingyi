@@ -11,9 +11,9 @@ import one.xingyi.core.time.NanoTimeService
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.higherKinds
 import scala.util.{Failure, Success, Try}
-import one.xingyi.core.functions.AsyncForScalaFuture._
+import one.xingyi.core.monad.AsyncForScalaFuture._
 import ImplicitsForTest._
-import one.xingyi.core.functions.Async
+import one.xingyi.core.monad.Async
 
 case class DelegateRequest(key: String, result: Try[String], bypassCache: Boolean = false, countDownLatch: CountDownLatch = new CountDownLatch(1)) {
   override def hashCode(): Int = key.hashCode

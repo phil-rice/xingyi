@@ -1,10 +1,10 @@
 package one.xingyi.sample.domain
 
 import one.xingyi.core.domain.{BypassCache, DomainRequestCompanionQuery, DomainResponseCompanionObject}
-import one.xingyi.core.functions.Monad
 import one.xingyi.core.http._
 import one.xingyi.core.json._
 import one.xingyi.core.language.Language._
+import one.xingyi.core.monad.Monad
 import one.xingyi.core.strings.Strings
 
 import scala.language.{higherKinds, implicitConversions}

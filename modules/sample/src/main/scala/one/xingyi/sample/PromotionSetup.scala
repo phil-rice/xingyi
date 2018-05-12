@@ -1,8 +1,7 @@
 package one.xingyi.sample
-
-import one.xingyi.core.functions.MonadCanFail
 import one.xingyi.core.http.{Failer, Get}
 import one.xingyi.core.json._
+import one.xingyi.core.monad.MonadCanFail
 import one.xingyi.sample.domain._
 import one.xingyi.tagless.TaglessLanguage
 

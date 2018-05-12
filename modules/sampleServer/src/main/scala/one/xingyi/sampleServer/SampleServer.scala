@@ -4,8 +4,8 @@ import java.util.ResourceBundle
 import java.util.concurrent.Executors
 
 import one.xingyi.core.cache.{CachingServiceFactory, DurationStaleCacheStategy}
-import one.xingyi.core.functions.AsyncForScalaFuture.ImplicitsForTest._
-import one.xingyi.core.functions.AsyncForScalaFuture._
+import one.xingyi.core.monad.AsyncForScalaFuture.ImplicitsForTest._
+import one.xingyi.core.monad.AsyncForScalaFuture._
 import one.xingyi.core.http._
 import one.xingyi.core.logging.{AbstractLogRequestAndResult, LogRequestAndResult, PrintlnLoggingAdapter}
 import one.xingyi.core.map.NoMapSizeStrategy

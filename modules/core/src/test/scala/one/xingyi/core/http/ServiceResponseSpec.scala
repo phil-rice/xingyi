@@ -3,7 +3,7 @@ package one.xingyi.core.http
 import one.xingyi.core.UtilsSpec
 
 import scala.concurrent.Future
-import one.xingyi.core.functions.AsyncForScalaFuture._
+import one.xingyi.core.monad.AsyncForScalaFuture._
 import ImplicitsForTest._
 import one.xingyi.core.json.ToJson
 import org.mockito.Mockito._

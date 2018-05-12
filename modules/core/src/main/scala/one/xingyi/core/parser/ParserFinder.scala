@@ -1,12 +1,11 @@
 package one.xingyi.core.parser
 
-import one.xingyi.core.functions.{Functor, MonadCanFail}
 import one.xingyi.core.http.ContentType
 import one.xingyi.core.json.{FromJson, FromJsonLib, JsonParser}
+import one.xingyi.core.monad.{Functor, MonadCanFail}
 
 import scala.annotation.implicitNotFound
 import scala.language.higherKinds
-import one.xingyi.core.language.AnyLanguage._
 trait Parser[T] extends (String => T)
 
 object Parser {

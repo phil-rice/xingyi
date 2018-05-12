@@ -1,14 +1,13 @@
-package one.xingyi.core.functions
+package one.xingyi.core.monad
 
 import java.util.concurrent.atomic.AtomicReference
 
+import one.xingyi.core.language.Language._
 import one.xingyi.core.{UtilsWithLoggingSpec, _}
 
 import scala.concurrent.Future
 import scala.language.higherKinds
 import scala.util.{Failure, Success, Try}
-import one.xingyi.core.language.Language._
-import one.xingyi.core.monad.{Async, MonadWithException}
 
 abstract class AbstractAsyncPimperTests[M[_] : Async : MonadWithException] extends UtilsWithLoggingSpec with FunctionFixture {
 

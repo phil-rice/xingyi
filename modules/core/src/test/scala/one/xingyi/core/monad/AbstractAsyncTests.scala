@@ -1,16 +1,13 @@
-package one.xingyi.core.functions
+package one.xingyi.core.monad
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
-import org.scalatest.BeforeAndAfter
 import one.xingyi.core.UtilsWithLoggingSpec
 import one.xingyi.core.http.Failer
 import one.xingyi.core.language.{AnyLanguage, MonadLanguage}
-import one.xingyi.core.monad._
 import one.xingyi.core.reflection.ClassTags
 
 import scala.concurrent.Future
-import scala.concurrent.duration.Duration
 import scala.language.{higherKinds, postfixOps}
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}

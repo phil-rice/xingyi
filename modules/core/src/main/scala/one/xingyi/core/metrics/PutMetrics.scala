@@ -2,7 +2,7 @@ package one.xingyi.core.metrics
 
 import scala.language.higherKinds
 import one.xingyi.core._
-import one.xingyi.core.functions.MonadCanFailWithException
+import one.xingyi.core.monad.MonadCanFailWithException
 import one.xingyi.core.strings.Strings
 import one.xingyi.core.success.SuccessState
 

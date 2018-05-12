@@ -1,8 +1,8 @@
 package one.xingyi.core.http
 
-import one.xingyi.core.functions.Liftable
-
 import one.xingyi.core.language.Language._
+import one.xingyi.core.monad.Liftable
+
 import scala.language.higherKinds
 
 trait HttpObjectFixture {

@@ -4,8 +4,8 @@ import one.xingyi.sample.domain.{Production, ProductionId, Programme, ProgrammeI
 import one.xingyi.tagless.TaglessLanguage
 import one.xingyi.sample.domain.{ProductionId, Programme, ProgrammeId}
 import one.xingyi.core.endpoint.MatchesServiceRequest
-import one.xingyi.core.functions.MonadCanFail
 import one.xingyi.core.http.{Failer, Get, ServiceRequest, ServiceResponse}
+import one.xingyi.core.monad.MonadCanFail
 
 import scala.language.higherKinds
 

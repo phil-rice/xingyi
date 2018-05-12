@@ -1,7 +1,7 @@
 package one.xingyi.core.endpoint
 
 import one.xingyi.core.UtilsSpec
-import one.xingyi.core.functions.{MonadCanFail, ScalaFutureAsAsyncAndMonadAndFailer}
+import one.xingyi.core.functions.ScalaFutureAsAsyncAndMonadAndFailer
 import one.xingyi.core.http._
 
 import scala.concurrent.Future

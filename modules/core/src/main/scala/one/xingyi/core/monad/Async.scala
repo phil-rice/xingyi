@@ -1,4 +1,4 @@
-package one.xingyi.core.functions
+package one.xingyi.core.monad
 
 import scala.concurrent.duration.Duration
 import scala.language.higherKinds

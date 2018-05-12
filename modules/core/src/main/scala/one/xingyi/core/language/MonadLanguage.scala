@@ -1,6 +1,7 @@
 package one.xingyi.core.language
 
 import one.xingyi.core.functions._
+import one.xingyi.core.monad.{Functor, Monad, MonadCanFailWithException, MonadWithException}
 
 import scala.language.higherKinds
 import scala.util.{Failure, Success, Try}

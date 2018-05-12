@@ -1,13 +1,12 @@
 package one.xingyi.core.aggregate
 
-import one.xingyi.core.{AsyncFixture, UtilsSpec}
-import one.xingyi.core.functions.{Async, Monad, MonadCanFailWithException}
-
-import scala.util.Success
 import one.xingyi.core.language.Language._
+import one.xingyi.core.monad.{Async, Monad, MonadCanFailWithException}
+import one.xingyi.core.{AsyncFixture, UtilsSpec}
 
 import scala.concurrent.Future
 import scala.language.higherKinds
+import scala.util.Success
 
 class EnricherKleisliSpec[M[_], Fail](implicit monadCanFail: MonadCanFailWithException[M, Fail], async: Async[M]) extends UtilsSpec with AsyncFixture[M] {
 
@@ -34,7 +33,7 @@ class EnricherKleisliSpec[M[_], Fail](implicit monadCanFail: MonadCanFailWithExc
     x(1).await shouldBe "1/1,2,3/[(1,value(1)),(2,value(2)),(3,value(3))]"
   }
 }
-import one.xingyi.core.functions.AsyncForScalaFuture._
-import ImplicitsForTest._
+import one.xingyi.core.monad.AsyncForScalaFuture.ImplicitsForTest._
+import one.xingyi.core.monad.AsyncForScalaFuture._
 
 class ScalaFutureEnricherKleisliSpec extends EnricherKleisliSpec[Future, Throwable]

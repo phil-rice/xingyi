@@ -1,4 +1,4 @@
-package one.xingyi.core.functions
+package one.xingyi.core.monad
 
 import one.xingyi.core.language.Language._
 
