@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 import org.scalatest.BeforeAndAfter
 import one.xingyi.core.UtilsWithLoggingSpec
 import one.xingyi.core.http.Failer
-import one.xingyi.core.language.MonadLanguage
+import one.xingyi.core.language.{AnyLanguage, MonadLanguage}
 import one.xingyi.core.reflection.ClassTags
 
 import scala.concurrent.Future
@@ -118,8 +118,8 @@ trait AbstractMonadTests[A[_]] extends AbstractFunctorTests[A] with MonadLanguag
 
 }
 
-abstract class AbstractMonadWithExceptionTests[A[_]](implicit m: MonadWithException[A]) extends AbstractMonadTests[A] {
-  def liftTryA[T](t: Try[T]): A[T] = m.liftTry(t)
+abstract class AbstractMonadWithExceptionTests[A[_]](implicit m: MonadWithException[A]) extends AbstractMonadTests[A] with AnyLanguage{
+  def liftTryA[T](t: Try[T]): A[T] = t.liftTry
   def liftA[T](t: T): A[T] = liftTryA(Success(t))
 
 
@@ -151,13 +151,6 @@ abstract class AbstractMonadWithExceptionTests[A[_]](implicit m: MonadWithExcept
     checkHasException[RuntimeException](m.exception(runtimeException)) shouldBe runtimeException
   }
 
-  it should "liftTry into A for successes" in {
-    getT(m.liftTry(Success("someString"))) shouldBe "someString"
-  }
-
-  it should "liftTry into A for failures" in {
-    checkHasException[RuntimeException](m.liftTry(Failure(runtimeException))) shouldBe runtimeException
-  }
 
   it should "recover from exceptions" in {
     getT(m.recover(liftTryA(Failure(runtimeException)), x => m.liftM(x.getMessage))) shouldBe "someMessage"

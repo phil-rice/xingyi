@@ -34,16 +34,18 @@ trait MonadLanguage extends FunctorLanguage {
 
   implicit class MonadWithExceptionPimper[M[_], T](m: M[T])(implicit monad: MonadWithException[M]) {
     def registerSideeffect(fn: Try[T] => Unit): M[T] = monad.flatMap[T, T](monad.recover(m, { e => fn(Failure(e)); monad.exception[T](e) }), { x => fn(Success(x)); monad.liftM(x) })
-
   }
 
+  implicit class MonadCanFailPimper[M[_], T](m: M[T]) {
+
+  }
   implicit class MonadCanFailWithExceptionPimper[M[_], T](m: M[T]) {
-    def onComplete[Fail]( fn: Try[Either[Fail, T]] => Unit)(implicit monad: MonadCanFailWithException[M, Fail]): M[T] = monad.foldWithExceptionAndFail[T, T](m,
+    def onComplete[Fail](fn: Try[Either[Fail, T]] => Unit)(implicit monad: MonadCanFailWithException[M, Fail]): M[T] = monad.foldWithExceptionAndFail[T, T](m,
       { e: Throwable => fn(Failure(e)); monad.exception(e) },
       { f: Fail => fn(Success(Left(f))); monad.fail(f) },
       { t: T => fn(Success(Right(t))); monad.liftM(t) }
     )
-    def mapTryFail[Fail,  T1]( fn: Try[Either[Fail, T]] => M[T1])(implicit monad: MonadCanFailWithException[M, Fail]): M[T1] = monad.foldWithExceptionAndFail[T, T1](m,
+    def mapTryFail[Fail, T1](fn: Try[Either[Fail, T]] => M[T1])(implicit monad: MonadCanFailWithException[M, Fail]): M[T1] = monad.foldWithExceptionAndFail[T, T1](m,
       t => fn(Failure(t)),
       f => fn(Success(Left(f))),
       t => fn(Success(Right(t))))

@@ -48,7 +48,7 @@ trait AnyLanguage {
 
 
   implicit class TryPimper[T](tryT: Try[T]) {
-    def liftTry[M[_]](implicit monadWithException: MonadWithException[M]): M[T] = monadWithException.liftTry(tryT)
+    def liftTry[M[_]](implicit monadWithException: MonadWithException[M]): M[T] = tryT.fold(monadWithException.exception, monadWithException.liftM)
   }
 
 }

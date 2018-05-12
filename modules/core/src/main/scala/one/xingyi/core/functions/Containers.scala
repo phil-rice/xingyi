@@ -20,11 +20,9 @@ trait Monad[M[_]] extends Functor[M] {
 }
 
 trait MonadWithException[M[_]] extends Monad[M] {
-
   def exception[T](t: Throwable): M[T]
   def recover[T](m: M[T], fn: Throwable => M[T]): M[T]
 
-  def liftTry[T](t: Try[T]): M[T] = t.fold(exception, liftM)
 }
 
 trait LiftFailure[M[_], Fail] {
@@ -34,6 +32,14 @@ trait LiftFailure[M[_], Fail] {
 trait MonadCanFail[M[_], Fail] extends Monad[M] with LiftFailure[M, Fail] {
   def mapEither[T, T1](m: M[T], fn: Either[Fail, T] => M[T1]): M[T1]
 }
+object MonadCanFail {
+  implicit def monadCanFailForEither[Fail]: MonadCanFail[({type λ[α] = Either[Fail, α]})#λ, Fail] = new MonadCanFailForEither[Fail]
+}
+
+trait MonadCanFailWithException[M[_], Fail] extends MonadWithException[M] with MonadCanFail[M, Fail] {
+  def foldWithExceptionAndFail[T, T1](m: M[T], fnE: Throwable => M[T1], fnFailure: Fail => M[T1], fn: T => M[T1]): M[T1]
+}
+
 
 class MonadCanFailForEither[Fail] extends MonadCanFail[({type λ[α] = Either[Fail, α]})#λ, Fail] {
   type M[T] = Either[Fail, T]
@@ -44,12 +50,4 @@ class MonadCanFailForEither[Fail] extends MonadCanFail[({type λ[α] = Either[Fa
   override def mapEither[T, T1](m: Either[Fail, T], fn: Either[Fail, T] => M[T1]): Either[Fail, T1] = fn(m)
 }
 
-object MonadCanFail {
-  implicit def monadCanFailForEither[Fail]: MonadCanFail[({type λ[α] = Either[Fail, α]})#λ, Fail] = new MonadCanFailForEither[Fail]
-}
-
-trait MonadCanFailWithException[M[_], Fail] extends MonadWithException[M] with MonadCanFail[M, Fail] {
-  def foldWithExceptionAndFail[T, T1](m: M[T], fnE: Throwable => M[T1], fnFailure: Fail => M[T1], fn: T => M[T1]): M[T1]
-
-}
 
