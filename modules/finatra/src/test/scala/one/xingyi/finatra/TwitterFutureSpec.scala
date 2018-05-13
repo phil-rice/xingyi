@@ -8,6 +8,7 @@ import one.xingyi.core.functions._
 import one.xingyi.core.http.Failer.failerForThrowable
 import one.xingyi.core.http.ResponseCategoriserSpec
 import one.xingyi.core.local.AbstractLocalOpsSpec
+import one.xingyi.core.monad.{AbstractAsyncTests, AbstractMonadCanFailWithFailWithExceptionAsThrowableTests}
 import one.xingyi.core.objectify.AbstractObjectifySpec
 
 class TwitterFutureSpec extends AbstractMonadCanFailWithFailWithExceptionAsThrowableTests[TFuture] with FlatSpecLike with AbstractAsyncTests[TFuture] {

@@ -3,13 +3,11 @@ package one.xingyi.core.profiling
 import java.util.concurrent.atomic.AtomicReference
 
 import one.xingyi.core.UtilsSpec
-import one.xingyi.core.functions.ScalaFutureAsAsyncAndMonadAndFailer
+import one.xingyi.core.language.Language._
+import one.xingyi.core.monad.ScalaFutureAsAsyncAndMonadAndFailer
 import one.xingyi.core.time.{MockTimeService, NanoTimeService}
 
 import scala.concurrent.Future
-import one.xingyi.core.language.Language._
-import org.mockito.Mockito._
-
 import scala.util.{Failure, Success, Try}
 
 class ProfilingServiceSpec extends UtilsSpec with ScalaFutureAsAsyncAndMonadAndFailer {

@@ -5,14 +5,15 @@ import com.twitter.finatra.utils.FuturePools
 import com.twitter.util.{Await, FuturePool, Local, Return, Throw, Duration => TDuration, Future => TFuture}
 import one.xingyi.core.http._
 import one.xingyi.core.local.{Holder, SimpleLocalOps}
-import one.xingyi.core.monad.{Async, MonadCanFailWithException}
+import one.xingyi.core.monad.{Async, LocalVariable, MonadCanFailWithException, MonadWithState}
 
+import scala.collection.concurrent.TrieMap
 import scala.concurrent.duration.Duration
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.util.{Try => STry}
 
-class AsyncForTwitterFuture(implicit futurePool: FuturePool) extends Async[TFuture] with MonadCanFailWithException[TFuture, Throwable] {
+class AsyncForTwitterFuture(implicit futurePool: FuturePool) extends Async[TFuture] with MonadCanFailWithException[TFuture, Throwable] with MonadWithState[TFuture] {
   override def async[T](t: => T) = futurePool(t)
   override def respond[T](m: TFuture[T], fn: STry[T] => Unit) = m.respond(tryS => fn(tryS.asScala))
   override def await[T](m: TFuture[T]) = Await.result(m, TDuration.fromSeconds(5))
@@ -22,7 +23,7 @@ class AsyncForTwitterFuture(implicit futurePool: FuturePool) extends Async[TFutu
     case Throw(t) => fnE(t)
   }
   override def exception[T](t: Throwable) = TFuture.exception(t)
-  override def recover[T](m:   TFuture[T], fn: Throwable => TFuture[T]): TFuture[T] = m.rescue { case e: Throwable => fn(e) }
+  override def recover[T](m: TFuture[T], fn: Throwable => TFuture[T]): TFuture[T] = m.rescue { case e: Throwable => fn(e) }
   override def flatMapEither[T, T1](m: TFuture[T], fn: Either[Throwable, T] => TFuture[T1]): TFuture[T1] = {
     m.transform {
       case Return(t) => fn(Right(t))
@@ -34,6 +35,17 @@ class AsyncForTwitterFuture(implicit futurePool: FuturePool) extends Async[TFutu
   override def map[T, T1](m: TFuture[T], fn: T => T1) = m.map(fn)
   override def fail[T](f: Throwable) = TFuture.exception(f)
   override def liftM[T](t: T) = TFuture.value(t)
+
+  def localVariableMap = new TrieMap[LocalVariable[_], Local[_]]()
+  def getLocal[V](localVariable: LocalVariable[V]) = localVariableMap.getOrElseUpdate(localVariable, new Local[Seq[V]]()).asInstanceOf[Local[Seq[V]]]
+
+  override def putInto[V, T](localVariable: LocalVariable[V], t: V)(m: TFuture[T]): TFuture[T] = m.map { x =>
+    val local = getLocal(localVariable)
+    local.update(local().fold(Seq(t))(old => old ++ Seq(t)))
+    x
+  }
+  override def mapState[V, T, T1](m: TFuture[T], localVariable: LocalVariable[V], fn: Seq[V] => T1): TFuture[T1] = m.map { x => fn(getLocal(localVariable)().getOrElse(Seq())) }
+  override def mapWith[V, T, T1](m: TFuture[T], localVariable: LocalVariable[V], fn: (T, Seq[V]) => T1): TFuture[T1] = m.map { x => fn(x, getLocal(localVariable)().getOrElse(Seq())) }
 }
 
 object FinatraImplicits {

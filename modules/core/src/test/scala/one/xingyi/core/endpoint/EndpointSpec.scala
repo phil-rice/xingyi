@@ -1,14 +1,14 @@
 package one.xingyi.core.endpoint
 
 import one.xingyi.core.UtilsSpec
-import one.xingyi.core.functions.{Functions, ScalaFutureAsAsyncAndMonadAndFailer}
 import one.xingyi.core.http._
 import one.xingyi.core.language.Language._
+import one.xingyi.core.monad.AsyncForScalaFuture.ImplicitsForTest._
+import one.xingyi.core.monad.AsyncForScalaFuture._
+import one.xingyi.core.monad.ScalaFutureAsAsyncAndMonadAndFailer
+import org.mockito.Mockito._
 
 import scala.concurrent.Future
-import org.mockito.Mockito._
-import one.xingyi.core.monad.AsyncForScalaFuture._
-import ImplicitsForTest._
 
 class EndpointSpec extends UtilsSpec with ServiceRequestForEndpointFixture {
 

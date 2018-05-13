@@ -2,17 +2,12 @@ package one.xingyi.core.metrics
 
 import java.util.concurrent.Executors
 
-import org.mockito.Matchers.any
-import org.mockito.Mockito._
-import org.scalatest.concurrent.Eventually
-import org.scalatest.mock.MockitoSugar
-import org.scalatest.{FlatSpec, Matchers}
 import one.xingyi.core.UtilsSpec
-import one.xingyi.core.functions.ScalaFutureAsAsyncAndMonadAndFailer
+import one.xingyi.core.monad.ScalaFutureAsAsyncAndMonadAndFailer
 import one.xingyi.core.time.MockTimeService
+import org.mockito.Mockito._
 
-import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 import scala.util.{Failure, Success}
 

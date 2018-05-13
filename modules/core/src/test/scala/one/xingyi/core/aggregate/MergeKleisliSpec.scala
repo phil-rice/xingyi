@@ -1,8 +1,7 @@
 package one.xingyi.core.aggregate
 
-import one.xingyi.core.functions.ScalaFutureAsAsyncAndMonadAndFailer
 import one.xingyi.core.language.Language._
-import one.xingyi.core.monad.{Async, Monad, MonadCanFailWithException}
+import one.xingyi.core.monad.{Async, Monad, MonadCanFailWithException, ScalaFutureAsAsyncAndMonadAndFailer}
 import one.xingyi.core.{AsyncFixture, UtilsSpec}
 
 import scala.concurrent.Future

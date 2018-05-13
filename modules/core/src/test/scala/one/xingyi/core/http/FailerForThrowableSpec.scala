@@ -2,7 +2,7 @@ package one.xingyi.core.http
 
 import one.xingyi.core.UtilsSpec
 import one.xingyi.core.exceptions.{EndpointNotFoundException, NotFoundException, UnexpectedStatusCodeException}
-import one.xingyi.core.functions.ScalaFutureAsAsyncAndMonadAndFailer
+import one.xingyi.core.monad.ScalaFutureAsAsyncAndMonadAndFailer
 
 class FailerForThrowableSpec extends UtilsSpec with ScalaFutureAsAsyncAndMonadAndFailer {
 

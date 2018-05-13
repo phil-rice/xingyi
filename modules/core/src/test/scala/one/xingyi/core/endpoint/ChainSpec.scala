@@ -1,12 +1,11 @@
 package one.xingyi.core.endpoint
 
 import one.xingyi.core.UtilsSpec
-import one.xingyi.core.functions.ScalaFutureAsAsyncAndMonadAndFailer
 import one.xingyi.core.http._
+import one.xingyi.core.monad.ScalaFutureAsAsyncAndMonadAndFailer
+import org.mockito.Mockito._
 
 import scala.concurrent.Future
-import org.mockito.Mockito._
-import one.xingyi.core.exceptions.EndpointNotFoundException
 
 class ChainSpec extends UtilsSpec with ServiceRequestForEndpointFixture {
 

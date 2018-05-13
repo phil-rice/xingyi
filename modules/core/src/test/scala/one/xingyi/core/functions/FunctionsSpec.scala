@@ -1,6 +1,6 @@
 package one.xingyi.core.functions
 
-import one.xingyi.core.monad.LiftFunctionKleisli
+import one.xingyi.core.monad.{LiftFunctionKleisli, ScalaFutureAsAsyncAndMonadAndFailer}
 import one.xingyi.core.strings.Strings
 import one.xingyi.core.{FunctionFixture, UtilsSpec}
 

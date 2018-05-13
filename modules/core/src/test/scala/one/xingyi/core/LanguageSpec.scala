@@ -1,12 +1,11 @@
 package one.xingyi.core
 
-import one.xingyi.core.functions.ScalaFutureAsAsyncAndMonadAndFailer
 import one.xingyi.core.language.Language._
-import one.xingyi.core.monad.MonadCanFail
+import one.xingyi.core.monad.{MonadCanFail, ScalaFutureAsAsyncAndMonadAndFailer}
+import org.mockito.Mockito._
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
-import org.mockito.Mockito._
+import scala.util.{Failure, Success}
 
 class LanguageSpec extends UtilsSpec with ScalaFutureAsAsyncAndMonadAndFailer with AsyncFixture[Future] with FunctionFixture {
 
@@ -37,7 +36,7 @@ class LanguageSpec extends UtilsSpec with ScalaFutureAsAsyncAndMonadAndFailer wi
 
   it should "have a kleisli composer that passes the output to a function|=>" in {
     (kleisli(1, Success(2)) |=> fn(2, 3)) (1).await() shouldBe 3
-    intercept[RuntimeException]((kleisli(1, Failure(runtimeException)) |=> fn(2, 3)) (1).await() ) shouldBe runtimeException
+    intercept[RuntimeException]((kleisli(1, Failure(runtimeException)) |=> fn(2, 3)) (1).await()) shouldBe runtimeException
     intercept[RuntimeException]((kleisli(1, Success(2)) |=> fn(2, throw runtimeException)) (1).await()) shouldBe runtimeException
   }
 

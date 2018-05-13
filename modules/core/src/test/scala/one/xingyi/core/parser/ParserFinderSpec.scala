@@ -1,9 +1,8 @@
 package one.xingyi.core.parser
 
-import one.xingyi.core.functions.ContainerSpec
 import one.xingyi.core.http.ContentType
 import one.xingyi.core.json.FromJson
-import one.xingyi.core.monad.{Functor, MonadCanFail}
+import one.xingyi.core.monad.{ContainerSpec, Functor, MonadCanFail}
 import org.mockito.Mockito._
 
 import scala.concurrent.duration._

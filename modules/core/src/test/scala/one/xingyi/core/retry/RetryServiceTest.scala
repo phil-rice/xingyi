@@ -1,9 +1,9 @@
 package one.xingyi.core.retry
 
-import org.mockito.Mockito._
 import one.xingyi.core.UtilsWithLoggingSpec
-import one.xingyi.core.functions.ScalaFutureAsAsyncAndMonadAndFailer
+import one.xingyi.core.monad.ScalaFutureAsAsyncAndMonadAndFailer
 import one.xingyi.core.time.Delay
+import org.mockito.Mockito._
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
