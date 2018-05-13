@@ -48,3 +48,19 @@ class MonadCanFailForEither[Fail] extends MonadCanFail[({type λ[α] = Either[Fa
 }
 
 
+trait MonadWithState[M[_]] extends Monad[M] {
+  def mapState[V, T, T1](m: M[T], localVariable: LocalVariable[V], fn: Seq[V] => T1): M[T1]
+  def mapWith[V, T, T1](m: M[T], localVariable: LocalVariable[V], fn: (T, Seq[V]) => T1): M[T1]
+  def putInto[V, T](localVariable: LocalVariable[V], t: V)(m: M[T]): M[T]
+  def liftMAndPut[T, V](t: T, localVariable: LocalVariable[V], v: V): M[T] = putInto(localVariable, v)(liftM(t))
+}
+
+object LocalVariable {
+  private val nextIndex = new AtomicInteger()
+  def apply[V]() = new LocalVariable[V](nextIndex.getAndIncrement())
+}
+
+class LocalVariable[V](val offset: Int) {
+  //this is safe, and is the price for not having horrible type signatures polluting every method
+  def getFrom(state: Map[Int, Seq[Any]]): Seq[V] = state.getOrElse(offset, Nil).asInstanceOf[Seq[V]]
+}

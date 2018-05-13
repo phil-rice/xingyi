@@ -34,6 +34,7 @@ trait ScalaFutureAsAsyncAndMonadAndFailer {
 trait AbstractAsyncTests[A[_]] extends ContainerSpec[A] {
   def async: Async[A]
   override def getT[X](a: A[X]) = async.await(a)
+  def isActuallyAsync: Boolean = true
 
 
   behavior of s"Async for ${async.getClass.getSimpleName}"
@@ -71,8 +72,10 @@ trait AbstractAsyncTests[A[_]] extends ContainerSpec[A] {
 
 
   it should "async values into A on a different thread" in {
-    val thisThread = Thread.currentThread().getName
-    getT(async.async(Thread.currentThread().getName)) shouldNot be(thisThread)
+    if (isActuallyAsync) {
+      val thisThread = Thread.currentThread().getName
+      getT(async.async(Thread.currentThread().getName)) shouldNot be(thisThread)
+    }
   }
 }
 
@@ -116,7 +119,7 @@ trait AbstractMonadTests[A[_]] extends AbstractFunctorTests[A] with MonadLanguag
 
 }
 
-abstract class AbstractMonadWithExceptionTests[A[_]](implicit m: MonadWithException[A]) extends AbstractMonadTests[A] with AnyLanguage{
+abstract class AbstractMonadWithExceptionTests[A[_]](implicit m: MonadWithException[A]) extends AbstractMonadTests[A] with AnyLanguage {
   def liftTryA[T](t: Try[T]): A[T] = t.liftTry
   def liftA[T](t: T): A[T] = liftTryA(Success(t))
 
@@ -283,6 +286,24 @@ abstract class AbstractMonadCanFailWithFailWithExceptionNotAsThrowableTests[A[_]
   it should "have a flatMap that returns the fail" in {
     callOnComplete(monad.flatMap[String, String](monad.fail(makeFail("someValue")), _ => throw new RuntimeException)) shouldBe Success(Left(makeFail("someValue")))
   }
+}
 
+
+abstract class AbstractMonadCanFailWithExceptionAndStateTests[A[_]](implicit monad: MonadCanFailWithException[A, Throwable]) extends AbstractMonadCanFailWithFailWithExceptionAsThrowableTests[A] with AbstractMonadHasStateTests[A] {
+  behavior of s"MonadWithState and for ${monadWithState.getClass.getSimpleName}"
+  it should "have a mapState method which works when there is an exception in the monad " in {
+    monad.exception[Int](runtimeException).putInto(lv1, 10).mapState(lv1)(fn(Seq(10), 2)).mapWith(lv1)(fn2(2, Seq(10), 3)) |> getT shouldBe 3
+  }
+  it should "have a mapState method which works when there is an exception in the map fn " in {
+    val m = 1.liftM.mapState(lv1)(_ => throw runtimeException)
+    intercept[RuntimeException](getT(m)) shouldBe runtimeException
+  }
+
+  it should "keep the state even with map methods that throw exceptions" in {
+    1.liftResultAndPut(lv1, 10).map(_ => throw new RuntimeException).mapState(lv1)(fn(Seq(10), 4)) |> getT shouldBe 4
+  }
+  it should "keep the state even with flatmap methods that throw exceptions" in {
+    1.liftResultAndPut(lv1, 10).flatMap(_ => throw new RuntimeException).mapState(lv1)(fn(Seq(10), 4)) |> getT shouldBe 4
+  }
 
 }

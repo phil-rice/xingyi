@@ -1,7 +1,7 @@
 package one.xingyi.core.language
 
 import one.xingyi.core.functions._
-import one.xingyi.core.monad.{Functor, Monad, MonadCanFailWithException, MonadWithException}
+import one.xingyi.core.monad._
 
 import scala.language.higherKinds
 import scala.util.{Failure, Success, Try}
@@ -37,9 +37,6 @@ trait MonadLanguage extends FunctorLanguage {
     def registerSideeffect(fn: Try[T] => Unit): M[T] = monad.flatMap[T, T](monad.recover(m, { e => fn(Failure(e)); monad.exception[T](e) }), { x => fn(Success(x)); monad.liftM(x) })
   }
 
-  implicit class MonadCanFailPimper[M[_], T](m: M[T]) {
-
-  }
   implicit class MonadCanFailWithExceptionPimper[M[_], T](m: M[T]) {
     def onComplete[Fail](fn: Try[Either[Fail, T]] => Unit)(implicit monad: MonadCanFailWithException[M, Fail]): M[T] = monad.foldWithExceptionAndFail[T, T](m,
       { e: Throwable => fn(Failure(e)); monad.exception(e) },
@@ -52,6 +49,11 @@ trait MonadLanguage extends FunctorLanguage {
       t => fn(Success(Right(t))))
   }
 
+  implicit class MonadWithStatePimper[M[_], T](m: M[T])(implicit monad: MonadWithState[M]) {
+    def mapWith[V, T1](localVariable: LocalVariable[V])(fn: (T, Seq[V]) => T1): M[T1] = monad.mapWith(m, localVariable, fn)
+    def mapState[V, T1](localVariable: LocalVariable[V])(fn: Seq[V] => T1): M[T1] = monad.mapState(m, localVariable, fn)
+    def putInto[V](localVariable: LocalVariable[V], t: V): M[T] = monad.putInto(localVariable, t)(m)
+  }
 }
 
 

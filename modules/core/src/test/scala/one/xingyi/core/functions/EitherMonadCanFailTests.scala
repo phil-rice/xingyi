@@ -5,7 +5,7 @@ import one.xingyi.core.monad.MonadCanFail
 import scala.util.Try
 
 //I cannot work out how to make this work: the lamba type isn't great. Hence the inheritor
-class AbstractEitherMonadCanFailTests(implicit val monad: MonadCanFail[EitherString, String]) extends AbstractMonadCanFailTests[EitherString, String] {
+abstract class AbstractEitherMonadCanFailTests(implicit  monad: MonadCanFail[EitherString, String]) extends AbstractMonadCanFailTests[EitherString, String] {
   //  override def getT[T](m: EitherString[T]): T = m.right.getOrElse(fail("didn't hold right"))
   override def liftA[T](t: T): EitherString[T] = Right(t)
   override def makeFail(s: String): String = s

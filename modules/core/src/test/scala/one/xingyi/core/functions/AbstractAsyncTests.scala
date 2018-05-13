@@ -167,7 +167,7 @@ trait MonadCanFailFixture[A[_], Fail] {
 }
 
 //only extended by those that don't have MonadCanFailWithException.
-abstract class AbstractMonadCanFailTests[A[_], Fail: ClassTag](implicit monad: MonadCanFail[A, Fail]) extends AbstractMonadTests[A] with MonadCanFailFixture[A, Fail] {
+abstract class AbstractMonadCanFailTests[A[_], Fail: ClassTag](implicit val monad: MonadCanFail[A, Fail]) extends AbstractMonadTests[A] with MonadCanFailFixture[A, Fail] {
   behavior of s"monad can fail ${getClass.getSimpleName} with fail being ${ClassTags.nameOf[Fail]}"
 
   it should "have a mapEither that works when holds a T" in {
