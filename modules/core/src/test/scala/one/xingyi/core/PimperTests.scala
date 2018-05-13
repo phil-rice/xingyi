@@ -2,16 +2,15 @@ package one.xingyi.core
 
 import java.util.concurrent.atomic.AtomicReference
 
-import one.xingyi.core.functions._
+import one.xingyi.core.language.Language._
+import one.xingyi.core.monad.AsyncForScalaFuture.ImplicitsForTest._
 import one.xingyi.core.monad.AsyncForScalaFuture._
-import ImplicitsForTest._
+import one.xingyi.core.monad.MonadCanFail
 import org.scalatest.Matchers
 
 import scala.concurrent.Future
 import scala.language.higherKinds
-import scala.util.{Failure, Success, Try}
-import one.xingyi.core.language.Language._
-import one.xingyi.core.monad.MonadCanFail
+import scala.util.{Failure, Success}
 
 trait FunctionFixture extends Matchers{
   def fn[X, Y](expected: X, y: => Y) = { x: X => x shouldBe expected; y }
@@ -22,20 +21,7 @@ trait FunctionFixture extends Matchers{
 }
 
 class PimperTests extends UtilsSpec with FunctionFixture {
-  //  implicit class AnyPimper[T](t: T) {
-  //    def |>[T2](fn: T => T2) = fn(t)
-  //    def liftM[M[_]](implicit monad: Monad[M]): M[T] = monad.liftM(t)
-  //    def |+>[T1](fn: T => T => T1): T1 = fn(t)(t)
-  //    def liftException[M[_], T1](implicit async: MonadWithException[M], ev: T <:< Throwable): M[T1] = async.exception(t)
-  //    def |?[M[_] : Functor, Failure](validation: T => Seq[Failure])(implicit withFailure: MonadCanFail[M, Failure], multipleFailures: FailureMaker[Seq[Failure], Failure]): M[T] =
-  //      validation(t) match {
-  //        case Nil => t.liftM
-  //        case Seq(single) => withFailure.fail(single)
-  //        case f => withFailure.fail(multipleFailures(f))
-  //      }
-  //  }
-
-  val runtimeException = new RuntimeException("someErrorMessage")
+    val runtimeException = new RuntimeException("someErrorMessage")
   behavior of "AnyPimper"
 
   it should "have a |> that passes the any to a function" in {

@@ -38,18 +38,6 @@ trait MonadCanFailWithException[M[_], Fail] extends MonadWithException[M] with M
   def foldWithExceptionAndFail[T, T1](m: M[T], fnE: Throwable => M[T1], fnFailure: Fail => M[T1], fn: T => M[T1]): M[T1]
 }
 
-object LocalVariable {
-  private val nextIndex = new AtomicInteger()
-  def apply[V]() = new LocalVariable[V](nextIndex.getAndIncrement())
-}
-
-class LocalVariable[V](val offset: Int) {
-  def getFrom(state: Map[Int, Seq[Any]]): Seq[V] = state.getOrElse(offset, Nil).asInstanceOf[Seq[V]]
-}
-
-
-
-
 class MonadCanFailForEither[Fail] extends MonadCanFail[({type λ[α] = Either[Fail, α]})#λ, Fail] {
   type M[T] = Either[Fail, T]
   override def fail[T](f: Fail): Either[Fail, T] = Left(f)
