@@ -18,7 +18,7 @@ class FunctionsSpec extends UtilsSpec with FunctionFixture with LiftFunctionKlei
   }
 
   "Functions.identity" should "return the input" in {
-    Functions.identify("a") shouldBe "a"
+    Functions.identity("a") shouldBe "a"
   }
 
   "LiftFunctionKleisli" should "turn function into kleisli" in {

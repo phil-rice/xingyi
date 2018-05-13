@@ -22,8 +22,8 @@ class AsyncForTwitterFuture(implicit futurePool: FuturePool) extends Async[TFutu
     case Throw(t) => fnE(t)
   }
   override def exception[T](t: Throwable) = TFuture.exception(t)
-  override def recover[T](m: TFuture[T], fn: Throwable => TFuture[T]): TFuture[T] = m.rescue { case e: Throwable => fn(e) }
-  override def mapEither[T, T1](m: TFuture[T], fn: Either[Throwable, T] => TFuture[T1]): TFuture[T1] = {
+  override def recover[T](m:   TFuture[T], fn: Throwable => TFuture[T]): TFuture[T] = m.rescue { case e: Throwable => fn(e) }
+  override def flatMapEither[T, T1](m: TFuture[T], fn: Either[Throwable, T] => TFuture[T1]): TFuture[T1] = {
     m.transform {
       case Return(t) => fn(Right(t))
       case Throw(t) =>

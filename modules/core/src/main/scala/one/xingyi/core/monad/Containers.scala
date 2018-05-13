@@ -27,7 +27,7 @@ trait LiftFailure[M[_], Fail] {
 }
 
 trait MonadCanFail[M[_], Fail] extends Monad[M] with LiftFailure[M, Fail] {
-  def mapEither[T, T1](m: M[T], fn: Either[Fail, T] => M[T1]): M[T1]
+  def flatMapEither[T, T1](m: M[T], fn: Either[Fail, T] => M[T1]): M[T1]
 }
 
 object MonadCanFail {
@@ -36,12 +36,6 @@ object MonadCanFail {
 
 trait MonadCanFailWithException[M[_], Fail] extends MonadWithException[M] with MonadCanFail[M, Fail] {
   def foldWithExceptionAndFail[T, T1](m: M[T], fnE: Throwable => M[T1], fnFailure: Fail => M[T1], fn: T => M[T1]): M[T1]
-}
-
-trait MonadWithState[M[_]] extends Monad[M] {
-  def mapWith[V, T, T1](m: M[T], localVariable: LocalVariable[V], fn: (T, Seq[V]) => T1): M[T1]
-  def putInto[V, T](localVariable: LocalVariable[V], t: V)(m: M[T]): M[T]
-  def liftMAndPut[T, V](t: T, localVariable: LocalVariable[V], v: V): M[T] = putInto(localVariable, v)(liftM(t))
 }
 
 object LocalVariable {
@@ -62,7 +56,7 @@ class MonadCanFailForEither[Fail] extends MonadCanFail[({type λ[α] = Either[Fa
   override def liftM[T](t: T): Either[Fail, T] = Right(t)
   override def flatMap[T, T1](m: Either[Fail, T], fn: T => M[T1]): M[T1] = m.right.flatMap(fn)
   override def map[T, T1](m: Either[Fail, T], fn: T => T1): M[T1] = m.right.map(fn)
-  override def mapEither[T, T1](m: Either[Fail, T], fn: Either[Fail, T] => M[T1]): Either[Fail, T1] = fn(m)
+  override def flatMapEither[T, T1](m: Either[Fail, T], fn: Either[Fail, T] => M[T1]): Either[Fail, T1] = fn(m)
 }
 
 

@@ -167,12 +167,12 @@ abstract class AbstractMonadCanFailTests[A[_], Fail: ClassTag](implicit monad: M
 
   it should "have a mapEither that works when holds a T" in {
     val remember = new AtomicReference[Either[Fail, String]]()
-    getT(monad.mapEither[String, String](monad.liftM("someValue"), { e: Either[Fail, String] => remember.set(e); monad.liftM("result") })) shouldBe "result"
+    getT(monad.flatMapEither[String, String](monad.liftM("someValue"), { e: Either[Fail, String] => remember.set(e); monad.liftM("result") })) shouldBe "result"
     remember.get shouldBe Right("someValue")
   }
   it should "have a mapEither that works when holds a Fail" in {
     val remember = new AtomicReference[Either[Fail, String]]()
-    getT(monad.mapEither[String, String](monad.fail(makeFail("someValue")), { e: Either[Fail, String] => remember.set(e); monad.liftM("result") })) shouldBe "result"
+    getT(monad.flatMapEither[String, String](monad.fail(makeFail("someValue")), { e: Either[Fail, String] => remember.set(e); monad.liftM("result") })) shouldBe "result"
     remember.get shouldBe Left("someValue")
   }
 
@@ -200,7 +200,7 @@ abstract class AbstractMonadCanFailWithExceptionTests[A[_], Fail: ClassTag](impl
 
   it should "have a mapEither that works when holds a T" in {
     val remember = new AtomicReference[Either[Fail, String]]()
-    getT(monad.mapEither[String, String](monad.liftM("someValue"), { e: Either[Fail, String] => remember.set(e); monad.liftM("result") })) shouldBe "result"
+    getT(monad.flatMapEither[String, String](monad.liftM("someValue"), { e: Either[Fail, String] => remember.set(e); monad.liftM("result") })) shouldBe "result"
     remember.get shouldBe Right("someValue")
   }
 
@@ -248,7 +248,7 @@ abstract class AbstractMonadCanFailWithFailWithExceptionAsThrowableTests[A[_]](i
   it should "have a mapEither that works when holds a Throwable" in {
     val remember = new AtomicReference[Either[Throwable, String]]()
 
-    val m = monad.mapEither[String, String](monad.exception(runtimeException), { e: Either[Throwable, String] => remember.set(e); monad.liftM("result") })
+    val m = monad.flatMapEither[String, String](monad.exception(runtimeException), { e: Either[Throwable, String] => remember.set(e); monad.liftM("result") })
     getT(m) shouldBe "result"
     remember.get shouldBe Left(runtimeException)
   }
@@ -263,13 +263,13 @@ abstract class AbstractMonadCanFailWithFailWithExceptionNotAsThrowableTests[A[_]
   }
   it should "have a mapEither that works when holds a Fail" in {
     val remember = new AtomicReference[Either[Fail, String]]()
-    getT(monad.mapEither[String, String](monad.fail(makeFail("someValue")), { e: Either[Fail, String] => remember.set(e); monad.liftM("result") })) shouldBe "result"
+    getT(monad.flatMapEither[String, String](monad.fail(makeFail("someValue")), { e: Either[Fail, String] => remember.set(e); monad.liftM("result") })) shouldBe "result"
     remember.get shouldBe Left("someValue")
   }
   it should "have a mapEither that works when holds a Throwable" in {
     val remember = new AtomicReference[Either[Fail, String]]()
 
-    val m = monad.mapEither[String, String](monad.exception(runtimeException), { e: Either[Fail, String] => remember.set(e); monad.liftM("result") })
+    val m = monad.flatMapEither[String, String](monad.exception(runtimeException), { e: Either[Fail, String] => remember.set(e); monad.liftM("result") })
     intercept[RuntimeException](getT(m)) shouldBe runtimeException
     remember.get shouldBe null
   }

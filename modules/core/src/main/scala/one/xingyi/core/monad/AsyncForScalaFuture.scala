@@ -38,7 +38,7 @@ class AsyncForScalaFuture(implicit ex: ExecutionContextWithLocal) extends Async[
   override def flattenM[T](seq: Seq[Future[T]]): Future[Seq[T]] = Future.sequence(seq)
   override def async[T](t: => T) = Future(t)
   override def delay[T](duration: Duration)(block: => Future[T]): Future[T] = DelayedFuture(duration)(block)
-  override def mapEither[T, T1](m: Future[T], fn: Either[Throwable, T] => Future[T1]): Future[T1] = m.transformWith {
+  override def flatMapEither[T, T1](m: Future[T], fn: Either[Throwable, T] => Future[T1]): Future[T1] = m.transformWith {
     case Success(t) => fn(Right(t))
     case Failure(t) => fn(Left(t))
   }
@@ -51,7 +51,7 @@ class AsyncForScalaFutureEither[Fail] {
   type FutureEither[T] = Future[Either[Fail, T]]
 
   class AsyncForFutureEither(implicit ex: ExecutionContextWithLocal) extends MonadCanFailWithException[FutureEither, Fail] with Async[FutureEither] {
-    override def mapEither[T, T1](m: FutureEither[T], fn: Either[Fail, T] => FutureEither[T1]): FutureEither[T1] = m.flatMap(fn)
+    override def flatMapEither[T, T1](m: FutureEither[T], fn: Either[Fail, T] => FutureEither[T1]): FutureEither[T1] = m.flatMap(fn)
     override def async[T](t: => T): FutureEither[T] = Future(Right(t))
     override def respond[T](m: FutureEither[T], fn: Try[T] => Unit): FutureEither[T] = m.transformWith {
       _ match {
@@ -60,7 +60,7 @@ class AsyncForScalaFutureEither[Fail] {
         case Failure(t) => fn(Failure(t)); exception(t)
       }
     }
-    override def await[T](m: FutureEither[T]): T = Await.result(m, Duration(5, TimeUnit.SECONDS)).fold(f => throw new HadUnexpectedFailException(f), Functions.identify)
+    override def await[T](m: FutureEither[T]): T = Await.result(m, Duration(5, TimeUnit.SECONDS)).fold(f => throw new HadUnexpectedFailException(f), Functions.identity)
     override def delay[T](duration: Duration)(block: => FutureEither[T]): FutureEither[T] = DelayedFuture(duration)(block)
     override def flatMap[T, T1](m: FutureEither[T], fn: T => FutureEither[T1]): FutureEither[T1] = {
       m.flatMap {

@@ -1,7 +1,7 @@
 package one.xingyi.core.language
 
 import one.xingyi.core.functions._
-import one.xingyi.core.monad.{Functor, Liftable, MonadCanFail, MonadWithException}
+import one.xingyi.core.monad._
 
 import scala.util.Try
 import scala.language.higherKinds
@@ -40,7 +40,6 @@ trait AnyLanguage {
       result
     }
     def sideeffectIfIs[Sub <: T](fn: Sub => Unit)(implicit classTag: ClassTag[Sub]) = if (classTag.runtimeClass.isAssignableFrom(t.getClass)) fn(t.asInstanceOf[Sub])
-
   }
 
   implicit class BooleanPimper(boolean: Boolean) {
@@ -51,5 +50,4 @@ trait AnyLanguage {
   implicit class TryPimper[T](tryT: Try[T]) {
     def liftTry[M[_]](implicit monadWithException: MonadWithException[M]): M[T] = tryT.fold(monadWithException.exception, monadWithException.liftM)
   }
-
 }
