@@ -18,11 +18,13 @@ trait AbstractMonadHasStateTests[M[_]] extends ContainerSpec[M] with AnyLanguage
   }
 
   it should "have a mapWith that works when the LocalVariable has been set" in {
-    1.liftResultAndPut(lv1, 10).mapWith(lv1)(fn2(1, Seq(10), 2)) |> getT shouldBe 2
-    1.liftResultAndPut(lv1, 10).mapWith(lv2)(fn2(1, Seq[Int](), 2)) |> getT shouldBe 2
+    println("start")
+    val x = 1.liftResultAndPut(lv1, 10).map{x => println(s"liftResultAndPut done$x"); x}.mapWith(lv1)(fn2(1, Seq(10), 2)) |> getT shouldBe 2
+//    1.liftResultAndPut(lv1, 10).mapWith(lv2)(fn2(1, Seq[Int](), 2)) |> getT shouldBe 2
   }
 
   it should "have a putIntoMethod" in {
+    println("start2")
     1.liftM.putInto(lv1, 10).mapWith(lv1)(fn2(1, Seq(10), 2)) |> getT shouldBe 2
     1.liftM.putInto(lv1, 10).putInto(lv1, 20).mapWith(lv1)(fn2(1, Seq(10, 20), 2)) |> getT shouldBe 2
     1.liftResultAndPut(lv1, 10).putInto(lv1, 20).mapWith(lv2)(fn2(1, Seq[Int](), 2)) |> getT shouldBe 2

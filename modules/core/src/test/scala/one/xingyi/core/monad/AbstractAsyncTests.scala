@@ -289,10 +289,15 @@ abstract class AbstractMonadCanFailWithFailWithExceptionNotAsThrowableTests[A[_]
 }
 
 
-abstract class AbstractMonadCanFailWithExceptionAndStateTests[A[_]](implicit monad: MonadCanFailWithException[A, Throwable]) extends AbstractMonadCanFailWithFailWithExceptionAsThrowableTests[A] with AbstractMonadHasStateTests[A] {
+trait AbstractMonadExceptionAndStateTests[A[_]] extends AbstractMonadHasStateTests[A] {
+
+  //Sadly this is Cake pattern. It's hard to avoid it
+   def monad: Monad[A]
+  def liftTryA[T](t: Try[T]): A[T]
+
   behavior of s"MonadWithState and for ${monadWithState.getClass.getSimpleName}"
   it should "have a mapState method which works when there is an exception in the monad " in {
-    monad.exception[Int](runtimeException).putInto(lv1, 10).mapState(lv1)(fn(Seq(10), 2)).mapWith(lv1)(fn2(2, Seq(10), 3)) |> getT shouldBe 3
+    liftTryA[Int](Failure(runtimeException)).putInto(lv1, 10).mapState(lv1)(fn(Seq(10), 2)).mapWith(lv1)(fn2(2, Seq(10), 3)) |> getT shouldBe 3
   }
   it should "have a mapState method which works when there is an exception in the map fn " in {
     val m = 1.liftM.mapState(lv1)(_ => throw runtimeException)

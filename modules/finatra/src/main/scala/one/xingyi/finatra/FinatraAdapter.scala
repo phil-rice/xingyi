@@ -13,6 +13,10 @@ import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.util.{Try => STry}
 
+object AsyncForTwitterFuture {
+  val localVariableMap = new TrieMap[LocalVariable[_], Local[_]]()
+
+}
 class AsyncForTwitterFuture(implicit futurePool: FuturePool) extends Async[TFuture] with MonadCanFailWithException[TFuture, Throwable] with MonadWithState[TFuture] {
   override def async[T](t: => T) = futurePool(t)
   override def respond[T](m: TFuture[T], fn: STry[T] => Unit) = m.respond(tryS => fn(tryS.asScala))
@@ -36,21 +40,32 @@ class AsyncForTwitterFuture(implicit futurePool: FuturePool) extends Async[TFutu
   override def fail[T](f: Throwable) = TFuture.exception(f)
   override def liftM[T](t: T) = TFuture.value(t)
 
-  def localVariableMap = new TrieMap[LocalVariable[_], Local[_]]()
-  def getLocal[V](localVariable: LocalVariable[V]) = localVariableMap.getOrElseUpdate(localVariable, new Local[Seq[V]]()).asInstanceOf[Local[Seq[V]]]
+
+  def getLocal[V](localVariable: LocalVariable[V]) = AsyncForTwitterFuture.localVariableMap.getOrElseUpdate(localVariable, new Local[Seq[V]]()).asInstanceOf[Local[Seq[V]]]
 
   override def putInto[V, T](localVariable: LocalVariable[V], t: V)(m: TFuture[T]): TFuture[T] = m.map { x =>
     val local = getLocal(localVariable)
-    local.update(local().fold(Seq(t))(old => old ++ Seq(t)))
+    println(s"putInto: $x $local $this ${AsyncForTwitterFuture.localVariableMap}")
+    val oldSeq = local().getOrElse(Seq())
+    println(s"  oldSeq: $oldSeq")
+    local.update(oldSeq ++ Seq(t))
+    println(s"  new: ${local()}")
+    println(s"  new: ${getLocal(localVariable)()}")
     x
   }
   override def mapState[V, T, T1](m: TFuture[T], localVariable: LocalVariable[V], fn: Seq[V] => T1): TFuture[T1] = m.map { x => fn(getLocal(localVariable)().getOrElse(Seq())) }
-  override def mapWith[V, T, T1](m: TFuture[T], localVariable: LocalVariable[V], fn: (T, Seq[V]) => T1): TFuture[T1] = m.map { x => fn(x, getLocal(localVariable)().getOrElse(Seq())) }
+  override def mapWith[V, T, T1](m: TFuture[T], localVariable: LocalVariable[V], fn: (T, Seq[V]) => T1): TFuture[T1] = m.map { x =>
+    val local = getLocal(localVariable)
+    println(s"in mapwith $local $this   ${AsyncForTwitterFuture.localVariableMap}")
+    println(s"   in mapwith ${local()}")
+    val seq = local().getOrElse(Seq())
+    println(s"  in mapwith - $seq")
+    fn(x, seq)
+  }
 }
 
 object FinatraImplicits {
 
-  implicit def asyncForTwitter(implicit futurePool: FuturePool) = new AsyncForTwitterFuture
   val localHolder = new Holder[Local] {
     override def makeHolder[V: ClassTag]: Local[V] = new Local()
     override def getValueOutOfHolder[V](holder: Local[V]): Option[V] = holder()
@@ -60,6 +75,7 @@ object FinatraImplicits {
   implicit val localOps = new SimpleLocalOps[TFuture, Local](localHolder)
   object ImplicitsForTest {
     implicit val futurePool = FuturePools.fixedPool("Future pool for tests", 20)
+    implicit val asyncForTwitter = new AsyncForTwitterFuture
 
   }
 
