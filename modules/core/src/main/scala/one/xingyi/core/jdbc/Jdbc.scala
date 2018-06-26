@@ -10,6 +10,7 @@ import scala.language.{higherKinds, postfixOps}
 import one.xingyi.core.language.AnyLanguage._
 import one.xingyi.core.closable.ClosableLanguage._
 
+object Jdbc extends Jdbc
 trait Jdbc {
   def connection[M[_] : ClosableM] = { d: DataSource => d.getConnection.liftClosable }
   def statement[M[_] : ClosableM] = { c: Connection => c.createStatement().liftClosable }

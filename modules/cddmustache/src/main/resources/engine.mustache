@@ -1,0 +1,17 @@
+{{#map}}
+    {{#traceData}}
+        <div class="index">
+            {{{index}}}
+        </div>
+        <div class="traceData">
+            {{>traceData}}
+        </div>
+    {{/traceData}}
+    {{^traceData}}
+        <div class="engine">
+            <a href="{{url}}">Engine</a>
+        {{#useCases}}{{>useCase}}{{/useCases}}{{#tree}}{{>decisionTree}}{{/tree}}
+    {{/traceData}}
+    </div>
+{{/map}}
+

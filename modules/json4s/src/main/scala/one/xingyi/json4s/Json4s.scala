@@ -39,6 +39,7 @@ trait Json4sWriter {
       case JsonString(s) => s
       case JsonInt(i) => i
       case JsonDouble(d) => d
+      case JsonBoolean(b) => b
       case j: JsonObject => JObject(j.nameAndValues.map { case (k, v) => (k, toJ(v)) }: _*)
       case JsonList(list) => JArray(list.map(toJ).toList)
     }

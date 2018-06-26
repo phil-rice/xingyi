@@ -12,6 +12,7 @@ val versions = new {
   val scalapact = "2.1.3"
   val junit = "4.12"
   val json4s = "3.5.3"
+  val mustache = "0.9.5"
 }
 
 lazy val commonSettings = Seq(
@@ -97,12 +98,31 @@ lazy val apacheDbcp2Settings = publishSettings ++ Seq(
   libraryDependencies += "com.h2database" % "h2" % "1.4.197"
 )
 
+lazy val mustacheSettings = publishSettings ++ Seq(
+  libraryDependencies += "com.github.spullara.mustache.java" % "scala-extensions-2.11" % versions.mustache
+)
+
+lazy val scalatestSettings = publishSettings ++ Seq(
+  libraryDependencies += "org.scalatest" %% "scalatest" % versions.scalatest
+)
+
 lazy val core = (project in file("modules/core")).
   settings(publishSettings: _*)
 
-val apachejdbc = (project in file("module/apachejdbc")).
+val apachejdbc = (project in file("modules/apachejdbc")).
   dependsOn(core % "test->test;compile->compile").
   settings(apacheDbcp2Settings)
+
+val cddmustache = (project in file("modules/cddmustache")).
+  dependsOn(core % "test->test;compile->compile").
+  aggregate(core).
+  settings(mustacheSettings)
+
+val cddscalatest = (project in file("modules/cddscalatest")).
+  dependsOn(core % "test->test;compile->compile").
+  dependsOn(cddengine % "test->test;compile->compile").
+  settings(scalatestSettings)
+
 
 lazy val tagless = (project in file("modules/tagless")).
   settings(publishSettings: _*).
@@ -111,6 +131,17 @@ lazy val tagless = (project in file("modules/tagless")).
 lazy val cddscenario = (project in file("modules/cddscenario")).
   settings(cddscenarioSettings: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core)
+
+val cddexamples = (project in file("modules/cddexamples")).
+  dependsOn(core % "test->test;compile->compile").
+  dependsOn(cddengine % "test->test;compile->compile").
+  dependsOn(cddscalatest % "test->test;compile->compile").
+  dependsOn(json4s % "test->test;compile->compile").
+  dependsOn(cddmustache % "test->test;compile->compile").
+//  dependsOn(cddlegacy % "test->test;compile->compile").
+  dependsOn(apachejdbc % "test->test;compile->compile").
+  settings(publishSettings)
+
 
 lazy val cddengine = (project in file("modules/cddengine")).
   settings(publishSettings: _*).
@@ -160,4 +191,4 @@ lazy val finatraSample = (project in file("modules/finatraSample")).
 val root = (project in file(".")).
   settings(publishSettings).
   settings(publishArtifact := false).
-  aggregate(core, finatra, finatraSample, sample, sampleServer, tagless, apachejdbc, json4s, cddscenario)
+  aggregate(core, finatra, finatraSample, sample, sampleServer, tagless, apachejdbc, json4s, cddmustache, cddscenario)
