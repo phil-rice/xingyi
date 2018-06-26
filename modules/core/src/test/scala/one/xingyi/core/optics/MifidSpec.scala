@@ -144,7 +144,6 @@ trait Question extends MifidSpec {
 }
 
 abstract class AbstractMifidBlackboardSpec[J: JsonWriter] extends UtilsSpec with MifidBuilder with Question {
-  implicit def bundle: ResourceBundle
 
   behavior of "entityB"
 
@@ -157,6 +156,7 @@ abstract class AbstractMifidBlackboardSpec[J: JsonWriter] extends UtilsSpec with
   }
 
   it should "make json " in {
+    implicit  val messageGetter = MessageGetter.fnGetter(x => s"[$x]")
     val e = BusinessType.comodityDealer name "somename" lotsOfMoney;
     new BlackboardToJson() apply new BlackboardToJsonData(List(), e, entityB) shouldBe ""
 

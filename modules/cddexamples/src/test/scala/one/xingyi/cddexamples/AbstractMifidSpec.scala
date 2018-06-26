@@ -15,6 +15,4 @@ class MifidSpec extends CddFlatSpec {
   override protected def engines: Try[List[Engine[_, _]]] = Try(List(new MifidDecisionMaker().categoriser))
 }
 
-class MifidBlackboardSpec extends AbstractMifidBlackboardSpec[JValue]{
-  implicit val bundle = ResourceBundle.getBundle("message")
-}
+class MifidBlackboardSpec extends AbstractMifidBlackboardSpec[JValue]

@@ -25,7 +25,14 @@ trait ToJsonWithPrefix[T] extends ((List[String], T) => JsonObject)
 
 case class BlackboardToJsonData[T, Issue](strings: List[String], entity: T, blackboard: Blackboard[T, Issue])
 
-class BlackboardToJson[Issue](implicit bundle: ResourceBundle) {
+trait MessageGetter extends (String => String)
+object MessageGetter {
+  def bundleMessageGetter(bundle: ResourceBundle): MessageGetter = key => bundle.getString(key)
+  def mapGetter(map: Map[String, String]): MessageGetter = key => map(key)
+  def fnGetter(fn: String => String): MessageGetter = key => fn(key)
+}
+
+class BlackboardToJson[Issue](implicit messageGetter: MessageGetter) {
   def linkJson[T, Child](blackboardToJsonData: BlackboardToJsonData[T, Issue], name: String, link: BlackboardLink[T, Child, Issue]): JsonValue = {
     import blackboardToJsonData._
     apply(new BlackboardToJsonData[Child, Issue](strings :+ name, link.lens(entity), link.blackboard))
@@ -35,7 +42,7 @@ class BlackboardToJson[Issue](implicit bundle: ResourceBundle) {
     import data._
     val rawObject = JsonObject(
       "id" -> data.strings.mkString("."),
-      "name" -> bundle.getString(("title" :: data.strings).mkString(".")),
+      "name" -> messageGetter(("title" :: data.strings).mkString(".")),
       "children" -> JsonList(blackboard.children.map { case (name, link) => linkJson(data, name, link) }.toList))
     blackboard.children.size match {
       case 0 => rawObject
