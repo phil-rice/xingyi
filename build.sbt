@@ -84,14 +84,9 @@ lazy val pactSettings = publishSettings ++ Seq(
   libraryDependencies += "junit" % "junit" % versions.junit % "test"
 )
 
-lazy val playJsonSetting = publishSettings ++ Seq(
-  libraryDependencies += "com.typesafe.play" %% "play-json" % versions.play
+lazy val cddscenarioSettings = publishSettings ++ Seq(
+  libraryDependencies += "org.scala-lang" % "scala-reflect" % versions.scala
 )
-
-//lazy val caffeineSettings = publishSettings ++ Seq(
-//  libraryDependencies += "com.github.blemale" %% "scaffeine" % "2.4.0" % "compile"
-//)
-
 
 lazy val json4sSettings = commonSettings ++ Seq(
   libraryDependencies += "org.json4s" %% "json4s-native" % versions.json4s
@@ -113,6 +108,14 @@ lazy val tagless = (project in file("modules/tagless")).
   settings(publishSettings: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core)
 
+lazy val cddscenario = (project in file("modules/cddscenario")).
+  settings(cddscenarioSettings: _*).
+  dependsOn(core % "test->test;compile->compile").aggregate(core)
+
+lazy val cddscripts = (project in file("modules/cddscripts")).
+  settings(publishSettings: _*).
+  dependsOn(core % "test->test;compile->compile").aggregate(core)
+
 lazy val test = (project in file("modules/test")).
   settings(publishSettings: _*).
   dependsOn(core % "test->test;compile->compile").
@@ -126,29 +129,6 @@ lazy val sampleServer = (project in file("modules/sampleServer")).
   dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   dependsOn(sample % "test->test;compile->compile").aggregate(sample).
   dependsOn(json4s)
-//  dependsOn(caffeine % "test->test;compile->compile").aggregate(caffeine)
-
-
-//lazy val caffeine = (project in file("modules/caffeine")).
-//  settings(caffeineSettings: _*).
-//  dependsOn(core % "test->test;compile->compile").aggregate(core)
-//lazy val language = (project in file("modules/language")).
-//  settings(commonSettings: _*).
-//  dependsOn(core % "test->test;compile->compile").aggregate(core)
-
-
-//lazy val playJson = (project in file("modules/playJson")).
-//  dependsOn(core % "test->test;compile->compile").aggregate(core).
-//  settings(playJsonSetting: _*)
-//
-//lazy val play = (project in file("modules/play")).
-//  dependsOn(core % "test->test;compile->compile").aggregate(core).
-//  settings(playSettings: _*)
-
-//
-//lazy val playSample = (project in file("modules/playSample")).
-//  dependsOn(play % "test->test;compile->compile").aggregate(play).
-//  settings(playSettings: _*).enablePlugins(PlayScala)
 
 lazy val finatra = (project in file("modules/finatra")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
@@ -175,4 +155,4 @@ lazy val finatraSample = (project in file("modules/finatraSample")).
 val root = (project in file(".")).
   settings(publishSettings).
   settings(publishArtifact := false).
-  aggregate(core, finatra, finatraSample, sample, sampleServer, tagless, apachejdbc, json4s)
+  aggregate(core, finatra, finatraSample, sample, sampleServer, tagless, apachejdbc, json4s, cddscenario)

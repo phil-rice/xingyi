@@ -51,9 +51,6 @@ trait SemiGroupSpec[T] extends UtilsSpec {
     add(add(one, two), three) shouldBe add(one, add(two, three))
   }
 
-  it should "allow lists to be added" in {
-    add(one, List(two)) shouldBe (three)
-  }
 }
 
 abstract class MonoidSpec[T](implicit monoid: Monoid[T], val classTag: ClassTag[T]) extends SemiGroupSpec[T] with ZeroSpec[T] {
