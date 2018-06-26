@@ -159,6 +159,7 @@ lazy val test = (project in file("modules/test")).
   settings(publishSettings: _*).
   dependsOn(core % "test->test;compile->compile").
   dependsOn(apachejdbc % "test->test;compile->compile").
+  dependsOn(json4s % "test->test;compile->compile").
   aggregate(core)
 
 lazy val sampleServer = (project in file("modules/sampleServer")).

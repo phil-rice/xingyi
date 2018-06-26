@@ -1,10 +1,13 @@
 package one.xingyi.core.optics
 
+import java.util.ResourceBundle
+
 import one.xingyi.core.builder.{HasId, No, RememberingAggregator2, Yes}
+import one.xingyi.core.json.{JsonList, JsonObject, JsonValue}
 import one.xingyi.core.language.AnyLanguage._
 import one.xingyi.core.map.Maps._
 import one.xingyi.core.misc.IdMaker
-
+import one.xingyi.core.json.JsonLanguage._
 //desired usage
 //given a composite object like 'entity' being able to go entityB.financialData.profitAndLoss.nettIncome and getting a  lens to the net income would be cool
 //even better entityB.financialData(2017).profitAndLoss.nettIncome
@@ -17,7 +20,30 @@ import one.xingyi.core.misc.IdMaker
 //Need to consider how to deal with financialData(2017)! But ignore that for now too
 
 case class ValidateProblem(s: String)
+trait ToJsonWithPrefix[T] extends ((List[String], T) => JsonObject)
 
+
+case class BlackboardToJsonData[T, Issue](strings: List[String], entity: T, blackboard: Blackboard[T, Issue])
+
+class BlackboardToJson[Issue](implicit bundle: ResourceBundle) {
+  def linkJson[T, Child](blackboardToJsonData: BlackboardToJsonData[T, Issue], name: String, link: BlackboardLink[T, Child, Issue]): JsonValue = {
+    import blackboardToJsonData._
+    apply(new BlackboardToJsonData[Child, Issue](strings :+ name, link.lens(entity), link.blackboard))
+  }
+
+  def apply[T](data: BlackboardToJsonData[T, Issue]) = {
+    import data._
+    val rawObject = JsonObject(
+      "id" -> data.strings.mkString("."),
+      "name" -> bundle.getString(("title" :: data.strings).mkString(".")),
+      "children" -> JsonList(blackboard.children.map { case (name, link) => linkJson(data, name, link) }.toList))
+    blackboard.children.size match {
+      case 0 => rawObject
+      case _ => rawObject.|+|("leaf" -> JsonObject("value" -> blackboard.stringLens(data.strings).get(entity)))
+      //        "validation" -> JsonList(validateFn(name :: prefix)(t).map(v => JsonString(v.s)))))
+    }
+  }
+}
 
 case class Blackboard[T, Issue](children: Map[String, BlackboardLink[T, _, Issue]], validate: Validator[T, Issue])() {
   def findLens[A](s: List[String]): Lens[T, A] = s match {

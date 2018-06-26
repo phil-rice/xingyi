@@ -3,8 +3,9 @@ package one.xingyi.finatraSample
 
 import java.util.concurrent.Executors
 
-import com.twitter.finagle.http.Request
+import com.twitter.finagle.http.{Request, Response}
 import com.twitter.finatra.http.Controller
+import com.twitter.finatra.http.response.ResponseBuilder
 import com.twitter.finatra.utils.FuturePools
 import com.twitter.util.{Future, FuturePool}
 import one.xingyi.core.cache._
@@ -19,7 +20,7 @@ import one.xingyi.tagless.TaglessLanguageLanguageForKleislis
 import org.json4s.JsonAST.JValue
 
 
-class FinatraPromotionSetup(implicit futurePool: FuturePool) extends Controller  with Json4sParser with Json4sWriter{
+class FinatraPromotionSetup(implicit futurePool: FuturePool) extends Controller with Json4sParser with Json4sWriter {
   implicit val monad = new AsyncForTwitterFuture
   implicit val httpFactory = new HttpFactory[Future, ServiceRequest, ServiceResponse] {
     override def apply(v1: ServiceName) = { req => Future.value(ServiceResponse(Status(200), Body(s"response; ${req.body.map(_.s).getOrElse("")}"), ContentType("text/html"))) }
@@ -39,16 +40,17 @@ class FinatraPromotionSetup(implicit futurePool: FuturePool) extends Controller 
   import one.xingyi.core.http.Failer.failerForThrowable
 
   private val language = interpreter.NonFunctionalLanguageService()
-//    private val debugLanguage = new DebugEachObjectifyEndpoint(language)
+  //    private val debugLanguage = new DebugEachObjectifyEndpoint(language)
   val setup = new PromotionSetup[Future, interpreter.Kleisli, Throwable, JValue](language)
 
   import one.xingyi.finatra.FinatraImplicits._
 
-  def liftEndpoint(fn: ServiceRequest => Future[Option[ServiceResponse]]) = { request: Request =>
+  def liftEndpoint(fn: ServiceRequest => Future[Option[ServiceResponse]]): Request => Future[Response] = { request: Request =>
     val serviceRequest = implicitly[ToServiceRequest[Request]] apply (request)
     val result = fn(serviceRequest)
-    result.map { case Some(serRes) =>
-      response.status(serRes.status.code).body(serRes.body.s).contentType(serviceRequest.contentType.map(_.s).getOrElse("text/html"))
+    result.map {
+      case Some(serRes) => response.status(serRes.status.code).body(serRes.body.s).contentType(serviceRequest.contentType.map(_.s).getOrElse("text/html"))
+      case None => response.status(404).body(s"Endpoint  ${serviceRequest.method}  ${serviceRequest.uri} not found").contentType("text/html")
     }
   }
 

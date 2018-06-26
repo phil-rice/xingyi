@@ -1,6 +1,9 @@
 package one.xingyi.core.optics
 
+import java.util.ResourceBundle
+
 import one.xingyi.core.UtilsSpec
+import one.xingyi.core.json.JsonWriter
 
 import scala.language.postfixOps
 
@@ -77,8 +80,8 @@ trait MifidBuilder extends MifidSpec {
   )
   def entityWith(name: String, businessType: BusinessType, balanceSheetTotal: Long, netTurnover: Long, ownFunds: Long, mainBusinessIsFinancialTransactions: Boolean = false) = {
     val fd = prototypeFinancialData.
-             copy(balanceSheet = prototypeFinancialData.balanceSheet.copy(totalNetAssets = GBP(balanceSheetTotal), shareHoldersInterest = GBP(ownFunds))).
-             copy(profitAndLoss = prototypeFinancialData.profitAndLoss.copy(nettIncome = GBP(netTurnover)))
+      copy(balanceSheet = prototypeFinancialData.balanceSheet.copy(totalNetAssets = GBP(balanceSheetTotal), shareHoldersInterest = GBP(ownFunds))).
+      copy(profitAndLoss = prototypeFinancialData.profitAndLoss.copy(nettIncome = GBP(netTurnover)))
 
     val identity = prototypeEntity.identity.copy(name = name, businessType = businessType)
     val activities = prototypeActivities.copy(mainBusinessIsFinancialTransactions = mainBusinessIsFinancialTransactions)
@@ -140,15 +143,23 @@ trait Question extends MifidSpec {
 
 }
 
-class MifidBlackboardSpec extends UtilsSpec with MifidBuilder with Question {
+abstract class AbstractMifidBlackboardSpec[J: JsonWriter] extends UtilsSpec with MifidBuilder with Question {
+  implicit def bundle: ResourceBundle
+
   behavior of "entityB"
 
   it should "get things" in {
-    val e = BusinessType.comodityDealer name "somename" lotsOfMoney ;
+    val e = BusinessType.comodityDealer name "somename" lotsOfMoney;
     entityB.findLens[String](List("identity", "name"))(e) shouldBe "somename"
     entityB.findLens[String](List("identity", "name"))(e) shouldBe "somename"
     entityB.stringLens[String](List("identity", "name")) get e shouldBe "somename"
     entityB.findLens[Address](List("identity", "registeredAddress"))(e) shouldBe Address("someRegAdd")
+  }
+
+  it should "make json " in {
+    val e = BusinessType.comodityDealer name "somename" lotsOfMoney;
+    new BlackboardToJson() apply new BlackboardToJsonData(List(), e, entityB) shouldBe ""
+
   }
 }
 
