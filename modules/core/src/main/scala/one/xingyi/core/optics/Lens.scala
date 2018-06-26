@@ -2,7 +2,7 @@
 package one.xingyi.core.optics
 
 object Lens {
-  def identity[X] = Lens[X, X](a => a, (a, b) => b)
+  implicit def identity[X] = Lens[X, X](a => a, (a, b) => b)
   def cast[X, Y] = Lens[X, Y](a => a.asInstanceOf[Y], (a, b) => b.asInstanceOf[X])
 
 

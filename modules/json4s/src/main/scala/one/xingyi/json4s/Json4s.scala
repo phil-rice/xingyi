@@ -50,26 +50,3 @@ trait Json4sWriter {
 }
 
 object Json4sWriter extends Json4sWriter
-
-//trait FromJson4s[T] extends FromJson[T] {
-//  protected implicit val formats = DefaultFormats
-//  implicit def toString(j: JValue) = j.extract[String]
-//  implicit def toOptString(j: JValue) = j.extractOpt[String]
-//  implicit def toInt(j: JValue) = j.extract[Int]
-//  override def apply(v1: String): T = parse(JsonMethods.parse(v1)).ifError(e => throw new FromJson4sException(s"Error parsing: $v1", e))
-//  def parse(json: JValue): T
-//
-//  implicit class JValueOps(jValue: JValue) {
-//    def asJList: List[JValue] = jValue.extract[List[JValue]]
-//    def map[T1](fn: JValue => T1): List[T1] = asJList.map(fn)
-//    def asList[T1](implicit fromJson4s: FromJson4s[T1]): List[T1] = map(fromJson4s.parse)
-//    def as[T1](implicit fromJson4s: FromJson4s[T1]): T1 = fromJson4s.parse(jValue)
-//  }
-//
-//}
-//
-//trait ToJson4s[T] extends ToJson[T] {
-//  protected implicit val formats = DefaultFormats
-//  def toJvalue(t: T): JValue
-//  override def apply(v1: T): String = JsonMethods.pretty(JsonMethods.render(toJvalue(v1)))
-//}
