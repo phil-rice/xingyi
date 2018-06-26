@@ -16,6 +16,7 @@ trait FunctorLanguage {
 
 }
 
+object MonadLanguage extends MonadLanguage
 trait MonadLanguage extends FunctorLanguage {
   def join2[M[_], T1, T2](m1: M[T1], m2: M[T2])(implicit m: Monad[M]): M[(T1, T2)] = m.flatMap(m1, (t1: T1) => m.flatMap(m2, (t2: T2) => m.liftM((t1, t2))))
   def join3[M[_], T1, T2, T3](m1: M[T1], m2: M[T2], m3: M[T3])(implicit m: Monad[M]): M[(T1, T2, T3)] = m.flatMap(m1, (t1: T1) => m.flatMap(m2, (t2: T2) => m.flatMap(m3, (t3: T3) => m.liftM((t1, t2, t3)))))

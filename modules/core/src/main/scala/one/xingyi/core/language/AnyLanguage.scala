@@ -1,5 +1,7 @@
 package one.xingyi.core.language
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import one.xingyi.core.functions._
 import one.xingyi.core.monad._
 
@@ -34,6 +36,11 @@ trait AnyLanguage {
     } catch {
       case e: Exception => fn(e)
     }
+    def sideeffectTry(fn: Try[T] => Unit): Try[T] = {
+      val triedT = Try(t)
+      fn(triedT)
+      triedT
+    }
 
     def sideeffect[X](block: T => Unit) = {
       val result = t
@@ -50,5 +57,14 @@ trait AnyLanguage {
 
   implicit class TryPimper[T](tryT: Try[T]) {
     def liftTry[M[_]](implicit monadWithException: MonadWithException[M]): M[T] = tryT.fold(monadWithException.exception, monadWithException.liftM)
+  }
+
+  implicit class AtomicIntegerOps(a: AtomicInteger) {
+    def tick(size: Int)(fn: => Unit): Unit = {
+      if (a.updateAndGet { old => if (old >= size - 1) 0 else old + 1 } == 0) fn
+    }
+    def ifNotZero(fn: => Unit): Unit = {
+      if (a.get != 0) fn
+    }
   }
 }

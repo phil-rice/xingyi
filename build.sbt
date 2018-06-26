@@ -97,12 +97,27 @@ lazy val json4sSettings = commonSettings ++ Seq(
   libraryDependencies += "org.json4s" %% "json4s-native" % versions.json4s
 )
 
+lazy val apacheDbcp2Settings = publishSettings ++ Seq(
+  libraryDependencies += "org.apache.commons" % "commons-dbcp2" % "2.3.0",
+  libraryDependencies += "com.h2database" % "h2" % "1.4.197"
+)
+
 lazy val core = (project in file("modules/core")).
   settings(publishSettings: _*)
+
+val apachejdbc = (project in file("module/apachejdbc")).
+  dependsOn(core % "test->test;compile->compile").
+  settings(apacheDbcp2Settings)
 
 lazy val tagless = (project in file("modules/tagless")).
   settings(publishSettings: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core)
+
+lazy val test = (project in file("modules/test")).
+  settings(publishSettings: _*).
+  dependsOn(core % "test->test;compile->compile").
+  dependsOn(apachejdbc % "test->test;compile->compile").
+  aggregate(core)
 
 lazy val sampleServer = (project in file("modules/sampleServer")).
   settings(publishSettings: _*).
@@ -160,4 +175,4 @@ lazy val finatraSample = (project in file("modules/finatraSample")).
 val root = (project in file(".")).
   settings(publishSettings).
   settings(publishArtifact := false).
-  aggregate(core, finatra, finatraSample, sample, sampleServer, tagless, json4s)
+  aggregate(core, finatra, finatraSample, sample, sampleServer, tagless, apachejdbc, json4s)
