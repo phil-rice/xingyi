@@ -142,7 +142,6 @@ val cddexamples = (project in file("modules/cddexamples")).
   dependsOn(apachejdbc % "test->test;compile->compile").
   settings(publishSettings)
 
-
 lazy val cddengine = (project in file("modules/cddengine")).
   settings(publishSettings: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
