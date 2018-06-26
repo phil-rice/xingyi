@@ -25,5 +25,13 @@ object Strings {
     val result = Console.withOut(new PrintStream(bytes))(x)
     (result, bytes.toString("UTF-8"))
   }
+
+  def trimChar(trim: Char)(s: String) = s.dropWhile(_ == trim).reverse.dropWhile(_ == trim).reverse
+
+
+  def cleanString(s: String, acceptedChars: String = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_- ") = s.filter(acceptedChars.contains(_)).mkString
+
+  def uri(parts: String*): String = parts.map(trimChar('/')).mkString("/")
+
 }
 

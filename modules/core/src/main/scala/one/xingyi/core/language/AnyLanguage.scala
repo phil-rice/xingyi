@@ -11,6 +11,11 @@ import scala.reflect.ClassTag
 
 object AnyLanguage extends AnyLanguage
 trait AnyLanguage {
+  case class use[P, X](thingMaker: P => X) {
+    def apply[R](fn: X => R): P => R = { p => fn(thingMaker(p)) }
+  }
+
+  def using[T, T1](t: T)(fn: T => T1) = fn(t)
 
   def toSome[X](x: X): Option[X] = Some(x)
 

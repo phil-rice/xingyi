@@ -5,42 +5,12 @@ import java.io.IOException
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.{FileVisitResult, FileVisitor, Path, Paths, Files => NioFiles}
 
+import one.xingyi.core.strings.Files
+
 import scala.io.Source
 
 
-object Files {
 
-  def walkFiles(directory: String)(fn: Path => Unit) = {
-    NioFiles.walkFileTree(Paths.get(directory), new FileVisitor[Path] {
-      def visitFileFailed(file: Path, exc: IOException): FileVisitResult = FileVisitResult.CONTINUE
-
-      def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
-        fn(file);
-        FileVisitResult.CONTINUE
-      }
-
-      def preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult = FileVisitResult.CONTINUE
-
-      def postVisitDirectory(dir: Path, exc: IOException): FileVisitResult = FileVisitResult.CONTINUE
-    })
-  }
-
-  def printToFile(f: java.io.File)(op: java.io.PrintWriter => Unit) {
-    try {
-      println(f)
-      f.getParentFile.mkdirs()
-    } catch {
-      case e: Exception => throw new RuntimeException(s"File: $f", e)
-    }
-    val p = new java.io.PrintWriter(f)
-    try {
-      op(p)
-    } finally {
-      p.close()
-    }
-
-  }
-}
 
 object SetHeaders {
   def updateFile(matcher: Path => Boolean, headerPrefix: String)(newHeader: String)(path: Path) = {

@@ -14,7 +14,12 @@ sealed trait JsonValue
 case class JsonString(s: String) extends JsonValue
 case class JsonInt(i: Int) extends JsonValue
 case class JsonDouble(d: Double) extends JsonValue
-case class JsonObject(nameAndValues: (String, JsonValue)*) extends JsonValue
+case class JsonBoolean(b: Boolean) extends JsonValue
+case class JsonObject(nameAndValues: (String, JsonValue)*) extends JsonValue {
+  def |+|(other: (String, JsonValue)*) = JsonObject((nameAndValues ++ other): _*)
+  override def toString: String = s"JsonObject(${nameAndValues.mkString(",")})"
+
+}
 case class JsonList(seq: Seq[JsonValue]) extends JsonValue
 
 trait JsonWriter[J] extends (JsonValue => String) {
@@ -28,6 +33,7 @@ trait ToJsonLib[T] extends (T => JsonValue)
 trait JsonWriterLangauge {
   implicit def toJsonString(s: String) = JsonString(s)
   implicit def toJsonInt(i: Int) = JsonInt(i)
+  implicit def toJsonBoolean(b: Boolean) = JsonBoolean(b)
   implicit def toJsonDouble(d: Double) = JsonDouble(d)
   implicit def toT[T](t: T)(implicit forT: ToJsonLib[T]): JsonValue = forT(t)
   implicit def toListT[T](ts: Seq[T])(implicit forT: ToJsonLib[T]): JsonList = JsonList(ts.map(forT))

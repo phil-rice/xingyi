@@ -112,6 +112,11 @@ lazy val cddscenario = (project in file("modules/cddscenario")).
   settings(cddscenarioSettings: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core)
 
+lazy val cddengine = (project in file("modules/cddengine")).
+  settings(publishSettings: _*).
+  dependsOn(core % "test->test;compile->compile").aggregate(core).
+  dependsOn(cddscenario % "test->test;compile->compile").aggregate(cddscenario)
+
 lazy val cddscripts = (project in file("modules/cddscripts")).
   settings(publishSettings: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core)

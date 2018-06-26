@@ -6,6 +6,10 @@ import scala.language.higherKinds
 
 object FunctionLanguage extends FunctionLanguage
 trait FunctionLanguage {
+  implicit class FunctionFromMidToOptionOps[From, Mid, To](fn: From => Mid => Option[To]) {
+    def orElse(fn2: From => Mid => Option[To]): From => Mid => Option[To] = { from: From => mid: Mid => fn(from)(mid).orElse(fn2(from)(mid)) }
+    def orDefault(to: => To): From => Mid => To = { from: From => mid: Mid => fn(from)(mid).getOrElse(to) }
+  }
 
   implicit class FunctionPimper[Req, Res](fn: Req => Res) {
     def liftFn[M[_]](implicit monad: Monad[M]) = { req: Req => monad.liftM(fn(req)) }

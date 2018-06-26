@@ -24,6 +24,9 @@ trait UtilsSpec extends FlatSpecLike with Matchers with MockitoSugar with Eventu
       }
     }
   }
+  implicit class StringOps(s: String) {
+    def noWhiteSpace = s.replaceAll("\\se*", "")
+  }
 
 
 }
