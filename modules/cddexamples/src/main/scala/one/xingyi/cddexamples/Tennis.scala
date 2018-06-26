@@ -76,10 +76,10 @@ class Tennis {
 
 object Tennis extends Tennis with App {
   import Mustache._
-  import one.xingyi.json4s.Json4sWriter._
 
+import one.xingyi.json4s.Json4sWriter._
   implicit def v[P, R] = new SimpleValidation[P, R]
-  tennis.tools.trace("tennis")
+  tennis.tools.printTraceAboutAdding("tennis")
   tennis.tools.printPages("tennis")
   dump
 }

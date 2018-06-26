@@ -1,10 +1,12 @@
 /** Copyright (c) 2018, Phil Rice. Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS AS IS AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 package one.xingyi.cddengine
+
 import java.text.MessageFormat
 
 import one.xingyi.cddscenario.{HasScenarios, Scenario, ScenarioLogic}
 import one.xingyi.core.json.{JsonMaps, JsonObject, JsonWriter, TemplateEngine}
 import one.xingyi.core.misc.IdMaker
+import one.xingyi.core.optics.Lens
 
 import scala.collection.concurrent.TrieMap
 import scala.language.higherKinds
@@ -17,17 +19,20 @@ case class JsonDataForTree[J: JsonWriter, P, R](jsonObject: JsonObject, data: Op
 
 trait Engine[P, R] extends PartialFunction[P, R] {
   def tools: EngineTools[P, R]
-
 }
 
 trait EngineTools[P, R] {
   def useCases: List[UseCase[P, R]]
   def scenarios: List[Scenario[P, R]]
   def decisionTree: DecisionTree[P, R]
-  def trace[J: JsonWriter](prefix: String)(implicit config: RenderingConfig, validation: Validation[P, R], template: TemplateEngine[J], urlGenerators: EngineUrlGenerators[P, R], printRenderToFile: PrintRenderToFile): Unit
+  def issues: List[DecisionIssue[P, R]]
+  def printTraceAboutAdding[J: JsonWriter](prefix: String)(implicit config: RenderingConfig, validation: Validation[P, R], template: TemplateEngine[J], urlGenerators: EngineUrlGenerators[P, R], printRenderToFile: PrintRenderToFile): Unit
   def printPages[J: JsonWriter](prefix: String)(implicit config: RenderingConfig, template: TemplateEngine[J], urlGenerators: EngineUrlGenerators[P, R], printRenderToFile: PrintRenderToFile): Unit
   def test(name: String): CddTest
+  def trace(p: P): TraceThroughEngineResultData[P, R]
 }
+
+case class TraceThroughEngineResultData[P, R](trace: List[DecisionTreeNode[P, R]], lens: Lens[DecisionTreeNode[P, R], DecisionTreeNode[P, R]])
 
 class SimpleEngineTools[P, R](engine: Engine1[P, R]) extends EngineTools[P, R] {
   override def decisionTree: DecisionTree[P, R] = engine.decisionTree
@@ -36,12 +41,14 @@ class SimpleEngineTools[P, R](engine: Engine1[P, R]) extends EngineTools[P, R] {
   protected def printPrinter[J: JsonWriter](implicit engineUrlGenerators: EngineUrlGenerators[P, R], config: RenderingConfig, template: TemplateEngine[J]) = DecisionTreeRendering.simple[P, R] andThen (x => JsonDataForTree[J, P, R](x, None)) andThen template.apply
   protected def tracePrinter[J: JsonWriter](data: WithScenarioData[P, R])(implicit engineUrlGenerators: EngineUrlGenerators[P, R], template: TemplateEngine[J]) =
     new WithScenarioRendering[P, R](data) andThen JsonDataForTree.make[J, P, R](data) andThen template.apply
-  override def trace[J: JsonWriter](prefix: String)(implicit renderingConfig: RenderingConfig, validation: Validation[P, R], template: TemplateEngine[J], urlGenerators: EngineUrlGenerators[P, R], printRenderToFile: PrintRenderToFile): Unit =
+  override def printTraceAboutAdding[J: JsonWriter](prefix: String)(implicit renderingConfig: RenderingConfig, validation: Validation[P, R], template: TemplateEngine[J], urlGenerators: EngineUrlGenerators[P, R], printRenderToFile: PrintRenderToFile): Unit =
     (new TraceRenderer).apply(tracePrinter[J], prefix)(engine)
 
   override def printPages[J: JsonWriter](prefix: String)(implicit renderingConfig: RenderingConfig, template: TemplateEngine[J], urlGenerators: EngineUrlGenerators[P, R], printRenderToFile: PrintRenderToFile): Unit =
     (new PrintPagesRenderer).apply[P, R](printPrinter[J], tracePrinter[J])(prefix, engine)
   def test(name: String): CddTest = new SimpleTestMaker[P, R](name, engine).apply
+  override def issues: List[DecisionIssue[P, R]] = engine.decisionTree.issues
+  override def trace(p: P): TraceThroughEngineResultData[P, R] = TraceThroughEngineResultData[P, R](DecisionTree.findWithParents(engine.decisionTree, p), decisionTree.root.findLens(p))
 }
 
 

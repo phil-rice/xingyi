@@ -1,0 +1,11 @@
+<form method="get" action="/change">
+{{#map}}
+    {{#question}}
+        <h1>{{name}}</h1>
+        {{#val}}
+            {{>section}}
+        {{/val}}
+    {{/question}}
+{{/map}}
+    <input type="submit" value="Submit">
+</form>
