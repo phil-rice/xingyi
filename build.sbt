@@ -89,7 +89,7 @@ lazy val cddscenarioSettings = publishSettings ++ Seq(
   libraryDependencies += "org.scala-lang" % "scala-reflect" % versions.scala
 )
 
-lazy val json4sSettings = commonSettings ++ Seq(
+lazy val json4sSettings = publishSettings ++ Seq(
   libraryDependencies += "org.json4s" %% "json4s-native" % versions.json4s
 )
 
@@ -107,6 +107,10 @@ lazy val scalatestSettings = publishSettings ++ Seq(
 )
 
 lazy val core = (project in file("modules/core")).
+  settings(publishSettings: _*)
+
+lazy val jdbc = (project in file("modules/jdbc")).
+  dependsOn(core % "test->test;compile->compile").
   settings(publishSettings: _*)
 
 val apachejdbc = (project in file("modules/apachejdbc")).
@@ -163,6 +167,7 @@ lazy val sampleServer = (project in file("modules/sampleServer")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   dependsOn(sample % "test->test;compile->compile").aggregate(sample).
+  dependsOn(jdbc % "test->test;compile->compile").aggregate(sample).
   dependsOn(json4s)
 
 lazy val finatra = (project in file("modules/finatra")).
@@ -190,4 +195,17 @@ lazy val finatraSample = (project in file("modules/finatraSample")).
 val root = (project in file(".")).
   settings(publishSettings).
   settings(publishArtifact := false).
-  aggregate(core, finatra, finatraSample, sample, sampleServer, tagless, apachejdbc, json4s, cddmustache, cddscenario)
+  aggregate(
+    apachejdbc,//
+    cddscenario,//
+    cddengine,//
+    cddmustache,//
+    cddscalatest,//
+    core,//
+    finatra,//
+    finatraSample,
+    sample,
+    sampleServer,
+    json4s,//
+    tagless//
+  )

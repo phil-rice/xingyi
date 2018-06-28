@@ -32,8 +32,7 @@ a function X => M[Y] where M is (almost) a Monad. I use (almost) because even th
 Scala futures are NOT actually a monad, they are almost Monads.
 
 ### Kleisli Arrows and Transformations
-Kleisli arrows are effectively flatMap. If I take K1 and K2 and do (K1 andThen K2) where andThen
-is the arrow, I end up with a function K1 that is takes the result and flatMaps it to do K2. Pretty straightforwards
+Kleisli arrows are effectively flatMap. If I take K1 and K2 and do (K1 arrow K2), I end up with a function K1 that is takes the result and flatMaps it to do K2. Pretty straightforwards
 
 I find that these arrows are not a suitable composition for about half the things I want to. For example
 when I profile a klesli I need to do something at the start, then call the original kleisli
@@ -41,7 +40,7 @@ then do something at the end. This is a common pattern with logging, caching, pr
 
 So as well as arrows I have the idea of a Kleisli transformer that 'wraps' a Klesli. It does some code
 at the start, then the delegate and in the future of the delegate it does some more code. Importantly
-it is common for the code in the 'after' to use values defined or created in the initial code
+it is common for the code in the 'after' to use values defined or created in the initial code.
 
 ## Error Handling
 I'm not convinced of the value of Either for error handling. As far as I can see Future already 
@@ -90,5 +89,7 @@ Xing Yi is a martial arts that is based on simplicity and whole body coordinatio
 take a lot of training to understand the concepts.  Functional programming is quite like this. 
 
 Plus all the good names are gone, so I picked one that I like
+
+
 
 

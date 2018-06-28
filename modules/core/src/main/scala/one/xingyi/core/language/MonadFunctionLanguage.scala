@@ -11,14 +11,16 @@ import scala.util.Try
 trait MonadFunctionLanguage extends MonadLanguage {
 
   implicit class MonadFunctionPimper[M[_], Req, Res](fn: Req => M[Res])(implicit monad: Monad[M]) {
-
     def |=>[Res2](mapFn: Res => Res2): (Req => M[Res2]) = req => monad.map(fn(req), mapFn)
     def |==>[Res2](mapFn: Res => M[Res2]): (Req => M[Res2]) = req => monad.flatMap(fn(req), mapFn)
     def |=+>[Res2](mapFn: (Req => Res => Res2)): (Req => M[Res2]) = req => monad.map(fn(req), mapFn(req))
     def |==+>[Res2](mapFn: (Req => Res => M[Res2])): (Req => M[Res2]) = req => monad.flatMap(fn(req), mapFn(req))
     def |=++>[Res2](mapFn: (Req => Res => Res => M[Res2])): (Req => M[Res2]) = { req => monad.flatMap(fn(req), { res: Res => mapFn(req)(res)(res) }) }
   }
-
+  implicit class MonadFunctionOptPimper[M[_], Req, Res](fn: Req => M[Option[Res]])(implicit monad: Monad[M]) {
+    def |?>[Res2](mapFn: Res => Res2): (Req => M[Option[Res2]]) = req => monad.map[Option[Res], Option[Res2]](fn(req), _.map(mapFn))
+    def |??>[Res2](mapFn: Res => M[Res2]): (Req => M[Option[Res2]]) = req => monad.flatMap[Option[Res], Option[Res2]](fn(req), _.fold[M[Option[Res2]]](monad.liftM(None))(o => mapFn(o).map(Some(_))))
+  }
 
   implicit class MonadCanFailFunctionPimper[M[_], Req, Res](fn: Req => M[Res]) {
     def |=|+>[Fail, Res2](mapFn: (Req => Res => Either[Fail, Res2]))(implicit monad: MonadCanFail[M, Fail]): (Req => M[Res2]) = req =>
