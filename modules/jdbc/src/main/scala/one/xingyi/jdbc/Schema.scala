@@ -20,4 +20,9 @@ case class FieldDefn(name: String, typeName: FieldType, digestable: Boolean)
 trait ToDaoMap[T] extends (T => DaoMap)
 trait FromDaoMap[T] extends (DaoMap => T)
 
-case class Schema[T](tableName: String, fields: List[FieldDefn])
+trait TableNameFor[T]{
+  def tableName: String
+}
+case class Schema[T]( idField: FieldDefn, otherFields: List[FieldDefn]){
+  val fields = idField :: otherFields
+}

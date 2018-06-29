@@ -5,23 +5,26 @@ import one.xingyi.core.language.MonadLanguage._
 import one.xingyi.core.closable.ClosableLanguage._
 import one.xingyi.core.monad.{Liftable, Monad, MonadWithException}
 import one.xingyi.core.language.AnyLanguage._
-case class Id(id: String) extends AnyVal
-trait DaoWriter[M[_]] extends (DaoMap => M[Id])
-trait DaoReader[M[_]] extends (Id => M[Option[DaoMap]])
 
-trait DaoWriterOps[M[_], T] {
+trait DaoWriter[M[_], Id] {
+  def apply[T](daoMap: DaoMap)(implicit tableNameFor: TableNameFor[T]): M[Id]
+}
+trait DaoReader[M[_], Id] {
+  def read[T](implicit tableNameFor: TableNameFor[T]): Id => M[Option[DaoMap]]
+}
+trait DaoWriterOps[M[_], Id, T] {
   def save: T => M[Id]
 }
 
-trait DaoReaderOps[M[_], T] {
+trait DaoReaderOps[M[_], Id, T] {
   def get: Id => M[Option[T]]
 }
 object SimpleDaoOps {
-  def simpleWriterDaoOps[M[_], T](implicit toDaoMap: ToDaoMap[T], daoWriter: DaoWriter[M]): DaoWriterOps[M, T] = new DaoWriterOps[M, T] {
-    def save = toDaoMap andThen daoWriter
+  def simpleWriterDaoOps[M[_], Id, T: TableNameFor](implicit toDaoMap: ToDaoMap[T], daoWriter: DaoWriter[M, Id]): DaoWriterOps[M, Id, T] = new DaoWriterOps[M, Id, T] {
+    def save = toDaoMap andThen daoWriter.apply[T]
   }
-  def simpleReaderDaoOps[M[_] : Monad, T](implicit fromDaoMap: FromDaoMap[T], daoReader: DaoReader[M]): DaoReaderOps[M, T] = new DaoReaderOps[M, T] {
-    def get = daoReader |?> fromDaoMap
+  def simpleReaderDaoOps[M[_] : Monad, Id, T: TableNameFor](implicit fromDaoMap: FromDaoMap[T], daoReader: DaoReader[M, Id]): DaoReaderOps[M, Id, T] = new DaoReaderOps[M, Id, T] {
+    def get: Id => M[Option[T]] = daoReader.read[T] |?> fromDaoMap
   }
 }
 
@@ -49,11 +52,11 @@ object CheckDigest {
   }
 }
 object DigesterDaoOps {
-  implicit def writerDaoOps[M[_], T](implicit addDigest: AddDigestToDaoMap[T], toDaoMap: ToDaoMap[T], daoWriter: DaoWriter[M]): DaoWriterOps[M, T] = new DaoWriterOps[M, T] {
-    def save: T => M[Id] = toDaoMap andThen addDigest andThen daoWriter
+  implicit def writerDaoOps[M[_], Id, T: TableNameFor](implicit addDigest: AddDigestToDaoMap[T], toDaoMap: ToDaoMap[T], daoWriter: DaoWriter[M, Id]): DaoWriterOps[M, Id, T] = new DaoWriterOps[M, Id, T] {
+    def save: T => M[Id] = toDaoMap andThen addDigest andThen daoWriter.apply[T]
   }
-  implicit def readerDaoOps[M[_] : Monad, T](implicit checkDigest: CheckDigest[M, T], fromDaoMap: FromDaoMap[T], daoReader: DaoReader[M]): DaoReaderOps[M, T] = new DaoReaderOps[M, T] {
-    def get: Id => M[Option[T]] = daoReader |??> checkDigest |?> fromDaoMap
+  implicit def readerDaoOps[M[_] : Monad, Id, T: TableNameFor](implicit checkDigest: CheckDigest[M, T], fromDaoMap: FromDaoMap[T], daoReader: DaoReader[M, Id]): DaoReaderOps[M, Id, T] = new DaoReaderOps[M, Id, T] {
+    def get: Id => M[Option[T]] = daoReader.read[T] |??> checkDigest |?> fromDaoMap
   }
 }
 
