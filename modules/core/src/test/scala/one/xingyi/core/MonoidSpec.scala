@@ -1,6 +1,7 @@
 /** Copyright (c) 2018, Phil Rice. Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS AS IS AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 package one.xingyi.core
 
+import one.xingyi.core.builder.{Aggregator, RememberingAggregator2}
 import one.xingyi.core.functions.{Monoid, SemiGroup, Zero}
 
 import scala.reflect.ClassTag
@@ -101,6 +102,65 @@ class MonoidForIntSpec extends MonoidSpec[Int] {
   }
 
 }
+
+case class Currency(symbol: String) {
+  case class Money(amount: Int) {
+    def +(money: Money) = Money(amount + money.amount)
+  }
+  object Money {
+    implicit object MonoidForMoney extends Monoid[Money] {
+      override def zero: Money = Money(0)
+      override def add(t1: Money, t2: Money): Money = Money(t1.amount + t2.amount)
+    }
+  }
+}
+
+object Currency extends App {
+
+
+  var currentDefinition: String = ""
+  implicit val aggregator: Aggregator[String] = new RememberingAggregator2[String]()
+
+
+
+
+  def definition1(name: String) (block: => Unit): Unit = {
+    currentDefinition =  name
+    block
+    currentDefinition = """   {"hey":{"value":123} } """
+  }
+  trait doesword
+  object does extends doesword
+  case class something(s: String) {
+    case class which(doesWord: doesword) {
+      aggregator(s"adding this $s to $currentDefinition")
+    }
+  }
+
+  definition1 ("with some name") {
+    something("nice") which does
+
+
+  }
+  definition1 ("with some other name") {
+    something("nice") which does
+
+
+  }
+
+
+}
+
+
+//class MonoidForIntSpec extends MonoidSpec[Money] {
+//
+//  override def zeroValue = Money("eur", 0)
+//  override def one = Money("eur", 1)
+//  override def two = Money("eur", 2)
+//  override def three = Money("eur", 3)
+//
+//
+//}
 class MonoidForSeqSpec extends MonoidSpec[Seq[String]] {
   override def zeroValue = List()
   override def one = List("1")
