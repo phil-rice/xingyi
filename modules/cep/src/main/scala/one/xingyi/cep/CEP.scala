@@ -11,22 +11,22 @@ import scala.language.experimental.macros
 
 case class ListenerRef(any: Any)
 
-trait CEP[ED] {
+trait StringFieldGetter[ED] {
+  def getString(stringField: StringField): ED => Option[String]
+}
+trait CEP[ED] extends StringFieldGetter[ED] {
   def listenTo(fn: ED => Unit): ListenerRef
   def stopListeningTo(ref: ListenerRef)
-  def getString(stringField: StringField): ED => String
 }
 
 
-class CEPProcessor[ED](keyby: StringField, topic: Topic, preprocess: Preprocess)(implicit cep: CEP[ED]) {
+class CEPProcessor[ED](topic: Topic, preprocess: Preprocess)(implicit cep: CEP[ED]) {
   val map: TrieMap[Any, MiyamotoState[ED]] = TrieMap()
 
   def findLastStateFromString: ED => String => MiyamotoState[ED] = ed => key => map.getOrElseUpdate(key, new MiyamotoState[ED](key, ed, preprocess.initial, Map()))
-  def findLastStateFromED = cep.getString(keyby) ~+> findLastStateFromString
-  def updateStateWithEd = { ed: ED => state: MiyamotoState[ED] => state.copy(lastEvent = ed) }
-  def findPipeline: MiyamotoState[ED] => Option[StatePipelineAndMiyamotoState[ED]] = { state =>
-    state.currentState.list.find(_.event.accepts(state.lastEvent)).map {StatePipelineAndMiyamotoState.apply(state)}
-  }
+  def findLastStateFromED = cep.getString(preprocess.keyby) ~+?> findLastStateFromString
+  def updateStateWithEd = { ed: ED => state: MiyamotoState[ED] => state.copy(ed = ed) }
+  def findPipeline: MiyamotoState[ED] => Option[StatePipelineAndMiyamotoState[ED]] = { state => state.currentState.find(state.ed).map {StatePipelineAndMiyamotoState.apply(state)} }
   def updateWithStartState: StatePipelineAndMiyamotoState[ED] => Option[StatePipelineAndMiyamotoState[ED]] = {
     case StatePipelineAndMiyamotoState(statePipeline, state) =>
       val mapForState = state.lastData.getOrElse(statePipeline.event, Map())
@@ -37,7 +37,7 @@ class CEPProcessor[ED](keyby: StringField, topic: Topic, preprocess: Preprocess)
   def processPipeline: StatePipelineAndMiyamotoState[ED] => MiyamotoState[ED] = {case StatePipelineAndMiyamotoState(statePipeline, state) => statePipeline.execute(state)}
   def putBackInMap: MiyamotoState[ED] => Unit = { s => map.put(s.key, s) }
 
-  def process = findLastStateFromED ~+> updateStateWithEd ~> findPipeline ~~?> updateWithStartState ~?> processPipeline ~?> putBackInMap
+  def process = findLastStateFromED ~+?> updateStateWithEd ~~?> findPipeline ~~?> updateWithStartState ~?> processPipeline ~?> putBackInMap
 }
 
 trait HasKeyBy {
@@ -59,6 +59,9 @@ abstract class StringField(implicit val aggregator: Aggregator[StringField]) ext
   override def toString: String = s"StringField($id,$name)"
 }
 
+case class KeyByStringField(name: String) extends StringField()(Aggregator.nullAggregator[StringField]) {
+  override def id: Int = -1
+}
 case class SimpleStringField(id: Int, name: String)(implicit aggregator: Aggregator[StringField]) extends StringField {
   override def toString: String = s"StringField($id,$name)"
 }
@@ -69,7 +72,7 @@ case class StringFieldWithValue(id: Int, name: String, value: ValueFn)(implicit 
 case class Topic(topicName: String, version: String)
 
 
-abstract class Preprocess(name: String, version: String) {
+abstract class Preprocess(name: String, version: String) extends HasKeyBy {
   protected implicit class PipeLineOps(p: StatePipeline) {
     def or(p2: StatePipeline) = List(p, p2)
     def ||(p2: StatePipeline) = List(p, p2)

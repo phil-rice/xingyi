@@ -18,6 +18,7 @@ trait CepFixture {
   }
 
   val pp2 = new Preprocess("pp2", "1.0.0") {
+    override val keyby = KeyByStringField("customerId")
     val ie1 = new TopicEvent("ie1", fraudtestinputtopic) with CustomerAddressIpAddressAndType {
       where(`type`.value == "A")
     }
@@ -37,6 +38,7 @@ trait CepFixture {
     val initial = state(ie1 >> ie1Recv)
     val ie1Recv = state(timeout(11 seconds) >> purge >> terminate || ie2 >> ie2Recv)
     val ie2Recv = state(ie3 >> map(map123) >> emit >> terminate)
+    val test = state(ie1 >> ie1Recv || ie2 >> ie2Recv || ie3 >> terminate)
   }
 
   val be2 = new TopicEvent("be2", fraudtestbusinesseventstopic, "1.0.0") with CustomerAddressIpAddressAndType
@@ -46,10 +48,15 @@ trait CepFixture {
   }
   bind(pp2) to (be2)
 }
-class CEPSpec extends UtilsSpec with CepFixture with WithFields {
+abstract class AbstractCEPSpec[ED](implicit stringGetter: StringFieldGetter[ED]) extends UtilsSpec with CepFixture with WithFields {
+
+  def makeEd(tuples: (StringField, String)*): ED
 
   val ipaddress = stringField
+  val `type` = stringField
+  val customerId = stringField
   val otherField = stringField
+
   val stringFieldNotCreatedByMacro = new SimpleStringField(5, "someName")(new Aggregator[StringField] {
     override def apply(v1: StringField): Unit = {}
   })
@@ -74,8 +81,8 @@ class CEPSpec extends UtilsSpec with CepFixture with WithFields {
   behavior of "withfields.update"
 
   it should "makes a filtered map based on the defined stringfields" in {
-    val m  = Map(otherField -> "2", ipaddress -> "3", stringFieldNotCreatedByMacro -> "1")
-    update(m) shouldBe Some(Map(otherField -> "2", ipaddress -> "3"))
+    val m = Map(otherField -> "2", ipaddress -> "3", stringFieldNotCreatedByMacro -> "1", customerId -> "4", `type` -> "5")
+    update(m) shouldBe Some(Map(otherField -> "2", ipaddress -> "3", customerId -> "4", `type` -> "5"))
   }
 
   it should "return none if there fields are not all there" in {
@@ -85,12 +92,30 @@ class CEPSpec extends UtilsSpec with CepFixture with WithFields {
 
   behavior of "TopicEvents"
 
-  it should "be created in "in {
+  it should "be created in " in {
     pp2.ie1.name shouldBe "ie1"
     pp2.ie1.topic shouldBe fraudtestinputtopic
     pp2.ie1.fields.map(_.name) shouldBe List("type", "customerId", "ipaddress")
   }
 
+  it should "only accept an event if the fields are present in the event" in {
+    val edAll = makeEd(ipaddress -> "one", `type` -> "A", customerId -> "someId")
+    val edMissing1 = makeEd(`type` -> "A", customerId -> "someId")
+    val edMissing2 = makeEd(ipaddress -> "one", customerId -> "someId")
+    val edMissing3 = makeEd(ipaddress -> "one", `type` -> "A")
+    pp2.ie1.accepts(edAll) shouldBe true
+    pp2.ie1.accepts(edMissing1) shouldBe false
+    pp2.ie1.accepts(edMissing2) shouldBe false
+    pp2.ie1.accepts(edMissing3) shouldBe false
+  }
+
+  it should "only accept an event if the where condition is true" in {
+    val edAll = makeEd(ipaddress -> "one", `type` -> "A", customerId -> "someId")
+    val edWithWrongType = makeEd(ipaddress -> "one", `type` -> "B", customerId -> "someId")
+    pp2.ie1.accepts(edAll) shouldBe true
+    pp2.ie1.accepts(edWithWrongType) shouldBe false
+
+  }
 
 
   it should "do something while I'm just playing around" in {
@@ -111,4 +136,21 @@ class CEPSpec extends UtilsSpec with CepFixture with WithFields {
     println(pp2)
 
   }
+}
+
+object CEPSpec {
+  implicit object CepForMapStringString extends CEP[Map[String, String]] {
+    override def getString(stringField: StringField): Map[String, String] => Option[String] = _ get (stringField.name)
+    override def listenTo(fn: Map[String, String] => Unit): ListenerRef = ???
+    override def stopListeningTo(ref: ListenerRef): Unit = ???
+  }
+  def makeEd(tuples: (StringField, String)*): Map[String, String] = tuples.map { case (k, v) => (k.name, v) }.toMap
+}
+import CEPSpec._
+import one.xingyi.core.map.Maps._
+class CEPSpec extends AbstractCEPSpec[Map[String, String]] {
+  //  override def makeEd(is: String, other: String, notCreated: String): Map[String, String] =
+  //  override def makeEd(is: Option[String], other: Option[String], notCreated: String): Map[String, String] =
+  //    Map(stringFieldNotCreatedByMacro.name -> notCreated).optAdd(ipaddress.name -> is, otherField.name -> is)
+  override def makeEd(tuples: (StringField, String)*): Map[String, String] = CEPSpec.makeEd(tuples: _*)
 }

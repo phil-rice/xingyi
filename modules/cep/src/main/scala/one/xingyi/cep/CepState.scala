@@ -1,10 +1,11 @@
 package one.xingyi.cep
 
-case class MiyamotoState[ED](key: Any, lastEvent: ED, currentState: CepState = terminate, lastData: Map[Event, Map[StringField, String]] = Map())
+case class MiyamotoState[ED](key: Any, ed: ED, currentState: CepState = terminate, lastData: Map[Event, Map[StringField, String]] = Map())
 
 trait CepState {
   def name: String
   def list: List[StatePipeline]
+  def find[ED: StringFieldGetter](ed: ED)=list.find(_.event.accepts(ed))
 }
 
 object terminate extends CepState {

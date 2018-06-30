@@ -9,6 +9,9 @@ object Maps {
     allKeys.map(k => (k, maps.flatMap(m => m.getOrElse(k, Nil)))).toMap[K, Seq[V]]
   }
 
+  implicit class MapOps[K, V](map: Map[K, V]) {
+    def optAdd(tuples: (K, Option[V])*) = tuples.foldLeft(map)((acc, tuple) => tuple._2.fold(acc)(v => acc + (tuple._1 -> v)))
+  }
   implicit class MapOfListsPimper[K, V](map: Map[K, List[V]]) {
     def addToList(kv: (K, V)): Map[K, List[V]] = kv match {case (k, v) => map.get(k).fold(map + (k -> List[V](v)))(list => map + (k -> (list :+ v)))}
     def items(id: K): List[V] = map.getOrElse(id, Nil)
