@@ -22,22 +22,18 @@ trait CEP[ED] extends StringFieldGetter[ED] {
 
 class CEPProcessor[ED](topic: Topic, preprocess: Preprocess)(implicit cep: CEP[ED]) {
   val map: TrieMap[Any, MiyamotoState[ED]] = TrieMap()
-
+  val toDataL = StatePipelineAndMiyamotoState.stateL[ED] andThen MiyamotoState.lastDataL
   def findLastStateFromString: ED => String => MiyamotoState[ED] = ed => key => map.getOrElseUpdate(key, new MiyamotoState[ED](key, ed, preprocess.initial, Map()))
   def findLastStateFromED = cep.getString(preprocess.keyby) ~+?> findLastStateFromString
-  def updateStateWithEd = { ed: ED => state: MiyamotoState[ED] => state.copy(ed = ed) }
+  def updateStateWithEd = MiyamotoState.edL[ED].setFn
   def findPipeline: MiyamotoState[ED] => Option[StatePipelineAndMiyamotoState[ED]] = { state => state.currentState.find(state.ed).map {StatePipelineAndMiyamotoState.apply(state)} }
-  def updateWithStartState: StatePipelineAndMiyamotoState[ED] => Option[StatePipelineAndMiyamotoState[ED]] = {
-    case StatePipelineAndMiyamotoState(statePipeline, state) =>
-      val mapForState = state.lastData.getOrElse(statePipeline.event, Map())
-      statePipeline.event.update(mapForState).map { newMapForState =>
-        StatePipelineAndMiyamotoState(statePipeline, state.copy(lastData = state.lastData + (statePipeline.event -> newMapForState)))
-      }
-  }
+
+  def updateWithStartState: StatePipelineAndMiyamotoState[ED] => StatePipelineAndMiyamotoState[ED] = { s => toDataL.transform(s, _ + (s.statePipeline.event -> s.makeMapForEventFromED)) }
+
   def processPipeline: StatePipelineAndMiyamotoState[ED] => MiyamotoState[ED] = {case StatePipelineAndMiyamotoState(statePipeline, state) => statePipeline.execute(state)}
   def putBackInMap: MiyamotoState[ED] => Unit = { s => map.put(s.key, s) }
 
-  def process = findLastStateFromED ~+?> updateStateWithEd ~~?> findPipeline ~~?> updateWithStartState ~?> processPipeline ~?> putBackInMap
+  def process = findLastStateFromED ~+?> updateStateWithEd ~~?> findPipeline ~?> updateWithStartState ~?> processPipeline ~?> putBackInMap
 }
 
 trait HasKeyBy {
@@ -55,7 +51,7 @@ abstract class StringField(implicit val aggregator: Aggregator[StringField]) ext
   def :=(fn: ValueFn): StringField = new StringFieldWithValue(id, name, fn)
   def :=(value: String): StringField = new StringFieldWithValue(id, name, _ => value)
   def :==(value: String): StringField = macro Macros.assignmentImpl
-  def value(implicit map: Map[StringField, String]) = map(this)
+  def value(implicit map: StringMap) = map(name)
   override def toString: String = s"StringField($id,$name)"
 }
 

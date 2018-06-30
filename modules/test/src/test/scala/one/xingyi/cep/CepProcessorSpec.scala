@@ -1,7 +1,7 @@
 package one.xingyi.cep
 
 import one.xingyi.core.UtilsSpec
-
+import scala.language.reflectiveCalls
 abstract class AbstractCepProcessorSpec[ED](implicit cep: CEP[ED]) extends UtilsSpec with CepFixture {
 
   def makeEd(tuples: (StringField, String)*): ED
@@ -10,7 +10,7 @@ abstract class AbstractCepProcessorSpec[ED](implicit cep: CEP[ED]) extends Utils
   val falseKeyBy = KeyByStringField("notIn")
   val typeField = KeyByStringField("type")
   val customerIdField = KeyByStringField("customerId")
-  val ipAddress = KeyByStringField("ipAddress")
+  val ipaddress = KeyByStringField("ipaddress")
 
   def setup(fn: CEPProcessor[ED] => Unit): Unit = {
     fn(new CEPProcessor[ED](fraudtestinputtopic, pp2))
@@ -51,14 +51,36 @@ abstract class AbstractCepProcessorSpec[ED](implicit cep: CEP[ED]) extends Utils
 
   }
   it should "find the first pipeline that would accept the ED in the current state " in {
-    val ed = makeEd(pp2.keyby -> "someValue", typeField -> "A", ipAddress -> "someIpAddresss")
-    val state = MiyamotoState("someValue", ed, pp2.test, Map())
-    pp2.ie1.accepts(ed) shouldBe true
-
     setup { cepProcessor =>
-      cepProcessor.findPipeline(state) shouldBe ""
+      val ed = makeEd(pp2.keyby -> "someValue", typeField -> "A", ipaddress -> "someIpAddresss")
+      val state = MiyamotoState("someValue", ed, pp2.test, Map())
+      val Some(StatePipelineAndMiyamotoState(pipeline, finalState)) = cepProcessor.findPipeline(state)
+      finalState shouldBe state
+      pipeline shouldBe pp2.test.list(0)
     }
+    setup { cepProcessor =>
+      val ed = makeEd(pp2.keyby -> "someValue", typeField -> "B", ipaddress -> "someIpAddresss")
+      val state = MiyamotoState("someValue", ed, pp2.test, Map())
+      val Some(StatePipelineAndMiyamotoState(pipeline, finalState)) = cepProcessor.findPipeline(state)
+      finalState shouldBe state
+      pipeline shouldBe pp2.test.list(1)
+    }
+  }
 
+  behavior of "updateWithStartState"
+
+  it should "make a map of the fields in the start event" in {
+    val ed = makeEd(pp2.keyby -> "someValue", typeField -> "A", ipaddress -> "someIpAddresss", falseKeyBy -> "shouldNotBeInclude")
+    val state = MiyamotoState("someValue", ed, pp2.test, Map())
+    val tuple = StatePipelineAndMiyamotoState(pp2.test.list(0), state)
+    setup { cepProcessor =>
+      val StatePipelineAndMiyamotoState(pipeline, resultingState) = cepProcessor.updateWithStartState(tuple)
+      pipeline shouldBe pp2.test.list(0)
+      resultingState.ed shouldBe ed
+      resultingState.key shouldBe "someValue"
+      resultingState.currentState shouldBe pp2.test
+      resultingState.data shouldBe Map(pp2.ie1 -> Map("type" -> "A", "customerId" -> "someValue", "ipaddress" -> "someIpAddresss"))
+    }
   }
 
 }

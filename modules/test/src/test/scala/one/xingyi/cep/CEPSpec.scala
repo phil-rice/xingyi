@@ -23,7 +23,7 @@ trait CepFixture {
       where(`type`.value == "A")
     }
     val ie2 = new TopicEvent("ie2", fraudtestinputtopic) with CustomerAddressIpAddressAndType {
-      where(`type`.value == "B" && customerId.value.matches("[A02468]$"))
+      where(`type`.value == "B")
     }
     val ie3 = new TopicEvent("ie3", fraudtestinputtopic) with CustomerAddressIpAddressAndType {
       where(`type`.value == "F" && customerId.value.matches("[A02468]$"))
@@ -40,12 +40,14 @@ trait CepFixture {
     val ie2Recv = state(ie3 >> map(map123) >> emit >> terminate)
     val test = state(ie1 >> ie1Recv || ie2 >> ie2Recv || ie3 >> terminate)
   }
+  pp2.initialise
 
   val be2 = new TopicEvent("be2", fraudtestbusinesseventstopic, "1.0.0") with CustomerAddressIpAddressAndType
 
   case class bind(e: Preprocess) {
     def to(topic: TopicEvent) = ()
   }
+
   bind(pp2) to (be2)
 }
 abstract class AbstractCEPSpec[ED](implicit stringGetter: StringFieldGetter[ED]) extends UtilsSpec with CepFixture with WithFields {
@@ -71,8 +73,8 @@ abstract class AbstractCEPSpec[ED](implicit stringGetter: StringFieldGetter[ED])
 
 
   it should "have a value methods that pulls its value out of the 'currentfields' in 'withfields' (later this will be macro)" in {
-    currentValues.set(Map(otherField -> "1", ipaddress -> "2", stringFieldNotCreatedByMacro -> "3"))
-    implicitsValuesUntilWeGetMacrosSortedOut(ipaddress) shouldBe "2"
+    currentValues.set(Map(otherField.name -> "1", ipaddress.name -> "2", stringFieldNotCreatedByMacro.name -> "3"))
+    implicitsValuesUntilWeGetMacrosSortedOut(ipaddress.name) shouldBe "2"
     otherField.value shouldBe "1"
     ipaddress.value shouldBe "2"
     stringFieldNotCreatedByMacro.value shouldBe "3"
@@ -81,13 +83,13 @@ abstract class AbstractCEPSpec[ED](implicit stringGetter: StringFieldGetter[ED])
   behavior of "withfields.update"
 
   it should "makes a filtered map based on the defined stringfields" in {
-    val m = Map(otherField -> "2", ipaddress -> "3", stringFieldNotCreatedByMacro -> "1", customerId -> "4", `type` -> "5")
-    update(m) shouldBe Some(Map(otherField -> "2", ipaddress -> "3", customerId -> "4", `type` -> "5"))
+    val m = Map(otherField.name -> "2", ipaddress.name -> "3", stringFieldNotCreatedByMacro.name -> "1", customerId.name -> "4", `type`.name -> "5")
+    update(m) shouldBe Some(Map(otherField.name -> "2", ipaddress.name -> "3", customerId.name -> "4", `type`.name -> "5"))
   }
 
   it should "return none if there fields are not all there" in {
-    update(Map(ipaddress -> "3", stringFieldNotCreatedByMacro -> "1")) shouldBe None
-    update(Map(otherField -> "3", stringFieldNotCreatedByMacro -> "1")) shouldBe None
+    update(Map(ipaddress.name -> "3", stringFieldNotCreatedByMacro.name -> "1")) shouldBe None
+    update(Map(otherField.name -> "3", stringFieldNotCreatedByMacro.name -> "1")) shouldBe None
   }
 
   behavior of "TopicEvents"
