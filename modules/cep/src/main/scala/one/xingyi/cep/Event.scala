@@ -56,7 +56,7 @@ abstract class TopicEvent(val name: String, val topic: Topic, val version: Strin
 
 case class timeout(n: Duration) extends StartEvent {
   override def update(map: StringMap): Option[StringMap] = Some(map)
-  override def accepts[ED: StringFieldGetter](lastEvent: ED): Boolean = true
+  override def accepts[ED: StringFieldGetter](lastEvent: ED): Boolean = false
   override def makeMap[ED](ed: ED)(implicit stringFieldGetter: StringFieldGetter[ED]): Option[StringMap] = None
 }
 

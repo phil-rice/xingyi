@@ -7,7 +7,10 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.language.reflectiveCalls
 
-trait CepFixture {
+trait CepFixture[ED] {
+  def setup(fn: CEPProcessor[ED] => Unit)(implicit cep: CEP[ED]): Unit = {
+    fn(new CEPProcessor[ED](fraudtestinputtopic, pp2))
+  }
   val fraudtestbusinesseventstopic = Topic("fraudtestbusinesseventstopic", "1.0.0")
   val fraudtestinputtopic = Topic("fraudtestinputtopic", "1.0.0")
 
@@ -50,7 +53,7 @@ trait CepFixture {
 
   bind(pp2) to (be2)
 }
-abstract class AbstractCEPSpec[ED](implicit stringGetter: StringFieldGetter[ED]) extends UtilsSpec with CepFixture with WithFields {
+abstract class AbstractCEPSpec[ED](implicit stringGetter: StringFieldGetter[ED]) extends UtilsSpec with CepFixture[ED] with WithFields {
 
   def makeEd(tuples: (StringField, String)*): ED
 

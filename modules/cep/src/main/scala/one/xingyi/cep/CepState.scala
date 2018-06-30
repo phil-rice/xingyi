@@ -4,6 +4,7 @@ import one.xingyi.core.optics.Lens
 object MiyamotoState {
   def lastDataL[ED] = Lens[MiyamotoState[ED], Map[Event, StringMap]](_.data, (m, e) => m.copy(data = e))
   def edL[ED] = Lens[MiyamotoState[ED], ED](_.ed, (m, e) => m.copy(ed = e))
+  def stateL[ED] = Lens[MiyamotoState[ED], CepState](_.currentState, (m, e) => m.copy(currentState = e))
 }
 case class MiyamotoState[ED](key: Any, ed: ED, currentState: CepState = terminate, data: Map[Event, StringMap] = Map())
 

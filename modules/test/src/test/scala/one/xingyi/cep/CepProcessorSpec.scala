@@ -1,8 +1,11 @@
 package one.xingyi.cep
 
 import one.xingyi.core.UtilsSpec
+import org.scalatest.mockito.MockitoSugar
+
 import scala.language.reflectiveCalls
-abstract class AbstractCepProcessorSpec[ED](implicit cep: CEP[ED]) extends UtilsSpec with CepFixture {
+import org.mockito.Mockito._
+abstract class AbstractCepProcessorSpec[ED](implicit cep: CEP[ED]) extends UtilsSpec with CepFixture [ED]with MockitoSugar {
 
   def makeEd(tuples: (StringField, String)*): ED
 
@@ -12,9 +15,7 @@ abstract class AbstractCepProcessorSpec[ED](implicit cep: CEP[ED]) extends Utils
   val customerIdField = KeyByStringField("customerId")
   val ipaddress = KeyByStringField("ipaddress")
 
-  def setup(fn: CEPProcessor[ED] => Unit): Unit = {
-    fn(new CEPProcessor[ED](fraudtestinputtopic, pp2))
-  }
+
   behavior of "CepProcessor.findLastStateFromED"
   it should "return nothing when the keyBy isn't in the ED" in {
     setup { cepProcessor =>
@@ -80,6 +81,21 @@ abstract class AbstractCepProcessorSpec[ED](implicit cep: CEP[ED]) extends Utils
       resultingState.key shouldBe "someValue"
       resultingState.currentState shouldBe pp2.test
       resultingState.data shouldBe Map(pp2.ie1 -> Map("type" -> "A", "customerId" -> "someValue", "ipaddress" -> "someIpAddresss"))
+    }
+  }
+
+  behavior of "execute"
+
+  it should "pass the state to the execute method of the pipeline, and update the current state to be the final state in the pipeline" in {
+    setup { cepProcessor =>
+      val state = mock[MiyamotoState[ED]]
+      val finalMState = MiyamotoState("someKey", makeEd(), terminate, Map())
+      val pipeline = mock[StatePipeline]
+      val tuple = StatePipelineAndMiyamotoState(pipeline, finalMState)
+      when(pipeline.execute(finalMState)) thenReturn finalMState
+      val finalState = mock[CepState]
+      when(pipeline.finalState) thenReturn { () => finalState }
+      cepProcessor.processPipeline(tuple) shouldBe finalMState.copy(currentState = finalState)
     }
   }
 

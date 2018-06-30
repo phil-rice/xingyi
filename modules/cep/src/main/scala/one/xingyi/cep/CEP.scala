@@ -30,7 +30,7 @@ class CEPProcessor[ED](topic: Topic, preprocess: Preprocess)(implicit cep: CEP[E
 
   def updateWithStartState: StatePipelineAndMiyamotoState[ED] => StatePipelineAndMiyamotoState[ED] = { s => toDataL.transform(s, _ + (s.statePipeline.event -> s.makeMapForEventFromED)) }
 
-  def processPipeline: StatePipelineAndMiyamotoState[ED] => MiyamotoState[ED] = {case StatePipelineAndMiyamotoState(statePipeline, state) => statePipeline.execute(state)}
+  def processPipeline: StatePipelineAndMiyamotoState[ED] => MiyamotoState[ED] = {case StatePipelineAndMiyamotoState(statePipeline, state) => statePipeline.execute(state); state.copy(currentState = statePipeline.finalState())}
   def putBackInMap: MiyamotoState[ED] => Unit = { s => map.put(s.key, s) }
 
   def process = findLastStateFromED ~+?> updateStateWithEd ~~?> findPipeline ~?> updateWithStartState ~?> processPipeline ~?> putBackInMap
