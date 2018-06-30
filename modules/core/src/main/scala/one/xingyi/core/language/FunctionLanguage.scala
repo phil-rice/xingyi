@@ -17,6 +17,7 @@ trait FunctionLanguage {
     def ~>[Res2](fn2: Res => Res2): (Req) => Res2 = { res: Req => fn2(fn(res)) }
     def ~^>(fn2: Res => Unit): (Req => Res) = { req: Req => sideeffect(fn(req))(fn2) }
     def ~+>[Res2](fn2: Req => Res => Res2): (Req => Res2) = { req: Req => fn2(req)(fn(req)) }
+    def ~~+>[Res2](fn2: Res => Res => Res2): (Req => Res2) = { req: Req => val res = fn(req); fn2(res)(res) }
     //    def let[Mid, Res2](mid: Req => Mid)(fn2: Mid => Res => Res): Req => Res = { req: Req => fn2(mid(req))(fn(req)) }
     def onEnterAndExit[Mid](mid: Req => Mid, before: Mid => Unit, after: (Mid, Res) => Unit) = { req: Req =>
       val m = mid(req)
@@ -33,6 +34,9 @@ trait FunctionLanguage {
     }
   }
 
+  implicit class OptionFunctionOps[T1, T2](fn: T1 => Option[T2]) {
+    def ~?>[T3](fn2: T2 => T3): T1 => Option[T3] = { t1: T1 => fn(t1).map(fn2) }
+  }
   implicit class OptionFunctionCurriedPimper[T, T1, T2](fn: T => T1 => Option[T2]) {
     def chain(fn2: T => T1 => Option[T2]): T => T1 => Option[T2] = { t: T =>
       t1: T1 =>

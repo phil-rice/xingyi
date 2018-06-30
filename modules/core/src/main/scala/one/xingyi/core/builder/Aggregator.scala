@@ -5,6 +5,9 @@ sealed trait YesNo
 trait Yes extends YesNo
 trait No extends YesNo
 
+trait HasAggregator[T] {
+  def aggregator: Aggregator[T]
+}
 trait Aggregator[T] extends (T => Unit)
 trait HasId[T, ID] extends (T => ID)
 

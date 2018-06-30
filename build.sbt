@@ -85,8 +85,9 @@ lazy val pactSettings = publishSettings ++ Seq(
   libraryDependencies += "junit" % "junit" % versions.junit % "test"
 )
 
-lazy val cddscenarioSettings = publishSettings ++ Seq(
-  libraryDependencies += "org.scala-lang" % "scala-reflect" % versions.scala
+lazy val reflectionSettings = publishSettings ++ Seq(
+  libraryDependencies += "org.scala-lang" % "scala-reflect" % versions.scala,
+  libraryDependencies += "org.scala-lang" % "scala-compiler" % versions.scala
 )
 
 lazy val json4sSettings = publishSettings ++ Seq(
@@ -133,7 +134,11 @@ lazy val tagless = (project in file("modules/tagless")).
   dependsOn(core % "test->test;compile->compile").aggregate(core)
 
 lazy val cddscenario = (project in file("modules/cddscenario")).
-  settings(cddscenarioSettings: _*).
+  settings(reflectionSettings: _*).
+  dependsOn(core % "test->test;compile->compile").aggregate(core)
+
+lazy val cep = (project in file("modules/cep")).
+  settings(reflectionSettings: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core)
 
 val cddexamples = (project in file("modules/cddexamples")).
@@ -158,6 +163,7 @@ lazy val cddscripts = (project in file("modules/cddscripts")).
 lazy val test = (project in file("modules/test")).
   settings(publishSettings: _*).
   dependsOn(core % "test->test;compile->compile").
+  dependsOn(cep % "test->test;compile->compile").
   dependsOn(apachejdbc % "test->test;compile->compile").
   dependsOn(json4s % "test->test;compile->compile").
   aggregate(core)
@@ -202,6 +208,7 @@ val root = (project in file(".")).
     cddengine,//
     cddmustache,//
     cddscalatest,//
+    cep,
     core,//
     finatra,//
     finatraSample,

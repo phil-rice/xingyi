@@ -103,64 +103,6 @@ class MonoidForIntSpec extends MonoidSpec[Int] {
 
 }
 
-case class Currency(symbol: String) {
-  case class Money(amount: Int) {
-    def +(money: Money) = Money(amount + money.amount)
-  }
-  object Money {
-    implicit object MonoidForMoney extends Monoid[Money] {
-      override def zero: Money = Money(0)
-      override def add(t1: Money, t2: Money): Money = Money(t1.amount + t2.amount)
-    }
-  }
-}
-
-object Currency extends App {
-
-
-  var currentDefinition: String = ""
-  implicit val aggregator: Aggregator[String] = new RememberingAggregator2[String]()
-
-
-
-
-  def definition1(name: String) (block: => Unit): Unit = {
-    currentDefinition =  name
-    block
-    currentDefinition = """   {"hey":{"value":123} } """
-  }
-  trait doesword
-  object does extends doesword
-  case class something(s: String) {
-    case class which(doesWord: doesword) {
-      aggregator(s"adding this $s to $currentDefinition")
-    }
-  }
-
-  definition1 ("with some name") {
-    something("nice") which does
-
-
-  }
-  definition1 ("with some other name") {
-    something("nice") which does
-
-
-  }
-
-
-}
-
-
-//class MonoidForIntSpec extends MonoidSpec[Money] {
-//
-//  override def zeroValue = Money("eur", 0)
-//  override def one = Money("eur", 1)
-//  override def two = Money("eur", 2)
-//  override def three = Money("eur", 3)
-//
-//
-//}
 class MonoidForSeqSpec extends MonoidSpec[Seq[String]] {
   override def zeroValue = List()
   override def one = List("1")

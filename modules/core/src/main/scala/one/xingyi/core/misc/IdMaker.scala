@@ -8,3 +8,7 @@ trait IdMaker {
   protected def getNextId = nextId.getAndIncrement()
 
 }
+trait PublicIdMaker extends IdMaker{
+   override def getNextId = super.getNextId
+
+}
