@@ -30,7 +30,7 @@ object Macros {
     c.Expr(
       q"""{
          def someFn(implicit value: StringMap) = $value;
-         new StringFieldWithValue($stringField.id, $stringField.name, $hasAggregator.aggregator)(v => someFn(v))}""")
+         new StringFieldWithValue($stringField.id, $stringField.name, v => someFn(v))($hasAggregator.aggregator)}""")
   }
   def whereImpl(c: whitebox.Context)(value: c.Expr[Boolean]): c.Expr[WhereFn] = {
     import c.universe._
@@ -76,7 +76,7 @@ object Macros {
     val enclosingValName = definingValName(c, methodName => s"""$methodName must be directly assigned to a val, such as `val x = $methodName[Int]("description")`.""")
     val name = c.Expr[String](Literal(Constant(enclosingValName)))
     reify {
-      new StringField(idMaker.splice.getNextId, name.splice, hasAggregator.splice.aggregator)
+      new SimpleStringField(idMaker.splice.getNextId, name.splice)(hasAggregator.splice.aggregator)
     }
   }
 

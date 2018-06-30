@@ -7,19 +7,20 @@ import one.xingyi.core.reflection.Macros
 import scala.annotation.tailrec
 import scala.concurrent.duration.Duration
 import scala.language.experimental.macros
+import scala.util.Try
 
 case class MapEvent() extends Event with WithFields
 
 trait Event {
   def accepts(lastEvent: Any): Boolean = ???
-  def update(map: Map[StringField, String]): Map[StringField, String]
+  def update(map: Map[StringField, String]): Option[Map[StringField, String]]
   def >>(s: => CepState): StatePipeline = StatePipeline(this, List(), () => s)
   def >>(p: PipelineStage) = StatePipeline(this, List(p), () => terminate)
 }
 
 trait WithFields extends PublicIdMaker {
   //TODO This is an anti pattern. Put simply needing this sucks. I think we can do this better with macros, but this works for now
-  protected implicit def currentValues = new InheritableThreadLocal[StringMap] {
+  protected implicit val currentValues = new InheritableThreadLocal[StringMap] {
     override def initialValue(): StringMap = Map()
   }
   implicit def implicitsValuesUntilWeGetMacrosSortedOut = currentValues.get
@@ -28,11 +29,14 @@ trait WithFields extends PublicIdMaker {
   def stringField: StringField = macro Macros.stringFieldImpl
 
   def fields = aggregator.items
-  def update(map: StringMap) = {currentValues.set(map); fields.foldLeft[StringMap](Map())((acc, sf) => acc + (sf -> sf.value(map)))}
+  def update(map: StringMap) = {
+    currentValues.set(map) //TODO another place that needs the 'value' macro sorting out
+    fields.foldLeft[Option[StringMap]](Some(Map())) { case (Some(acc), sf) => try {Some(acc + (sf -> sf.value(map)))} catch {case e: Exception => None} ; case _ => None}
+  }
 }
 
 
-abstract class TopicEvent(name: String, topic: Topic, version: String = "1.0.0") extends Event {
+abstract class TopicEvent(val name: String, val topic: Topic, val version: String = "1.0.0") extends Event {
   //TODO Again just until we get the macros sorted out
   var actualWhere: WhereFn = { _ => true }
   def where(fn: => Boolean) = actualWhere = _ => fn
@@ -40,7 +44,7 @@ abstract class TopicEvent(name: String, topic: Topic, version: String = "1.0.0")
 }
 
 case class timeout(n: Duration) extends Event {
-  override def update(map: Map[StringField, String]): Map[StringField, String] = map
+  override def update(map: Map[StringField, String]): Option[Map[StringField, String]] = Some(map)
 }
 
 case class StatePipelineAndMiyamotoState[ED](statePipeline: StatePipeline, miyamotoState: MiyamotoState[ED])
@@ -58,7 +62,7 @@ case class StatePipeline(event: Event, pipelineStages: List[PipelineStage], fina
 
   def >>(pipelineStage: PipelineStage) = StatePipeline(event, pipelineStages :+ pipelineStage, finalState)
   def >>(finalState: => CepState) = StatePipeline(event, pipelineStages, () => finalState)
-  def pipelineStageAsString= if (pipelineStages.isEmpty) "" else " => " + pipelineStages.mkString(" => ")
+  def pipelineStageAsString = if (pipelineStages.isEmpty) "" else " => " + pipelineStages.mkString(" => ")
   override def toString: String = s"($event$pipelineStageAsString => ${finalState().name})"
 }
 

@@ -27,16 +27,17 @@ class CEPProcessor[ED](keyby: StringField, topic: Topic, preprocess: Preprocess)
   def findPipeline: MiyamotoState[ED] => Option[StatePipelineAndMiyamotoState[ED]] = { state =>
     state.currentState.list.find(_.event.accepts(state.lastEvent)).map {StatePipelineAndMiyamotoState.apply(state)}
   }
-  def updateWithStartState: StatePipelineAndMiyamotoState[ED] => StatePipelineAndMiyamotoState[ED] = {
+  def updateWithStartState: StatePipelineAndMiyamotoState[ED] => Option[StatePipelineAndMiyamotoState[ED]] = {
     case StatePipelineAndMiyamotoState(statePipeline, state) =>
       val mapForState = state.lastData.getOrElse(statePipeline.event, Map())
-      val newMapForState = statePipeline.event.update(mapForState)
-      StatePipelineAndMiyamotoState(statePipeline, state.copy(lastData = state.lastData + (statePipeline.event -> newMapForState)))
+      statePipeline.event.update(mapForState).map { newMapForState =>
+        StatePipelineAndMiyamotoState(statePipeline, state.copy(lastData = state.lastData + (statePipeline.event -> newMapForState)))
+      }
   }
   def processPipeline: StatePipelineAndMiyamotoState[ED] => MiyamotoState[ED] = {case StatePipelineAndMiyamotoState(statePipeline, state) => statePipeline.execute(state)}
   def putBackInMap: MiyamotoState[ED] => Unit = { s => map.put(s.key, s) }
 
-  def process = findLastStateFromED ~+> updateStateWithEd ~> findPipeline ~?> updateWithStartState ~?> processPipeline ~?> putBackInMap
+  def process = findLastStateFromED ~+> updateStateWithEd ~> findPipeline ~~?> updateWithStartState ~?> processPipeline ~?> putBackInMap
 }
 
 trait HasKeyBy {
@@ -46,15 +47,23 @@ trait HasKeyBy {
 object StringField {
   implicit object hasIdForStringField extends HasId[StringField, Int] {override def apply(v1: StringField): Int = v1.id}
 }
-class StringField(val id: Int, val name: String, val aggregator: Aggregator[StringField]) extends HasAggregator[StringField] {
+
+abstract class StringField(implicit val aggregator: Aggregator[StringField]) extends HasAggregator[StringField] {
+  def id: Int
+  def name: String
   aggregator(this)
-  def :=(fn: ValueFn): StringField = new StringFieldWithValue(id, name, aggregator)(fn)
-  def :=(value: String): StringField = new StringFieldWithValue(id, name, aggregator)(_ => value)
+  def :=(fn: ValueFn): StringField = new StringFieldWithValue(id, name, fn)
+  def :=(value: String): StringField = new StringFieldWithValue(id, name, _ => value)
   def :==(value: String): StringField = macro Macros.assignmentImpl
   def value(implicit map: Map[StringField, String]) = map(this)
+  override def toString: String = s"StringField($id,$name)"
 }
 
-class StringFieldWithValue(id: Int, name: String, aggregator: Aggregator[StringField])(value: ValueFn) extends StringField(id, name, aggregator)
+case class SimpleStringField(id: Int, name: String)(implicit aggregator: Aggregator[StringField]) extends StringField {
+  override def toString: String = s"StringField($id,$name)"
+}
+
+case class StringFieldWithValue(id: Int, name: String, value: ValueFn)(implicit aggregator: Aggregator[StringField]) extends StringField
 
 
 case class Topic(topicName: String, version: String)
@@ -79,7 +88,7 @@ abstract class Preprocess(name: String, version: String) {
   def initialise = setupList.foreach { case (state, list) => state.list = list }
   protected def state(block: StatePipeline): UserState = macro Macros.statePipelineImpl
   protected def state(block: List[StatePipeline]): UserState = macro Macros.statePipelinesImpl
-  override def toString: String = s"Preprocess($name,$version:\n   ${setupList.map{t => t._1}.mkString("\n   ")}"
+  override def toString: String = s"Preprocess($name,$version:\n   ${setupList.map { t => t._1 }.mkString("\n   ")}"
 }
 
 
