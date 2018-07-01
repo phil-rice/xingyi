@@ -16,12 +16,12 @@ case class MapEvent(name: String) extends Event with WithFields {
 
 trait Event {
   def name: String
-  def update(map: StringMap): Option[StringMap]
+  def update(map: LastEventAndData): Option[StringMap]
 }
 
-object NullEvent extends Event{
+object NullEvent extends Event {
   override def name: String = "NullEvent"
-  override def update(map: StringMap): Option[StringMap] = Some(map)
+  override def update(map: LastEventAndData): Option[StringMap] = Some(map.map)
 }
 
 trait StartEvent extends Event {
@@ -34,12 +34,10 @@ trait StartEvent extends Event {
 trait WithFields extends PublicIdMaker {
   def event: Event
   //TODO This is an anti pattern. Put simply needing this sucks. I think we can do this better with macros, but this works for now
-  protected implicit val currentValues = new InheritableThreadLocal[StringMap] {
-    override def initialValue(): StringMap = Map()
-  }
+  protected implicit val currentValues = new InheritableThreadLocal[LastEventAndData]
   implicit def implicitsValuesUntilWeGetMacrosSortedOut = currentValues.get
 
-  protected implicit val aggregator: RememberingAggregator2[StringField] = new RememberingAggregator2[StringField]()
+  protected implicit val aggregator: RememberingAggregator2[StringField, String] = new RememberingAggregator2()
   def stringField: StringField = macro Macros.stringFieldImpl
 
   def fields = aggregator.items
@@ -48,16 +46,16 @@ trait WithFields extends PublicIdMaker {
     case _ => None
   }
 
-  def update(map: StringMap) = {
-    currentValues.set(map) //TODO another place that needs the 'value' macro sorting out
-    fields.foldLeft[Option[StringMap]](Some(Map())) { case (Some(acc), sf) => try {Some(acc + (sf.name -> sf.value(map)))} catch {case e: Exception => None}; case _ => None }
+  def update(lastEventAndData: LastEventAndData) = {
+    currentValues.set(lastEventAndData) //TODO another place that needs the 'value' macro sorting out
+    fields.foldLeft[Option[StringMap]](Some(Map())) { case (Some(acc), sf) => try {Some(acc + (sf.name -> sf.value))} catch {case e: Exception => e.printStackTrace(Console.err); None}; case _ => None }
   }
 }
 
 
 abstract class TopicEvent(val name: String, val topic: Topic, val version: String = "1.0.0") extends StartEvent with WithFields {
   def event = this
-  override def accepts[ED](lastEvent: ED)(implicit cep: StringFieldGetter[ED]): Boolean = makeMap(lastEvent).map { m => currentValues.set(m); actualWhere(m) }.getOrElse(false)
+  override def accepts[ED](ed: ED)(implicit cep: StringFieldGetter[ED]): Boolean = makeMap(ed).map { m => currentValues.set(new LastEventAndDataForAccept(this, m)); actualWhere(m) }.getOrElse(false)
   //TODO Again just until we get the macros sorted out...this is a mess at the moment to make the DSL prettier
   var actualWhere: WhereFn = { _ => true }
   def where(fn: => Boolean) = actualWhere = _ => fn
@@ -65,14 +63,14 @@ abstract class TopicEvent(val name: String, val topic: Topic, val version: Strin
 }
 
 case class timeout(n: Duration) extends StartEvent {
-  override def update(map: StringMap): Option[StringMap] = Some(map)
+  override def update(map: LastEventAndData): Option[StringMap] = Some(map.map)
   override def accepts[ED: StringFieldGetter](lastEvent: ED): Boolean = false
   override def makeMap[ED](ed: ED)(implicit stringFieldGetter: StringFieldGetter[ED]): Option[StringMap] = None
   override def name: String = "timeout"
 }
 
 case class StatePipeline(event: StartEvent, pipelineStages: List[PipelineStage], finalState: () => CepState) {
-  def execute[ED](startState: PipelineData[ED]): PipelineData[ED] = execute(startState, pipelineStages).copy(currentState = finalState())
+  def execute[ED](startState: PipelineData[ED]): PipelineData[ED] = execute(startState, pipelineStages)
 
   @tailrec
   final private def execute[ED](state: PipelineData[ED], pipelineStages: List[PipelineStage]): PipelineData[ED] = pipelineStages match {

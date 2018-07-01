@@ -96,7 +96,7 @@ case class ChildBuilder[Main, Child, Issue](id: Int, name: String, lens: Lens[Ma
 class BlackboardBuilder[M] extends BlackboardBuilderAnyIssue[M, ValidateProblem]
 trait BlackboardBuilderAnyIssue[M, Issue] extends IdMaker {
 
-  implicit protected val agg: RememberingAggregator2[BlackBoardBuilderBase[M, Issue]] = new RememberingAggregator2()
+  implicit protected val agg: RememberingAggregator2[BlackBoardBuilderBase[M, Issue],Int] = new RememberingAggregator2()
 
   protected def leaf[C](name: String) = LeafBuilder[M, C, Issue, No, No, No](getNextId, name, None, None, None).sideeffect(agg.apply)
 

@@ -1,6 +1,6 @@
 package one.xingyi.cep
 
-import one.xingyi.core.builder.{Aggregator, HasAggregator, HasId}
+import one.xingyi.core.builder.{Aggregator, HasAggregator, HasId, RememberingAggregator2}
 import one.xingyi.core.language.FunctionLanguage._
 import one.xingyi.core.reflection.Macros
 
@@ -17,18 +17,20 @@ trait StringFieldGetter[ED] {
 trait CEP[ED] extends StringFieldGetter[ED] {
   def listenTo(fn: ED => Unit): ListenerRef
   def stopListeningTo(ref: ListenerRef)
+  def sendMessage(topicEvent: TopicEvent, emitData: EmitData)
 }
 
 
-class CEPProcessor[ED](topic: Topic, preprocess: Preprocess)(implicit cep: CEP[ED]) {
+class CEPProcessor[ED](topicEvent: TopicEvent, preprocess: Preprocess)(implicit cep: CEP[ED]) {
   val map: TrieMap[Any, StoredState[ED]] = TrieMap()
 
   def findLastStateFromString: ED => String => StoredState[ED] = ed => key => map.getOrElseUpdate(key, new StoredState[ED](key, ed, preprocess.initial, Map()))
   def findLastStateFromED = cep.getString(preprocess.keyby) ~+?> findLastStateFromString
-  def processPipeline: PipelineData[ED] => StoredState[ED] = { s => s.statePipeline.execute(s); s.asStoredStateWithNewState }
-  def putBackInMap: StoredState[ED] => Unit = { s => map.put(s.key, s) }
+  def processPipeline: PipelineData[ED] => PipelineData[ED] = { s => s.statePipeline.execute(s) }
+  def putResultInMap = { s: PipelineData[ED] => map.put(s.key, s.asStoredStateWithNewState) }
+  def emitMessages = { s: PipelineData[ED] => s.emitData.foreach(cep.sendMessage(topicEvent, _)) }
 
-  def process = findLastStateFromED ~~+?> PipelineData.makeStartIfCan[ED] ~?> processPipeline ~?> putBackInMap
+  def process = findLastStateFromED ~~+?> PipelineData.makeStartIfCan[ED] ~?> processPipeline ~?^> putResultInMap ~?^> emitMessages
 }
 
 trait HasKeyBy {
@@ -36,31 +38,44 @@ trait HasKeyBy {
 }
 
 object StringField {
-  implicit object hasIdForStringField extends HasId[StringField, Int] {override def apply(v1: StringField): Int = v1.id}
+  implicit object hasIdForStringField extends HasId[StringField, String] {override def apply(v1: StringField): String = v1.name}
 }
 
+class CannotgetData(stringField: StringField, lastEventAndData: LastEventAndData, name: String, event: Event, cause: Throwable) extends RuntimeException(
+  s"""
+     |stringField: $stringField
+     |name:  $name
+     |event: $event
+     |Data:
+     |$lastEventAndData
+  """.stripMargin, cause)
 
 abstract class StringField(implicit val aggregator: Aggregator[StringField]) extends HasAggregator[StringField] {
-  def id: Int
+  def aggregatorString = aggregator match {
+    case a: RememberingAggregator2[StringField, _] => aggregator.asInstanceOf[RememberingAggregator2[StringField, _]].items.mkString("\n  ")
+    case x => x.toString()
+  }
+  aggregator(this)
+  //  println(s"making ${getClass.getSimpleName}. event: $event name: $name,  Aggregator is \n  $aggregatorString")
+
+
   def name: String
   def event: Event
-  aggregator(this)
-  def :=(fn: ValueFn): StringField = new StringFieldWithValue(event, id, name, fn)
-  def :=(value: String): StringField = new StringFieldWithValue(event, id, name, _ => value)
+  def :=(fn: ValueFn): StringField = new StringFieldWithValue(event, name, fn)
+  def :=(value: String): StringField = new StringFieldWithValue(event, name, _ => value)
   def :==(value: String): StringField = macro Macros.assignmentImpl
-  def value(implicit map: StringMap) = map(name)
-  override def toString: String = s"StringField(${event.name}, $id, $name)"
+  def value(implicit lastEventAndData: LastEventAndData) = try {lastEventAndData.data(event)(name)} catch {case e: Exception => throw new CannotgetData(this, lastEventAndData, name, event, e)}
+  override def toString: String = s"StringField( $event,  $name)"
 }
 
-case class KeyByStringField( name: String) extends StringField()(Aggregator.nullAggregator[StringField]) {
-  override def id: Int = -1
-  override def event: Event = NullEvent
+case class KeyByStringField(name: String) extends StringField()(Aggregator.nullAggregator[StringField]) {
+  def event = NullEvent
 }
-case class SimpleStringField(event: Event, id: Int, name: String)(implicit aggregator: Aggregator[StringField]) extends StringField {
-  override def toString: String = s"StringField($id,$name)"
+case class SimpleStringField(event: Event, name: String)(implicit aggregator: Aggregator[StringField]) extends StringField
+case class StringFieldWithValue(event: Event, name: String, valueFn: ValueFn)(implicit aggregator: Aggregator[StringField]) extends StringField {
+  override def value(implicit lastEventAndData: LastEventAndData) = valueFn(lastEventAndData.data)
+  override def toString: String = s"StringFieldWithValue( $event, $name)"
 }
-
-case class StringFieldWithValue(event: Event, id: Int, name: String, value: ValueFn)(implicit aggregator: Aggregator[StringField]) extends StringField
 
 
 case class Topic(topicName: String, version: String)

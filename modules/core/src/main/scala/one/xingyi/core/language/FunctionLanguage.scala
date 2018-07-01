@@ -36,6 +36,7 @@ trait FunctionLanguage {
 
   implicit class OptionFunctionOps[T1, T2](fn: T1 => Option[T2]) {
     def ~?>[T3](fn2: T2 => T3): T1 => Option[T3] = { t1: T1 => fn(t1).map(fn2) }
+    def ~?^>[T3](fn2: T2 => T3): T1 => Option[T2] = { t1: T1 => fn(t1).map { t2 => fn2(t2); t2 } }
     def ~+?>[T3](fn2: T1 => T2 => T3): T1 => Option[T3] = { t1: T1 => fn(t1).map(fn2(t1)) }
     def ~~+?>[T3](fn2: T1 => T2 => Option[T3]): T1 => Option[T3] = { t1: T1 => fn(t1).flatMap(fn2(t1)) }
     def ~~?>[T3](fn2: T2 => Option[T3]): T1 => Option[T3] = { t1: T1 => fn(t1).flatMap(fn2) }

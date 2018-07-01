@@ -7,16 +7,16 @@ abstract class AbstractIntegrationCepSpec[ED: CEP] extends UtilsSpec with CepFix
 
   behavior of "CepFixture"
 
-  val edInitial = makeEd("customerId" -> "someValue", "type" -> "A", "ipaddress" -> "someIpAddress", "junk" -> "someJunk")
-  val edTwo = makeEd("customerId" -> "someValue", "type" -> "B", "ipaddress" -> "someIpAddress", "junk" -> "someJunk")
-  val edThree = makeEd("customerId" -> "someValue", "type" -> "C", "ipaddress" -> "someIpAddress", "junk" -> "someJunk")
+  val edInitial = makeEd("customerId" -> "someValue", "type" -> "A", "ipaddress" -> "someIpAddress1", "junk" -> "someJunk")
+  val edTwo = makeEd("customerId" -> "someValue", "type" -> "B", "ipaddress" -> "someIpAddress2", "junk" -> "someJunk")
+  val edThree = makeEd("customerId" -> "someValue", "type" -> "C", "ipaddress" -> "someIpAddress3", "junk" -> "someJunk")
 
   it should "process the initial ED" in {
     setup { cepProcessor =>
       cepProcessor.process(edInitial)
       val Some(StoredState("someValue", actualEd, pp2.ie1Recv, actualMap)) = cepProcessor.findLastStateFromED(edInitial)
       actualEd shouldBe edInitial
-      actualMap shouldBe Map(pp2.ie1 -> Map("customerId" -> "someValue", "type" -> "A", "ipaddress" -> "someIpAddress"))
+      actualMap shouldBe Map(pp2.ie1 -> Map("customerId" -> "someValue", "type" -> "A", "ipaddress" -> "someIpAddress1"))
     }
   }
 
@@ -27,7 +27,7 @@ abstract class AbstractIntegrationCepSpec[ED: CEP] extends UtilsSpec with CepFix
 
       val Some(StoredState("someValue", actualEd, pp2.ie1Recv, actualMap)) = cepProcessor.findLastStateFromED(edInitial)
       actualEd shouldBe edInitial
-      actualMap shouldBe Map(pp2.ie1 -> Map("customerId" -> "someValue", "type" -> "A", "ipaddress" -> "someIpAddress"))
+      actualMap shouldBe Map(pp2.ie1 -> Map("customerId" -> "someValue", "type" -> "A", "ipaddress" -> "someIpAddress1"))
     }
   }
   it should "not process the second ED initially" in {
@@ -46,23 +46,31 @@ abstract class AbstractIntegrationCepSpec[ED: CEP] extends UtilsSpec with CepFix
       val Some(StoredState("someValue", actualEd, pp2.ie2Recv, actualMap)) = cepProcessor.findLastStateFromED(edInitial)
       actualEd shouldBe edTwo
       actualMap shouldBe Map(
-        pp2.ie1 -> Map("customerId" -> "someValue", "type" -> "A", "ipaddress" -> "someIpAddress"),
-        pp2.ie2 -> Map("customerId" -> "someValue", "type" -> "B", "ipaddress" -> "someIpAddress")
+        pp2.ie1 -> Map("customerId" -> "someValue", "type" -> "A", "ipaddress" -> "someIpAddress1"),
+        pp2.ie2 -> Map("customerId" -> "someValue", "type" -> "B", "ipaddress" -> "someIpAddress2")
       )
     }
   }
   it should "Process the third ED which has a map in it" in {
-//    setup { cepProcessor =>
-//      cepProcessor.process(edInitial)
-//      cepProcessor.process(edTwo)
-//      cepProcessor.process(edThree).isDefined shouldBe true
-//      val Some(StoredState("someValue", actualEd, pp2.ie2Recv, actualMap)) = cepProcessor.findLastStateFromED(edInitial)
-//      actualEd shouldBe edTwo
-//      actualMap shouldBe Map(
-//        pp2.ie1 -> Map("customerId" -> "someValue", "type" -> "A", "ipaddress" -> "someIpAddress"),
-//        pp2.ie2 -> Map("customerId" -> "someValue", "type" -> "B", "ipaddress" -> "someIpAddress")
-//      )
-//    }
+    setup { cepProcessor =>
+      cepProcessor.process(edInitial)
+      cepProcessor.process(edTwo)
+      val Some(PipelineData("someValue", actualEd, actualState, actualMap, actualPipeline, actualLastEvent, actualEmit)) = cepProcessor.process(edThree)
+//      actualState shouldBe terminate
+      actualEd shouldBe edThree
+      actualState shouldBe pp2.ie2Recv
+      val expectedMap = Map("ipaddress" -> "someIpAddress1/someIpAddress2/someIpAddress3", "type" -> "A-B-C", "businessEventSubtype" -> "performance-test-data")
+      actualMap(pp2.map123) shouldBe expectedMap
+      actualPipeline shouldBe pp2.ie2Recv.list(0)
+      actualLastEvent shouldBe pp2.map123
+      actualMap shouldBe Map(
+        pp2.ie1 -> Map("customerId" -> "someValue", "type" -> "A", "ipaddress" -> "someIpAddress1"),
+        pp2.ie2 -> Map("customerId" -> "someValue", "type" -> "B", "ipaddress" -> "someIpAddress2"),
+        pp2.ie3 -> Map("customerId" -> "someValue", "type" -> "C", "ipaddress" -> "someIpAddress3"),
+        pp2.map123 -> expectedMap
+      )
+      actualEmit shouldBe List(EmitData(expectedMap))
+    }
 
   }
 

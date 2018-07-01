@@ -50,13 +50,13 @@ abstract class AbstractCepProcessorSpec[ED](implicit cep: CEP[ED]) extends Utils
       val ed = makeEd(pp2.keyby -> "someValue", typeField -> "A", ipaddress -> "someIpAddresss", falseKeyBy -> "shouldNotBeInclude")
       val start = StoredState("someValue", oldEd, pp2.test, Map())
       val expectedData = Map[Event, StringMap](pp2.ie1 -> Map("type" -> "A", "customerId" -> "someValue", "ipaddress" -> "someIpAddresss"))
-      PipelineData.makeStartIfCan(ed)(start) shouldBe Some(PipelineData("someValue", ed, pp2.test, expectedData, pp2.test.list(0), pp2.ie1))
+      PipelineData.makeStartIfCan(ed)(start) shouldBe Some(PipelineData("someValue", ed, pp2.test, expectedData, pp2.test.list(0), pp2.ie1, List()))
     }
     setup { cepProcessor =>
       val ed = makeEd(pp2.keyby -> "someValue", typeField -> "B", ipaddress -> "someIpAddresss", falseKeyBy -> "shouldNotBeInclude")
       val start = StoredState("someValue", oldEd, pp2.test, Map())
       val expectedData = Map[Event, StringMap](pp2.ie2 -> Map("type" -> "B", "customerId" -> "someValue", "ipaddress" -> "someIpAddresss"))
-      PipelineData.makeStartIfCan(ed)(start) shouldBe Some(PipelineData("someValue", ed, pp2.test, expectedData, pp2.test.list(1), pp2.ie2))
+      PipelineData.makeStartIfCan(ed)(start) shouldBe Some(PipelineData("someValue", ed, pp2.test, expectedData, pp2.test.list(1), pp2.ie2, List()))
     }
   }
 

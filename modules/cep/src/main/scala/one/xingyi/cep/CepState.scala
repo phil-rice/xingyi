@@ -13,8 +13,28 @@ case class StoreStateAndPipeline[ED](key: Any, ed: ED, currentState: CepState, d
   def makeMapForEventFromED(implicit stringFieldGetter: StringFieldGetter[ED]): StringMap = statePipeline.event.makeMap(ed).getOrElse(Map())
 }
 
-case class PipelineData[ED](key: Any, ed: ED, currentState: CepState, data: Map[Event, StringMap], statePipeline: StatePipeline, lastEvent: Event) {
+trait LastEventAndData {
+  def lastEvent: Event
+  def data: Map[Event, StringMap]
+  def map = data(lastEvent)
+  def getOrException(name: String) = data(lastEvent)(name)
+}
+case class LastEventAndDataForAccept(lastEvent: Event, rawMap: StringMap) extends LastEventAndData {
+  val data = Map(lastEvent -> rawMap)
+  override def toString: String = s"LastEventAndDataForAccept($lastEvent -> $map)"
+}
+case class LastEventAndDataForTest(lastEvent: Event, data: Map[Event, StringMap]) extends LastEventAndData
+
+case class PipelineData[ED](key: Any, ed: ED, startState: CepState, data: Map[Event, StringMap], statePipeline: StatePipeline, lastEvent: Event, emitData: List[EmitData]) extends LastEventAndData {
   def asStoredStateWithNewState = StoredState(key, ed, statePipeline.finalState(), data)
+  override def toString: String =
+    s""""PipelineData($key,$ed
+       |startState: $startState
+       |Data
+       |  ${data.mkString("\n  ")}
+       |Pipeline: $statePipeline
+       |Event $lastEvent
+     """.stripMargin
 
 }
 
@@ -24,7 +44,7 @@ object PipelineData {
     import storedState._
     storedState.currentState.find(thisEd).map { pipeline =>
       val startData = pipeline.event.makeMap(thisEd).getOrElse(Map())
-      PipelineData(key, thisEd, currentState, data + (pipeline.event -> startData), pipeline, pipeline.event)
+      PipelineData(key, thisEd, currentState, data + (pipeline.event -> startData), pipeline, pipeline.event, List())
     }
   }
 }

@@ -4,7 +4,6 @@ import one.xingyi.core.builder.{Aggregator, HasAggregator, RememberingAggregator
 import one.xingyi.core.reflection.Macros
 import scala.language.postfixOps
 class StringFieldSpec extends UtilsSpec with WithFields {
-  override def event: Event = NullEvent
 
   behavior of "StringField"
 
@@ -14,4 +13,5 @@ class StringFieldSpec extends UtilsSpec with WithFields {
     s.name shouldBe "s"
     test.name shouldBe "test"
   }
+  override def event: Event = NullEvent
 }
