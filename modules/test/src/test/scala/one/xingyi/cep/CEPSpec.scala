@@ -7,7 +7,10 @@ import one.xingyi.core.builder.Aggregator
 import scala.concurrent.duration._
 import scala.language.{postfixOps, reflectiveCalls}
 
+
 trait CepFixture[ED] {
+  case class LastEventAndDataForTest(lastEvent: Event, data: Map[Event, StringMap]) extends LastEventAndData
+
   def setup(fn: CEPProcessor[ED] => Unit)(implicit cep: CEP[ED]): Unit = {
     fn(new CEPProcessor[ED](be2, pp2))
   }
@@ -20,7 +23,7 @@ trait CepFixture[ED] {
     val ipaddress = stringField
   }
 
-  val pp2 = new Preprocess("pp2", "1.0.0") {
+  val pp2 = new Processor("pp2", "1.0.0") {
     override val keyby = KeyByStringField("customerId")
     val ie1 = new TopicEvent("ie1", fraudtestinputtopic) with CustomerAddressIpAddressAndType {
       where(`type`.value == "A")
@@ -38,17 +41,17 @@ trait CepFixture[ED] {
     }
 
     val initial = state(ie1 >> ie1Recv)
-    val ie1Recv = state(timeout(11 seconds) >> purge >> Terminate || ie2 >> ie2Recv)
-    val ie2Recv = state(ie3 >> map(map123) >> emit >> Terminate)
+    val ie1Recv = state(Timeout(11 seconds) >> purge >> Terminate || ie2 >> ie2Recv)
+    val ie2Recv = state(ie3 >> map(map123) >> Emit >> Terminate)
     val test = state(ie1 >> ie1Recv || ie2 >> ie2Recv || ie3 >> Terminate)
   }
   pp2.initialise
 
   val be2 = new TopicEvent("be2", fraudtestbusinesseventstopic, "1.0.0") with CustomerAddressIpAddressAndType
 
-//  case class bind[ED:CEP](e: Preprocess) {
-//    def to(topic: TopicEvent) = new CEPProcessor[ED](topic, e)
-//  }
+  //  case class bind[ED:CEP](e: Preprocess) {
+  //    def to(topic: TopicEvent) = new CEPProcessor[ED](topic, e)
+  //  }
 
 }
 abstract class AbstractCEPSpec[ED](implicit stringGetter: StringFieldGetter[ED]) extends UtilsSpec with CepFixture[ED] with WithFields {
@@ -75,7 +78,7 @@ abstract class AbstractCEPSpec[ED](implicit stringGetter: StringFieldGetter[ED])
 
   it should "have a value methods that pulls its value out of the 'currentfields' in 'withfields' (later this will be macro)" in {
     currentValues.set(new LastEventAndDataForAccept(NullEvent, Map(otherField.name -> "1", ipaddress.name -> "2", stringFieldNotCreatedByMacro.name -> "3")))
-    implicitsValuesUntilWeGetMacrosSortedOut.map(ipaddress.name) shouldBe "2"
+    implicitsValuesUntilWeGetMacrosSortedOut.dataForLastEvent(ipaddress.name) shouldBe "2"
     otherField.value shouldBe "1"
     ipaddress.value shouldBe "2"
     stringFieldNotCreatedByMacro.value shouldBe "3"

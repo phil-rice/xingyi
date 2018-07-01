@@ -81,9 +81,7 @@ abstract class AbstractIntegrationCepSpec[ED: CEP] extends UtilsSpec with CepFix
       cepProcessor.process(edThree)
       cepProcessor.map.get("someValue").isDefined shouldBe false
     }
-
   }
-
 }
 
 import CEPSpec._

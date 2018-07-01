@@ -1,14 +1,13 @@
 package one.xingyi.cep
 
 import one.xingyi.core.builder.RememberingAggregator2
-import one.xingyi.core.misc.{IdMaker, PublicIdMaker}
-import one.xingyi.core.optics.Lens
+import one.xingyi.core.language.AnyLanguage._
+import one.xingyi.core.misc.PublicIdMaker
 import one.xingyi.core.reflection.Macros
 
 import scala.annotation.tailrec
 import scala.concurrent.duration.Duration
 import scala.language.experimental.macros
-import scala.util.Try
 
 case class MapEvent(name: String) extends Event with WithFields {
   override def event: Event = this
@@ -21,7 +20,7 @@ trait Event {
 
 object NullEvent extends Event {
   override def name: String = "NullEvent"
-  override def update(map: LastEventAndData): Option[StringMap] = Some(map.map)
+  override def update(map: LastEventAndData): Option[StringMap] = Some(map.dataForLastEvent)
 }
 
 trait StartEvent extends Event {
@@ -32,23 +31,25 @@ trait StartEvent extends Event {
 }
 
 trait WithFields extends PublicIdMaker {
+  //TODO This is another anti pattern. Sort it out.
   def event: Event
+
   //TODO This is an anti pattern. Put simply needing this sucks. I think we can do this better with macros, but this works for now
   protected implicit val currentValues = new InheritableThreadLocal[LastEventAndData]
   implicit def implicitsValuesUntilWeGetMacrosSortedOut = currentValues.get
 
   protected implicit val aggregator: RememberingAggregator2[StringField, String] = new RememberingAggregator2()
+  def fields = aggregator.items
+
   def stringField: StringField = macro Macros.stringFieldImpl
 
-  def fields = aggregator.items
-  def makeMap[ED](ed: ED)(implicit stringFieldGetter: StringFieldGetter[ED]) = fields.foldLeft[Option[StringMap]](Some(Map())) {
-    case (Some(acc), sf) => try {stringFieldGetter.getString(sf)(ed).map(v => acc + (sf.name -> v))} catch {case e: Exception => None};
-    case _ => None
-  }
+  def makeMap[ED](ed: ED)(implicit stringFieldGetter: StringFieldGetter[ED]) =
+    fields.foldLeftWithOptionsEatingExceptions[StringMap](Map()) { (acc, sf) => sf.get(ed).map(v => acc + (sf.name -> v)) }
 
+  import one.xingyi.core.map.Maps._
   def update(lastEventAndData: LastEventAndData) = {
     currentValues.set(lastEventAndData) //TODO another place that needs the 'value' macro sorting out
-    fields.foldLeft[Option[StringMap]](Some(Map())) { case (Some(acc), sf) => try {Some(acc + (sf.name -> sf.value))} catch {case e: Exception => e.printStackTrace(Console.err); None}; case _ => None }
+    fields.foldLeftWithOptionsEatingExceptions[StringMap](Map()) { (acc, sf) => Some(acc + (sf.name -> sf.value)) }
   }
 }
 
@@ -62,8 +63,8 @@ abstract class TopicEvent(val name: String, val topic: Topic, val version: Strin
   override def toString: String = s"TopicEvent($name,$version)"
 }
 
-case class timeout(n: Duration) extends StartEvent {
-  override def update(map: LastEventAndData): Option[StringMap] = Some(map.map)
+case class Timeout(n: Duration) extends StartEvent {
+  override def update(map: LastEventAndData): Option[StringMap] = Some(map.dataForLastEvent)
   override def accepts[ED: StringFieldGetter](lastEvent: ED): Boolean = false
   override def makeMap[ED](ed: ED)(implicit stringFieldGetter: StringFieldGetter[ED]): Option[StringMap] = None
   override def name: String = "timeout"

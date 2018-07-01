@@ -8,8 +8,8 @@ trait CepAction extends PipelineStage
 
 case class EmitData(map: StringMap)
 
-object emit extends CepAction {
-  override def execute[ED](state: PipelineData[ED]): PipelineData[ED] = state.copy(emitData = state.emitData :+ EmitData(state.map))
+object Emit extends CepAction {
+  override def execute[ED](state: PipelineData[ED]): PipelineData[ED] = state.copy(emitData = state.emitData :+ EmitData(state.dataForLastEvent))
   override def toString: String = "emit"
 }
 object purge extends CepAction {

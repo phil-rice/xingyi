@@ -51,7 +51,7 @@ object Macros {
 
   def statePipelineImpl(c: blackbox.Context)(block: c.Expr[StatePipeline]): c.Expr[UserState] = {
     import c.universe._
-    val preprocess = (c.Expr[Preprocess](c.prefix.tree))
+    val preprocess = (c.Expr[Processor](c.prefix.tree))
 
     val enclosingValName = definingValName(c, methodName => s"""$methodName must be directly assigned to a val, such as `val x = $methodName("details of pipelines")`.""")
     val name = c.Expr[String](Literal(Constant(enclosingValName)))
@@ -62,7 +62,7 @@ object Macros {
   }
   def statePipelinesImpl(c: blackbox.Context)(block: c.Expr[List[StatePipeline]]): c.Expr[UserState] = {
     import c.universe._
-    val preprocess = (c.Expr[Preprocess](c.prefix.tree))
+    val preprocess = (c.Expr[Processor](c.prefix.tree))
 
     val enclosingValName = definingValName(c, methodName => s"""$methodName must be directly assigned to a val, such as `val x = $methodName("details of pipelines")`.""")
     val name = c.Expr[String](Literal(Constant(enclosingValName)))

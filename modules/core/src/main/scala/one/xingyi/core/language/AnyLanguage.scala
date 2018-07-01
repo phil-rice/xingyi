@@ -74,8 +74,12 @@ trait AnyLanguage {
     }
   }
 
-  implicit class ListOps[X](s: List[X]){
+  implicit class ListOps[X](s: List[X]) {
     def asString(fn: X => String, separator: String = ",") = s.map(fn).mkString(separator)
+    def foldLeftWithOptions[Acc](initial: Acc)(foldFn: (Acc, X) => Option[Acc]) =
+      s.foldLeft[Option[Acc]](Some(initial)) { case (Some(acc), v) => foldFn(acc, v); case _ => None }
+    def foldLeftWithOptionsEatingExceptions[Acc](initial: Acc)(foldFn: (Acc, X) => Option[Acc]) =
+      foldLeftWithOptions(initial) { (acc, v) => try (foldFn(acc, v)) catch {case e: Exception => None} }
   }
 
 }
