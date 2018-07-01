@@ -27,7 +27,12 @@ class CEPProcessor[ED](topicEvent: TopicEvent, preprocess: Preprocess)(implicit 
   def findLastStateFromString: ED => String => StoredState[ED] = ed => key => map.getOrElseUpdate(key, new StoredState[ED](key, ed, preprocess.initial, Map()))
   def findLastStateFromED = cep.getString(preprocess.keyby) ~+?> findLastStateFromString
   def processPipeline: PipelineData[ED] => PipelineData[ED] = { s => s.statePipeline.execute(s) }
-  def putResultInMap = { s: PipelineData[ED] => map.put(s.key, s.asStoredStateWithNewState) }
+  def putResultInMap: PipelineData[ED] => Option[StoredState[ED]] = { s: PipelineData[ED] =>
+    s.statePipeline.finalState() match {
+      case Terminate => map.remove(s.key)
+      case _ => map.put(s.key, s.asStoredStateWithNewState)
+    }
+  }
   def emitMessages = { s: PipelineData[ED] => s.emitData.foreach(cep.sendMessage(topicEvent, _)) }
 
   def process = findLastStateFromED ~~+?> PipelineData.makeStartIfCan[ED] ~?> processPipeline ~?^> putResultInMap ~?^> emitMessages
@@ -61,9 +66,9 @@ abstract class StringField(implicit val aggregator: Aggregator[StringField]) ext
 
   def name: String
   def event: Event
-  def :=(fn: ValueFn): StringField = new StringFieldWithValue(event, name, fn)
-  def :=(value: String): StringField = new StringFieldWithValue(event, name, _ => value)
-  def :==(value: String): StringField = macro Macros.assignmentImpl
+//  def :=(fn: ValueFn): StringField = new StringFieldWithValue(event, name, fn)
+//  def :=(value: String): StringField = new StringFieldWithValue(event, name, _ => value)
+  def :=(value: String): StringField = macro Macros.assignmentImpl
   def value(implicit lastEventAndData: LastEventAndData) = try {lastEventAndData.data(event)(name)} catch {case e: Exception => throw new CannotgetData(this, lastEventAndData, name, event, e)}
   override def toString: String = s"StringField( $event,  $name)"
 }

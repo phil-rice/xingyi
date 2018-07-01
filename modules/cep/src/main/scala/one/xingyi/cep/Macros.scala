@@ -23,6 +23,7 @@ object Macros {
     )
   }
 
+  //TODO So this didn't work the way i expected. The stringfield is remake... so we could do this differently and get rid of the stringfield macro, making the name here
   def assignmentImpl(c: whitebox.Context)(value: c.Expr[String]): c.Expr[StringField] = {
     import c.universe._
     val stringField = c.Expr[StringField](c.prefix.tree)

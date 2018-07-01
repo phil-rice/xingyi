@@ -32,15 +32,15 @@ trait CepFixture[ED] {
       where(`type`.value == "C")
     }
     val map123 = new MapEvent("map123") {
-      val ipaddress = stringField :== ie1.ipaddress.value + "/"  + ie2.ipaddress.value  + "/" + ie3.ipaddress.value
-      val `type` = stringField := (values => ie1.`type`.value + "-" + ie2.`type`.value + "-" + ie3.`type`.value)
-      val businessEventSubtype = stringField :== "performance-test-data"
+      val ipaddress = stringField := ie1.ipaddress.value + "/" + ie2.ipaddress.value + "/" + ie3.ipaddress.value
+      val `type` = stringField := ie1.`type`.value + "-" + ie2.`type`.value + "-" + ie3.`type`.value
+      val businessEventSubtype = stringField := "performance-test-data"
     }
 
     val initial = state(ie1 >> ie1Recv)
-    val ie1Recv = state(timeout(11 seconds) >> purge >> terminate || ie2 >> ie2Recv)
-    val ie2Recv = state(ie3 >> map(map123) >> emit >> terminate)
-    val test = state(ie1 >> ie1Recv || ie2 >> ie2Recv || ie3 >> terminate)
+    val ie1Recv = state(timeout(11 seconds) >> purge >> Terminate || ie2 >> ie2Recv)
+    val ie2Recv = state(ie3 >> map(map123) >> emit >> Terminate)
+    val test = state(ie1 >> ie1Recv || ie2 >> ie2Recv || ie3 >> Terminate)
   }
   pp2.initialise
 

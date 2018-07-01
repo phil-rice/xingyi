@@ -28,7 +28,7 @@ trait StartEvent extends Event {
   def makeMap[ED](ed: ED)(implicit stringFieldGetter: StringFieldGetter[ED]): Option[StringMap]
   def accepts[ED: StringFieldGetter](lastEvent: ED): Boolean
   def >>(s: => CepState): StatePipeline = StatePipeline(this, List(), () => s)
-  def >>(p: PipelineStage) = StatePipeline(this, List(p), () => terminate)
+  def >>(p: PipelineStage) = StatePipeline(this, List(p), () => Terminate)
 }
 
 trait WithFields extends PublicIdMaker {

@@ -56,7 +56,7 @@ abstract class AbstractIntegrationCepSpec[ED: CEP] extends UtilsSpec with CepFix
       cepProcessor.process(edInitial)
       cepProcessor.process(edTwo)
       val Some(PipelineData("someValue", actualEd, actualState, actualMap, actualPipeline, actualLastEvent, actualEmit)) = cepProcessor.process(edThree)
-//      actualState shouldBe terminate
+      //      actualState shouldBe terminate
       actualEd shouldBe edThree
       actualState shouldBe pp2.ie2Recv
       val expectedMap = Map("ipaddress" -> "someIpAddress1/someIpAddress2/someIpAddress3", "type" -> "A-B-C", "businessEventSubtype" -> "performance-test-data")
@@ -70,6 +70,16 @@ abstract class AbstractIntegrationCepSpec[ED: CEP] extends UtilsSpec with CepFix
         pp2.map123 -> expectedMap
       )
       actualEmit shouldBe List(EmitData(expectedMap))
+    }
+  }
+
+  it should "remove the data from the trip map when terminate occurs, so we get a new session" in {
+    setup { cepProcessor =>
+      cepProcessor.process(edInitial)
+      cepProcessor.process(edTwo)
+      cepProcessor.map.get("someValue").isDefined shouldBe true
+      cepProcessor.process(edThree)
+      cepProcessor.map.get("someValue").isDefined shouldBe false
     }
 
   }

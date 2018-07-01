@@ -7,7 +7,7 @@ object StoredState {
   def stateL[ED] = Lens[StoredState[ED], CepState](_.currentState, (m, e) => m.copy(currentState = e))
 }
 
-case class StoredState[ED](key: Any, ed: ED, currentState: CepState = terminate, data: Map[Event, StringMap] = Map())
+case class StoredState[ED](key: Any, ed: ED, currentState: CepState = Terminate, data: Map[Event, StringMap] = Map())
 
 case class StoreStateAndPipeline[ED](key: Any, ed: ED, currentState: CepState, data: Map[Event, StringMap], statePipeline: StatePipeline) {
   def makeMapForEventFromED(implicit stringFieldGetter: StringFieldGetter[ED]): StringMap = statePipeline.event.makeMap(ed).getOrElse(Map())
@@ -56,7 +56,7 @@ trait CepState {
   def find[ED: StringFieldGetter](ed: ED) = list.find(_.event.accepts(ed))
 }
 
-object terminate extends CepState {
+object Terminate extends CepState {
   override def list: List[StatePipeline] = List()
   override def name: String = "terminate"
 }
