@@ -1,9 +1,7 @@
-package one.xingyi.core.reflection
-
+package one.xingyi.cep.model
 
 import one.xingyi.cep._
 import one.xingyi.core.builder.HasAggregator
-import one.xingyi.core.misc.{IdMaker, PublicIdMaker}
 
 import scala.annotation.tailrec
 import scala.language.experimental.macros
@@ -31,7 +29,7 @@ object Macros {
     reify {
       {
         val s = stringField.splice
-        new StringFieldWithValue(s.event,  s.name, v => value.splice)(hasAggregator.splice.aggregator)
+        new StringFieldWithValue(s.event, s.name, v => value.splice)(hasAggregator.splice.aggregator)
       }
     }
   }
@@ -42,12 +40,6 @@ object Macros {
       q"""{values: StringMap => $value;}""")
   }
 
-  //  def valueImpl(c: whitebox.Context): c.Expr[String] = {
-  //    import c.universe._
-  //    val stringField = c.Expr[StringField](c.prefix.tree)
-  //    reify(stringField.splice.value(values.sp))
-  //
-  //  }
 
   def statePipelineImpl(c: blackbox.Context)(block: c.Expr[StatePipeline]): c.Expr[UserState] = {
     import c.universe._
@@ -79,17 +71,11 @@ object Macros {
     val enclosingValName = definingValName(c, methodName => s"""$methodName must be directly assigned to a val, such as `val x = $methodName[Int]("description")`.""")
     val name = c.Expr[String](Literal(Constant(enclosingValName)))
     reify {
-      new SimpleStringField(withFields.splice.event,  name.splice)(hasAggregator.splice.aggregator)
+      new SimpleStringField(withFields.splice.event, name.splice)(hasAggregator.splice.aggregator)
     }
   }
 
-  def keyImpl[T: c.WeakTypeTag, S: c.WeakTypeTag](c: blackbox.Context)(f: (c.Expr[String], c.Expr[Manifest[T]]) => c.Expr[S]): c.Expr[S] = {
-    import c.universe._
-    val enclosingValName = definingValName(c, methodName => s"""$methodName must be directly assigned to a val, such as `val x = $methodName[Int]("description")`.""")
-    val name = c.Expr[String](Literal(Constant(enclosingValName)))
-    val mf = c.Expr[Manifest[T]](c.inferImplicitValue(weakTypeOf[Manifest[T]]))
-    f(name, mf)
-  }
+
   def definingValName(c: blackbox.Context, invalidEnclosingTree: String => String): String = {
     import c.universe.{Apply => ApplyTree, _}
     val methodName = c.macroApplication.symbol.name

@@ -1,4 +1,5 @@
 package one.xingyi.cep
+import one.xingyi.cep.model.Event
 import one.xingyi.core.UtilsSpec
 
 import scala.language.reflectiveCalls
@@ -22,7 +23,7 @@ class MapEventSpec extends AbstractMapEventSpec[StringMap] {
     )
     val last = new LastEventAndDataForTest(map123, map)
     implicit val notUsedButNeedForCompileUntilGetMacrosSorted: LastEventAndData = mock[LastEventAndData]
-    map123.update(last)
+    map123.findDataForThisEvent(last)
     map123.ipaddress.value shouldBe "ip1/ip2/ip3"
     map123.`type`.value shouldBe "A-B-C"
     map123.businessEventSubtype.value shouldBe "performance-test-data"

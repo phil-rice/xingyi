@@ -1,5 +1,7 @@
 package one.xingyi.cep
+import one.xingyi.cep.model.EmitData
 import one.xingyi.core.UtilsSpec
+
 import scala.language.reflectiveCalls
 
 abstract class AbstractIntegrationCepSpec[ED: CEP] extends UtilsSpec with CepFixture[ED] {

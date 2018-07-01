@@ -1,6 +1,7 @@
 package one.xingyi.cep
 import java.io.ByteArrayOutputStream
 
+import one.xingyi.cep.model._
 import one.xingyi.core.UtilsSpec
 import one.xingyi.core.builder.Aggregator
 
@@ -88,14 +89,14 @@ abstract class AbstractCEPSpec[ED](implicit stringGetter: StringFieldGetter[ED])
 
   it should "makes a filtered map based on the defined stringfields" in {
     val m = Map(otherField.name -> "2", ipaddress.name -> "3", stringFieldNotCreatedByMacro.name -> "1", customerId.name -> "4", `type`.name -> "5")
-    update(new LastEventAndDataForAccept(NullEvent, m)) shouldBe Some(Map(otherField.name -> "2", ipaddress.name -> "3", customerId.name -> "4", `type`.name -> "5"))
+    findDataForThisEvent(new LastEventAndDataForAccept(NullEvent, m)) shouldBe Some(Map(otherField.name -> "2", ipaddress.name -> "3", customerId.name -> "4", `type`.name -> "5"))
   }
 
   it should "return none if there fields are not all there" in {
     Console.withOut(new ByteArrayOutputStream()) {
       Console.withErr(new ByteArrayOutputStream()) {
-        update(new LastEventAndDataForAccept(NullEvent, Map(ipaddress.name -> "3", stringFieldNotCreatedByMacro.name -> "1"))) shouldBe None
-        update(new LastEventAndDataForAccept(NullEvent, Map(otherField.name -> "3", stringFieldNotCreatedByMacro.name -> "1"))) shouldBe None
+        findDataForThisEvent(new LastEventAndDataForAccept(NullEvent, Map(ipaddress.name -> "3", stringFieldNotCreatedByMacro.name -> "1"))) shouldBe None
+        findDataForThisEvent(new LastEventAndDataForAccept(NullEvent, Map(otherField.name -> "3", stringFieldNotCreatedByMacro.name -> "1"))) shouldBe None
       }
     }
   }
@@ -129,9 +130,7 @@ abstract class AbstractCEPSpec[ED](implicit stringGetter: StringFieldGetter[ED])
 
 object CEPSpec {
   implicit object CepForMapStringString extends CEP[Map[String, String]] {
-    override def getString(stringField: StringField): Map[String, String] => Option[String] = _ get (stringField.name)
-    override def listenTo(fn: Map[String, String] => Unit): ListenerRef = ???
-    override def stopListeningTo(ref: ListenerRef): Unit = ???
+    override def getString: StringFieldGetter[Map[String, String]] = stringField => ed => ed get stringField.name
     override def sendMessage(topicEvent: TopicEvent, emitData: EmitData): Unit = println(s"Sending to ${topicEvent.name} $emitData")
   }
   def makeEd(tuples: (StringField, String)*): Map[String, String] = tuples.map { case (k, v) => (k.name, v) }.toMap
@@ -139,8 +138,5 @@ object CEPSpec {
 import one.xingyi.cep.CEPSpec._
 class CEPSpec extends AbstractCEPSpec[Map[String, String]] {
   def event = NullEvent
-  //  override def makeEd(is: String, other: String, notCreated: String): Map[String, String] =
-  //  override def makeEd(is: Option[String], other: Option[String], notCreated: String): Map[String, String] =
-  //    Map(stringFieldNotCreatedByMacro.name -> notCreated).optAdd(ipaddress.name -> is, otherField.name -> is)
   override def makeEd(tuples: (StringField, String)*): Map[String, String] = CEPSpec.makeEd(tuples: _*)
 }

@@ -1,4 +1,5 @@
 package one.xingyi.cep
+import one.xingyi.cep.model.{CepState, EmitData, Event, StatePipeline}
 
 
 trait LastEventAndData {
@@ -22,14 +23,9 @@ case class PipelineData[ED](key: Any, ed: ED, startState: CepState, data: Map[Ev
      """.stripMargin
 
 }
-
 object PipelineData {
-  //  def stateL[ED] = Lens[StoreStateAndPipeline[ED], StoredState[ED]](_.miyamotoState, (big, s) => big.copy(miyamotoState = s))
-  def makeIfCan[ED: StringFieldGetter](thisEd: ED)(storedState: StoredState[ED]): Option[PipelineData[ED]] = {
-    import storedState._
-    storedState.currentState.find(thisEd).map { pipeline =>
-      val startData = pipeline.event.makeMap(thisEd).getOrElse(Map())
-      PipelineData(key, thisEd, currentState, data + (pipeline.event -> startData), pipeline, pipeline.event, List())
-    }
-  }
+  //TODO this can be made clearer.
+  def makeIfCan[ED: StringFieldGetter](thisEd: ED)(s: StoredState[ED]): Option[PipelineData[ED]] =
+    s.currentState.findStatePipeline(thisEd).map(_.asStartData(thisEd, s))
+
 }

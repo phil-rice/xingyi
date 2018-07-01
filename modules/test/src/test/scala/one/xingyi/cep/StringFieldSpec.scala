@@ -1,7 +1,8 @@
 package one.xingyi.cep
+import one.xingyi.cep.model._
 import one.xingyi.core.UtilsSpec
 import one.xingyi.core.builder.{Aggregator, HasAggregator, RememberingAggregator2}
-import one.xingyi.core.reflection.Macros
+
 import scala.language.postfixOps
 class StringFieldSpec extends UtilsSpec with WithFields {
 

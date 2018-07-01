@@ -1,4 +1,5 @@
 package one.xingyi
+import one.xingyi.cep.model.Event
 
 package object cep {
 

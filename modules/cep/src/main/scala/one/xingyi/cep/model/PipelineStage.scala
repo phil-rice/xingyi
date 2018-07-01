@@ -1,4 +1,7 @@
-package one.xingyi.cep
+package one.xingyi.cep.model
+
+import one.xingyi.cep.exceptions.CouldntCreateMapEventException
+import one.xingyi.cep.{PipelineData, StringMap}
 
 trait PipelineStage {
   def execute[ED](state: PipelineData[ED]): PipelineData[ED]
@@ -17,17 +20,7 @@ object purge extends CepAction {
   override def toString: String = "purge"
 }
 
-class CouldntCreateMapEventException(state: PipelineData[_], event: MapEvent) extends RuntimeException(
-  s"""
-     |State is $state
-     |MapEvent $event
-   """.stripMargin)
-
 case class map(event: MapEvent) extends CepAction {
-  override def execute[ED](state: PipelineData[ED]): PipelineData[ED] = {
-    event.update(state) match {
-      case Some(newMap) => state.copy(lastEvent = event, data = state.data + (event -> newMap))
-      case _ => throw new CouldntCreateMapEventException(state, event)
-    }
-  }
+  def updateWith[ED](pipelineData: PipelineData[ED])(newMap: StringMap): PipelineData[ED] = pipelineData.copy(lastEvent = event, data = pipelineData.data + (event -> newMap))
+  override def execute[ED](pipelineData: PipelineData[ED]): PipelineData[ED] = event.findDataForThisEvent(pipelineData).fold(throw new CouldntCreateMapEventException(pipelineData, event))(updateWith(pipelineData))
 }

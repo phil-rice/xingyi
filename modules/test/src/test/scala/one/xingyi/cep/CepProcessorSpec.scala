@@ -1,5 +1,6 @@
 package one.xingyi.cep
 
+import one.xingyi.cep.model.{Event, KeyByStringField, StringField}
 import one.xingyi.core.UtilsSpec
 import org.scalatest.mockito.MockitoSugar
 
