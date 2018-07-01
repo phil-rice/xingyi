@@ -12,6 +12,7 @@ case class StoredState[ED](key: Any, ed: ED, currentState: CepState = terminate,
 case class StoreStateAndPipeline[ED](key: Any, ed: ED, currentState: CepState, data: Map[Event, StringMap], statePipeline: StatePipeline) {
   def makeMapForEventFromED(implicit stringFieldGetter: StringFieldGetter[ED]): StringMap = statePipeline.event.makeMap(ed).getOrElse(Map())
 }
+
 case class PipelineData[ED](key: Any, ed: ED, currentState: CepState, data: Map[Event, StringMap], statePipeline: StatePipeline, lastEvent: Event) {
   def asStoredStateWithNewState = StoredState(key, ed, statePipeline.finalState(), data)
 

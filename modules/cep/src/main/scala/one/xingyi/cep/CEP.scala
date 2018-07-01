@@ -28,7 +28,7 @@ class CEPProcessor[ED](topic: Topic, preprocess: Preprocess)(implicit cep: CEP[E
   def processPipeline: PipelineData[ED] => StoredState[ED] = { s => s.statePipeline.execute(s); s.asStoredStateWithNewState }
   def putBackInMap: StoredState[ED] => Unit = { s => map.put(s.key, s) }
 
-  def process = findLastStateFromED ~~+?> PipelineData.makeStartIfCan [ED]~?> processPipeline ~?> putBackInMap
+  def process = findLastStateFromED ~~+?> PipelineData.makeStartIfCan[ED] ~?> processPipeline ~?> putBackInMap
 }
 
 trait HasKeyBy {
@@ -39,25 +39,28 @@ object StringField {
   implicit object hasIdForStringField extends HasId[StringField, Int] {override def apply(v1: StringField): Int = v1.id}
 }
 
+
 abstract class StringField(implicit val aggregator: Aggregator[StringField]) extends HasAggregator[StringField] {
   def id: Int
   def name: String
+  def event: Event
   aggregator(this)
-  def :=(fn: ValueFn): StringField = new StringFieldWithValue(id, name, fn)
-  def :=(value: String): StringField = new StringFieldWithValue(id, name, _ => value)
+  def :=(fn: ValueFn): StringField = new StringFieldWithValue(event, id, name, fn)
+  def :=(value: String): StringField = new StringFieldWithValue(event, id, name, _ => value)
   def :==(value: String): StringField = macro Macros.assignmentImpl
   def value(implicit map: StringMap) = map(name)
-  override def toString: String = s"StringField($id,$name)"
+  override def toString: String = s"StringField(${event.name}, $id, $name)"
 }
 
-case class KeyByStringField(name: String) extends StringField()(Aggregator.nullAggregator[StringField]) {
+case class KeyByStringField( name: String) extends StringField()(Aggregator.nullAggregator[StringField]) {
   override def id: Int = -1
+  override def event: Event = NullEvent
 }
-case class SimpleStringField(id: Int, name: String)(implicit aggregator: Aggregator[StringField]) extends StringField {
+case class SimpleStringField(event: Event, id: Int, name: String)(implicit aggregator: Aggregator[StringField]) extends StringField {
   override def toString: String = s"StringField($id,$name)"
 }
 
-case class StringFieldWithValue(id: Int, name: String, value: ValueFn)(implicit aggregator: Aggregator[StringField]) extends StringField
+case class StringFieldWithValue(event: Event, id: Int, name: String, value: ValueFn)(implicit aggregator: Aggregator[StringField]) extends StringField
 
 
 case class Topic(topicName: String, version: String)

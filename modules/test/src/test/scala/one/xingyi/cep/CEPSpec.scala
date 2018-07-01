@@ -32,7 +32,7 @@ trait CepFixture[ED] {
       where(`type`.value == "C")
     }
 
-    val map123 = new MapEvent {
+    val map123 = new MapEvent("map123") {
       val ipaddress = stringField :== ie1.ipaddress.value + ie2.ipaddress.value + ie3.ipaddress.value
       val `type` = stringField :== ie1.`type`.value + "-" + ie2.`type`.value + "-" + ie3.`type`.value
       val businessEventSubtype = stringField :== "performance-test-data"
@@ -62,7 +62,7 @@ abstract class AbstractCEPSpec[ED](implicit stringGetter: StringFieldGetter[ED])
   val customerId = stringField
   val otherField = stringField
 
-  val stringFieldNotCreatedByMacro = new SimpleStringField(5, "someName")(new Aggregator[StringField] {
+  val stringFieldNotCreatedByMacro = new SimpleStringField(NullEvent, 5, "someName")(new Aggregator[StringField] {
     override def apply(v1: StringField): Unit = {}
   })
 
@@ -154,6 +154,7 @@ object CEPSpec {
 import CEPSpec._
 import one.xingyi.core.map.Maps._
 class CEPSpec extends AbstractCEPSpec[Map[String, String]] {
+  def event = NullEvent
   //  override def makeEd(is: String, other: String, notCreated: String): Map[String, String] =
   //  override def makeEd(is: Option[String], other: Option[String], notCreated: String): Map[String, String] =
   //    Map(stringFieldNotCreatedByMacro.name -> notCreated).optAdd(ipaddress.name -> is, otherField.name -> is)

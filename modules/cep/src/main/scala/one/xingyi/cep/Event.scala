@@ -10,10 +10,18 @@ import scala.concurrent.duration.Duration
 import scala.language.experimental.macros
 import scala.util.Try
 
-case class MapEvent() extends Event with WithFields
+case class MapEvent(name: String) extends Event with WithFields {
+  override def event: Event = this
+}
 
 trait Event {
+  def name: String
   def update(map: StringMap): Option[StringMap]
+}
+
+object NullEvent extends Event{
+  override def name: String = "NullEvent"
+  override def update(map: StringMap): Option[StringMap] = Some(map)
 }
 
 trait StartEvent extends Event {
@@ -24,6 +32,7 @@ trait StartEvent extends Event {
 }
 
 trait WithFields extends PublicIdMaker {
+  def event: Event
   //TODO This is an anti pattern. Put simply needing this sucks. I think we can do this better with macros, but this works for now
   protected implicit val currentValues = new InheritableThreadLocal[StringMap] {
     override def initialValue(): StringMap = Map()
@@ -47,6 +56,7 @@ trait WithFields extends PublicIdMaker {
 
 
 abstract class TopicEvent(val name: String, val topic: Topic, val version: String = "1.0.0") extends StartEvent with WithFields {
+  def event = this
   override def accepts[ED](lastEvent: ED)(implicit cep: StringFieldGetter[ED]): Boolean = makeMap(lastEvent).map { m => currentValues.set(m); actualWhere(m) }.getOrElse(false)
   //TODO Again just until we get the macros sorted out...this is a mess at the moment to make the DSL prettier
   var actualWhere: WhereFn = { _ => true }
@@ -58,6 +68,7 @@ case class timeout(n: Duration) extends StartEvent {
   override def update(map: StringMap): Option[StringMap] = Some(map)
   override def accepts[ED: StringFieldGetter](lastEvent: ED): Boolean = false
   override def makeMap[ED](ed: ED)(implicit stringFieldGetter: StringFieldGetter[ED]): Option[StringMap] = None
+  override def name: String = "timeout"
 }
 
 case class StatePipeline(event: StartEvent, pipelineStages: List[PipelineStage], finalState: () => CepState) {
