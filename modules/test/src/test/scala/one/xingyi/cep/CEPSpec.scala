@@ -18,7 +18,7 @@ trait CepFixture[ED] {
   val fraudtestbusinesseventstopic = Topic("fraudtestbusinesseventstopic", "1.0.0")
   val fraudtestinputtopic = Topic("fraudtestinputtopic", "1.0.0")
 
-  trait CustomerAddressIpAddressAndType extends WithFields {
+  trait CustomerAddressIpAddressAndType extends EventWithFields {
     val `type` = stringField
     val customerId = stringField
     val ipaddress = stringField
@@ -55,7 +55,8 @@ trait CepFixture[ED] {
   //  }
 
 }
-abstract class AbstractCEPSpec[ED](implicit stringGetter: StringFieldGetter[ED]) extends UtilsSpec with CepFixture[ED] with WithFields {
+abstract class AbstractCEPSpec[ED](implicit stringGetter: StringFieldGetter[ED]) extends UtilsSpec with CepFixture[ED] with EventWithFields {
+  override def name = getClass.getSimpleName
 
   def makeEd(tuples: (StringField, String)*): ED
 
@@ -64,7 +65,7 @@ abstract class AbstractCEPSpec[ED](implicit stringGetter: StringFieldGetter[ED])
   val customerId = stringField
   val otherField = stringField
 
-  val stringFieldNotCreatedByMacro = new SimpleStringField(NullEvent, "someName")(new Aggregator[StringField] {
+  val stringFieldNotCreatedByMacro = new SimpleStringField(this, "someName")(new Aggregator[StringField] {
     override def apply(v1: StringField): Unit = {}
   })
 
@@ -78,7 +79,7 @@ abstract class AbstractCEPSpec[ED](implicit stringGetter: StringFieldGetter[ED])
 
 
   it should "have a value methods that pulls its value out of the 'currentfields' in 'withfields' (later this will be macro)" in {
-    currentValues.set(new LastEventAndDataForAccept(NullEvent, Map(otherField.name -> "1", ipaddress.name -> "2", stringFieldNotCreatedByMacro.name -> "3")))
+    currentValues.set(new LastEventAndDataForAccept(this, Map(otherField.name -> "1", ipaddress.name -> "2", stringFieldNotCreatedByMacro.name -> "3")))
     implicitsValuesUntilWeGetMacrosSortedOut.dataForLastEvent(ipaddress.name) shouldBe "2"
     otherField.value shouldBe "1"
     ipaddress.value shouldBe "2"
@@ -89,7 +90,7 @@ abstract class AbstractCEPSpec[ED](implicit stringGetter: StringFieldGetter[ED])
 
   it should "makes a filtered map based on the defined stringfields" in {
     val m = Map(otherField.name -> "2", ipaddress.name -> "3", stringFieldNotCreatedByMacro.name -> "1", customerId.name -> "4", `type`.name -> "5")
-    findDataForThisEvent(new LastEventAndDataForAccept(NullEvent, m)) shouldBe Some(Map(otherField.name -> "2", ipaddress.name -> "3", customerId.name -> "4", `type`.name -> "5"))
+    findDataForThisEvent(new LastEventAndDataForAccept(this, m)) shouldBe Some(Map(otherField.name -> "2", ipaddress.name -> "3", customerId.name -> "4", `type`.name -> "5"))
   }
 
   it should "return none if there fields are not all there" in {
@@ -137,6 +138,6 @@ object CEPSpec {
 }
 import one.xingyi.cep.CEPSpec._
 class CEPSpec extends AbstractCEPSpec[Map[String, String]] {
-  def event = NullEvent
+
   override def makeEd(tuples: (StringField, String)*): Map[String, String] = CEPSpec.makeEd(tuples: _*)
 }

@@ -4,7 +4,8 @@ import one.xingyi.core.UtilsSpec
 import one.xingyi.core.builder.{Aggregator, HasAggregator, RememberingAggregator2}
 
 import scala.language.postfixOps
-class StringFieldSpec extends UtilsSpec with WithFields {
+class StringFieldSpec extends UtilsSpec with EventWithFields {
+  override def name: String = getClass.getSimpleName
 
   behavior of "StringField"
 
@@ -14,5 +15,4 @@ class StringFieldSpec extends UtilsSpec with WithFields {
     s.name shouldBe "s"
     test.name shouldBe "test"
   }
-  override def event: Event = NullEvent
 }

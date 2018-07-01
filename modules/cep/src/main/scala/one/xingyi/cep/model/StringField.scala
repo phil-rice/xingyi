@@ -15,7 +15,8 @@ abstract class StringField(implicit val aggregator: Aggregator[StringField]) ext
   def name: String
   def event: Event
   def :=(value: String): StringField = macro Macros.assignmentImpl
-  def value(implicit lastEventAndData: LastEventAndData) = try {lastEventAndData.data(event)(name)} catch {case e: Exception => throw new CannotgetData(this, lastEventAndData, name, event, e)}
+  def value(implicit lastEventAndData: LastEventAndData) =
+    try {lastEventAndData.data(event)(name)} catch {case e: Exception => throw new CannotgetData(this, lastEventAndData, name, event, e)}
   def get[ED](ed: ED)(implicit stringFieldGetter: StringFieldGetter[ED]): Option[String] = stringFieldGetter(this)(ed)
   override def toString: String = s"${getClass.getSimpleName}( $event,  $name)"
 }

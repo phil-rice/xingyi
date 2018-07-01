@@ -13,9 +13,7 @@ trait Event {
   def findDataForThisEvent(map: LastEventAndData): Option[StringMap]
 }
 
-case class MapEvent(name: String) extends Event with WithFields {
-  override def event: Event = this
-}
+case class MapEvent(name: String) extends EventWithFields
 
 object NullEvent extends Event {
   override def name: String = "NullEvent"
@@ -36,9 +34,9 @@ case class Timeout(n: Duration) extends StartEvent {
   override def name: String = "timeout"
 }
 
-trait WithFields extends PublicIdMaker {
-  //TODO This class is dripping with anti pattern. Put simply needing this sucks. I think we can do this better with macros, but this works for now
-  def event: Event
+trait EventWithFields extends Event with  PublicIdMaker {
+  //TODO This  is dripping with anti pattern. Put simply needing this sucks. I think we can do this better with macros, but this works for now
+
 
   protected implicit val currentValues = new InheritableThreadLocal[LastEventAndData]
   implicit def implicitsValuesUntilWeGetMacrosSortedOut = currentValues.get
@@ -58,8 +56,7 @@ trait WithFields extends PublicIdMaker {
 }
 
 //TODO Again just until we get the macros sorted out...this is a mess at the moment to make the DSL prettier
-abstract class TopicEvent(val name: String, val topic: Topic, val version: String = "1.0.0") extends StartEvent with WithFields {
-  def event = this
+abstract class TopicEvent(val name: String, val topic: Topic, val version: String = "1.0.0") extends StartEvent with EventWithFields {
   override def accepts[ED: StringFieldGetter](ed: ED): Boolean = makeMap(ed).exists { m => currentValues.set(new LastEventAndDataForAccept(this, m)); actualWhere(m) }
   var actualWhere: WhereFn = { _ => true }
   def where(fn: => Boolean) = actualWhere = _ => fn

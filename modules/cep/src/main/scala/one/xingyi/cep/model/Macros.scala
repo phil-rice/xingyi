@@ -33,12 +33,12 @@ object Macros {
       }
     }
   }
-  def whereImpl(c: whitebox.Context)(value: c.Expr[Boolean]): c.Expr[WhereFn] = {
-    import c.universe._
-    val stringField = c.Expr[StringField](c.prefix.tree)
-    c.Expr(
-      q"""{values: StringMap => $value;}""")
-  }
+//  def whereImpl(c: whitebox.Context)(value: c.Expr[Boolean]): c.Expr[WhereFn] = {
+//    import c.universe._
+//    val stringField = c.Expr[StringField](c.prefix.tree)
+//    c.Expr(
+//      q"""{values: StringMap => $value;}""")
+//  }
 
 
   def statePipelineImpl(c: blackbox.Context)(block: c.Expr[StatePipeline]): c.Expr[UserState] = {
@@ -66,12 +66,12 @@ object Macros {
   def stringFieldImpl(c: blackbox.Context): c.Expr[StringField] = {
     import c.universe._
     val hasAggregator = (c.Expr[HasAggregator[StringField]](c.prefix.tree))
-    val withFields = (c.Expr[WithFields](c.prefix.tree))
+    val withFields = (c.Expr[EventWithFields](c.prefix.tree))
 
     val enclosingValName = definingValName(c, methodName => s"""$methodName must be directly assigned to a val, such as `val x = $methodName[Int]("description")`.""")
     val name = c.Expr[String](Literal(Constant(enclosingValName)))
     reify {
-      new SimpleStringField(withFields.splice.event, name.splice)(hasAggregator.splice.aggregator)
+      new SimpleStringField(withFields.splice, name.splice)(hasAggregator.splice.aggregator)
     }
   }
 
