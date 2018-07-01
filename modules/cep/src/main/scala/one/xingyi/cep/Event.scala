@@ -60,19 +60,11 @@ case class timeout(n: Duration) extends StartEvent {
   override def makeMap[ED](ed: ED)(implicit stringFieldGetter: StringFieldGetter[ED]): Option[StringMap] = None
 }
 
-case class StatePipelineAndMiyamotoState[ED](statePipeline: StatePipeline, miyamotoState: MiyamotoState[ED]) {
-  def makeMapForEventFromED(implicit stringFieldGetter: StringFieldGetter[ED]): StringMap = statePipeline.event.makeMap(miyamotoState.ed).getOrElse(Map())
-}
-
-object StatePipelineAndMiyamotoState {
-  def stateL[ED] = Lens[StatePipelineAndMiyamotoState[ED], MiyamotoState[ED]](_.miyamotoState, (big, s) => big.copy(miyamotoState = s))
-  def apply[ED](miyamotoState: MiyamotoState[ED])(statePipeline: StatePipeline): StatePipelineAndMiyamotoState[ED] = StatePipelineAndMiyamotoState(statePipeline, miyamotoState)
-}
 case class StatePipeline(event: StartEvent, pipelineStages: List[PipelineStage], finalState: () => CepState) {
-  def execute[ED](startState: MiyamotoState[ED]): MiyamotoState[ED] = execute(startState, pipelineStages).copy(currentState = finalState())
+  def execute[ED](startState: PipelineData[ED]): PipelineData[ED] = execute(startState, pipelineStages).copy(currentState = finalState())
 
   @tailrec
-  final private def execute[ED](state: MiyamotoState[ED], pipelineStages: List[PipelineStage]): MiyamotoState[ED] = pipelineStages match {
+  final private def execute[ED](state: PipelineData[ED], pipelineStages: List[PipelineStage]): PipelineData[ED] = pipelineStages match {
     case Nil => state
     case stage :: tail => execute(stage.execute(state), tail)
   }

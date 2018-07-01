@@ -29,7 +29,7 @@ trait CepFixture[ED] {
       where(`type`.value == "B")
     }
     val ie3 = new TopicEvent("ie3", fraudtestinputtopic) with CustomerAddressIpAddressAndType {
-      where(`type`.value == "F" && customerId.value.matches("[A02468]$"))
+      where(`type`.value == "C")
     }
 
     val map123 = new MapEvent {

@@ -9,11 +9,12 @@ abstract class AbstractIntegrationCepSpec[ED: CEP] extends UtilsSpec with CepFix
 
   val edInitial = makeEd("customerId" -> "someValue", "type" -> "A", "ipaddress" -> "someIpAddress", "junk" -> "someJunk")
   val edTwo = makeEd("customerId" -> "someValue", "type" -> "B", "ipaddress" -> "someIpAddress", "junk" -> "someJunk")
+  val edThree = makeEd("customerId" -> "someValue", "type" -> "C", "ipaddress" -> "someIpAddress", "junk" -> "someJunk")
 
   it should "process the initial ED" in {
     setup { cepProcessor =>
       cepProcessor.process(edInitial)
-      val Some(MiyamotoState("someValue", actualEd, pp2.ie1Recv, actualMap)) = cepProcessor.findLastStateFromED(edInitial)
+      val Some(StoredState("someValue", actualEd, pp2.ie1Recv, actualMap)) = cepProcessor.findLastStateFromED(edInitial)
       actualEd shouldBe edInitial
       actualMap shouldBe Map(pp2.ie1 -> Map("customerId" -> "someValue", "type" -> "A", "ipaddress" -> "someIpAddress"))
     }
@@ -24,7 +25,7 @@ abstract class AbstractIntegrationCepSpec[ED: CEP] extends UtilsSpec with CepFix
       cepProcessor.process(edInitial)
       cepProcessor.process(edInitial) shouldBe None
 
-      val Some(MiyamotoState("someValue", actualEd, pp2.ie1Recv, actualMap)) = cepProcessor.findLastStateFromED(edInitial)
+      val Some(StoredState("someValue", actualEd, pp2.ie1Recv, actualMap)) = cepProcessor.findLastStateFromED(edInitial)
       actualEd shouldBe edInitial
       actualMap shouldBe Map(pp2.ie1 -> Map("customerId" -> "someValue", "type" -> "A", "ipaddress" -> "someIpAddress"))
     }
@@ -32,7 +33,7 @@ abstract class AbstractIntegrationCepSpec[ED: CEP] extends UtilsSpec with CepFix
   it should "not process the second ED initially" in {
     setup { cepProcessor =>
       cepProcessor.process(edTwo)
-      val Some(MiyamotoState("someValue", actualEd, pp2.initial, actualMap)) = cepProcessor.findLastStateFromED(edInitial)
+      val Some(StoredState("someValue", actualEd, pp2.initial, actualMap)) = cepProcessor.findLastStateFromED(edInitial)
       actualEd shouldBe edTwo
       actualMap shouldBe Map()
     }
@@ -42,7 +43,7 @@ abstract class AbstractIntegrationCepSpec[ED: CEP] extends UtilsSpec with CepFix
     setup { cepProcessor =>
       cepProcessor.process(edInitial)
       cepProcessor.process(edTwo)
-      val Some(MiyamotoState("someValue", actualEd, pp2.ie2Recv, actualMap)) = cepProcessor.findLastStateFromED(edInitial)
+      val Some(StoredState("someValue", actualEd, pp2.ie2Recv, actualMap)) = cepProcessor.findLastStateFromED(edInitial)
       actualEd shouldBe edTwo
       actualMap shouldBe Map(
         pp2.ie1 -> Map("customerId" -> "someValue", "type" -> "A", "ipaddress" -> "someIpAddress"),
@@ -50,6 +51,21 @@ abstract class AbstractIntegrationCepSpec[ED: CEP] extends UtilsSpec with CepFix
       )
     }
   }
+  it should "Process the third ED which has a map in it" in {
+//    setup { cepProcessor =>
+//      cepProcessor.process(edInitial)
+//      cepProcessor.process(edTwo)
+//      cepProcessor.process(edThree).isDefined shouldBe true
+//      val Some(StoredState("someValue", actualEd, pp2.ie2Recv, actualMap)) = cepProcessor.findLastStateFromED(edInitial)
+//      actualEd shouldBe edTwo
+//      actualMap shouldBe Map(
+//        pp2.ie1 -> Map("customerId" -> "someValue", "type" -> "A", "ipaddress" -> "someIpAddress"),
+//        pp2.ie2 -> Map("customerId" -> "someValue", "type" -> "B", "ipaddress" -> "someIpAddress")
+//      )
+//    }
+
+  }
+
 }
 
 import CEPSpec._

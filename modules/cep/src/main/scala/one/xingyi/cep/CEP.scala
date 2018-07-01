@@ -21,19 +21,14 @@ trait CEP[ED] extends StringFieldGetter[ED] {
 
 
 class CEPProcessor[ED](topic: Topic, preprocess: Preprocess)(implicit cep: CEP[ED]) {
-  val map: TrieMap[Any, MiyamotoState[ED]] = TrieMap()
-  val toDataL = StatePipelineAndMiyamotoState.stateL[ED] andThen MiyamotoState.lastDataL
-  def findLastStateFromString: ED => String => MiyamotoState[ED] = ed => key => map.getOrElseUpdate(key, new MiyamotoState[ED](key, ed, preprocess.initial, Map()))
+  val map: TrieMap[Any, StoredState[ED]] = TrieMap()
+
+  def findLastStateFromString: ED => String => StoredState[ED] = ed => key => map.getOrElseUpdate(key, new StoredState[ED](key, ed, preprocess.initial, Map()))
   def findLastStateFromED = cep.getString(preprocess.keyby) ~+?> findLastStateFromString
-  def updateStateWithEd = MiyamotoState.edL[ED].setFn
-  def findPipeline: MiyamotoState[ED] => Option[StatePipelineAndMiyamotoState[ED]] = { state => state.currentState.find(state.ed).map {StatePipelineAndMiyamotoState.apply(state)} }
+  def processPipeline: PipelineData[ED] => StoredState[ED] = { s => s.statePipeline.execute(s); s.asStoredStateWithNewState }
+  def putBackInMap: StoredState[ED] => Unit = { s => map.put(s.key, s) }
 
-  def updateWithStartState: StatePipelineAndMiyamotoState[ED] => StatePipelineAndMiyamotoState[ED] = { s => toDataL.transform(s, _ + (s.statePipeline.event -> s.makeMapForEventFromED)) }
-
-  def processPipeline: StatePipelineAndMiyamotoState[ED] => MiyamotoState[ED] = {case StatePipelineAndMiyamotoState(statePipeline, state) => statePipeline.execute(state); state.copy(currentState = statePipeline.finalState())}
-  def putBackInMap: MiyamotoState[ED] => Unit = { s => map.put(s.key, s) }
-
-  def process = findLastStateFromED ~+?> updateStateWithEd ~~?> findPipeline ~?> updateWithStartState ~?> processPipeline ~?> putBackInMap
+  def process = findLastStateFromED ~~+?> PipelineData.makeStartIfCan [ED]~?> processPipeline ~?> putBackInMap
 }
 
 trait HasKeyBy {
