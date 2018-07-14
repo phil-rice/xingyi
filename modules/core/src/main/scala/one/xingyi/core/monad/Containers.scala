@@ -16,6 +16,7 @@ trait Functor[M[_]] extends Liftable[M]{
 trait Monad[M[_]] extends Functor[M] {
   def flatMap[T, T1](m: M[T], fn: T => M[T1]): M[T1]
   def flattenM[T](ms: Seq[M[T]]): M[Seq[T]] = ms.foldLeft(liftM(Seq[T]())) { (mAcc: M[Seq[T]], mV: M[T]) => flatMap(mAcc, (acc: Seq[T]) => flatMap(mV, (v: T) => liftM(acc :+ v))) }
+  def flattenListM[T](ms: List[M[T]]): M[List[T]] = ms.foldLeft(liftM(List[T]())) { (mAcc: M[List[T]], mV: M[T]) => flatMap(mAcc, (acc: List[T]) => flatMap(mV, (v: T) => liftM(acc :+ v))) }
 }
 
 trait MonadWithException[M[_]] extends Monad[M] {

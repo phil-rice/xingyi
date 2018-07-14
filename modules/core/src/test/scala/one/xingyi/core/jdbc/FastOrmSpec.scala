@@ -9,7 +9,7 @@ import one.xingyi.core.orm._
 
 import scala.language.higherKinds
 import one.xingyi.core.map.Maps._
-trait FastOrmFixture {
+trait OrmFixture {
   val address = OneToManyEntity("Address", "A", IntField("aid"), IntField("personid"), List(StringField("add")), List())
   val phone = OneToManyEntity("Phone", "Ph", IntField("aid"), IntField("personid"), List(StringField("phoneNo")), List())
   val main = MainEntity("Person", "P", IntField("pid"), List(StringField("name")), List(address, phone))
@@ -18,7 +18,9 @@ trait FastOrmFixture {
   case class Phone(phoneNo: String)
   case class Person(name: String, address: List[Address], phones: List[Phone])
 
+}
 
+trait FastOrmFixture extends OrmFixture {
   implicit val maker: OrmMaker[Person] = { map: Map[OrmEntity, List[List[AnyRef]]] =>
     import OrmMaker._
     val aList = toMap(map(address))(implicit list => Address(str(0)))

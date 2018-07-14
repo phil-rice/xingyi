@@ -8,18 +8,26 @@ import one.xingyi.core.monad.{Monad, MonadCanFail, MonadCanFailWithException, Mo
 import scala.language._
 import scala.util.Try
 
+object MonadFunctionLanguage extends MonadFunctionLanguage
 trait MonadFunctionLanguage extends MonadLanguage {
 
   implicit class MonadFunctionPimper[M[_], Req, Res](fn: Req => M[Res])(implicit monad: Monad[M]) {
     def |=>[Res2](mapFn: Res => Res2): (Req => M[Res2]) = req => monad.map(fn(req), mapFn)
     def |==>[Res2](mapFn: Res => M[Res2]): (Req => M[Res2]) = req => monad.flatMap(fn(req), mapFn)
     def |=+>[Res2](mapFn: (Req => Res => Res2)): (Req => M[Res2]) = req => monad.map(fn(req), mapFn(req))
+    def |==+/>[Res2](mapFn: (Res => Req => M[Res2])): (Req => M[Res2]) = { req => val mRes = fn(req); monad.flatMap(mRes, { res: Res => mapFn(res)(req) }) }
     def |==+>[Res2](mapFn: (Req => Res => M[Res2])): (Req => M[Res2]) = req => monad.flatMap(fn(req), mapFn(req))
     def |=++>[Res2](mapFn: (Req => Res => Res => M[Res2])): (Req => M[Res2]) = { req => monad.flatMap(fn(req), { res: Res => mapFn(req)(res)(res) }) }
   }
   implicit class MonadFunctionOptPimper[M[_], Req, Res](fn: Req => M[Option[Res]])(implicit monad: Monad[M]) {
     def |?>[Res2](mapFn: Res => Res2): (Req => M[Option[Res2]]) = req => monad.map[Option[Res], Option[Res2]](fn(req), _.map(mapFn))
     def |??>[Res2](mapFn: Res => M[Res2]): (Req => M[Option[Res2]]) = req => monad.flatMap[Option[Res], Option[Res2]](fn(req), _.fold[M[Option[Res2]]](monad.liftM(None))(o => mapFn(o).map(Some(_))))
+    def |+??>[Res2](mapFn: Req => Res => M[Res2]): (Req => M[Option[Res2]]) = req => monad.flatMap[Option[Res], Option[Res2]](fn(req), _.fold[M[Option[Res2]]](monad.liftM(None))(o => mapFn(req)(o).map(Some(_))))
+  }
+  implicit class MonadFunctionListPimper[M[_], Req, Res](fn: Req => M[List[Res]])(implicit monad: Monad[M]) {
+    def |?>[Res2](mapFn: Res => Res2): (Req => M[List[Res2]]) = req => monad.map[List[Res], List[Res2]](fn(req), _.map(mapFn))
+    def |??>[Res2](mapFn: Res => M[Res2]): (Req => M[List[Res2]]) = req => monad.flatMap[List[Res], List[Res2]](fn(req), list => monad.flattenListM(list.map(mapFn)))
+    def |+??>[Res2](mapFn: Req => Res => M[Res2]): (Req => M[List[Res2]]) = req => monad.flatMap[List[Res], List[Res2]](fn(req), list => monad.flattenListM(list.map(r => mapFn(req)(r))))
   }
 
   implicit class MonadCanFailFunctionPimper[M[_], Req, Res](fn: Req => M[Res]) {

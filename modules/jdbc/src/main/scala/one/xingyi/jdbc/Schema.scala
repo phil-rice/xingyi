@@ -17,12 +17,16 @@ object BlobFieldType extends FieldType {
 case class FieldDefn(name: String, typeName: FieldType, digestable: Boolean)
 
 
-trait ToDaoMap[T] extends (T => DaoMap)
-trait FromDaoMap[T] extends (DaoMap => T)
-
-trait TableNameFor[T]{
-  def tableName: String
+trait ToDaoMap[T] {
+  def main: T => DaoMap
+  def child: T => DaoMap
 }
-case class Schema[T]( idField: FieldDefn, otherFields: List[FieldDefn]){
-  val fields = idField :: otherFields
+trait FromDaoMap[T] extends (DaoMap => T) {
+  def fromDaoHistory(t: WithHistory[DaoMap]) = WithHistory(apply(t.main), t.history.map(apply))
+}
+
+case class TableName(name: String)
+
+case class Schema[ID, T](mainTableName: TableName, secondaryTableName: TableName, idField: FieldDefn, digestField: FieldDefn, otherFields: List[FieldDefn]) {
+  val fieldsToDigest = idField :: otherFields
 }
