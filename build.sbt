@@ -2,16 +2,16 @@ import sbt.url
 
 
 val versions = new {
-  val scala = "2.12.2"
+  val scala = "2.12.6"
   //  val scala = "2.12.1"
-  val finatra = "18.2.0"
+  val finatra = "18.8.0"
   val scalatest = "3.0.5"
   val mockito = "1.10.19"
   val guice = "4.0"
-  val play = "2.5.12"
-  val scalapact = "2.1.3"
+  val play = "2.6.18"
+  val scalapact = "2.3.1"
   val junit = "4.12"
-  val json4s = "3.5.3"
+  val json4s = "3.6.0"
   val mustache = "0.9.5"
 }
 
