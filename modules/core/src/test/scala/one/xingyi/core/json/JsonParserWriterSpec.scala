@@ -5,7 +5,7 @@ import one.xingyi.core.UtilsSpec
 
 import scala.reflect.ClassTag
 
-abstract class JsonParserWriterSpec[J: ClassTag](implicit jsonParser: JsonParser[J], jsonWriter: JsonWriter[J]) extends UtilsSpec with JsonParserLanguage with JsonWriterLangauge {
+abstract class JsonParserWriterSpec[J: ClassTag](implicit val jsonParser: JsonParser[J], jsonWriter: JsonWriter[J]) extends UtilsSpec with JsonParserLanguage with JsonWriterLangauge {
 
   def intAsJ(i: Int): J = jsonWriter.toJ(JsonInt(i))
   def stringAsJ(s: String): J = jsonWriter.toJ(JsonString(s))
@@ -45,4 +45,18 @@ abstract class JsonParserWriterSpec[J: ClassTag](implicit jsonParser: JsonParser
     d4 shouldBe "4"
   }
 
+  it should "turn a string into a 'J'" in {
+    val i: Int = jsonParser("""{"a":1}""") \ "a"
+    i shouldBe 1
+  }
+
+  it should "have a toJ method" in {
+    val j: J = jsonWriter.toJ(JsonList(Seq(JsonObject("a" -> 1, "b" -> 1.0, "c" -> "1", "d" -> true))))
+    jsonWriter.toStringForJ(j).noWhiteSpace shouldBe """[{"a":1,"b":1.0,"c":"1","d":true}]"""
+  }
+
+
+  it should "turn a J into a string" in {
+    jsonWriter.toStringForJ(jsonParser("""{"a":1}""")).noWhiteSpace shouldBe """{"a":1}"""
+  }
 }

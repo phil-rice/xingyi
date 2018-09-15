@@ -29,7 +29,7 @@ case class JsonList(seq: Seq[JsonValue]) extends JsonValue
 trait JsonWriter[J] extends (JsonValue => String) {
   def toJ(jsonValue: JsonValue): J
   def toStringForJ: J => String
-  def apply(jsonValue: JsonValue) = toStringForJ(toJ(jsonValue))
+  def apply(jsonValue: JsonValue): String = toStringForJ(toJ(jsonValue))
 
 }
 

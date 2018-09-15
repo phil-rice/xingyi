@@ -8,7 +8,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class HttpUtils {
+public class    HttpUtils {
 
     public static ExecutorService makeDefaultExecutor() {
         return Executors.newFixedThreadPool(100);

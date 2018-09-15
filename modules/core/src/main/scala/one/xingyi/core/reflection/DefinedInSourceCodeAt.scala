@@ -19,7 +19,7 @@ object DefinedInSourceCodeAt {
 object DefinedInSourceCodeAtLanguage extends DefinedInSourceCodeAtLanguage
 trait DefinedInSourceCodeAtLanguage {
   implicit class DefinedInSourceCodeAtOps[T](t: T)(implicit definedAt: IsDefinedInSourceCodeAt[T]) {
-    def definedInSourceCodeAt = definedAt(t)
+    def definedInSourceCodeAt: DefinedInSourceCodeAt = definedAt(t)
   }
 }
 

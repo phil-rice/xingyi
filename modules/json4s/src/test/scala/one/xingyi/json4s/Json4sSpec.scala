@@ -6,4 +6,10 @@ import org.json4s.JValue
 
 import Json4sParser._
 import Json4sWriter._
-class Json4sSpec extends JsonParserWriterSpec[JValue]
+class Json4sSpec extends JsonParserWriterSpec[JValue]{
+
+  it should "throw a if cannot parse" in {
+    intercept[FromJson4sException](jsonParser("""$$$asd""")).getMessage shouldBe "$$$asd"
+  }
+
+}

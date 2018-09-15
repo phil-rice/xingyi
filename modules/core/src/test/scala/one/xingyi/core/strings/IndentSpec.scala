@@ -39,4 +39,9 @@ class IndentSpec extends UtilsSpec {
       IndentAnd(201, List((200, "new"), (3, "one"), (4, "two"), (3, "three"), (4, "four")))
   }
 
+  it should "have a tupleToString method" in {
+    val and = IndentAnd.tupleToString(".", 10) _
+    and(5, ("one", "two")) shouldBe ".....one..two"
+    and(1, ("one", "two")) shouldBe ".one......two"
+  }
 }

@@ -14,7 +14,7 @@ object Maps {
     def optAdd(tuples: (K, Option[V])*) = tuples.foldLeft(map)((acc, tuple) => tuple._2.fold(acc)(v => acc + (tuple._1 -> v)))
     def add(v: V)(implicit hasId: HasId[V, K]) = map + (hasId(v) -> v)
   }
-  implicit class MapOfListsPimper[K, V](map: Map[K, List[V]]) {
+  implicit class MapOfListsOps[K, V](map: Map[K, List[V]]) {
     def addToList(kv: (K, V)): Map[K, List[V]] = kv match {case (k, v) => map.get(k).fold(map + (k -> List[V](v)))(list => map + (k -> (list :+ v)))}
     def items(id: K): List[V] = map.getOrElse(id, Nil)
   }

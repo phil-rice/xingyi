@@ -2,6 +2,7 @@
 package one.xingyi.core.strings
 
 import one.xingyi.core.UtilsWithLoggingSpec
+import one.xingyi.core.strings.Strings.indent
 
 
 class StringsTest extends UtilsWithLoggingSpec {
@@ -34,4 +35,36 @@ class StringsTest extends UtilsWithLoggingSpec {
     Strings.allButlastSection("/")("a") shouldBe ""
     Strings.allButlastSection("/")("a/b") shouldBe "a"
   }
+
+  "ShortPrint.apply" should "use the shortprint" in {
+    implicit val shortPrintForInt: ShortPrint[Int] = i => i + "usedit"
+    ShortPrint(1) shouldBe "1usedit"
+  }
+
+  "Strings.indentTuple" should "line up strings" in {
+    val indent = Strings.indentTuple(".", 10, 20) _
+    indent("one", "two") shouldBe
+    //1234567890123456789012
+    "..........one.......two"
+    indent("o", "t") shouldBe
+    "..........o.........t"
+  }
+
+  "Strings.trimChar" should "trim the char from both ends" in {
+    val trim = Strings.trimChar('.') _
+    trim("...ab.c...") shouldBe "ab.c"
+    trim("ab.c...") shouldBe "ab.c"
+    trim("...ab.c") shouldBe "ab.c"
+    trim("......") shouldBe ""
+    trim("") shouldBe ""
+  }
+
+  "Strings.clean" should "remove all but alphas_- and space" in {
+    Strings.cleanString(" abc.$d/e\\g-h") shouldBe " abcdeg-h"
+  }
+
+  "Strings.uri" should "make a uri" in {
+    Strings.uri("/abc","def/","/gh/", "i", "j") shouldBe "abc/def/gh/i/j"
+  }
+
 }

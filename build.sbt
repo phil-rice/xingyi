@@ -2,7 +2,7 @@ import sbt.url
 
 
 val versions = new {
-  val scala = "2.12.2"
+  val scala = "2.12.6"
   //  val scala = "2.12.1"
   val finatra = "18.2.0"
   val scalatest = "3.0.5"
@@ -16,7 +16,7 @@ val versions = new {
 }
 
 lazy val commonSettings = Seq(
-  version := "0.3",
+  version := "0.4",
   organization := "one.xingyi",
   publishMavenStyle := true,
   scalaVersion := versions.scala,
