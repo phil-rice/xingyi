@@ -20,4 +20,8 @@ class ServiceResponseSpec extends UtilsSpec {
 
     toServiceResponse("someString") shouldBe serviceResponse
   }
+
+  "ServiceResponse" should "let html responses be made easily" in {
+    ServiceResponse("someHtml") shouldBe ServiceResponse(Status(200), Body("someHtml"), ContentType("text/html"))
+  }
 }

@@ -2,6 +2,7 @@
 package one.xingyi.core.json
 
 import one.xingyi.core.UtilsSpec
+import one.xingyi.core.parser.Parser
 
 import scala.reflect.ClassTag
 
@@ -58,5 +59,16 @@ abstract class JsonParserWriterSpec[J: ClassTag](implicit val jsonParser: JsonPa
 
   it should "turn a J into a string" in {
     jsonWriter.toStringForJ(jsonParser("""{"a":1}""")).noWhiteSpace shouldBe """{"a":1}"""
+  }
+
+  behavior of "Parser"
+
+  it should "turns a String into a T as long as the jsonparser exists" in {
+    case class SimpleForTest(i: Int)
+    implicit object fromJsonLib extends FromJsonLib[J, SimpleForTest] {
+      override def apply(v1: J): SimpleForTest = SimpleForTest(v1 \ "a")
+    }
+
+    Parser.default.apply("""{"a":1}""") shouldBe SimpleForTest(1)
   }
 }

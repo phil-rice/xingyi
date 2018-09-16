@@ -5,6 +5,7 @@ import one.xingyi.core.builder.{Aggregator, RememberingAggregator2}
 import one.xingyi.core.functions.{Monoid, SemiGroup, Zero}
 
 import scala.reflect.ClassTag
+import one.xingyi.core.functions.SemiGroupLanguage._
 
 trait ZeroSpec[T] extends UtilsSpec {
   def classTag: ClassTag[T]
@@ -55,6 +56,7 @@ trait SemiGroupSpec[T] extends UtilsSpec {
 
 }
 
+
 abstract class MonoidSpec[T](implicit monoid: Monoid[T], val classTag: ClassTag[T]) extends SemiGroupSpec[T] with ZeroSpec[T] {
 
   override def zero = new Zero[T] {
@@ -76,6 +78,14 @@ abstract class MonoidSpec[T](implicit monoid: Monoid[T], val classTag: ClassTag[
     add(two, zeroValue) shouldBe two
     add(three, zeroValue) shouldBe three
   }
+  it should "have |+|" in {
+    new SemiGroupops(one)(semiGroup).|+|(zeroValue) shouldBe one
+    new SemiGroupops(one)(semiGroup).|+|(two) shouldBe three
+  }
+  it should "have or" in {
+    new SemiGroupops(one)(semiGroup).or(zeroValue) shouldBe one
+    new SemiGroupops(one)(semiGroup).or(two) shouldBe three
+  }
   it should "obey the law that X+ zero  is X" in {
     add(zeroValue, one) shouldBe one
     add(zeroValue, two) shouldBe two
@@ -86,7 +96,6 @@ abstract class MonoidSpec[T](implicit monoid: Monoid[T], val classTag: ClassTag[
     import Monoid._
     List(one, two).addAll shouldBe three
   }
-
 }
 
 class MonoidForIntSpec extends MonoidSpec[Int] {
@@ -104,6 +113,12 @@ class MonoidForIntSpec extends MonoidSpec[Int] {
 }
 
 class MonoidForSeqSpec extends MonoidSpec[Seq[String]] {
+  override def zeroValue = List()
+  override def one = List("1")
+  override def two = List("2")
+  override def three = List("1", "2")
+}
+class MonoidForListSpec extends MonoidSpec[List[String]] {
   override def zeroValue = List()
   override def one = List("1")
   override def two = List("2")

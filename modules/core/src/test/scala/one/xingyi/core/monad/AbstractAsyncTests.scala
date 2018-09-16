@@ -118,6 +118,14 @@ trait AbstractMonadTests[A[_]] extends AbstractFunctorTests[A] with MonadLanguag
     getT(join5(liftA(1), liftA(2), liftA(3), liftA(4), liftA(5))) shouldBe(1, 2, 3, 4, 5)
   }
 
+  it should "have a flattenM" in {
+    getT(monad.flattenM(List(liftA(1), liftA(2), liftA(3)))) shouldBe List(1, 2, 3)
+  }
+
+  it should "have a flattenListM" in {
+    getT(monad.flattenListM(List(liftA(1), liftA(2), liftA(3)))) shouldBe List(1, 2, 3)
+  }
+
 }
 
 abstract class AbstractMonadWithExceptionTests[A[_]](implicit m: MonadWithException[A]) extends AbstractMonadTests[A] with AnyLanguage {
@@ -293,7 +301,7 @@ abstract class AbstractMonadCanFailWithFailWithExceptionNotAsThrowableTests[A[_]
 trait AbstractMonadExceptionAndStateTests[A[_]] extends AbstractMonadHasStateTests[A] {
 
   //Sadly this is Cake pattern. It's hard to avoid it
-   def monad: Monad[A]
+  def monad: Monad[A]
   def liftTryA[T](t: Try[T]): A[T]
 
   behavior of s"MonadWithState and for ${monadWithState.getClass.getSimpleName}"
