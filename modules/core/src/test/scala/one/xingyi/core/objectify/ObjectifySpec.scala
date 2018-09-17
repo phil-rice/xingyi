@@ -21,7 +21,7 @@ trait ServiceResponseFixture {
 
 class AbstractObjectifySpec[M[_] : Async, Fail](implicit protected val monad: MonadCanFail[M, Fail],
                                                 protected val failer: Failer[Fail],
-                                                protected val detailsLoggingForSR: DetailedLogging[ServiceResponse]) extends UtilsSpec with ObjectifyKleisli[M, Fail] with FunctionFixture with ServiceResponseFixture {
+                                                protected val detailedLoggingForSR: DetailedLogging[ServiceResponse]) extends UtilsSpec with ObjectifyKleisli[M, Fail] with FunctionFixture with ServiceResponseFixture {
 
   behavior of "Objectify"
   type ServiceKleisli = ServiceRequest => M[ServiceResponse]

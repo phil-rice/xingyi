@@ -43,7 +43,8 @@ trait MonadLanguage extends FunctorLanguage {
     def onComplete[Fail](fn: Try[Either[Fail, T]] => Unit)(implicit monad: MonadCanFailWithException[M, Fail]): M[T] = monad.foldWithExceptionAndFail[T, T](m,
       { e: Throwable => fn(Failure(e)); monad.exception(e) },
       { f: Fail => fn(Success(Left(f))); monad.fail(f) },
-      { t: T => fn(Success(Right(t))); monad.liftM(t) }
+      { t: T =>
+        fn(Success(Right(t))); monad.liftM(t) }
     )
     def mapTryFail[Fail, T1](fn: Try[Either[Fail, T]] => M[T1])(implicit monad: MonadCanFailWithException[M, Fail]): M[T1] = monad.foldWithExceptionAndFail[T, T1](m,
       t => fn(Failure(t)),

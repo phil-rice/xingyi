@@ -49,7 +49,7 @@ trait MonadFunctionLanguage extends MonadLanguage {
   }
 
   implicit class MonadWithCanFailAndExceptionFunctionPimper[M[_], Req, Res](fn: Req => M[Res]) {
-    def sideEffectWithReq[Fail](mapFn: Req => Try[Either[Fail, Res]] => Unit)(implicit monad: MonadCanFailWithException[M, Fail]): Req => M[Res] = { req: Req => Exceptions(fn(req)).onComplete(mapFn(req)) }
+    def sideEffectWithReq[Fail](mapFn: (Req, Try[Either[Fail, Res]]) => Unit)(implicit monad: MonadCanFailWithException[M, Fail]): Req => M[Res] = { req: Req => Exceptions(fn(req)).onComplete { t: Try[Either[Fail, Res]] => mapFn(req, t) } }
   }
 
 }

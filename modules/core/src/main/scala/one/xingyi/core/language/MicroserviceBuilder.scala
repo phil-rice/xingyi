@@ -54,20 +54,20 @@ trait MicroserviceBuilder[M[_], Fail] extends ObjectifyKleisli[M, Fail] with Htt
 
 }
 
-class KleisliMicroserviceBuilder[M[_], Fail] {
-  type Klesli[Req, Res] = Req => M[Res]
-
-  case class builder()(implicit protected val async: Async[M],
-                       protected val monad: MonadCanFailWithException[M, Fail],
-                       protected val timeService: NanoTimeService,
-                       protected val httpFactory: HttpFactory[M, ServiceRequest, ServiceResponse],
-                       protected val cacheFactory: CacheFactory[M],
-                       protected val logReqAndResult: LogRequestAndResult[Fail],
-                       protected val failer: Failer[Fail],
-                       protected val putMetrics: PutMetrics,
-                       protected val responseParserFailer: ResponseParserFailer[Fail],
-                       protected val detailsLoggingForSR: DetailedLogging[ServiceResponse]
-
-  ) extends MicroserviceBuilder[M, Fail] with MergeLanguage[Klesli] with EnrichLanguage[Klesli] with MicroserviceComposers[M]
-
-}
+//class KleisliMicroserviceBuilder[M[_], Fail] {
+//  type Klesli[Req, Res] = Req => M[Res]
+//
+//  case class builder()(implicit protected val async: Async[M],
+//                       protected val monad: MonadCanFailWithException[M, Fail],
+//                       protected val timeService: NanoTimeService,
+//                       protected val httpFactory: HttpFactory[M, ServiceRequest, ServiceResponse],
+//                       protected val cacheFactory: CacheFactory[M],
+//                       protected val logReqAndResult: LogRequestAndResult[Fail],
+//                       protected val failer: Failer[Fail],
+//                       protected val putMetrics: PutMetrics,
+//                       protected val responseParserFailer: ResponseParserFailer[Fail],
+//                       protected val detailsLoggingForSR: DetailedLogging[ServiceResponse]
+//
+//  ) extends MicroserviceBuilder[M, Fail] with MergeLanguage[Klesli] with EnrichLanguage[Klesli] with MicroserviceComposers[M]
+//
+//}
