@@ -126,5 +126,29 @@ class AnyLanguageSpec extends UtilsSpec with AnyLanguage with FunctionFixture {
     true.toOption("value") shouldBe Some("value")
   }
 
+  "TryOps" should "lift a try into a monad when no success" in {
+    implicit val monad: MonadWithException[Option] = mock[MonadWithException[Option]]
+    when(monad.liftM(1)) thenReturn Some(123)
+    Success(1).liftTry shouldBe Some(123)
+  }
+  "TryOps" should "lift a try into a monad when no failure" in {
+    implicit val monad: MonadWithException[Option] = mock[MonadWithException[Option]]
+    val e = new RuntimeException
+    when(monad.exception[Int](e)) thenReturn Some(123)
+    Failure(e).liftTry shouldBe Some(123)
+  }
+
+  "AtomicIntegerOps" should "have a tick method that executes side effect every 'tick' calls" in {
+    val s = new AtomicReference("")
+    val a = new AtomicInteger()
+    val count = new AtomicInteger()
+    def callTick = {
+      a.tick(3)(s.updateAndGet(str => str + a.get+count.incrementAndGet()))
+      count.incrementAndGet()
+    }
+    (1 to 10) foreach (_ => callTick)
+    s.get shouldBe "0307011"//TODO check this
+    a.get() shouldBe 1
+  }
 
 }
