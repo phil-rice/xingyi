@@ -148,6 +148,7 @@ abstract class MicroserviceBuilderSpec[M[_], Fail](monadName: String)(implicit v
 
     b.log.records shouldBe List(LoggingRecord(100, "ERROR", "pattern {0} {2}/pattern ServiceRequest(Get,Uri(/thingyId),None,None,List(),None) java.lang.RuntimeException: the error", Some(exception)))
   }
+  "
 }
 
 class MicroserviceBuilderIdentityMonadSpec extends MicroserviceBuilderSpec[IdentityMonad, Throwable]("IdentityMonad") {
