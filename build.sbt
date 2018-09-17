@@ -141,11 +141,14 @@ lazy val cep = (project in file("modules/cep")).
   settings(reflectionSettings: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core)
 
+val javaServer=(project in file("modules/javaserver")).settings(publishSettings)
+
 val cddexamples = (project in file("modules/cddexamples")).
   dependsOn(core % "test->test;compile->compile").
   dependsOn(cddengine % "test->test;compile->compile").
   dependsOn(cddscalatest % "test->test;compile->compile").
   dependsOn(json4s % "test->test;compile->compile").
+  dependsOn(javaServer).
   dependsOn(cddmustache % "test->test;compile->compile").
 //  dependsOn(cddlegacy % "test->test;compile->compile").
   dependsOn(apachejdbc % "test->test;compile->compile").

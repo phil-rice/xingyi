@@ -1,4 +1,4 @@
-package core;
+package one.xingyi.javaserver;
 
 
 import com.sun.net.httpserver.HttpsConfigurator;
@@ -6,12 +6,9 @@ import com.sun.net.httpserver.HttpsParameters;
 import com.sun.net.httpserver.HttpsServer;
 
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.Executor;
 
 public class SimpleHttpsServer {

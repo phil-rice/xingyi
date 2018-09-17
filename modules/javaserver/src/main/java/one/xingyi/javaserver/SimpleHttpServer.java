@@ -1,4 +1,4 @@
-package core;
+package one.xingyi.javaserver;
 
 
 import com.sun.net.httpserver.HttpServer;

@@ -1,4 +1,4 @@
-package core;
+package one.xingyi.javaserver;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;

@@ -1,10 +1,9 @@
-package core;
+package one.xingyi.javaserver;
 
 import com.sun.net.httpserver.HttpExchange;
 
 import java.io.IOException;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
