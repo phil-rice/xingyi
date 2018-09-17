@@ -1,9 +1,11 @@
 package one.xingyi.core.language
 
+import java.text.MessageFormat
+
 import one.xingyi.core.{FunctionFixture, UtilsSpec}
 import one.xingyi.core.cache.CacheFactory
 import one.xingyi.core.http._
-import one.xingyi.core.logging.{DetailedLogging, LogRequestAndResult}
+import one.xingyi.core.logging._
 import one.xingyi.core.metrics.{CountMetricValue, MetricValue, PutMetrics, ReportData}
 import one.xingyi.core.monad.{Async, IdentityMonad, Liftable, MonadCanFailWithException}
 import one.xingyi.core.time.{MockTimeService, NanoTimeService}
@@ -17,7 +19,11 @@ import scala.util.{Failure, Success, Try}
 class MicroserviceBuilderForTest[M[_], Fail](implicit val async: Async[M], val monad: MonadCanFailWithException[M, Fail], val detailedLoggingForSR: DetailedLogging[ServiceResponse]) extends MicroserviceBuilder[M, Fail] with MockitoSugar {
   override val cacheFactory: CacheFactory[M] = mock[CacheFactory[M]]
   override implicit val timeService: NanoTimeService = new MockTimeService
-  override val logReqAndResult: LogRequestAndResult[Fail] = mock[LogRequestAndResult[Fail]]
+  implicit val log = new RememberLoggingAdapter
+  override val logReqAndResult: LogRequestAndResult[Fail] = new AbstractLogRequestAndResult[Fail]() {
+    override protected def format(messagePrefix: String, messagePostFix: String)(strings: String*): String =
+      MessageFormat.format(messagePrefix, strings: _*)
+  }
   override val failer: Failer[Fail] = mock[Failer[Fail]]
   override val putMetrics: PutMetrics = mock[PutMetrics]
   override val httpFactory: HttpFactory[M, ServiceRequest, ServiceResponse] = mock[HttpFactory[M, ServiceRequest, ServiceResponse]]
@@ -120,19 +126,28 @@ abstract class MicroserviceBuilderSpec[M[_], Fail](monadName: String)(implicit v
     verify(b.putMetrics, times(1)).apply(metricsData)
   }
 
-  it should "have a logging that logs the requests and responses" in {
+  val pattern = "pattern {0} {2}"
+
+  it should "have a logging that logs the requests and responses - happy path" in {
     val b = builder
     val service = mock[ServiceRequest => M[ServiceResponse]]
-    val pattern = "pattern {0} {1}"
     val lService: ServiceRequest => M[ServiceResponse] = service |+| b.logging(pattern)
     when(service.apply(serviceRequest)) thenReturn serviceResponse.liftM
-    val log = mock[(ServiceRequest, Try[Either[Fail, ServiceResponse]]) => Unit]
-    when(b.logReqAndResult.apply[ServiceRequest, ServiceResponse](pattern, pattern)).thenReturn(log)
+
     lService(serviceRequest).await shouldBe serviceResponse
-    verify(log, times(1)).apply(serviceRequest, Success(Right(serviceResponse)))
+    b.log.records shouldBe List(LoggingRecord(100, "DEBUG", "pattern {0} {2}/pattern ServiceRequest(Get,Uri(/thingyId),None,None,List(),None) ServiceResponse(Status(200),Body(thingyValue),ContentType(who cares))", None))
+
   }
+  it should "have a logging that logs the requests and responses - exception path" in {
+    val b = builder
+    val service = mock[ServiceRequest => M[ServiceResponse]]
+    val lService: ServiceRequest => M[ServiceResponse] = service |+| b.logging(pattern)
 
+    when(service.apply(serviceRequest)) thenReturn exception.liftException[M, ServiceResponse]
+    getFailure(lService(serviceRequest)) shouldBe exception
 
+    b.log.records shouldBe List(LoggingRecord(100, "ERROR", "pattern {0} {2}/pattern ServiceRequest(Get,Uri(/thingyId),None,None,List(),None) java.lang.RuntimeException: the error", Some(exception)))
+  }
 }
 
 class MicroserviceBuilderIdentityMonadSpec extends MicroserviceBuilderSpec[IdentityMonad, Throwable]("IdentityMonad") {

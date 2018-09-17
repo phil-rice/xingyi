@@ -11,6 +11,9 @@ trait LoggingKleisli[M[_], Fail] {
   protected def logReqAndResult: LogRequestAndResult[Fail]
 
   def logging[Req: ClassTag : DetailedLogging : SummaryLogging, Res: ClassTag : DetailedLogging : SummaryLogging](messagePrefix: String)(raw: Req => M[Res]): Req => M[Res] =
-    raw.sideEffectWithReq[Fail](logReqAndResult[Req, Res](messagePrefix, messagePrefix))
+    raw.sideEffectWithReq[Fail]{
+      val fn = logReqAndResult.apply[Req, Res](messagePrefix, messagePrefix)
+      println(s"in logging $logReqAndResult $fn")
+    fn}
 
 }
