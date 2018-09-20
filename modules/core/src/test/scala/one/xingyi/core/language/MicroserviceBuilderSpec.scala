@@ -3,16 +3,19 @@ package one.xingyi.core.language
 import java.text.MessageFormat
 
 import one.xingyi.core.{FunctionFixture, UtilsSpec}
-import one.xingyi.core.cache.CacheFactory
+import one.xingyi.core.cache._
 import one.xingyi.core.http._
 import one.xingyi.core.logging._
 import one.xingyi.core.metrics.{CountMetricValue, MetricValue, PutMetrics, ReportData}
 import one.xingyi.core.monad.{Async, IdentityMonad, Liftable, MonadCanFailWithException}
-import one.xingyi.core.time.{MockTimeService, NanoTimeService}
+import one.xingyi.core.time.{MockTimeService, NanoTimeService, RandomDelay}
 import org.scalatest.mockito.MockitoSugar
 import org.mockito.Mockito._
 import Language._
+import one.xingyi.core.profiling.{ProfileService, TryProfileData}
+import one.xingyi.core.retry.{RetryConfig, RetryService}
 
+import scala.concurrent.duration.Duration
 import scala.language.higherKinds
 import scala.util.{Failure, Success, Try}
 
@@ -126,29 +129,50 @@ abstract class MicroserviceBuilderSpec[M[_], Fail](monadName: String)(implicit v
     verify(b.putMetrics, times(1)).apply(metricsData)
   }
 
-  val pattern = "pattern {0} {2}"
 
-  it should "have a logging that logs the requests and responses - happy path" in {
+  it should "have a logging that wraps the delegate in a logging service" ignore {
+    val pattern = "pattern {0} {2}"
     val b = builder
     val service = mock[ServiceRequest => M[ServiceResponse]]
-    val lService: ServiceRequest => M[ServiceResponse] = service |+| b.logging(pattern)
-    when(service.apply(serviceRequest)) thenReturn serviceResponse.liftM
-
-    lService(serviceRequest).await shouldBe serviceResponse
-    b.log.records shouldBe List(LoggingRecord(100, "DEBUG", "pattern {0} {2}/pattern ServiceRequest(Get,Uri(/thingyId),None,None,List(),None) ServiceResponse(Status(200),Body(thingyValue),ContentType(who cares))", None))
-
+    val lService = (service |+| b.logging[ServiceRequest, ServiceResponse](pattern)).asInstanceOf[LoggingService[M, Fail, ServiceRequest, ServiceResponse]]
+    lService.delegate shouldBe service
+    lService.messagePrefix shouldBe pattern
+    lService.logReqAndResult shouldBe builder.logReqAndResult
   }
-  it should "have a logging that logs the requests and responses - exception path" in {
+
+  it should "have a retry that wraps the service in a RetryService" in {
     val b = builder
     val service = mock[ServiceRequest => M[ServiceResponse]]
-    val lService: ServiceRequest => M[ServiceResponse] = service |+| b.logging(pattern)
+    val retryConfig = RetryConfig(1, RandomDelay(Duration.fromNanos(1000)))
 
-    when(service.apply(serviceRequest)) thenReturn exception.liftException[M, ServiceResponse]
-    getFailure(lService(serviceRequest)) shouldBe exception
-
-    b.log.records shouldBe List(LoggingRecord(100, "ERROR", "pattern {0} {2}/pattern ServiceRequest(Get,Uri(/thingyId),None,None,List(),None) java.lang.RuntimeException: the error", Some(exception)))
+    val rService = (service |+| b.retry[ServiceRequest, ServiceResponse](retryConfig)).asInstanceOf[RetryService[M, Fail, ServiceRequest, ServiceResponse]]
+    rService.delegate shouldBe service
+    rService.retryConfig shouldBe retryConfig
   }
-  "
+
+  it should "have a profile that wraps the service in a profile service" in {
+    val b = builder
+    val service = mock[ServiceRequest => M[ServiceResponse]]
+    val profileData = mock[TryProfileData]
+    val pService = (service |+| b.profile[ServiceRequest, ServiceResponse](profileData)).asInstanceOf[ProfileService[M, ServiceRequest, ServiceResponse]]
+    pService.delegate shouldBe service
+    pService.profileData shouldBe profileData
+  }
+
+  it should "have a cache method that wraps the service with the result from the cache factory" in {
+    val b = builder
+    val service = mock[ServiceRequest => M[ServiceResponse]]
+    val profileData = mock[TryProfileData]
+    val cache = mock[Cache[M, ServiceRequest, ServiceResponse]]
+
+    implicit val s: ShouldCacheResult[ServiceResponse] = _ => true
+    implicit val ck: CachableKey[ServiceRequest] = CachableKey.cachableKeyDefault[ServiceRequest]
+
+    when(b.cacheFactory.apply("cacheName", service)) thenReturn cache
+    service |+| b.cache[ServiceRequest, ServiceResponse]("cacheName") shouldBe cache
+  }
+
+
 }
 
 class MicroserviceBuilderIdentityMonadSpec extends MicroserviceBuilderSpec[IdentityMonad, Throwable]("IdentityMonad") {

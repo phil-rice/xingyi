@@ -24,17 +24,16 @@ object ProfileAs {
 
 }
 
-object ProfileKleisli {
-  def apply[M[_] : MonadWithException, Req: ClassTag, Res: ClassTag : ProfileAs](profileData: TryProfileData)(raw: Req => M[Res])(implicit timeService: NanoTimeService): Req => M[Res] =
-    raw.onEnterAndExitM(_ => timeService(), profileData.eventFromStartTime)
 
+class ProfileService[M[_] : MonadWithException, Req: ClassTag, Res: ClassTag : ProfileAs](val profileData: TryProfileData)(val delegate: Req => M[Res])(implicit timeService: NanoTimeService) extends (Req => M[Res]){
+  override def apply(req: Req): M[Res] = delegate.onEnterAndExitM(_ => timeService(), profileData.eventFromStartTime) apply req
 }
+
 trait ProfileKleisli[M[_], Fail] {
   protected implicit def monad: MonadWithException[M]
   protected implicit def timeService: NanoTimeService
 
-  def profile[Req: ClassTag, Res: ClassTag : ProfileAs](profileData: TryProfileData)(raw: Req => M[Res]): Req => M[Res] = ProfileKleisli(profileData)(raw)
-  //    raw.onEnterAndExitM(_ => timeService(), profileData.eventFromStartTime)
+  def profile[Req: ClassTag, Res: ClassTag : ProfileAs](profileData: TryProfileData)(raw: Req => M[Res]): Req => M[Res] = new ProfileService(profileData)(raw)
 }
 
 class TryProfileData {

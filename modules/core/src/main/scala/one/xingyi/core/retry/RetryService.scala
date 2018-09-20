@@ -53,7 +53,7 @@ trait RetryInfo {
 case class RetryConfig(retries: Int, delay: Delay)
 
 
-class RetryService[M[_], Fail, Req, Res](delegate: (Req => M[Res]), retryConfig: RetryConfig)(implicit async: Async[M], monad: MonadCanFailWithException[M, Fail], resRetry: NeedsRetry[Res]) extends (Req => M[Res]) with RetryInfo {
+class RetryService[M[_], Fail, Req, Res](val delegate: (Req => M[Res]), val retryConfig: RetryConfig)(implicit async: Async[M], monad: MonadCanFailWithException[M, Fail], resRetry: NeedsRetry[Res]) extends (Req => M[Res]) with RetryInfo {
 
   import retryConfig._
 

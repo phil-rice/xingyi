@@ -10,7 +10,7 @@ trait CacheKleisli[M[_]] {
 
   protected def cacheFactory: CacheFactory[M]
   def cache[Req: ClassTag : CachableKey : ShouldUseCache, Res: ClassTag : ShouldCacheResult](name: String)(raw: Req => M[Res]): Req => M[Res] =
-    cacheFactory[Req, Res](name, raw)
+    cacheFactory.apply[Req, Res](name, raw)
 
 }
 case class CacheStats(size: Int)
@@ -19,9 +19,7 @@ case class CacheStats(size: Int)
 trait ShouldUseCache[Req] extends (Req => Boolean)
 
 object ShouldUseCache {
-  implicit def shouldCache[Req] = new ShouldUseCache[Req] {
-    override def apply(v1: Req): Boolean = true
-  }
+  implicit def shouldCache[Req]: ShouldUseCache[Req] = _ => true
 }
 
 trait ShouldCacheResult[Res] {

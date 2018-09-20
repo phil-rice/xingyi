@@ -11,9 +11,16 @@ trait LoggingKleisli[M[_], Fail] {
   protected def logReqAndResult: LogRequestAndResult[Fail]
 
   def logging[Req: ClassTag : DetailedLogging : SummaryLogging, Res: ClassTag : DetailedLogging : SummaryLogging](messagePrefix: String)(raw: Req => M[Res]): Req => M[Res] =
-    raw.sideEffectWithReq[Fail]{
-      val fn = logReqAndResult.apply[Req, Res](messagePrefix, messagePrefix)
-      println(s"in logging $logReqAndResult $fn")
-    fn}
+    new LoggingService(messagePrefix, logReqAndResult, raw)
 
+}
+
+class LoggingService[M[_], Fail, Req: ClassTag : DetailedLogging : SummaryLogging, Res: ClassTag : DetailedLogging : SummaryLogging]
+(val messagePrefix: String, val logReqAndResult: LogRequestAndResult[Fail], val delegate: Req => M[Res])(implicit monad: MonadCanFailWithException[M, Fail])
+  extends (Req => M[Res]) {
+  override def apply(raw: Req): M[Res] = delegate.sideEffectWithReq[Fail] {
+    val fn = logReqAndResult.apply[Req, Res](messagePrefix, messagePrefix)//TODO revisit this line and consider how to deal with source
+    println(s"in logging $logReqAndResult $fn")
+    fn
+  } apply raw
 }
