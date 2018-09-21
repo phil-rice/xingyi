@@ -13,6 +13,8 @@ object FromJson {
 
 trait JsonParser[J] extends (String => J) {
   def extractInt(j: J): Int
+  def extractDouble(j: J): Double
+  def extractBoolean(j: J): Boolean
   def extractString(j: J): String
   def extractOptString(j: J): Option[String]
   def asList(j: J): List[J]
@@ -25,6 +27,8 @@ object JsonParserLanguage extends JsonParserLanguage
 trait JsonParserLanguage {
   implicit def jsonToString[J](j: J)(implicit parser: JsonParser[J]) = parser.extractString(j)
   implicit def toInt[J](j: J)(implicit parser: JsonParser[J]) = parser.extractInt(j)
+  implicit def toDouble[J](j: J)(implicit parser: JsonParser[J]) = parser.extractDouble(j)
+  implicit def toBoolean[J](j: J)(implicit parser: JsonParser[J]) = parser.extractBoolean(j)
   implicit def toOptString[J](j: J)(implicit parser: JsonParser[J]) = parser.extractOptString(j)
 
   implicit class JsonParserOps[J](j: J)(implicit jsonParser: JsonParser[J]) {

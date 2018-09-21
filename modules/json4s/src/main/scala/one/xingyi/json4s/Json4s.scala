@@ -17,6 +17,8 @@ trait Json4sParser {
   implicit object JsonParserForJson4s extends JsonParser[JValue] {
     protected implicit val formats = DefaultFormats
     override def extractInt(j: JValue): Int = j.extract[Int]
+    override def extractDouble(j: JValue): Double = j.extract[Double]
+    override def extractBoolean(j: JValue): Boolean = j.extract[Boolean]
     override def extractString(j: JValue): String = j.extract[String]
     override def extractOptString(j: JValue): Option[String] = j.extractOpt[String]
     override def asList(j: JValue): List[JValue] = j.extract[List[JValue]]

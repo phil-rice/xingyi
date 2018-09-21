@@ -141,7 +141,7 @@ lazy val cep = (project in file("modules/cep")).
   settings(reflectionSettings: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core)
 
-val javaServer=(project in file("modules/javaserver")).settings(publishSettings)
+val javaServer = (project in file("modules/javaserver")).settings(publishSettings)
 
 val cddexamples = (project in file("modules/cddexamples")).
   dependsOn(core % "test->test;compile->compile").
@@ -150,7 +150,7 @@ val cddexamples = (project in file("modules/cddexamples")).
   dependsOn(json4s % "test->test;compile->compile").
   dependsOn(javaServer).
   dependsOn(cddmustache % "test->test;compile->compile").
-//  dependsOn(cddlegacy % "test->test;compile->compile").
+  //  dependsOn(cddlegacy % "test->test;compile->compile").
   dependsOn(apachejdbc % "test->test;compile->compile").
   settings(publishSettings)
 
@@ -202,21 +202,28 @@ lazy val finatraSample = (project in file("modules/finatraSample")).
   settings(publishArtifact := false).
   settings(publishSettings: _*)
 
+val experimental = (project in file("modules/experimental")).
+  settings(publishSettings).
+  settings(publishArtifact := false).
+  aggregate(
+    cep,
+    cddscenario, //
+    cddengine, //
+    cddmustache, //
+    cddscalatest //
+  )
+
 val root = (project in file(".")).
   settings(publishSettings).
   settings(publishArtifact := false).
   aggregate(
-    apachejdbc,//
-    cddscenario,//
-    cddengine,//
-    cddmustache,//
-    cddscalatest,//
-    cep,
-    core,//
-    finatra,//
+    apachejdbc, //
+    core, //
+    finatra, //
     finatraSample,
     sample,
     sampleServer,
-    json4s,//
-    tagless//
+    json4s, //
+    tagless ,//
+    test
   )

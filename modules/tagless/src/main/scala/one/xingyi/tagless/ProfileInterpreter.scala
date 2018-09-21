@@ -4,7 +4,7 @@ package one.xingyi.tagless
 import one.xingyi.core.endpoint.MatchesServiceRequest
 import one.xingyi.core.http._
 import one.xingyi.core.monad.{Monad, MonadWithException}
-import one.xingyi.core.profiling.{ProfileKleisli, TryProfileData}
+import one.xingyi.core.profiling.{ProfileKleisli, ProfileService, TryProfileData}
 import one.xingyi.core.strings.{IndentAnd, Strings}
 import one.xingyi.core.time.NanoTimeService
 
@@ -27,7 +27,7 @@ class Profile2[M[_] : MonadWithException] {
   //So this wraps every node in out tree, and we should be able to see the web page with the profiles of everything!
   case class ProfilingWrapper[Req: ClassTag, Res: ClassTag](name: String, description: String, kleisli: Req => M[Res], children: ProfilingWrapper[_, _]*)(implicit nanoTimeService: NanoTimeService) extends PartialFunction[Req, M[Res]] with Kleisli[Req, Res] with Profiled {
     val tryProfileData = new TryProfileData
-    val profiledKleisli = ProfileKleisli(tryProfileData)(kleisli)
+    val profiledKleisli = new ProfileService(tryProfileData)(kleisli)
 
     override def apply(v1: Req) = profiledKleisli(v1)
     val allChildren: Seq[Profiled] = children.flatMap(child => Seq(child) ++ child.allChildren)

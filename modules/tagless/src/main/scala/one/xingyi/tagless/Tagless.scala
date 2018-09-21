@@ -8,7 +8,7 @@ import one.xingyi.core.http._
 import one.xingyi.core.logging._
 import one.xingyi.core.metrics.ReportData
 import one.xingyi.core.monad.MonadWithException
-import one.xingyi.core.profiling.{ProfileAs, ProfileKleisli, TryProfileData}
+import one.xingyi.core.profiling.{ProfileAs, ProfileKleisli, ProfileService, TryProfileData}
 import one.xingyi.core.retry.{NeedsRetry, RetryConfig}
 import one.xingyi.core.strings.{IndentAnd, Strings}
 
@@ -75,7 +75,7 @@ trait TaglessModelLanguage[M[_]] {
   class ProfileTx(endPoint: String)(implicit monad: MonadWithException[M]) extends ModelTx {
     override def apply[Req: ClassTag, Res: ClassTag](model: Model[Req, Res]) = {
       var tryProfileData = new TryProfileData
-      val profileKleisli: Kleisli[Req, Res] = ProfileKleisli(tryProfileData)(model.kleisli)
+      val profileKleisli: Kleisli[Req, Res] = new ProfileService(tryProfileData)(model.kleisli)
       (profileKleisli, model.context + ("profile" -> tryProfileData))
     }
 

@@ -6,6 +6,9 @@ import one.xingyi.core.parser.Parser
 
 import scala.reflect.ClassTag
 
+case class ThingForJsonTests(a: Int, b: String, children: Seq[ChildForJsonTests])
+case class ChildForJsonTests(c: Double, d: Boolean)
+
 abstract class JsonParserWriterSpec[J: ClassTag](implicit val jsonParser: JsonParser[J], jsonWriter: JsonWriter[J]) extends UtilsSpec with JsonParserLanguage with JsonWriterLangauge {
 
   def intAsJ(i: Int): J = jsonWriter.toJ(JsonInt(i))
@@ -51,16 +54,30 @@ abstract class JsonParserWriterSpec[J: ClassTag](implicit val jsonParser: JsonPa
     i shouldBe 1
   }
 
+
   it should "have a toJ method" in {
     val j: J = jsonWriter.toJ(JsonList(Seq(JsonObject("a" -> 1, "b" -> 1.0, "c" -> "1", "d" -> true))))
     jsonWriter.toStringForJ(j).noWhiteSpace shouldBe """[{"a":1,"b":1.0,"c":"1","d":true}]"""
   }
 
 
+
+
   it should "turn a J into a string" in {
     jsonWriter.toStringForJ(jsonParser("""{"a":1}""")).noWhiteSpace shouldBe """{"a":1}"""
   }
 
+
+  behavior of "JsonObject"
+
+  it should "allow extra fields to be added with |+|" in {
+    JsonObject("a" -> 1, "b" -> 2) |+| "c" -> 3 shouldBe JsonObject("a" -> 1, "b" -> 2, "c" -> 3)
+  }
+
+  it should "have an adequate toString method" in {
+    JsonObject("a" -> 1, "b" -> 2, "c" -> 3).toString shouldBe """JsonObject((a,JsonInt(1)),(b,JsonInt(2)),(c,JsonInt(3)))"""
+
+  }
   behavior of "Parser"
 
   it should "turns a String into a T as long as the jsonparser exists" in {
@@ -69,6 +86,33 @@ abstract class JsonParserWriterSpec[J: ClassTag](implicit val jsonParser: JsonPa
       override def apply(v1: J): SimpleForTest = SimpleForTest(v1 \ "a")
     }
 
-    Parser.default.apply("""{"a":1}""") shouldBe SimpleForTest(1)
+    Parser.default[J, SimpleForTest].apply("""{"a":1}""") shouldBe SimpleForTest(1)
   }
+
+  it should "support a map method for lists" in {
+    val j: J = jsonWriter.toJ(JsonList(List(1, 2, 3)))
+    new JsonParserOps(j).map(json => jsonParser.extractInt(json).toString) shouldBe List("1", "2", "3")
+  }
+
+  implicit def toJsonLibForChild: ToJsonLib[ChildForJsonTests] = t => JsonObject("c" -> t.c, "d" -> t.d)
+  implicit def toJsonLibForThing: ToJsonLib[ThingForJsonTests] = t => JsonObject("a" -> t.a, "b" -> t.b, "children" -> toListT(t.children))
+  implicit def fromJsonForChild: FromJsonLib[J, ChildForJsonTests] = json => ChildForJsonTests(json \ "c", json \ "d")
+  implicit def fromJsonForThing: FromJsonLib[J, ThingForJsonTests] = json => ThingForJsonTests(json \ "a", json \ "b", (json \ "children").asList[ChildForJsonTests])
+
+  behavior of "round trip objects"
+
+  val child1 = ChildForJsonTests(1.0, true)
+  val child2 = ChildForJsonTests(2.0, false)
+  val thingy = ThingForJsonTests(1, "two", List(child1, child2))
+  it should "allow a composite objects to be roundtripped" in {
+    val string = implicitly[ToJson[ThingForJsonTests]] apply thingy
+    val roundTrip = implicitly[FromJson[ThingForJsonTests]] apply string
+    roundTrip shouldBe thingy
+  }
+  it should "Allow things with ToJsonLibs to be implicitly converted to json" in {
+    val j: JsonValue = toT(thingy)
+    j shouldBe JsonObject("a"->1, "b"->"two", "children"-> toListT(Seq(child1, child2)))
+  }
+
+
 }

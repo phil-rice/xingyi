@@ -11,7 +11,7 @@ import org.scalatest.BeforeAndAfterAll
 import one.xingyi.core.closable.ClosableLanguage._
 import scala.language.higherKinds
 
-class AbstractJdbcSpec[M[_] : ClosableM] extends UtilsSpec with BeforeAndAfterAll with Jdbc {
+class AbstractJdbcIntegrationSpec[M[_] : ClosableM] extends UtilsSpec with BeforeAndAfterAll with Jdbc {
 
   val ds = new BasicDataSource
   ds.setDriverClassName("org.h2.Driver")
@@ -59,4 +59,4 @@ class AbstractJdbcSpec[M[_] : ClosableM] extends UtilsSpec with BeforeAndAfterAl
 
 }
 
-class JdbcSpec extends AbstractJdbcSpec[SimpleClosable]
+class JdbcIntegrationSpec extends AbstractJdbcIntegrationSpec[SimpleClosable]

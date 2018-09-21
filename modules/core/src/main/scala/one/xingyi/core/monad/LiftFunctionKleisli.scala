@@ -12,3 +12,4 @@ trait LiftFunctionKleisli[M[_]] {
   def function[Req: ClassTag, Res: ClassTag](name: String)(fn: Req => Res) = fn.liftFn
 
 }
+
