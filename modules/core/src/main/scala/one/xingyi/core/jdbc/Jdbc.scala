@@ -22,17 +22,15 @@ trait Jdbc {
     if (!resultSet.next) throw new IllegalStateException()
     resultSet
   }
-  def toList[X](fn: ResultSet => X): ResultSet => List[X] = { resultSet: ResultSet =>
+  def   toList[X](fn: ResultSet => X): ResultSet => List[X] = { resultSet: ResultSet =>
     var list = List[X]()
-    while (resultSet.next()) {
-      list = fn(resultSet) :: list
-    }
+    while (resultSet.next()) list = fn(resultSet) :: list
     list.reverse
   }
 
   def executeSql[M[_] : ClosableM](sql: String): DataSource => Boolean =
     connection |==> statement |=> execute(sql) |===> result
-  def getValue[M[_] : ClosableM, X](sql: String)(fn: ResultSet => X): DataSource => X =
+  def getValue[M[_] : ClosableM, X](sql: String,fn: ResultSet => X): DataSource => X =
     connection |==> statement |==> toResultSet(sql) |=> toSingleResultSet |=> fn |===> result
   def getList[M[_] : ClosableM, X](sql: String)(fn: ResultSet => X): DataSource => List[X] =
     connection |==> statement |==> toResultSet(sql) |=> toList(fn) |===> result
