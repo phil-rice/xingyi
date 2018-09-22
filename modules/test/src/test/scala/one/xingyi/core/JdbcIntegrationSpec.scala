@@ -13,7 +13,7 @@ import one.xingyi.core.closable.ClosableLanguage._
 
 import scala.language.higherKinds
 
-class AbstractJdbcIntegrationSpec[M[_] : ClosableM] extends UtilsSpec with BeforeAndAfterAll with Jdbc {
+abstract class AbstractJdbcIntegrationSpec[M[_] : ClosableM] extends UtilsSpec with BeforeAndAfterAll with Jdbc {
 
   val ds = new BasicDataSource
   ds.setDriverClassName("org.h2.Driver")

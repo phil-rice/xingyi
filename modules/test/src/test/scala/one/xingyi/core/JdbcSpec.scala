@@ -77,40 +77,5 @@ class JdbcSpec extends UtilsSpec with ClosableFixture with Jdbc with ClosableLan
     toList(rs => rs.getString("colName") + "_processed")(rs) shouldBe List("one_processed", "two_processed")
   }
 
-  val jdbcOps: JdbcOps[DataSource] = implicitly[JdbcOps[DataSource]]
-  import jdbcOps._
-
-  it should "have an executeSql that does the chain 'connection', 'statement', 'execute' and then returns the boolean from the execute" in {
-    val d = mock[DataSource]
-    val c = mock[Connection]
-    val s = mock[Statement]
-    val sql = "someSql"
-    when(d.getConnection()) thenReturn c
-    when(c.createStatement()) thenReturn s
-    val n = Random.nextBoolean()
-    when(s.execute(sql)) thenReturn n
-
-    executeSql[SimpleClosable](sql) apply d shouldBe n
-    verify(s, times(1)) execute sql
-    verify(s, times(1)).close()
-    verify(c, times(1)).close()
-  }
-  it should "have an getValue that does the chain 'connection', 'statement', 'execute' and then returns the boolean from the execute" in {
-    val d = mock[DataSource]
-    val c = mock[Connection]
-    val s = mock[Statement]
-    val rs = mock[ResultSet]
-    val sql = "someSql"
-    when(d.getConnection()) thenReturn c
-    when(c.createStatement()) thenReturn s
-    when(s.executeQuery(sql)) thenReturn rs
-    when(rs.next()) thenReturn true
-    when(rs.getString("colName")) thenReturn "value"
-
-    getValue[SimpleClosable, String](sql, _.getString("colName")) apply d shouldBe "value"
-    verify(rs, times(1)).close()
-    verify(s, times(1)).close()
-    verify(c, times(1)).close()
-  }
 
 }
