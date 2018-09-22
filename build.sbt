@@ -110,9 +110,6 @@ lazy val scalatestSettings = publishSettings ++ Seq(
 lazy val core = (project in file("modules/core")).
   settings(publishSettings: _*)
 
-lazy val jdbc = (project in file("modules/jdbc")).
-  dependsOn(core % "test->test;compile->compile").
-  settings(publishSettings: _*)
 
 val apachejdbc = (project in file("modules/apachejdbc")).
   dependsOn(core % "test->test;compile->compile").
@@ -177,7 +174,6 @@ lazy val sampleServer = (project in file("modules/sampleServer")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   dependsOn(sample % "test->test;compile->compile").aggregate(sample).
-  dependsOn(jdbc % "test->test;compile->compile").aggregate(sample).
   dependsOn(json4s)
 
 lazy val finatra = (project in file("modules/finatra")).

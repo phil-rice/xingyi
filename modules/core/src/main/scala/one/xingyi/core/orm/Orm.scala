@@ -6,6 +6,7 @@ import java.sql.ResultSet
 import javax.sql.DataSource
 import one.xingyi.core.closable.ClosableM
 import one.xingyi.core.functions.Streams
+import one.xingyi.core.jdbc.{Jdbc, JdbcOps}
 import one.xingyi.core.jdbc.Jdbc._
 
 import scala.language.higherKinds
@@ -16,12 +17,15 @@ object FastReader {
 
 // We might need to reconsider this interface. At the moment there is a different connection for each operation, but there is something cool about the idea of
 // running the operations in a connection and the temp tables vanishing at the end of the connection
+// And actually there is probably a bug waiting to happen here: the temp tables die when the connection actually closes.
+//having checked.. this is just wrong. We need to do this all in the same connection.
 trait FastReaderDal extends {
   def execute(ds: DataSource): String => Unit
   def query(ds: DataSource): String => List[List[AnyRef]]
 }
 object FastReaderDal {
-  implicit def defaultFastReaderOps[M[_] : ClosableM]: FastReaderDal = new FastReaderDal {
+  implicit def defaultFastReaderOps[M[_] : ClosableM](implicit jdbcOps: JdbcOps[DataSource]) = new FastReaderDal {
+    import jdbcOps._
     def execute(ds: DataSource): String => Unit = { s: String => executeSql(s) apply ds }
     def query(ds: DataSource): String => List[List[AnyRef]] = { s: String => getList(s) { rs: ResultSet => (1 to rs.getMetaData.getColumnCount).toList.map(rs.getObject) } apply ds }
   }

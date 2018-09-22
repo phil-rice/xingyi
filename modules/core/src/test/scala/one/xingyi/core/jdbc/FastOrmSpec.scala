@@ -30,7 +30,8 @@ trait FastOrmFixture extends OrmFixture {
 
 
   import Jdbc._
-  def setupPerson[M[_] : ClosableM](ds: DataSource): Unit = {
+  def setupPerson[M[_] : ClosableM](ds: DataSource)(implicit jdbcOps: JdbcOps[DataSource]) = {
+    import jdbcOps._
     def execute = { s: String => executeSql(s) apply ds }
     def query = { s: String => getList(s) { rs: ResultSet => (1 to rs.getMetaData.getColumnCount).toList.map(rs.getObject) } apply ds }
 

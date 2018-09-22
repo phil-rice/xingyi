@@ -3,7 +3,7 @@ import java.sql.{Connection, PreparedStatement, ResultSet, Statement}
 
 import javax.sql.DataSource
 import one.xingyi.core.closable.{ClosableLanguage, SimpleClosable}
-import one.xingyi.core.jdbc.Jdbc
+import one.xingyi.core.jdbc.{Jdbc, JdbcOps}
 import org.mockito.Mockito._
 
 import scala.util.Random
@@ -76,6 +76,9 @@ class JdbcSpec extends UtilsSpec with ClosableFixture with Jdbc with ClosableLan
     when(rs.getString("colName")) thenReturn("one", "two")
     toList(rs => rs.getString("colName") + "_processed")(rs) shouldBe List("one_processed", "two_processed")
   }
+
+  val jdbcOps: JdbcOps[DataSource] = implicitly[JdbcOps[DataSource]]
+  import jdbcOps._
 
   it should "have an executeSql that does the chain 'connection', 'statement', 'execute' and then returns the boolean from the execute" in {
     val d = mock[DataSource]

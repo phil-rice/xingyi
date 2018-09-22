@@ -11,7 +11,9 @@ import scala.language.{higherKinds, postfixOps}
 import one.xingyi.core.language.AnyLanguage._
 import one.xingyi.core.closable.ClosableLanguage._
 
-object Jdbc extends Jdbc
+object Jdbc extends Jdbc {
+  implicit val defaultJdbc = this
+}
 trait Jdbc {
   def connection[M[_] : ClosableM] = { d: DataSource => d.getConnection.liftClosable }
   def statement[M[_] : ClosableM] = { c: Connection => c.createStatement().liftClosable }
@@ -22,24 +24,48 @@ trait Jdbc {
     if (!resultSet.next) throw new IllegalStateException()
     resultSet
   }
-  def   toList[X](fn: ResultSet => X): ResultSet => List[X] = { resultSet: ResultSet =>
+  def toList[X](fn: ResultSet => X): ResultSet => List[X] = { resultSet: ResultSet =>
     var list = List[X]()
     while (resultSet.next()) list = fn(resultSet) :: list
     list.reverse
   }
 
-  def executeSql[M[_] : ClosableM](sql: String): DataSource => Boolean =
-    connection |==> statement |=> execute(sql) |===> result
-  def getValue[M[_] : ClosableM, X](sql: String,fn: ResultSet => X): DataSource => X =
-    connection |==> statement |==> toResultSet(sql) |=> toSingleResultSet |=> fn |===> result
-  def getList[M[_] : ClosableM, X](sql: String)(fn: ResultSet => X): DataSource => List[X] =
-    connection |==> statement |==> toResultSet(sql) |=> toList(fn) |===> result
-
-  def process[M[_] : ClosableM, From, To](batchSize: Int)(readSql: String, readFn: ResultSet => From)(writeSql: String, preparer: To => List[Object])(fn: From => To): DataSource => M[Unit] =
-    connection |==> inParallel(statement |==> toResultSet(readSql)).and(prepare(writeSql) |==> Batcher.jdbcInsert[M, To](batchSize, preparer)).merge(Batcher(readFn andThen fn))
-
-
 }
+
+trait JdbcOps[Source] {
+  def executeSql[M[_] : ClosableM](sql: String): Source => Boolean;
+  def getValue[M[_] : ClosableM, X](sql: String, fn: ResultSet => X): Source => X
+  def getList[M[_] : ClosableM, X](sql: String)(fn: ResultSet => X): Source => List[X]
+  def process[M[_] : ClosableM, From, To](batchSize: Int)(readSql: String, readFn: ResultSet => From)(writeSql: String, preparer: To => List[Object])(fn: From => To): Source => M[Unit]
+}
+
+object JdbcOps {
+  //I could simplify these, but I tried and it didn't look better. This is nice because you can see what is going on
+  implicit def FromDataSource(implicit jdbc: Jdbc): JdbcOps[DataSource] = new JdbcOps[DataSource] {
+    import jdbc._
+    def executeSql[M[_] : ClosableM](sql: String): DataSource => Boolean =
+      connection |==> statement |=> execute(sql) |===> result
+    def getValue[M[_] : ClosableM, X](sql: String, fn: ResultSet => X): DataSource => X =
+      connection |==> statement |==> toResultSet(sql) |=> toSingleResultSet |=> fn |===> result
+    def getList[M[_] : ClosableM, X](sql: String)(fn: ResultSet => X): DataSource => List[X] =
+      connection |==> statement |==> toResultSet(sql) |=> toList(fn) |===> result
+    override def process[M[_] : ClosableM, From, To](batchSize: Int)(readSql: String, readFn: ResultSet => From)(writeSql: String, preparer: To => List[Object])(fn: From => To): DataSource => M[Unit] =
+      connection |==> inParallel(statement |==> toResultSet(readSql)).and(prepare(writeSql) |==> Batcher.jdbcInsert[M, To](batchSize, preparer)).merge(Batcher(readFn andThen fn))
+  }
+  implicit def FromConnection(implicit jdbc: Jdbc): JdbcOps[Connection] = new JdbcOps[Connection] {
+    import jdbc._
+    def executeSql[M[_] : ClosableM](sql: String): Connection => Boolean =
+      statement |=> execute(sql) |===> result
+    def getValue[M[_] : ClosableM, X](sql: String, fn: ResultSet => X): Connection => X =
+      statement |==> toResultSet(sql) |=> toSingleResultSet |=> fn |===> result
+    def getList[M[_] : ClosableM, X](sql: String)(fn: ResultSet => X): Connection => List[X] =
+      statement |==> toResultSet(sql) |=> toList(fn) |===> result
+    override def process[M[_] : ClosableM, From, To](batchSize: Int)(readSql: String, readFn: ResultSet => From)(writeSql: String, preparer: To => List[Object])(fn: From => To): Connection => M[Unit] =
+      inParallel(statement |==> toResultSet(readSql)).and(prepare(writeSql) |==> Batcher.jdbcInsert[M, To](batchSize, preparer)).merge(Batcher(readFn andThen fn))
+  }
+}
+
+
 case class BatchConfig[T](batchSize: Int, prepare: T => Unit, flush: () => Unit)
 class Batcher[T](batchConfig: BatchConfig[T], count: AtomicInteger = new AtomicInteger(0)) extends (T => Unit) with AutoCloseable {
   import batchConfig._

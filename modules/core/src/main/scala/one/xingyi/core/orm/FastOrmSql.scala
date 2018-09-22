@@ -16,11 +16,14 @@ trait OrmStrategies {
   def insertData(implicit fastOrmSql: FastOrmSql) = EntityStrategy(fastOrmSql.insertSql, _ => fastOrmSql.insertSql)
 }
 
-case class EntityStrategy[X](mainEntity: OrmEntity => X, oneToManyEntity: OrmEntity => OneToManyEntity => X) {
-  def map[T](fn: X => T) = EntityStrategy(mainEntity andThen fn, p => c => fn(oneToManyEntity(p)(c)))
-  def childEntity(parentEntity: OrmEntity): PartialFunction[ChildEntity, X] = {case e: OneToManyEntity => oneToManyEntity(parentEntity)(e)}
-  def walk(e: MainEntity): List[(OrmEntity, X)] = (e, mainEntity(e)) :: e.children.flatMap(walkChildren(e))
-  def walkChildren(parent: OrmEntity)(child: ChildEntity): List[(OrmEntity, X)] = (child, childEntity(parent)(child)) :: child.children.flatMap(walkChildren(child))
+object EntityStrategy {
+  def apply[X](ormEntityFn: OrmEntity => X): EntityStrategy[X] = EntityStrategy(ormEntityFn, _ => ormEntityFn)
+}
+case class EntityStrategy[X](mainEntityFn: OrmEntity => X, oneToManyEntityFn: OrmEntity => OneToManyEntity => X) {
+  def map[T](fn: X => T) = EntityStrategy(mainEntityFn andThen fn, p => c => fn(oneToManyEntityFn(p)(c)))
+  def childEntity(parentEntity: OrmEntity): ChildEntity => X = {case e: OneToManyEntity => oneToManyEntityFn(parentEntity)(e)}
+  def walk(e: MainEntity): List[(OrmEntity, X)] = (e, mainEntityFn(e)) :: e.children.flatMap(walkChildren(e))
+  private def walkChildren(parent: OrmEntity)(child: ChildEntity): List[(OrmEntity, X)] = (child, childEntity(parent)(child)) :: child.children.flatMap(walkChildren(child))
 }
 
 /** This is the layer of abstraction that needs to be rewritten for different databases. It's just a block of sql for each operation */
@@ -39,8 +42,8 @@ trait FastOrmSql {
 
   def createChildTempTable(parent: OrmEntity)(e: OneToManyEntity): String =
     s"create temporary table temp_${e.tableName} as select ${e.alias}.${e.parentId.name}, ${selectFields(e)} " +
-      s"from ${tempTableName(parent)} ${parent.alias},${e.tableName} ${e.alias} " +
-      s"where ${parent.alias}.${parent.primaryKeyField.name} = ${e.alias}.${e.parentId.name}"
+    s"from ${tempTableName(parent)} ${parent.alias},${e.tableName} ${e.alias} " +
+    s"where ${parent.alias}.${parent.primaryKeyField.name} = ${e.alias}.${e.parentId.name}"
 
   def drainSql(e: OrmEntity): String = s"select * from ${tempTableName(e)}"
 
