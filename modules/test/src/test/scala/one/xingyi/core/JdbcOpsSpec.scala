@@ -5,6 +5,7 @@ import javax.sql.DataSource
 import one.xingyi.core.closable.{ClosableLanguage, SimpleClosable}
 import one.xingyi.core.jdbc.{Jdbc, JdbcOps}
 import org.mockito.Mockito.{times, verify, when}
+import org.scalatest.BeforeAndAfterAll
 
 import scala.util.Random
 
@@ -54,10 +55,10 @@ abstract class AbstractJdbcOpsSpec[Source](implicit jdbcOps: JdbcOps[Source]) ex
     when(d.getConnection()) thenReturn c
     when(c.createStatement()) thenReturn s
     when(s.executeQuery(sql)) thenReturn rs
-    when(rs.next()) thenReturn (true, true, false)
-    when(rs.getString("colName")) thenReturn ("one", "two")
+    when(rs.next()) thenReturn(true, true, false)
+    when(rs.getString("colName")) thenReturn("one", "two")
 
-    getList[SimpleClosable, String](sql)( _.getString("colName")) apply getSourceFrom(d) shouldBe List("one", "two")
+    getList[SimpleClosable, String](sql)(_.getString("colName")) apply getSourceFrom(d) shouldBe List("one", "two")
     verify(rs, times(1)).close()
     verify(s, times(1)).close()
     verify(c, times(expectedCloseConnectionCount)).close()

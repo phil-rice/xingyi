@@ -40,8 +40,8 @@ trait CachingInfoAndOps {
   def cachingMetrics: CachingMetricSnapShot
 }
 
-class CachingServiceFactory[M[_] : MonadWithException](cachingStrategy: StaleCacheStrategy,
-                                                       sizeStrategy: MapSizeStrategy)(implicit timeService: NanoTimeService) extends CacheFactory[M] {
+class CachingServiceFactory[M[_] : MonadWithException](val cachingStrategy: StaleCacheStrategy,
+                                                       val sizeStrategy: MapSizeStrategy)(implicit timeService: NanoTimeService) extends CacheFactory[M] {
   override def apply[Req: CachableKey, Res: ShouldCacheResult](name: String, raw: Req => M[Res]): Cache[M, Req, Res] = {
     new CachingService[M, Req, Res](name, raw, cachingStrategy, sizeStrategy)
   }

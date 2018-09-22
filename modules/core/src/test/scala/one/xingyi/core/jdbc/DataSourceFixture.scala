@@ -9,7 +9,7 @@ trait DatabaseSourceFixture[DS <: DataSource] extends UtilsSpec with BeforeAndAf
   def makeDataSource(): DS
   def closeDataSource(ds: DS)
   val ds: DS = makeDataSource()
-
+  require(ds != null)
   override protected def afterAll(): Unit = {
     closeDataSource(ds)
     super.afterAll()

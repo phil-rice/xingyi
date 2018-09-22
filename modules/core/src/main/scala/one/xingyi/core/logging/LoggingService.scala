@@ -47,6 +47,10 @@ abstract class AbstractLogRequestAndResult[Fail: DetailedLogging : SummaryLoggin
       (state, res) => log.debug(sender)(string(state, res)))(t)
   }
 }
+
+class SimpleLogRequestAndResult(implicit val loggingAdapter: LoggingAdapter) extends AbstractLogRequestAndResult[Throwable] {
+  override protected def format(messagePrefix: String, messagePostFix: String)(strings: String*) = messagePostFix + "." + messagePostFix + ":" + strings.mkString(",")
+}
 class LogRequestAndResultForBundle[Fail: DetailedLogging : SummaryLogging](implicit bundle: ResourceBundle, log: LoggingAdapter) extends AbstractLogRequestAndResult[Fail] {
   override def format(messagePrefix: String, messagePostFix: String)(strings: String*) =
     MessageFormat.format(bundle.getString(messagePrefix + "." + messagePostFix), strings: _*)

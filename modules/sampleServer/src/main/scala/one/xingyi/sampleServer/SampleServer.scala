@@ -8,7 +8,7 @@ import one.xingyi.core.cache.{CachingServiceFactory, DurationStaleCacheStategy}
 import one.xingyi.core.monad.AsyncForScalaFuture.ImplicitsForTest._
 import one.xingyi.core.monad.AsyncForScalaFuture._
 import one.xingyi.core.http._
-import one.xingyi.core.logging.{AbstractLogRequestAndResult, LogRequestAndResult, PrintlnLoggingAdapter}
+import one.xingyi.core.logging.{AbstractLogRequestAndResult, LogRequestAndResult, PrintlnLoggingAdapter, SimpleLogRequestAndResult}
 import one.xingyi.core.map.NoMapSizeStrategy
 import one.xingyi.core.metrics.PrintlnPutMetrics
 import one.xingyi.core.simpleServer.{EndpointHandler, SimpleHttpServer}
@@ -19,17 +19,17 @@ import org.json4s.JValue
 
 import scala.concurrent.Future
 
-object SampleServer extends App  with Json4sWriter with Json4sParser {
+class SampleServer(port: Int) extends Json4sWriter with Json4sParser {
 
   implicit val httpFactory = new HttpFactory[Future, ServiceRequest, ServiceResponse] {
-    override def apply(v1: ServiceName) = { req => Future.successful(ServiceResponse(Status(200), Body(s"response; ${req.body.map(_.s).getOrElse("")}"), ContentType("text/html"))) }
+    override def apply(v1: ServiceName) = { req =>
+      Future.successful(ServiceResponse(Status(200), Body(s"response: ${req.body.map(_.s).getOrElse("")}"), ContentType("text/html")))
+    }
   }
   implicit val loggingAdapter = PrintlnLoggingAdapter
   implicit val resourceBundle = ResourceBundle.getBundle("messages")
   implicit val putMetrics = PrintlnPutMetrics
-  implicit val logRequestAndResult: LogRequestAndResult[Throwable] = new AbstractLogRequestAndResult[Throwable] {
-    override protected def format(messagePrefix: String, messagePostFix: String)(strings: String*) = messagePostFix + "." + messagePostFix + ":" + strings.mkString(",")
-  }
+  implicit val logRequestAndResult: LogRequestAndResult[Throwable] = new SimpleLogRequestAndResult
   implicit val cacheFactory = new CachingServiceFactory[Future](DurationStaleCacheStategy(10000000000L, 10000000000000L), NoMapSizeStrategy)
 
   val interpreter = new TaglessLanguageLanguageForKleislis[Future, Throwable]
@@ -41,9 +41,13 @@ object SampleServer extends App  with Json4sWriter with Json4sParser {
 
   private val language = interpreter.NonFunctionalLanguageService()
   //  private val debugLanguage = new DebugEachObjectifyEndpoint(language)
-  val setup = new PromotionSetup[Future, interpreter.Kleisli,  Throwable, JValue](language)
+  val setup = new PromotionSetup[Future, interpreter.Kleisli, Throwable, JValue](language)
 
   //  println("Dumping")
   //  println(debugLanguage.dump)
-  new SimpleHttpServer(9000, new EndpointHandler[Future, Throwable](setup.microservice)).start()
+  val server = new SimpleHttpServer(port, new EndpointHandler[Future, Throwable](setup.microservice))
+}
+
+object SampleServer extends SampleServer(port = 9000) with App {
+  server.start()
 }

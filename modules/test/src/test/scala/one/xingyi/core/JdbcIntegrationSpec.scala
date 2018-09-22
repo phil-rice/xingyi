@@ -6,25 +6,33 @@ import java.sql.ResultSet
 import javax.sql.DataSource
 import one.xingyi.core.cddlegacy.{LegacyData, LegacyResult}
 import one.xingyi.core.closable.{ClosableM, SimpleClosable}
-import one.xingyi.core.jdbc.{Jdbc, JdbcOps}
+import one.xingyi.core.jdbc.{AbstractFastOrmSpec, DatabaseSourceFixture, Jdbc, JdbcOps}
 import org.apache.commons.dbcp2.BasicDataSource
 import org.scalatest.BeforeAndAfterAll
 import one.xingyi.core.closable.ClosableLanguage._
 
 import scala.language.higherKinds
 
-abstract class AbstractJdbcIntegrationSpec[M[_] : ClosableM] extends UtilsSpec with BeforeAndAfterAll with Jdbc {
-
-  val ds = new BasicDataSource
-  ds.setDriverClassName("org.h2.Driver")
-  ds.setUrl("jdbc:h2:~/test")
-  ds.setUsername("sa")
-  ds.setPassword("")
-
-  override protected def afterAll(): Unit = {
-    ds.close()
-    super.afterAll()
+trait BasicDataSourceFixture extends DatabaseSourceFixture[BasicDataSource] {
+  def makeDataSource(): BasicDataSource = {
+    val bds= new BasicDataSource
+    bds.setDriverClassName("org.h2.Driver")
+    bds.setUrl("jdbc:h2:~/test")
+    bds.setUsername("sa")
+    bds.setPassword("")
+    bds.setMaxConnLifetimeMillis(4000)
+    bds
   }
+
+  override def closeDataSource(ds: BasicDataSource): Unit = ds.close()
+  //
+  //  override protected def afterAll(): Unit = {
+  //    ds.close()
+  //    super.afterAll()
+  //  }
+
+}
+abstract class AbstractJdbcIntegrationSpec[M[_] : ClosableM] extends BasicDataSourceFixture with Jdbc {
 
   behavior of "JDBC"
 
@@ -63,5 +71,7 @@ abstract class AbstractJdbcIntegrationSpec[M[_] : ClosableM] extends UtilsSpec w
   }
 
 }
+
+class FastOrmSpec extends AbstractFastOrmSpec[SimpleClosable, BasicDataSource] with BasicDataSourceFixture
 
 class JdbcIntegrationSpec extends AbstractJdbcIntegrationSpec[SimpleClosable]
