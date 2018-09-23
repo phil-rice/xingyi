@@ -9,14 +9,15 @@ import scala.annotation.implicitNotFound
 import scala.language.higherKinds
 import scala.reflect.ClassTag
 
-case class ServiceRequest(method: Method, uri: Uri, headers: List[Header], body: Option[Body]) {
+case class ServiceRequest(method: Method, domain: Option[Domain], path: Path, params: Seq[QueryParam], headers: List[Header], body: Option[Body]) {
   private def getHeader[H: ClassTag]: Option[H] = ClassTags.collectAll[H](headers).headOption
   lazy val contentType: Option[ContentType] = getHeader[ContentType]
   lazy val accept: Option[AcceptHeader] = getHeader[AcceptHeader]
+  lazy val uri = Uri(domain, path, params: _*)
 }
 object ServiceRequest {
   def apply(method: Method, uri: Uri, acceptHeader: Option[AcceptHeader] = None, contentType: Option[ContentType] = None, otherHeaders: List[Header] = List(), body: Option[Body] = None): ServiceRequest =
-    new ServiceRequest(method, uri, otherHeaders + acceptHeader + contentType, body)
+    new ServiceRequest(method, uri.domain, uri.path, uri.params, otherHeaders + acceptHeader + contentType, body)
 
 }
 

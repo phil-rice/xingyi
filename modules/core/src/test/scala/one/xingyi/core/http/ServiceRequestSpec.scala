@@ -21,24 +21,28 @@ class ServiceRequestSpec extends UtilsSpec {
 
   behavior of "ServiceRequest"
 
+  def sr(list: Header*) = {
+    val uri = Uri("/")
+    ServiceRequest(Get, uri.domain, uri.path, uri.params, list.toList, None)
+  }
   it should "have a constructor that allows the content type and accept header to be easily specified" in {
     ServiceRequest(Get, Uri("/"), Some(AcceptHeader("someAccept")), Some(ContentType("someOtherContent")), List(Header("h1", "v1"), Header("h2", "v2")), None) shouldBe
-    ServiceRequest(Get, Uri("/"), List(ContentType("someOtherContent"), AcceptHeader("someAccept"),Header("h1", "v1"), Header("h2", "v2")),None)
+    sr(ContentType("someOtherContent"), AcceptHeader("someAccept"), Header("h1", "v1"), Header("h2", "v2"))
 
   }
 
   it should "allow the accept header to be found: the first in the list of headers with the correct type (it ignores the name)" in {
-    ServiceRequest(Get, Uri("/"), List(Header("h1", "v1"), AcceptHeader("someAccept"), Header("h2", "v2")), None).accept shouldBe Some(AcceptHeader("someAccept"))
-    ServiceRequest(Get, Uri("/"), List(Header("h1", "v1"), AcceptHeader("someAccept"), AcceptHeader("someOtherAccept"), Header("h2", "v2")), None).accept shouldBe Some(AcceptHeader("someAccept"))
-    ServiceRequest(Get, Uri("/"), List(Header(Headers.accept, "v1"), AcceptHeader("someAccept"), Header(Headers.accept, "v2")), None).accept shouldBe Some(AcceptHeader("someAccept"))
-    ServiceRequest(Get, Uri("/"), List(Header(Headers.accept, "v1")), None).accept shouldBe None
+    sr(Header("h1", "v1"), AcceptHeader("someAccept"), Header("h2", "v2")).accept shouldBe Some(AcceptHeader("someAccept"))
+    sr(Header("h1", "v1"), AcceptHeader("someAccept"), AcceptHeader("someOtherAccept"), Header("h2", "v2")).accept shouldBe Some(AcceptHeader("someAccept"))
+    sr(Header(Headers.accept, "v1"), AcceptHeader("someAccept"), Header(Headers.accept, "v2")).accept shouldBe Some(AcceptHeader("someAccept"))
+    sr(Header(Headers.accept, "v1")).accept shouldBe None
   }
 
   it should "allow the content type to be found: the first in the list of headers with the correct type (it ignores the name)" in {
-    ServiceRequest(Get, Uri("/"), List(Header("h1", "v1"), ContentType("someContent"), Header("h2", "v2")), None).contentType shouldBe Some(ContentType("someContent"))
-    ServiceRequest(Get, Uri("/"), List(Header(Headers.contentType, "v1"), ContentType("someContent"), Header(Headers.contentType, "v2")), None).contentType shouldBe Some(ContentType("someContent"))
-    ServiceRequest(Get, Uri("/"), List(Header(Headers.contentType, "v1"), ContentType("someContent"), ContentType("someOtherContent"), Header(Headers.contentType, "v2")), None).contentType shouldBe Some(ContentType("someContent"))
-    ServiceRequest(Get, Uri("/"), List(Header(Headers.contentType, "v1")), None).contentType shouldBe None
+    sr(Header("h1", "v1"), ContentType("someContent"), Header("h2", "v2")).contentType shouldBe Some(ContentType("someContent"))
+    sr(Header(Headers.contentType, "v1"), ContentType("someContent"), Header(Headers.contentType, "v2")).contentType shouldBe Some(ContentType("someContent"))
+    sr(Header(Headers.contentType, "v1"), ContentType("someContent"), ContentType("someOtherContent"), Header(Headers.contentType, "v2")).contentType shouldBe Some(ContentType("someContent"))
+    sr(Header(Headers.contentType, "v1")).contentType shouldBe None
   }
 
 
