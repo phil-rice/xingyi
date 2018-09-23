@@ -10,9 +10,7 @@ import scala.language.higherKinds
 import scala.reflect.ClassTag
 
 case class ServiceRequest(method: Method, uri: Uri, headers: List[Header], body: Option[Body]) {
-
   private def getHeader[H: ClassTag]: Option[H] = ClassTags.collectAll[H](headers).headOption
-
   lazy val contentType: Option[ContentType] = getHeader[ContentType]
   lazy val accept: Option[AcceptHeader] = getHeader[AcceptHeader]
 }

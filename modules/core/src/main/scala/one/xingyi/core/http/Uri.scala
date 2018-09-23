@@ -31,11 +31,14 @@ trait Header{
   def name: String
   def value: String
 }
+object Header{
+  def apply(name: String, value: String): Header = SimpleHeader(name, value)
+}
 abstract class SpecificHeader(val name: String) extends Header
 case class ContentType(value: String) extends SpecificHeader(Headers.contentType)
 case class AcceptHeader(value: String) extends SpecificHeader(Headers.accept)
 
-case class SimpleHeader(name: String, value: String)
+case class SimpleHeader(name: String, value: String) extends Header
 
 
 trait UriFragment {
