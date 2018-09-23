@@ -13,7 +13,7 @@ object HttpUtils {
 
 
   def write(exchange: HttpExchange, response: ServiceResponse): Unit = {
-    exchange.getResponseHeaders.set("content-type", response.contentType.value)
+    exchange.getResponseHeaders.set("content-type", response.contentType.fold("text/plain")(_.value))
     val bytes = response.body.s.getBytes("UTF-8")
     exchange.sendResponseHeaders(response.status.code, bytes.length)
     Streams.sendAll(exchange.getResponseBody, bytes)
@@ -23,12 +23,12 @@ object HttpUtils {
     try {
       val result = response
       result match {
-        case None => write(exchange, new ServiceResponse(Status(404), Body(s"not found. ${exchange.getRequestURI}"), ContentType("text/plain")))
+        case None => write(exchange, ServiceResponse(Status(404), Body(s"not found. ${exchange.getRequestURI}"), ContentType("text/plain")))
         case Some(x) => write(exchange, x)
       }
     }
     catch {
-      case e: Exception => write(exchange, new ServiceResponse(Status(500), Body(e.getClass.getName + "\n" + e.getMessage), ContentType("text/plain")))
+      case e: Exception => write(exchange, ServiceResponse(Status(500), Body(e.getClass.getName + "\n" + e.getMessage), ContentType("text/plain")))
     }
   }
 

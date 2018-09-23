@@ -15,18 +15,11 @@ case class ServiceRequest(method: Method, domain: Option[Domain], path: Path, pa
   lazy val accept: Option[AcceptHeader] = getHeader[AcceptHeader]
   lazy val uri = Uri(domain, path, params: _*)
 }
+
 object ServiceRequest {
   def apply(method: Method, uri: Uri, acceptHeader: Option[AcceptHeader] = None, contentType: Option[ContentType] = None, otherHeaders: List[Header] = List(), body: Option[Body] = None): ServiceRequest =
     new ServiceRequest(method, uri.domain, uri.path, uri.params, otherHeaders + acceptHeader + contentType, body)
 
-}
-
-trait OriginalReq[Req] {
-  def acceptHeader(req: Req): AcceptHeader
-  def header(req: Req, name: String): Header
-  def contentType(req: Req): ContentType
-  def method(req: Req): Method
-  def path(req: Req): Path
 }
 
 @implicitNotFound("""Missing ToServiceRequest[${T}] This is how we turn a query/request object (${T}) into a HTTP request. If ${T} is a http request have """)

@@ -21,7 +21,12 @@ class ServiceResponseSpec extends UtilsSpec {
     toServiceResponse("someString") shouldBe serviceResponse
   }
 
-  "ServiceResponse" should "let html responses be made easily" in {
-    ServiceResponse("someHtml") shouldBe ServiceResponse(Status(200), Body("someHtml"), ContentType("text/html"))
+  behavior of "ServiceResponse"
+  it should "let html responses be made easily" in {
+    ServiceResponse("someHtml") shouldBe ServiceResponse(Status(200), Body("someHtml"), List(ContentType("text/html")))
+  }
+
+  it should "turn the content type into a header" in {
+    ServiceResponse(Status(200), Body("someHtml"), ContentType("text/html")) shouldBe ServiceResponse(Status(200), Body("someHtml"), List(ContentType("text/html")))
   }
 }

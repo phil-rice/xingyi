@@ -25,6 +25,7 @@ class ServiceRequestSpec extends UtilsSpec {
     val uri = Uri("/")
     ServiceRequest(Get, uri.domain, uri.path, uri.params, list.toList, None)
   }
+
   it should "have a constructor that allows the content type and accept header to be easily specified" in {
     ServiceRequest(Get, Uri("/"), Some(AcceptHeader("someAccept")), Some(ContentType("someOtherContent")), List(Header("h1", "v1"), Header("h2", "v2")), None) shouldBe
     sr(ContentType("someOtherContent"), AcceptHeader("someAccept"), Header("h1", "v1"), Header("h2", "v2"))

@@ -3,17 +3,22 @@ package one.xingyi.core.http
 
 import one.xingyi.core.json.ToJson
 import one.xingyi.core.profiling.{DontProfile, ProfileAs, ProfileAsFail, ProfileAsSuccess}
+import one.xingyi.core.reflection.ClassTags
 import one.xingyi.core.success._
 
 import scala.annotation.implicitNotFound
+import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
-case class ServiceResponse(status: Status, body: Body, contentType: ContentType)
-
+case class ServiceResponse(status: Status, body: Body, headers: List[Header]) {
+  private def getHeader[H: ClassTag]: Option[H] = ClassTags.collectAll[H](headers).headOption
+  def contentType: Option[ContentType] = getHeader[ContentType]
+}
 
 
 object ServiceResponse {
   def apply(html: String): ServiceResponse = ServiceResponse(Status(200), Body(html), ContentType("text/html"))
+  def apply(status: Status, body: Body, contentType: ContentType): ServiceResponse = new ServiceResponse(status, body, List(contentType))
 }
 
 @implicitNotFound(
