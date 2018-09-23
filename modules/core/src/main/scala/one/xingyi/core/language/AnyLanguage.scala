@@ -1,6 +1,7 @@
 /** Copyright (c) 2018, Phil Rice. Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS AS IS AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 package one.xingyi.core.language
 
+import java.text.MessageFormat
 import java.util.concurrent.atomic.AtomicInteger
 
 import one.xingyi.core.functions._
@@ -26,10 +27,13 @@ trait AnyLanguage {
     fn(x)
     x
   }
+  def sideeffectAll[From, To](seq: ((From, To) => Unit)*): From => To => To = { from => to => seq.foreach(_.apply(from, to)); to }
+
+
   implicit class AnyOps[T](t: => T) {
     def |>[T2](fn: T => T2) = fn(t)
     def |+>[T1](fn: T => T => T1): T1 = fn(t)(t)
-    def |?[M[_] , Failure](validation: T => Seq[Failure])(implicit withFailure: MonadCanFail[M, Failure], monoid: Monoid[Failure]): M[T] =
+    def |?[M[_], Failure](validation: T => Seq[Failure])(implicit withFailure: MonadCanFail[M, Failure], monoid: Monoid[Failure]): M[T] =
       validation(t) match {
         case Nil => t.liftM
         case s => withFailure.fail(monoid.addAll(s))
@@ -47,6 +51,7 @@ trait AnyLanguage {
       fn(triedT)
       triedT
     }
+    def sideeffectIfIs[Sub <: T](fn: Sub => _)(implicit classTag: ClassTag[Sub]) = if (classTag.runtimeClass.isAssignableFrom(t.getClass)) fn(t.asInstanceOf[Sub])
 
     def sideeffect[X](block: T => Unit) = {
       val result = t
@@ -58,7 +63,6 @@ trait AnyLanguage {
   implicit class BooleanOps(boolean: Boolean) {
     def toOption[T](value: => T): Option[T] = if (boolean) Some(value) else None
   }
-
 
 
   implicit class TryOps[T](tryT: Try[T]) {
@@ -80,7 +84,7 @@ trait AnyLanguage {
       s.foldLeft[Option[Acc]](Some(initial)) { case (Some(acc), v) => foldFn(acc, v); case _ => None }
     def foldLeftWithOptionsEatingExceptions[Acc](initial: Acc)(foldFn: (Acc, X) => Option[Acc]) =
       foldLeftWithOptions(initial) { (acc, v) => try (foldFn(acc, v)) catch {case e: Exception => None} }
-  def + (opt: Option[X]): List[X] = opt.fold(s)(_ :: s)
+    def +(opt: Option[X]): List[X] = opt.fold(s)(_ :: s)
 
   }
 

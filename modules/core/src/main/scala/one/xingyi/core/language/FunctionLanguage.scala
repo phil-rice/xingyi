@@ -1,5 +1,7 @@
 /** Copyright (c) 2018, Phil Rice. Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS AS IS AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 package one.xingyi.core.language
+import java.text.MessageFormat
+
 import one.xingyi.core.language.Language.sideeffect
 import one.xingyi.core.monad.Monad
 
@@ -12,7 +14,7 @@ trait FunctionLanguage {
     def orDefault(to: => To): From => Mid => To = { from: From => mid: Mid => fn(from)(mid).getOrElse(to) }
   }
 
-  implicit class FunctionPimper[Req, Res](fn: Req => Res) {
+  implicit class FunctionOps[Req, Res](fn: Req => Res) {
     def liftFn[M[_]](implicit monad: Monad[M]) = { req: Req => monad.liftM(fn(req)) }
     def ~>[Res2](fn2: Res => Res2): (Req) => Res2 = { res: Req => fn2(fn(res)) }
     def ~^>(fn2: Res => Unit): (Req => Res) = { req: Req => sideeffect(fn(req))(fn2) }
@@ -32,6 +34,18 @@ trait FunctionLanguage {
       after(m, result)
       result
     }
+    def debug(pattern: String) = { from: Req =>
+      try {
+        val to = fn(from)
+        println(MessageFormat.format(pattern, from.toString, to.toString))
+        to
+      } catch {
+        case e: Exception => println(MessageFormat.format(pattern, from.toString, e))
+          throw e
+      }
+    }
+
+
   }
 
   implicit class OptionFunctionOps[T1, T2](fn: T1 => Option[T2]) {

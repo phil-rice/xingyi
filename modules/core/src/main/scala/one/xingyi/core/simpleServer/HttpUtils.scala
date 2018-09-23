@@ -13,7 +13,8 @@ object HttpUtils {
 
 
   def write(exchange: HttpExchange, response: ServiceResponse): Unit = {
-    exchange.getResponseHeaders.set("content-type", response.contentType.fold("text/plain")(_.value))
+    response.headers.foreach(h => exchange.getResponseHeaders.set(h.name, h.value))
+    //    exchange.getResponseHeaders.set("content-type", response.contentType.fold("text/plain")(_.value))
     val bytes = response.body.s.getBytes("UTF-8")
     exchange.sendResponseHeaders(response.status.code, bytes.length)
     Streams.sendAll(exchange.getResponseBody, bytes)
