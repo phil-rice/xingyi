@@ -27,9 +27,15 @@ object Status {
 
 case class Status(code: Int) extends AnyVal
 case class Body(s: String) extends AnyVal
-case class ContentType(s: String) extends AnyVal
-case class AcceptHeader(s: String) extends AnyVal
-case class Header(s: String) extends AnyVal
+trait Header{
+  def name: String
+  def value: String
+}
+abstract class SpecificHeader(val name: String) extends Header
+case class ContentType(value: String) extends SpecificHeader(Headers.contentType)
+case class AcceptHeader(value: String) extends SpecificHeader(Headers.accept)
+
+case class SimpleHeader(name: String, value: String)
 
 
 trait UriFragment {

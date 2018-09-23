@@ -60,6 +60,7 @@ trait AnyLanguage {
   }
 
 
+
   implicit class TryOps[T](tryT: Try[T]) {
     def liftTry[M[_]](implicit monadWithException: MonadWithException[M]): M[T] = tryT.fold(monadWithException.exception, monadWithException.liftM)
   }
@@ -79,6 +80,8 @@ trait AnyLanguage {
       s.foldLeft[Option[Acc]](Some(initial)) { case (Some(acc), v) => foldFn(acc, v); case _ => None }
     def foldLeftWithOptionsEatingExceptions[Acc](initial: Acc)(foldFn: (Acc, X) => Option[Acc]) =
       foldLeftWithOptions(initial) { (acc, v) => try (foldFn(acc, v)) catch {case e: Exception => None} }
+  def + (opt: Option[X]): List[X] = opt.fold(s)(_ :: s)
+
   }
 
 }

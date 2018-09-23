@@ -49,7 +49,7 @@ class FinatraPromotionSetup(implicit futurePool: FuturePool) extends Controller 
     val serviceRequest = implicitly[ToServiceRequest[Request]] apply (request)
     val result = fn(serviceRequest)
     result.map {
-      case Some(serRes) => response.status(serRes.status.code).body(serRes.body.s).contentType(serviceRequest.contentType.map(_.s).getOrElse("text/html"))
+      case Some(serRes) => response.status(serRes.status.code).body(serRes.body.s).contentType(serviceRequest.contentType.map(_.value).getOrElse("text/html"))
       case None => response.status(404).body(s"Endpoint  ${serviceRequest.method}  ${serviceRequest.uri} not found").contentType("text/html")
     }
   }

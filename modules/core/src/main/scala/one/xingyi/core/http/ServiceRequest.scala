@@ -3,11 +3,24 @@ package one.xingyi.core.http
 
 import one.xingyi.core.language.Language._
 import one.xingyi.core.monad.Liftable
+import one.xingyi.core.reflection.ClassTags
 
 import scala.annotation.implicitNotFound
 import scala.language.higherKinds
+import scala.reflect.ClassTag
 
-case class ServiceRequest(method: Method, uri: Uri, acceptHeader: Option[AcceptHeader] = None, contentType: Option[ContentType] = None, otherHeaders: List[Header] = List(), body: Option[Body] = None)
+case class ServiceRequest(method: Method, uri: Uri, headers: List[Header], body: Option[Body]) {
+
+  private def getHeader[H: ClassTag]: Option[H] = ClassTags.collectAll[H](headers).headOption
+
+  lazy val contentType: Option[ContentType] = getHeader[ContentType]
+  lazy val accept: Option[AcceptHeader] = getHeader[AcceptHeader]
+}
+object ServiceRequest {
+  def apply(method: Method, uri: Uri, acceptHeader: Option[AcceptHeader] = None, contentType: Option[ContentType] = None, otherHeaders: List[Header] = List(), body: Option[Body] = None): ServiceRequest =
+    new ServiceRequest(method, uri, otherHeaders + acceptHeader + contentType, body)
+
+}
 
 trait OriginalReq[Req] {
   def acceptHeader(req: Req): AcceptHeader

@@ -57,12 +57,12 @@ class EndpointSpec extends UtilsSpec with ServiceRequestForEndpointFixture {
 
   it should "have a debugInfo for a success" in {
     setup { (endpoint, matcher, delegate) =>
-      endpoint.debugInfo(srGetPath) shouldBe "Endpoint(/some/path, FixedPathAndVerb(Get)) called with ServiceRequest(Get,Uri(/some/path?a=1),None,None,List(),Some(Body(someGetPathBody))) results in true"
+      endpoint.debugInfo(srGetPath) shouldBe s"Endpoint(/some/path, FixedPathAndVerb(Get)) called with $srGetPath results in true"
     }
   }
   it should "have a debugInfo for a fail" in {
     setup { (endpoint, matcher, delegate) =>
-      endpoint.debugInfo(srPutPath) shouldBe "Endpoint(/some/path, FixedPathAndVerb(Get)) called with ServiceRequest(Put,Uri(/some/path?a=1),None,None,List(),Some(Body(somePutPathBody))) results in false"
+      endpoint.debugInfo(srPutPath) shouldBe s"Endpoint(/some/path, FixedPathAndVerb(Get)) called with $srPutPath results in false"
     }
   }
 }
