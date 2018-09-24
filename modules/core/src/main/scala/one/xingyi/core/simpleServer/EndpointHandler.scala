@@ -6,6 +6,8 @@ import one.xingyi.core.http._
 import one.xingyi.core.language.Language._
 import one.xingyi.core.monad.{Async, MonadCanFailWithException}
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 import scala.language.higherKinds
 
 class EndpointHandler[M[_] : Async, Fail](fn: ServiceRequest => M[Option[ServiceResponse]])(implicit monadCanFail: MonadCanFailWithException[M, Fail], failer: Failer[Fail]) extends HttpHandler {

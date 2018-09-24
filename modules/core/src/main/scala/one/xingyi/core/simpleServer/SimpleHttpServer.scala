@@ -17,7 +17,7 @@ class SimpleHttpServer(port: Int, handler: HttpHandler)(implicit executor: Execu
   }
 
   def stop(): Unit = {
-    server.stop(10)
+    server.stop(1)
   }
 
 }
