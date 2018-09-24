@@ -1,6 +1,6 @@
 package one.xingyi.core.client
 
-import java.io.{InputStream, OutputStream}
+import java.io.{FileNotFoundException, IOException, InputStream, OutputStream}
 import java.net.{HttpURLConnection, URL}
 
 import javax.net.ssl.{HttpsURLConnection, SSLContext}
@@ -24,10 +24,13 @@ object StreamOps extends StreamOps {
 
 
 object HttpClient {
-  def makeConnection(domain: Domain) = { serviceRequest: ServiceRequest => new URL(domain.asUriString + serviceRequest.uri).openConnection.asInstanceOf[HttpURLConnection] }
-  def addMethod(serviceRequest: ServiceRequest, connection: HttpURLConnection) = connection.setRequestMethod(serviceRequest.method.toString)
+  def makeConnection(domain: Domain) = { serviceRequest: ServiceRequest =>
+    require(Some(domain) == serviceRequest.uri.domain, serviceRequest.uri + " " + serviceRequest.uri.domain + " != " + domain)
+    new URL(serviceRequest.uri.asUriString).openConnection.asInstanceOf[HttpURLConnection]
+  }
+  def addMethod(serviceRequest: ServiceRequest, connection: HttpURLConnection) = {connection.setRequestMethod(serviceRequest.method.toString.toUpperCase)}
   def addHeaders(serviceRequest: ServiceRequest, connection: HttpURLConnection) = serviceRequest.headers.foreach { h => connection.setRequestProperty(h.name, h.value) }
-  def addBody(serviceRequest: ServiceRequest, connection: HttpURLConnection) = serviceRequest.body.foreach(body => StreamOps.write(connection.getOutputStream, body.s))
+  def addBody(serviceRequest: ServiceRequest, connection: HttpURLConnection) = serviceRequest.body.foreach { body => connection.setDoOutput(true); StreamOps.write(connection.getOutputStream, body.s) }
 
   def addSslSocketFactory(serviceRequest: ServiceRequest, connection: HttpURLConnection)(implicit sslContext: Option[SSLContext]) =
     sslContext.foreach(ssl => connection.sideeffectIfIs[HttpsURLConnection] { h: HttpsURLConnection => h.setSSLSocketFactory(ssl.getSocketFactory) })
@@ -45,8 +48,9 @@ object HttpClient {
     }
     s"Normal:\n${get(connection.getInputStream)} \n\nError:\n${get(connection.getErrorStream)}"
   }
+  def bodyFromErrorStream(connection: HttpURLConnection): Body = if (connection.getErrorStream == null) Body("") else Body(bodyForError(connection))
   //TODO Clean this up. Consider error stream as well...
-  def makeServiceResponse[M[_] : Monad](connection: HttpURLConnection): M[ServiceResponse] = {
+  def makeServiceResponse[M[_] : Monad](connection: HttpURLConnection): M[ServiceResponse] = try {
 
     val responseCode = connection.getResponseCode
     if (connection.getInputStream == null) {
@@ -55,6 +59,9 @@ object HttpClient {
     val headers = connection.getHeaderFields.asScala.toList.flatMap { case (name, list) => list.asScala.map(value => Header(name, value)) }
     val body = Streams.readAll(connection.getInputStream)
     ServiceResponse(Status(connection.getResponseCode), Body(body), headers).liftM[M]
+  } catch {
+    case e: FileNotFoundException => ServiceResponse(Status(404), bodyFromErrorStream(connection), List()).liftM[M]
+    case e: IOException => ServiceResponse(Status(500), bodyFromErrorStream(connection), List()).liftM[M]
   }
 
 

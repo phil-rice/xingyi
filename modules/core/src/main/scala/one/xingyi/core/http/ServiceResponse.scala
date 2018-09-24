@@ -19,6 +19,7 @@ case class ServiceResponse(status: Status, body: Body, headers: List[Header]) {
 object ServiceResponse {
   def apply(html: String): ServiceResponse = ServiceResponse(Status(200), Body(html), ContentType("text/html"))
   def apply(status: Status, body: Body, contentType: ContentType): ServiceResponse = new ServiceResponse(status, body, List(contentType))
+def removeHeader(name: String)(serviceResponse: ServiceResponse) = serviceResponse.copy(headers= serviceResponse.headers.filterNot(_.name == name))
 }
 
 @implicitNotFound(

@@ -17,7 +17,9 @@ object Maps {
   implicit class MapOfListsOps[K, V](map: Map[K, List[V]]) {
     def addToList(kv: (K, V)): Map[K, List[V]] = kv match {case (k, v) => map.get(k).fold(map + (k -> List[V](v)))(list => map + (k -> (list :+ v)))}
     def items(id: K): List[V] = map.getOrElse(id, Nil)
+//    def toJavaMapOfLists = map.foldLeft(new util.HashMap[K, java.util.ArrayList[V]]) { case (acc, (k, l)) => acc.put(k, l.foldLeft(new util.ArrayList[V]()) { case (acc2, v) => acc2.add(v); acc2 }); acc }
   }
+
   implicit class ToMapOps[V](list: List[V]) {
     def toMapFrom[K](fn: V => K) = list.foldLeft(Map[K, V]())((acc, v) => acc + (fn(v) -> v))
   }
