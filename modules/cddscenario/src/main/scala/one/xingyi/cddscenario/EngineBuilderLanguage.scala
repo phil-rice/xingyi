@@ -15,9 +15,9 @@ trait Yes extends YesNo
 trait No extends YesNo
 
 //just to make equals work. Will probably remove when refactor scenario logic
-case class BecauseDefinedAt[P, R](becauseFn: PartialFunction[P, R]) extends (P => Boolean) {
-  override def apply(p: P): Boolean = becauseFn.isDefinedAt(p)
-}
+//case class BecauseDefinedAt[P, R](becauseFn: PartialFunction[P, R]) extends (P => Boolean) {
+//  override def apply(p: P): Boolean = becauseFn.isDefinedAt(p)
+//}
 class ScBuilder[P, R, HasResult, HasWhen, HasCode, HasBecause](protected[cddscenario] val id: Int,
                                                                protected[cddscenario] val situation: P,
                                                                protected[cddscenario] val data: EngineComponentData,
@@ -40,7 +40,7 @@ class ScBuilder[P, R, HasResult, HasWhen, HasCode, HasBecause](protected[cddscen
   }
   def scenario = Scenario[P, R](situation, optResult, scenarioLogic, List(), data)
   protected[cddscenario] def withResultPrim(r: R) = new ScBuilder[P, R, Yes, HasWhen, No, No](id, situation, data, Some(r), optWhen, optCode, optBecause, ifString, thenString)
-  protected[cddscenario] def withBecausePrim(because: PartialFunction[P, R], ifString: String, thenString: String) = new ScBuilder[P, R, HasResult, No, HasCode, Yes](id, situation, data, optResult, optWhen, optCode, Some(because), ifString, thenString)
+//  protected[cddscenario] def withBecausePrim(because: PartialFunction[P, R], ifString: String, thenString: String) = new ScBuilder[P, R, HasResult, No, HasCode, Yes](id, situation, data, optResult, optWhen, optCode, Some(because), ifString, thenString)
 }
 
 
@@ -77,6 +77,10 @@ object EngineBuilderLanguage {
   def withWhenPrim[P, R, HasResult, HasCode](builder: ScBuilder[P, R, HasResult, No, HasCode, No], when: P => Boolean, ifStringFromMacro: String): ScBuilder[P, R, HasResult, Yes, HasCode, No] = {
     import builder._
     new ScBuilder[P, R, HasResult, Yes, HasCode, No](id, situation, data, optResult, Some(when), optCode, optBecause, ifStringFromMacro, thenString)
+  }
+  def withCodePrim[P, R, HasResult, HasWhen](builder: ScBuilder[P, R, HasResult, HasWhen, No, No], code: P => R, codeStringFromMacro: String): ScBuilder[P, R, HasResult, HasWhen, Yes, No] = {
+    import builder._
+    new ScBuilder[P, R, HasResult, HasWhen, Yes, No](id, situation, data, optResult, optWhen, Some(code), optBecause, ifString, codeStringFromMacro)
   }
 
 }

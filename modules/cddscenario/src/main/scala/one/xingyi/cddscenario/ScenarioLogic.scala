@@ -55,7 +55,7 @@ case class WhenCodeScenarioLogic[P, R](when: P => Boolean, code: P => R, defined
 
 case class CompositeScenarioLogic[P, R](logics: Seq[SingleScenarioLogic[P, R]]) extends ScenarioLogic[P, R] {
   override def hasCondition: Boolean = logics.exists(_.hasCondition)
-  override val fn: PartialFunction[P, R] =  logics.map(_.fn).orAll
+  override lazy val fn: PartialFunction[P, R] =  logics.map(_.fn).orAll
   override def toString(): String = s"SCompLogic(${logics.mkString(",")})"
   override def ifString: String = logics.map(_.ifString).mkString(" or ")
 }

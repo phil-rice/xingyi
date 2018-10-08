@@ -25,9 +25,8 @@ trait SemiGroupSpec[T] extends UtilsSpec {
   def classTag: ClassTag[T]
   def semiGroup: SemiGroup[T]
 
-  behavior of s"Monoid[${classTag.runtimeClass.getSimpleName}]"
+  behavior of s"Semigroup[${classTag.runtimeClass.getSimpleName}]"
 
-  def zeroValue: T
 
   def one: T
 
@@ -35,14 +34,11 @@ trait SemiGroupSpec[T] extends UtilsSpec {
 
   def three: T
   def oddSemigroup: Boolean = false
-  it should "be setup correctly" in {
+  it should "be setup correctly as a semigroup" in {
     if (!oddSemigroup) {
-      one shouldNot be(zeroValue)
       one shouldNot be(two)
       one shouldNot be(three)
-      two shouldNot be(zeroValue)
       two shouldNot be(three)
-      three shouldNot be(zeroValue)
     }
   }
   val sg = semiGroup
@@ -60,6 +56,7 @@ trait SemiGroupSpec[T] extends UtilsSpec {
 
 
 abstract class MonoidSpec[T](implicit monoid: Monoid[T], val classTag: ClassTag[T]) extends SemiGroupSpec[T] with ZeroSpec[T] {
+  def zeroValue: T
 
   override def zero = new Zero[T] {
     override def zero = monoid.zero
@@ -70,6 +67,13 @@ abstract class MonoidSpec[T](implicit monoid: Monoid[T], val classTag: ClassTag[
 
 
   behavior of s"Monoid[${classTag.runtimeClass.getSimpleName}]"
+  it should "be setup correctly as a monid" in {
+    if (!oddSemigroup) {
+      one shouldNot be(zeroValue)
+      two shouldNot be(zeroValue)
+      three shouldNot be(zeroValue)
+    }
+  }
 
 
   import monoid._
@@ -114,13 +118,12 @@ class MonoidForIntSpec extends MonoidSpec[Int] {
 
 }
 
-class MonoidForOptionSpec extends SemiGroupSpec[Option[String]] {
+class SemigroupForOptionSpec extends SemiGroupSpec[Option[String]] {
   lazy val classTag: ClassTag[Option[String]] = implicitly[ClassTag[Option[String]]]
   lazy val semiGroup: SemiGroup[Option[String]] = SemiGroup.forOption[String]
   override lazy val oddSemigroup = true
 
-  override def zeroValue = None
-  override def one = Some("1")
+ override def one = Some("1")
   override def two = Some("2")
   override def three = Some("1")
 }

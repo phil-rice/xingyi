@@ -202,8 +202,7 @@ val experimental = (project in file("modules/experimental")).
   settings(publishSettings).
   settings(publishArtifact := false).
   aggregate(
-    cep,
-    cddscenario, //
+//    cep,
     cddengine, //
     cddmustache, //
     cddscalatest //
@@ -215,6 +214,7 @@ val root = (project in file(".")).
   aggregate(
     apachejdbc, //
     core, //
+    cddscenario, //
     finatra, //
     finatraSample,
     sample,

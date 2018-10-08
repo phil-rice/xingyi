@@ -27,10 +27,12 @@ class ScenarioBuilderSpec extends UtilsSpec with EngineBuilderLanguage1 {
       val x2 = scenario(2) produces "2"
       val y = scenario(2) produces "2" when (_ < 10) title "this is case 2" comment "not very interesting"
       val z = scenario(3) produces "3" because { case x if x < 10 => x.toString }
-      List(x1, x2, y, z)
+      val wc = scenario(1) produces "2" when (_ < 10) code (x => (x + 1).toString) title "this is case wc" reference(InternetDocument("name", "ref"))
+
+      List(x1, x2, y, z, wc)
     }
     scenarios shouldBe result.map(_.scenario)
-    val List(x1, x2, y, z) = scenarios
+    val List(x1, x2, y, z, wc) = scenarios
 
     z.logic.fn.isDefinedAt(-5) shouldBe true
     z.logic.fn.isDefinedAt(9) shouldBe true
@@ -38,11 +40,15 @@ class ScenarioBuilderSpec extends UtilsSpec with EngineBuilderLanguage1 {
     z.logic.fn.isDefinedAt(11) shouldBe false
     z.logic.fn(3) shouldBe "3"
 
+    wc.logic.fn(1) shouldBe "2"
+    wc.logic.fn(2) shouldBe "3"
+
     scenarios.map(_.data.definedInSourceCodeAt.toString) shouldBe List(
       "(ScenarioBuilderSpec.scala:26)",
       "(ScenarioBuilderSpec.scala:27)",
       "(ScenarioBuilderSpec.scala:28)",
-      "(ScenarioBuilderSpec.scala:29)"
+      "(ScenarioBuilderSpec.scala:29)",
+      "(ScenarioBuilderSpec.scala:30)"
     )
   }
 
