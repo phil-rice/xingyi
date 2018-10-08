@@ -2,6 +2,7 @@
 package one.xingyi.cddscenario
 
 import one.xingyi.core.functions.SemiGroup
+import one.xingyi.core.reflection.{IsDefinedInSourceCodeAt, SingleDefinedInSourceCodeAt}
 import one.xingyi.core.{SemiGroupSpec, UtilsSpec}
 
 import scala.reflect.ClassTag
@@ -13,16 +14,113 @@ class ScenarioLogicSpec extends UtilsSpec {
   it should "have an empty method" in {
     val empty: NoScenarioLogic[Int, Int] = ScenarioLogic.empty[Int, Int]
     empty.ifString shouldBe "<empty>"
-    empty.definedInSourceCodeAt.toString shouldBe "(ScenarioLogicSpec.scala:14)"
+    empty.definedInSourceCodeAt.toString shouldBe "(ScenarioLogicSpec.scala:15)"
   }
+
 
 }
 
 
 class SemigroupForScenarioLogicSpec extends SemiGroupSpec[ScenarioLogic[String, Int]] {
   override def classTag: ClassTag[ScenarioLogic[String, Int]] = implicitly[ClassTag[ScenarioLogic[String, Int]]]
-  override def semiGroup: SemiGroup[ScenarioLogic[String, Int]] =implicitly[SemiGroup[ScenarioLogic[String,Int]]]
-  override val one: SingleScenarioLogic[String, Int] = mock[SingleScenarioLogic[String,Int]]
-  override val two: SingleScenarioLogic[String, Int] = mock[SingleScenarioLogic[String,Int]]
+  override def semiGroup: SemiGroup[ScenarioLogic[String, Int]] = implicitly[SemiGroup[ScenarioLogic[String, Int]]]
+  override val one: SingleScenarioLogic[String, Int] = mock[SingleScenarioLogic[String, Int]]
+  override val two: SingleScenarioLogic[String, Int] = mock[SingleScenarioLogic[String, Int]]
   override val three: ScenarioLogic[String, Int] = CompositeScenarioLogic(Seq(one, two))
 }
+
+abstract class SingleScenarioLogicSpec[SL <: SingleScenarioLogic[String, Int] : ClassTag] extends UtilsSpec {
+  import ScenarioLogic._
+  def scenarioLogic: SL
+
+   val name: String = implicitly[ClassTag[SL]].runtimeClass.getSimpleName
+  behavior of name
+
+  it should "have an implicitly 'isDefinedInSourceCodeAt' which return the 'isDefinedInSourceCode At" in {
+    val sl = scenarioLogic
+    implicitly[IsDefinedInSourceCodeAt[ScenarioLogic[String, Int]]].apply(sl) shouldBe sl.definedInSourceCodeAt
+  }
+  it should "have a nice to string" in {
+    val sl = scenarioLogic
+    sl.toString shouldBe s"$name@(${sl.definedInSourceCodeAt})"
+  }
+
+}
+
+class NoScenarioLogicSpec extends SingleScenarioLogicSpec[NoScenarioLogic[String, Int]] {
+  override lazy val scenarioLogic: NoScenarioLogic[String, Int] = NoScenarioLogic(mock[SingleDefinedInSourceCodeAt], "someIfString")
+
+  it should "not have a condition" in {
+    scenarioLogic.hasCondition shouldBe false
+  }
+
+  it should "blow up if the fn is called" in {
+    intercept[RuntimeException](scenarioLogic.fn("someString")).getMessage shouldBe "someString (of class java.lang.String)"
+  }
+}
+
+class ResultScenarioLogicSpec extends SingleScenarioLogicSpec[ResultScenarioLogic[String, Int]] {
+  override lazy val scenarioLogic: ResultScenarioLogic[String, Int] = ResultScenarioLogic(123, mock[SingleDefinedInSourceCodeAt], "someIfString")
+
+  it should "not have a condition" in {
+    scenarioLogic.hasCondition shouldBe false
+  }
+
+  it should "return the result if the fn is called" in {
+    scenarioLogic.fn("someString") shouldBe 123
+  }
+}
+class BecauseScenarioLogicSpec extends SingleScenarioLogicSpec[BecauseScenarioLogic[String, Int]] {
+  override lazy val scenarioLogic: BecauseScenarioLogic[String, Int] = BecauseScenarioLogic({ case s: String if s.toInt > 2 => s.toInt }, mock[SingleDefinedInSourceCodeAt], "someIfString")
+
+  it should "have a condition" in {
+    scenarioLogic.hasCondition shouldBe true
+  }
+
+  it should "use the partial function passed into it" in {
+    scenarioLogic.fn.isDefinedAt("0") shouldBe false
+    scenarioLogic.fn.isDefinedAt("3") shouldBe true
+    scenarioLogic.fn("3") shouldBe 3
+  }
+}
+
+class WhenResultScenarioLogicSpec extends SingleScenarioLogicSpec[WhenResultScenarioLogic[String, Int]] {
+  override lazy val scenarioLogic: WhenResultScenarioLogic[String, Int] = WhenResultScenarioLogic(x => x.toInt > 2, 123, mock[SingleDefinedInSourceCodeAt], "someIfString")
+
+  it should "have a condition" in {
+    scenarioLogic.hasCondition shouldBe true
+  }
+
+  it should "use the when as the 'if defined' " in {
+    scenarioLogic.fn.isDefinedAt("0") shouldBe false
+    scenarioLogic.fn.isDefinedAt("3") shouldBe true
+  }
+  it should "use the result" in {
+//    scenarioLogic.fn("0") shouldBe 123
+    scenarioLogic.fn("3") shouldBe 123
+  }
+}
+
+class WhenCodeScenarioLogicSpec extends SingleScenarioLogicSpec[WhenCodeScenarioLogic[String, Int]] {
+  override lazy val scenarioLogic: WhenCodeScenarioLogic[String, Int] = WhenCodeScenarioLogic(x => x.toInt > 2, x => x.toInt * 2, mock[SingleDefinedInSourceCodeAt], "someIfString")
+
+  it should "have a condition" in {
+    scenarioLogic.hasCondition shouldBe true
+  }
+
+  it should "use the when as the 'if defined' " in {
+    scenarioLogic.fn.isDefinedAt("0") shouldBe false
+    scenarioLogic.fn.isDefinedAt("3") shouldBe true
+  }
+  it should "use the code" in {
+    scenarioLogic.fn("3") shouldBe 6
+  }
+}
+
+//class CompositeScenarioLogicSpec extends UtilsSpec{
+//  behavior of "CompositeScenarioLogic"
+//
+//  it should "" in {
+//
+//  }
+//}

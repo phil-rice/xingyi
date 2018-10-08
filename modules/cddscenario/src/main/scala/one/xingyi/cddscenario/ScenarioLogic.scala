@@ -26,7 +26,7 @@ trait ScenarioLogic[P, R] {
 trait SingleScenarioLogic[P, R] extends ScenarioLogic[P, R] {
   //arrgh... cake pattern!!! But for once it saves a lot of code here
   def definedInSourceCodeAt: SingleDefinedInSourceCodeAt
-  override def toString: String = s"${getClass.getSimpleName}@($definedInSourceCodeAt}"
+  override def toString: String = s"${getClass.getSimpleName}@($definedInSourceCodeAt)"
 }
 
 case class NoScenarioLogic[P, R](definedInSourceCodeAt: SingleDefinedInSourceCodeAt, ifString: String) extends SingleScenarioLogic[P, R] {
