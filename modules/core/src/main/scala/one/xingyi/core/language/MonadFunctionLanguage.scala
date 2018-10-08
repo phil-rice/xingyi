@@ -50,13 +50,10 @@ trait MonadFunctionLanguage extends MonadLanguage {
 
   implicit class MonadWithCanFailAndExceptionFunctionPimper[M[_], Req, Res](fn: Req => M[Res]) {
     def sideEffectWithReq[Fail](mapFn: (Req, Try[Either[Fail, Res]]) => Unit)(implicit monad: MonadCanFailWithException[M, Fail]): Req => M[Res] = { req: Req =>
-      println(s"sideEffectWithReq: $req $fn $mapFn")
       Exceptions {
         val res = fn(req)
-        println(s"res: $res")
         res
       }.onComplete { t: Try[Either[Fail, Res]] =>
-        println(s"onComplete $t mapFn $mapFn")
         mapFn(req, t)
       }
     }

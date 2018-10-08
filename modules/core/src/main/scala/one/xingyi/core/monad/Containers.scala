@@ -3,13 +3,14 @@ package one.xingyi.core.monad
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.collection.concurrent.TrieMap
 import scala.language.higherKinds
 
-trait Liftable[M[_]]{
+trait Liftable[M[_]] {
   def liftM[T](t: T): M[T]
 
 }
-trait Functor[M[_]] extends Liftable[M]{
+trait Functor[M[_]] extends Liftable[M] {
   def map[T, T1](m: M[T], fn: T => T1): M[T1]
 }
 
@@ -55,6 +56,29 @@ trait MonadWithState[M[_]] extends Monad[M] {
   def mapWith[V, T, T1](m: M[T], localVariable: LocalVariable[V], fn: (T, Seq[V]) => T1): M[T1]
   def putInto[V, T](localVariable: LocalVariable[V], t: V)(m: M[T]): M[T]
   def liftMAndPut[T, V](t: T, localVariable: LocalVariable[V], v: V): M[T] = putInto(localVariable, v)(liftM(t))
+  //OK this sucks. I would like to do it better
+  //It returns a new monad with a cleared local variable... but potentially when you flat map with it, the previous threads stuff
+  //will be carried across.
+  //However if you call this and use this as the root of your process tree it should all work.
+  //The behavior is undefined if you do  mWithState.flatMap(_ => clear). So don't do that!
+  def clear: M[Unit]
+}
+
+trait SimpleMonadWithState[M[_]] extends MonadWithState[M] {
+  def localVariables = new InheritableThreadLocal[Map[LocalVariable[_], Seq[Any]]]() // is this a higher ranked type? The _ and the Any are the same
+
+  //// the classical but unpleasant workaround for the higher ranked type.
+  private def get[T1, T, V](localVariable: LocalVariable[V]) = localVariables.get().getOrElse(localVariable, Seq()).asInstanceOf[Seq[V]]
+
+  def mapState[V, T, T1](m: M[T], localVariable: LocalVariable[V], fn: Seq[V] => T1): M[T1] =
+    map[T, T1](m, t => fn(get(localVariable)))
+
+  def mapWith[V, T, T1](m: M[T], localVariable: LocalVariable[V], fn: (T, Seq[V]) => T1): M[T1] =
+    map[T,T1](m, t => fn(t, get(localVariable)))
+  def putInto[V, T](localVariable: LocalVariable[V], v: V)(m: M[T]): M[T] =
+    map[T, T](m, { t => localVariables.set(localVariables.get + (localVariable -> (get(localVariable) :+ v))); t })
+
+  override def clear: M[Unit] = {localVariables.set(Map()); liftM(())}
 }
 
 object LocalVariable {

@@ -19,31 +19,45 @@ trait AbstractMonadHasStateTests[M[_]] extends ContainerSpec[M] with AnyLanguage
   }
 
   it should "have a mapWith that works when the LocalVariable has been set" in {
-    println("start")
-    val x = 1.liftResultAndPut(lv1, 10).map{x => println(s"liftResultAndPut done$x"); x}.mapWith(lv1)(fn2(1, Seq(10), 2)) |> getT shouldBe 2
-//    1.liftResultAndPut(lv1, 10).mapWith(lv2)(fn2(1, Seq[Int](), 2)) |> getT shouldBe 2
+    val x = 1.liftResultAndPut(lv1, 10).map { x => x }.mapWith(lv1)(fn2(1, Seq(10), 2)) |> getT shouldBe 2
+    //    1.liftResultAndPut(lv1, 10).mapWith(lv2)(fn2(1, Seq[Int](), 2)) |> getT shouldBe 2
   }
 
   it should "have a putIntoMethod" in {
-    println("start2")
+    monadWithState.clear
     1.liftM.putInto(lv1, 10).mapWith(lv1)(fn2(1, Seq(10), 2)) |> getT shouldBe 2
+    monadWithState.clear
     1.liftM.putInto(lv1, 10).putInto(lv1, 20).mapWith(lv1)(fn2(1, Seq(10, 20), 2)) |> getT shouldBe 2
+    monadWithState.clear
     1.liftResultAndPut(lv1, 10).putInto(lv1, 20).mapWith(lv2)(fn2(1, Seq[Int](), 2)) |> getT shouldBe 2
+    monadWithState.clear
     1.liftResultAndPut(lv1, 10).putInto(lv2, 20).mapWith(lv1)(fn2(1, Seq(10), 2)) |> getT shouldBe 2
   }
 
   it should "have a mapState method " in {
+    monadWithState.clear
     1.liftResultAndPut(lv1, 10).mapState(lv1)(fn(Seq(10), 2)) |> getT shouldBe 2
+    monadWithState.clear
     1.liftResultAndPut(lv1, 10).mapState(lv1)(fn(Seq(10), 2)).mapWith(lv1)(fn2(2, Seq(10), 3)) |> getT shouldBe 3
   }
 
   it should "keep the state even with map methods " in {
+    monadWithState.clear
     1.liftResultAndPut(lv1, 10).map(_ * 2).mapWith(lv1)(fn2(2, Seq(10), 4)) |> getT shouldBe 4
   }
   it should "keep the state even with flatMap methods " in {
+    monadWithState.clear
     1.liftResultAndPut(lv1, 10).flatMap(fn(1, 2.liftM)).mapWith(lv1)(fn2(2, Seq(10), 4)) |> getT shouldBe 4
   }
 
+  it should "clear the state " in {
+    //So this is an awkward test which tells us that perhaps this is the wrong model for clear (which is plain clunky)
+    //The idea of this is that if there are any thread locals they are cleaned up... but basically this is pretty messy...
+    1.liftResultAndPut(lv1, 10) |> getT
+    2.liftResultAndPut(lv1, 20) |> getT
+
+    monadWithState.clear.mapState(lv1)(sq => sq) |> getT shouldBe Seq()
+  }
 }
 
 

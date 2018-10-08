@@ -41,6 +41,7 @@ object IdentityMonad {
     override def exception[T](t: Throwable): IdentityMonad[T] = IdentityMonad(Failure(t), Map())
     override def recover[T](m: IdentityMonad[T], fn: Throwable => IdentityMonad[T]): IdentityMonad[T] = m.value.fold(fn, _ => m)
     override def putInto[V, T](localVariable: LocalVariable[V], t: V)(m: IdentityMonad[T]): IdentityMonad[T] = IdentityMonad(m.value, Maps.addTo(m.state, localVariable.offset, t))
+    override def clear: IdentityMonad[Unit] = IdentityMonad(Success(()), Map())
   }
 
 }

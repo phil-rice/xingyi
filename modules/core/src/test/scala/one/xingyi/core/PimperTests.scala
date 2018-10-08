@@ -13,7 +13,7 @@ import scala.concurrent.Future
 import scala.language.higherKinds
 import scala.util.{Failure, Success}
 
-trait FunctionFixture extends Matchers{
+trait FunctionFixture extends Matchers {
   def fn[X, Y](expected: X, y: => Y) = { x: X => x shouldBe expected; y }
   def fn2[X, Y, Z](expectedX: X, expectedY: Y, z: => Z) = { (x: X, y: Y) => x shouldBe expectedX; y shouldBe expectedY; z }
   def fn2Curried[X, Y, Z](expectedX: X, expectedY: Y, z: => Z) = { x: X => y: Y => x shouldBe expectedX; y shouldBe expectedY; println(s"fn2 $expectedX, $expectedY, $z"); z }
@@ -22,7 +22,7 @@ trait FunctionFixture extends Matchers{
 }
 
 class PimperTests extends UtilsSpec with FunctionFixture {
-    val runtimeException = new RuntimeException("someErrorMessage")
+  val runtimeException = new RuntimeException("someErrorMessage")
   behavior of "AnyPimper"
 
   it should "have a |> that passes the any to a function" in {
@@ -128,11 +128,11 @@ class PimperTests extends UtilsSpec with FunctionFixture {
   }
 
   it should "compose f: A=>Seq[B] with g: B => M[C] using f ~~> g giving A => M[Seq[C]]" in {
-    (fn(1, Seq(2, 3, 4)) ~~>(x => Future.successful(x * 2))).apply(1).await shouldBe List(4, 6, 8)
+    (fn(1, Seq(2, 3, 4)) ~~> (x => Future.successful(x * 2))).apply(1).await shouldBe List(4, 6, 8)
   }
 
   it should "compose f: A=>Seq[B] with g: B => M[C] using f ~+~> g giving A => M[Seq[(B, C)]]" in {
-    (fn(1, Seq(2, 3, 4)) ~+>(x => Future.successful(x * 2))).apply(1).await shouldBe List((2,4), (3,6), (4,8))
+    (fn(1, Seq(2, 3, 4)) ~+> (x => Future.successful(x * 2))).apply(1).await shouldBe List((2, 4), (3, 6), (4, 8))
   }
 
 

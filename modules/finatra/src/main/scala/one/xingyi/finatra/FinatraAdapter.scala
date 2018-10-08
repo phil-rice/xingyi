@@ -15,7 +15,7 @@ import scala.reflect.ClassTag
 import scala.util.{Try => STry}
 
 object AsyncForTwitterFuture {
-  val localVariableMap = new TrieMap[LocalVariable[_], Local[_]]()
+  val localVariableMap = new TrieMap[LocalVariable[_], InheritableThreadLocal[_]]()
 
 }
 class AsyncForTwitterFuture(implicit futurePool: FuturePool) extends Async[TFuture] with MonadCanFailWithException[TFuture, Throwable] with MonadWithState[TFuture] {
@@ -23,7 +23,8 @@ class AsyncForTwitterFuture(implicit futurePool: FuturePool) extends Async[TFutu
   override def respond[T](m: TFuture[T], fn: STry[T] => Unit) = m.respond(tryS => fn(tryS.asScala))
   override def await[T](m: TFuture[T]) = Await.result(m, TDuration.fromSeconds(5))
   override def delay[T](duration: Duration)(block: => TFuture[T]) = ???
-  override def foldWithExceptionAndFail[T, T1](m: TFuture[T], fnE: Throwable => TFuture[T1], fnFailure: Throwable => TFuture[T1], fn: T => TFuture[T1]) = m.transform {
+
+  override def foldWithExceptionAndFail[T, T1](m: TFuture[T], fnE: Throwable => TFuture[T1], fnFailure: Throwable => TFuture[T1], fn: T => TFuture[T1]): TFuture[T1] = m.transform {
     case Return(t) => fn(t)
     case Throw(t) => fnE(t)
   }
@@ -42,25 +43,26 @@ class AsyncForTwitterFuture(implicit futurePool: FuturePool) extends Async[TFutu
   override def liftM[T](t: T) = TFuture.value(t)
 
 
-  def getLocal[V](localVariable: LocalVariable[V]) = AsyncForTwitterFuture.localVariableMap.getOrElseUpdate(localVariable, new Local[Seq[V]]()).asInstanceOf[Local[Seq[V]]]
+  def getLocal[V](localVariable: LocalVariable[V]) =
+    AsyncForTwitterFuture.localVariableMap.getOrElseUpdate(localVariable,
+      new InheritableThreadLocal[Seq[V]]() {override def initialValue(): Seq[V] = Seq()}).asInstanceOf[InheritableThreadLocal[Seq[V]]]
+
+
+  override def clear: TFuture[Unit] = {
+    AsyncForTwitterFuture.localVariableMap.values.foreach(_.remove())
+    TFuture.value()
+  }
 
   override def putInto[V, T](localVariable: LocalVariable[V], t: V)(m: TFuture[T]): TFuture[T] = m.map { x =>
-    val local = getLocal(localVariable)
-    println(s"putInto: $x $local $this ${AsyncForTwitterFuture.localVariableMap}")
-    val oldSeq = local().getOrElse(Seq())
-    println(s"  oldSeq: $oldSeq")
-    local.update(oldSeq ++ Seq(t))
-    println(s"  new: ${local()}")
-    println(s"  new: ${getLocal(localVariable)()}")
+    val local: InheritableThreadLocal[Seq[V]] = getLocal(localVariable)
+    val oldSeq = local.get
+    local.set(oldSeq ++ Seq(t))
     x
   }
-  override def mapState[V, T, T1](m: TFuture[T], localVariable: LocalVariable[V], fn: Seq[V] => T1): TFuture[T1] = m.map { x => fn(getLocal(localVariable)().getOrElse(Seq())) }
+  override def mapState[V, T, T1](m: TFuture[T], localVariable: LocalVariable[V], fn: Seq[V] => T1): TFuture[T1] = m.map { x => fn(getLocal(localVariable).get) }
   override def mapWith[V, T, T1](m: TFuture[T], localVariable: LocalVariable[V], fn: (T, Seq[V]) => T1): TFuture[T1] = m.map { x =>
     val local = getLocal(localVariable)
-    println(s"in mapwith $local $this   ${AsyncForTwitterFuture.localVariableMap}")
-    println(s"   in mapwith ${local()}")
-    val seq = local().getOrElse(Seq())
-    println(s"  in mapwith - $seq")
+    val seq = local.get()
     fn(x, seq)
   }
 }

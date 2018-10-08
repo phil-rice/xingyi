@@ -9,19 +9,20 @@ import one.xingyi.core.functions._
 import one.xingyi.core.http.Failer.failerForThrowable
 import one.xingyi.core.http.ResponseCategoriserSpec
 import one.xingyi.core.local.AbstractLocalOpsSpec
-import one.xingyi.core.monad.{AbstractAsyncTests, AbstractMonadCanFailWithFailWithExceptionAsThrowableTests}
+import one.xingyi.core.monad.{AbstractAsyncTests, AbstractMonadCanFailWithFailWithExceptionAsThrowableTests, AbstractMonadHasStateTests, MonadWithState}
 import one.xingyi.core.objectify.AbstractObjectifySpec
 
 class TwitterFutureSpec extends AbstractMonadCanFailWithFailWithExceptionAsThrowableTests[TFuture] with FlatSpecLike with AbstractAsyncTests[TFuture] {
   override def async = asyncForTwitter
   override def monad = asyncForTwitter
 
-  it should "handle state" ignore {
-    fail("change the inherited class")
-  }
 }
-
 class TwitterFutureAsyncPimperTests extends AbstractAsyncPimperTests[TFuture]
+class TwitterFuturHasStateTests extends AbstractMonadHasStateTests[TFuture] {
+  override implicit def monadWithState: MonadWithState[TFuture] = asyncForTwitter
+  override def liftA[T](t: T): TFuture[T] = asyncForTwitter.liftM(t)
+  override def getT[X](a: TFuture[X]): X = asyncForTwitter.await(a)
+}
 
 class FutureObjectifySpec extends AbstractObjectifySpec[TFuture, Throwable]
 

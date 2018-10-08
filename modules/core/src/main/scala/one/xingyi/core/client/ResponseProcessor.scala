@@ -20,7 +20,8 @@ abstract class AbstractResponseProcess[M[_], Req, Res](implicit monad: MonadWith
   def processOther(req: Req, sr: ServiceResponse): M[Res] = monad.exception(UnexpectedResponse(sr))
 }
 object ResponseProcessor {
-  implicit def default[M[_], Req, Res](implicit monad: MonadWithException[M], fromJson: FromJson[Res]): ResponseProcessor[M, Req, Res] = new AbstractResponseProcess[M, Req, Res] {
-    override def process200(req: Req, sr: ServiceResponse): M[Res] = monad.liftM(fromJson(sr.body.s))
-  }
+  implicit def default[M[_], Req, Res](implicit monad: MonadWithException[M], fromJson: FromJson[Res]): ResponseProcessor[M, Req, Res] = new DefaultResponseProcess[M, Req, Res]
+}
+class DefaultResponseProcess[M[_], Req, Res](implicit monad: MonadWithException[M], fromJson: FromJson[Res]) extends AbstractResponseProcess[M, Req, Res] {
+  override def process200(req: Req, sr: ServiceResponse): M[Res] = monad.liftM(fromJson(sr.body.s))
 }
