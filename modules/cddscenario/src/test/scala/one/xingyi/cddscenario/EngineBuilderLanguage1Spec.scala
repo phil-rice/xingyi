@@ -6,15 +6,14 @@ import one.xingyi.core.UtilsSpec
 import scala.language.higherKinds
 
 
-class ScenarioBuilderSpec extends UtilsSpec with EngineBuilderLanguage1 {
+class EngineBuilderLanguage1Spec extends UtilsSpec with EngineBuilderLanguage1 {
 
-  behavior of "Scenario Builder"
-
+  behavior of "EngineBuilderLanguage1"
 
   it should "have a is defined at" in {
     val (x, scenarios) = new RememberingScenarioAggregator2[Int, String].withAggreator { implicit a =>
       val x = scenario(2) produces "2"
-      x.data.definedInSourceCodeAt.toString shouldBe "(ScenarioBuilderSpec.scala:16)"
+      x.data.definedInSourceCodeAt.toString shouldBe "(EngineBuilderLanguage1Spec.scala:15)"
       x
     }
     scenarios shouldBe List(x.scenario)
@@ -27,7 +26,7 @@ class ScenarioBuilderSpec extends UtilsSpec with EngineBuilderLanguage1 {
       val x2 = scenario(2) produces "2"
       val y = scenario(2) produces "2" when (_ < 10) title "this is case 2" comment "not very interesting"
       val z = scenario(3) produces "3" because { case x if x < 10 => x.toString }
-      val wc = scenario(1) produces "2" when (_ < 10) code (x => (x + 1).toString) title "this is case wc" reference(InternetDocument("name", "ref"))
+      val wc = scenario(1) produces "2" when (_ < 10) code (x => (x + 1).toString) title "this is case wc" reference (InternetDocument("name", "ref"))
 
       List(x1, x2, y, z, wc)
     }
@@ -44,11 +43,11 @@ class ScenarioBuilderSpec extends UtilsSpec with EngineBuilderLanguage1 {
     wc.logic.fn(2) shouldBe "3"
 
     scenarios.map(_.data.definedInSourceCodeAt.toString) shouldBe List(
-      "(ScenarioBuilderSpec.scala:26)",
-      "(ScenarioBuilderSpec.scala:27)",
-      "(ScenarioBuilderSpec.scala:28)",
-      "(ScenarioBuilderSpec.scala:29)",
-      "(ScenarioBuilderSpec.scala:30)"
+      "(EngineBuilderLanguage1Spec.scala:25)",
+      "(EngineBuilderLanguage1Spec.scala:26)",
+      "(EngineBuilderLanguage1Spec.scala:27)",
+      "(EngineBuilderLanguage1Spec.scala:28)",
+      "(EngineBuilderLanguage1Spec.scala:29)"
     )
   }
 

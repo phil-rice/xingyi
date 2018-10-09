@@ -33,7 +33,7 @@ abstract class SingleScenarioLogicSpec[SL <: SingleScenarioLogic[String, Int] : 
   import ScenarioLogic._
   def scenarioLogic: SL
 
-   val name: String = implicitly[ClassTag[SL]].runtimeClass.getSimpleName
+  val name: String = implicitly[ClassTag[SL]].runtimeClass.getSimpleName
   behavior of name
 
   it should "have an implicitly 'isDefinedInSourceCodeAt' which return the 'isDefinedInSourceCode At" in {
@@ -96,7 +96,7 @@ class WhenResultScenarioLogicSpec extends SingleScenarioLogicSpec[WhenResultScen
     scenarioLogic.fn.isDefinedAt("3") shouldBe true
   }
   it should "use the result" in {
-//    scenarioLogic.fn("0") shouldBe 123
+    //    scenarioLogic.fn("0") shouldBe 123
     scenarioLogic.fn("3") shouldBe 123
   }
 }
@@ -117,10 +117,46 @@ class WhenCodeScenarioLogicSpec extends SingleScenarioLogicSpec[WhenCodeScenario
   }
 }
 
-//class CompositeScenarioLogicSpec extends UtilsSpec{
-//  behavior of "CompositeScenarioLogic"
-//
-//  it should "" in {
-//
-//  }
-//}
+import org.mockito.Mockito._
+class CompositeScenarioLogicSpec extends UtilsSpec {
+  behavior of "CompositeScenarioLogic"
+
+  def setup[X](hc1: Boolean = true, hc2: Boolean = true)(fn: (CompositeScenarioLogic[String, Int], SingleScenarioLogic[String, Int], SingleScenarioLogic[String, Int]) => X) = {
+    val s1 = mock[SingleScenarioLogic[String, Int]]
+    val s2 = mock[SingleScenarioLogic[String, Int]]
+    when(s1.hasCondition) thenReturn (hc1)
+    when(s2.hasCondition) thenReturn (hc2)
+    when(s1.ifString) thenReturn ("s1IfString")
+    when(s2.ifString) thenReturn ("s2IfString")
+    fn(new CompositeScenarioLogic(Seq(s1, s2)), s1, s2)
+  }
+
+  it should "have a 'hasCondition' if one of the sceanarios does" in {
+    setup(false, false) { (comp, s1, s2) => comp }.hasCondition shouldBe false
+    setup(false, true) { (comp, s1, s2) => comp }.hasCondition shouldBe true
+    setup(true, false) { (comp, s1, s2) => comp }.hasCondition shouldBe true
+    setup(true, true) { (comp, s1, s2) => comp }.hasCondition shouldBe true
+  }
+
+  it should "an ifstring that is the composition of the scenarios" in {
+    setup() { (comp, s1, s2) => comp }.ifString shouldBe "s1IfString or s2IfString"
+  }
+
+  it should "a toString that is the composition of the scenarios" in {
+    setup() { (comp, s1, s2) =>
+      comp.toString() shouldBe s"CompLogic($s1,$s2)"
+    }
+  }
+  it should "a fn that is the composition of the scenarios" in {
+    setup() { (comp, s1, s2) =>
+      val pf1 = mock[PartialFunction[String,Int]]
+      val pf2 = mock[PartialFunction[String,Int]]
+      val res = mock[PartialFunction[String, Int]]
+      when (s1.fn) thenReturn pf1
+      when (s2.fn) thenReturn pf2
+      when(pf1.orElse(pf2)) thenReturn res
+
+      comp.fn shouldBe res
+    }
+  }
+}

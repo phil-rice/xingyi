@@ -198,15 +198,12 @@ lazy val finatraSample = (project in file("modules/finatraSample")).
   settings(publishArtifact := false).
   settings(publishSettings: _*)
 
-val experimental = (project in file("modules/experimental")).
-  settings(publishSettings).
-  settings(publishArtifact := false).
-  aggregate(
+//val experimental = (project in file("modules/experimental")).
+//  settings(publishSettings).
+//  settings(publishArtifact := false).
+//  aggregate(
 //    cep,
-    cddengine, //
-    cddmustache, //
-    cddscalatest //
-  )
+//  )
 
 val root = (project in file(".")).
   settings(publishSettings).
@@ -215,6 +212,10 @@ val root = (project in file(".")).
     apachejdbc, //
     core, //
     cddscenario, //
+    cddengine, //
+    cddmustache, //
+    cddscalatest, //
+    cddexamples, //
     finatra, //
     finatraSample,
     sample,

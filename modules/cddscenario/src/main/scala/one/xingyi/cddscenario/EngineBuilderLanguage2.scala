@@ -15,6 +15,13 @@ object EngineBuilderLanguage2 {
       EngineBuilderLanguage.withWhenPrim(hasBuilder.builder, when.splice.tupled, c.literal(show(when.tree)).splice)
     }
   }
+  def code_impl[P1: c.WeakTypeTag, P2: c.WeakTypeTag, R: c.WeakTypeTag, HasResult: c.WeakTypeTag, HasWhen: c.WeakTypeTag](c: blackbox.Context)(code: c.Expr[(P1, P2) => R]): c.Expr[ScBuilder[(P1, P2), R, HasResult, HasWhen, Yes, No]] = {
+    import c.universe._
+    reify {
+      val hasBuilder = (c.Expr[HasScBuilder[(P1, P2), R, HasResult, HasWhen, No, No]](c.prefix.tree)).splice
+      EngineBuilderLanguage.withCodePrim(hasBuilder.builder, code.splice.tupled, c.literal(show(code.tree)).splice)
+    }
+  }
   def because_impl[P1: c.WeakTypeTag, P2: c.WeakTypeTag, R: c.WeakTypeTag, HasResult: c.WeakTypeTag](c: blackbox.Context)(becauseFn: c.Expr[PartialFunction[(P1, P2), R]]): c.Expr[ScBuilder[(P1, P2), R, HasResult, No, No, Yes]] = {
     import c.universe._
     reify {
@@ -32,7 +39,10 @@ trait EngineBuilderLanguage2 extends EngineBuilderLanguage {
     def produces(r: R): ScBuilder[(P1, P2), R, Yes, HasWhen, No, No] = builder.withResultPrim(r)
   }
   implicit protected class ScBuilderAddWhenOps[P1, P2, R, HasResult, HasCode](val builder: ScBuilder[(P1, P2), R, HasResult, No, HasCode, No]) extends HasScBuilder[(P1, P2), R, HasResult, No, HasCode, No] {
-    def when(when: (P1, P2) => Boolean): ScBuilder[(P1,P2), R, HasResult, Yes, HasCode, No] = macro EngineBuilderLanguage2.when_impl[P1, P2, R, HasResult, HasCode]
+    def when(when: (P1, P2) => Boolean): ScBuilder[(P1, P2), R, HasResult, Yes, HasCode, No] = macro EngineBuilderLanguage2.when_impl[P1, P2, R, HasResult, HasCode]
+  }
+  implicit protected class ScBuilderAddCodeOps[P1, P2, R, HasResult, HasWhen](val builder: ScBuilder[(P1, P2), R, HasResult, HasWhen, No, No]) extends HasScBuilder[(P1, P2), R, HasResult, HasWhen, No, No] {
+    def  code(code: (P1, P2) => R): ScBuilder[(P1, P2), R, HasResult, HasWhen, Yes, No] = macro EngineBuilderLanguage2.code_impl[P1, P2, R, HasResult, HasWhen]
   }
   implicit protected class ScBuilderAddBecauseOps[P1, P2, R, HasResult](val builder: ScBuilder[(P1, P2), R, HasResult, No, No, No]) extends HasScBuilder[(P1, P2), R, HasResult, No, No, No] {
     def because(becauseFn: PartialFunction[(P1, P2), R]): ScBuilder[(P1, P2), R, HasResult, No, No, Yes] = macro EngineBuilderLanguage1.because_impl[(P1, P2), R, HasResult]
