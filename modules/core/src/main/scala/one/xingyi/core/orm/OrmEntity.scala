@@ -2,6 +2,7 @@
 package one.xingyi.core.orm
 
 import one.xingyi.core.map.Maps._
+
 trait OrmMaker[T] extends (Map[OrmEntity, List[List[AnyRef]]] => List[T])
 
 object OrmMaker {

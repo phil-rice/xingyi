@@ -21,6 +21,7 @@ object GetFromResult {
   implicit def getFromRsForString: GetFromResult[ResultSet, String] = (r, i, name) => r.getString(name)
   implicit def getFromRsForInt: GetFromResult[ResultSet, Int] = (r, i, name) => r.getInt(name)
   implicit def getFromRsForDouble: GetFromResult[ResultSet, Double] = (r, i, name) => r.getDouble(name)
+  implicit def getFromRsForDate: GetFromResult[ResultSet, Date] = (r, i, name) => r.getDate(name)
   implicit def getFromRsForOption[T](implicit get: GetFromResult[ResultSet, T]): GetFromResult[ResultSet, Option[T]] = { (u, i, name) => Option(get(u, i, name)) }
 }
 
@@ -69,11 +70,6 @@ case class Dal[Upsert, Result]() {
               protected val c5 = this;
               val pos = 5
               def schema(readFn: (C1, C2, C3, C4, C5) => T): Schema[Upsert, Result, T] = DalSchema(tableName, { r: Result => readFn(c1.getFrom(r), c2.getFrom(r), c3.getFrom(r), c4.getFrom(r), c5.getFrom(r)) }, c1, c2, c3, c4, c5)
-              case class cell[C6](name: String, fromT: T => C6, digest: Digest = DigestYes)(implicit val get: GetFromResult[Result, C6], val add: AddToUpsert[Upsert, C6]) extends DalCell[C6] {
-                protected val c6 = this;
-                val pos = 6
-                def schema(readFn: (C1, C2, C3, C4, C5, C6) => T) = DalSchema(tableName, { r: Result => readFn(c1.getFrom(r), c2.getFrom(r), c3.getFrom(r), c4.getFrom(r), c5.getFrom(r), c6.getFrom(r)) }, c1, c2, c3, c4, c5, c6)
-              }
             }
           }
         }
@@ -82,29 +78,29 @@ case class Dal[Upsert, Result]() {
   }
 }
 
-object JdbcSchemaOps {
-  def makeInsertStatement[T](schema: Schema[PreparedStatement, ResultSet, T]) = {
-    import schema._
-    s"insert into $tableName" + cells.map(_.name).mkString("(", ",", ")") + " values " + cells.map(_ => "?").mkString("(", ",", ")")
-  }
-  def makeReadStatement[T](schema: Schema[PreparedStatement, ResultSet, T]) = {
-    import schema._
-    s"select " + cells.map(_.name).mkString(",") + s"from  $tableName "
-  }
+//object JdbcSchemaOps {
+//  def makeInsertStatement[T](schema: Schema[PreparedStatement, ResultSet, T]) = {
+//    import schema._
+//    s"insert into $tableName" + cells.map(_.name).mkString("(", ",", ")") + " values " + cells.map(_ => "?").mkString("(", ",", ")")
+//  }
+//  def makeReadStatement[T](schema: Schema[PreparedStatement, ResultSet, T]) = {
+//    import schema._
+//    s"select " + cells.map(_.name).mkString(",") + s"from  $tableName "
+//  }
+//
+//  import one.xingyi.core.closable.ClosableLanguage._
+//  import one.xingyi.core.closable.SimpleClosable._
+//  import one.xingyi.core.jdbc.Jdbc._
+//  def insert[T](e: T)(implicit s: Schema[PreparedStatement, ResultSet, T]): DataSource => Boolean = connection |===> prepare(makeInsertStatement(s)) |=> s.add(e) |=> executePS |===> result
+//}
 
-  import one.xingyi.core.closable.ClosableLanguage._
-  import one.xingyi.core.closable.SimpleClosable._
-  import one.xingyi.core.jdbc.Jdbc._
-  def insert[T](e: T)(implicit s: Schema[PreparedStatement, ResultSet, T]): DataSource => Boolean = connection |===> prepare(makeInsertStatement(s)) |=> s.add(e) |=> executePS |===> result
-}
-
-case class ExampleThing(one: String, two: Int, three: Double, four: Option[String])
-object ExampleDal {
-  import JdbcSchemaOps._
-
-  implicit val s = Dal[PreparedStatement, ResultSet]().ForType[ExampleThing]("example").cell("one", _.one).cell("two", _.two).cell("three", _.three).cell("four", _.four).schema(ExampleThing.apply)
-  val e = ExampleThing("oneV", 2, 3.0, Some("string"))
-
-  insert(e)
-
-}
+//case class ExampleThing(one: String, two: Int, three: Double, four: Option[String])
+//object ExampleDal {
+//  import JdbcSchemaOps._
+//
+//  implicit val s = Dal[PreparedStatement, ResultSet]().ForType[ExampleThing]("example").cell("one", _.one).cell("two", _.two).cell("three", _.three).cell("four", _.four).schema(ExampleThing.apply)
+//  val e = ExampleThing("oneV", 2, 3.0, Some("string"))
+//
+//  insert(e)
+//
+//}

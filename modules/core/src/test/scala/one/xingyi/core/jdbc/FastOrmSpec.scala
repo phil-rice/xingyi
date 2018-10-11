@@ -21,11 +21,11 @@ trait OrmFixture {
 }
 
 trait FastOrmFixture extends OrmFixture {
-  implicit val maker: OrmMaker[Person] = { map: Map[OrmEntity, List[List[AnyRef]]] =>
+  implicit val maker: OrmMaker[Person] = { data: Map[OrmEntity, List[List[AnyRef]]] =>
     import OrmMaker._
-    val aList = toMap(map(address))(implicit list => Address(str(0)))
-    val phoneList = toMap(map(phone))(implicit list => Phone(str(0)))
-    map(main).mapPf { case id :: name :: _ => Person(name.toString, aList.items(id), phoneList.items(id)) }
+    val aList = toMap(data(address))(implicit list => Address(str(0)))
+    val phoneList = toMap(data(phone))(implicit list => Phone(str(0)))
+    data(main).mapPf { case id :: name :: _ => Person(name.toString, aList.items(id), phoneList.items(id)) }
   }
 
 
