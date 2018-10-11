@@ -19,6 +19,7 @@ trait Jdbc {
   def statement[M[_] : ClosableM] = { c: Connection => c.createStatement().liftClosable }
   def prepare[M[_] : ClosableM](sql: String) = { c: Connection => c.prepareStatement(sql).liftClosable }
   def execute(sql: String) = { s: Statement => s.execute(sql) }
+  def executePS = { s: PreparedStatement => s.execute }
   def toResultSet[M[_] : ClosableM](sql: String) = { s: Statement => s.executeQuery(sql).liftClosable }
   def toSingleResultSet = { resultSet: ResultSet =>
     if (!resultSet.next) throw new IllegalStateException()
