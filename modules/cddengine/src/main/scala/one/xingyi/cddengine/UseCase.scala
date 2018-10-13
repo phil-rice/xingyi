@@ -57,7 +57,7 @@ object CompositeUseCase {
     override def useCases[P, R](t: CompositeUseCase[P, R]): List[UseCase[P, R]] = t.allUseCases
   }
 }
-class CompositeUseCase[P, R](val allUseCases: List[UseCase[P, R]], val data: EngineComponentData) extends UseCase[P, R] {
+case class CompositeUseCase[P, R](val allUseCases: List[UseCase[P, R]], val data: EngineComponentData) extends UseCase[P, R] {
   val allScenarios: List[Scenario[P, R]] = allUseCases.flatMap(_.allScenarios)
   def or(useCase1: UseCase1[P, R]) = new CompositeUseCase[P, R](allUseCases :+ useCase1, EngineComponentData(DefinedInSourceCodeAt.definedInSourceCodeAt(), None))
   override def copyWithOnly(list: List[Scenario[P, R]]): UseCase[P, R] = new CompositeUseCase(allUseCases.map(_.copyWithOnly(list)),data)
