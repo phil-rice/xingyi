@@ -2,6 +2,7 @@
 package one.xingyi.cddscenario
 
 import one.xingyi.cddscenario.EngineComponentData._
+import one.xingyi.core.builder.{No, Yes}
 import one.xingyi.core.misc.IdMaker
 import one.xingyi.core.optics.Lens
 
@@ -9,10 +10,6 @@ import scala.annotation.implicitNotFound
 import scala.language.experimental.macros
 import scala.language.higherKinds
 
-
-sealed trait YesNo
-trait Yes extends YesNo
-trait No extends YesNo
 
 //just to make equals work. Will probably remove when refactor scenario logic
 //case class BecauseDefinedAt[P, R](becauseFn: PartialFunction[P, R]) extends (P => Boolean) {

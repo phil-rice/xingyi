@@ -3,10 +3,14 @@ package one.xingyi.cddscenario
 
 import one.xingyi.core.optics.Lens
 import one.xingyi.core.reflection.SingleDefinedInSourceCodeAt
+import one.xingyi.core.strings.HasTitle
 
 trait HasEngineComponentData[T] extends (T => EngineComponentData)
 
 object EngineComponentData {
+  implicit object toTitleForEngineComponentData extends HasTitle[EngineComponentData] {
+    override def apply(v1: EngineComponentData): Option[String] = v1.title
+  }
   def toTitleL: Lens[EngineComponentData, Option[String]] = Lens(_.title, (d, t) => d.copy(title = t))
   def toCommentL: Lens[EngineComponentData, Option[String]] = Lens(_.comment, (d, c) => d.copy(comment = c))
   def toReferencesL: Lens[EngineComponentData, List[Reference]] = Lens(_.references, (d, r) => d.copy(references = r))
