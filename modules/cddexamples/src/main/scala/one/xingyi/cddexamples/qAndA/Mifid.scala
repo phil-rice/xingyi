@@ -2,7 +2,7 @@
 package one.xingyi.cddexamples.qAndA
 
 import one.xingyi.cddengine.{Engine, SimpleValidation, UseCase1}
-import one.xingyi.cddmustache.{Mustache, MustacheWithTemplate}
+import one.xingyi.cddmustache.{RawMustache, Mustache}
 import one.xingyi.core.strings.ShortPrint
 import one.xingyi.json4s.Json4sWriter._
 import org.json4s.JValue
@@ -141,7 +141,7 @@ class MifidDecisionMaker extends Question {
 object Trace extends App {
 
   implicit def v[P, R] = new SimpleValidation[P, R]
-  implicit def template: MustacheWithTemplate[JValue] = Mustache.withTemplate("main.template.mustache") apply("question.mustache", "Coolness")
+  implicit val template = Mustache("Coolness", "question.mustache")
 
   private val categoriser: Engine[EntityDetails, MifidConclusion] = new MifidDecisionMaker().categoriser
   categoriser.tools.printTraceAboutAdding("mifid")

@@ -166,6 +166,7 @@ lazy val test = (project in file("modules/test")).
   dependsOn(cep % "test->test;compile->compile").
   dependsOn(apachejdbc % "test->test;compile->compile").
   dependsOn(json4s % "test->test;compile->compile").
+  dependsOn(cddmustache % "test->test;compile->compile").
   aggregate(core)
 
 lazy val sampleServer = (project in file("modules/sampleServer")).

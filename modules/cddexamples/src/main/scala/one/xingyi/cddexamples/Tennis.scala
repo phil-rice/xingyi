@@ -2,7 +2,7 @@
 package one.xingyi.cddexamples
 
 import one.xingyi.cddengine._
-import one.xingyi.cddmustache.Mustache
+import one.xingyi.cddmustache.{RawMustache, Mustache}
 import one.xingyi.cddscenario.InternetDocument
 class Tennis {
   val definition = InternetDocument("CodingDojo", "http://codingdojo.org/cgi-bin/wiki.pl?KataTennis")
@@ -75,9 +75,10 @@ class Tennis {
 
 
 object Tennis extends Tennis with App {
-  import Mustache._
+  import RawMustache._
 
-import one.xingyi.json4s.Json4sWriter._
+  import one.xingyi.json4s.Json4sWriter._
+  implicit val mustache = Mustache(title = "Tennis")
   implicit def v[P, R] = new SimpleValidation[P, R]
   tennis.tools.printTraceAboutAdding("tennis")
   tennis.tools.printPages("tennis")

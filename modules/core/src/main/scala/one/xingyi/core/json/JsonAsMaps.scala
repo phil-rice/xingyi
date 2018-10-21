@@ -20,4 +20,5 @@ trait TemplateEngine[J] extends (JsonMaps[J] => String)
 class JsonMaps[J](val jsonValue: JsonValue)(implicit jWriter: JsonWriter[J]) {
   lazy val map = JsonMaps.toMap(jsonValue)
   lazy val json = jWriter(jsonValue)
+  override def toString: String = s"JsonMaps(${map})"
 }

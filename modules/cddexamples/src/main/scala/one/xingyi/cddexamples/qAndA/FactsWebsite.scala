@@ -4,7 +4,7 @@ package one.xingyi.cddexamples.qAndA
 import java.util.ResourceBundle
 
 import com.sun.net.httpserver.HttpExchange
-import one.xingyi.cddmustache.{Mustache, MustacheWithTemplate}
+import one.xingyi.cddmustache.{RawMustache, Mustache}
 import one.xingyi.core.json.JsonLanguage._
 import one.xingyi.core.json.{JsonMaps, JsonObject, JsonString}
 import one.xingyi.javaserver.{HttpUtils, PathAndHandler, SimpleHttpResponse, SimpleHttpServer}
@@ -15,7 +15,7 @@ import scala.util.Try
 
 object FactsWebsite extends App with Question {
   implicit val resource = ResourceBundle.getBundle("message")
-  implicit def template: MustacheWithTemplate[JValue] = Mustache.withTemplate("main.template.mustache") apply("question.mustache", "Coolness")
+  implicit val template = Mustache(title = "coolness", templateName = "question.mustache")
   val executor = HttpUtils.makeDefaultExecutor
   var theEntity = entity
 
@@ -42,7 +42,7 @@ object FactsWebsite extends App with Question {
           })
           theEntity = blackboard.update(theEntity)(x)
           HttpUtils.process(httpExchange, () => new SimpleHttpResponse(200, "text/html", html))
-        } catch {case e:Throwable => e.printStackTrace(); HttpUtils.process(httpExchange, () => new SimpleHttpResponse(200, "text/html", s"Error: $e"))}
+        } catch {case e: Throwable => e.printStackTrace(); HttpUtils.process(httpExchange, () => new SimpleHttpResponse(200, "text/html", s"Error: $e"))}
       }
     },
     new PathAndHandler {

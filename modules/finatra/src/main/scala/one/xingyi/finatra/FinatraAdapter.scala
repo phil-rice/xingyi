@@ -4,9 +4,10 @@ package one.xingyi.finatra
 import com.twitter.finagle.http.{Method, Request, Response}
 import com.twitter.finatra.utils.FuturePools
 import com.twitter.util.{Await, FuturePool, Local, Return, Throw, Duration => TDuration, Future => TFuture}
-import one.xingyi.core.http._
+import one.xingyi.core.http.{Header, _}
 import one.xingyi.core.local.{Holder, SimpleLocalOps}
 import one.xingyi.core.monad.{Async, LocalVariable, MonadCanFailWithException, MonadWithState}
+import one.xingyi.core.strings.Strings
 
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.duration.Duration
@@ -83,16 +84,25 @@ object FinatraImplicits {
   }
 
   implicit object ToServiceResponseForFinatraResponse extends ToServiceResponse[Response] {
-    override def apply(response: Response): ServiceResponse = ServiceResponse(Status(response.statusCode), Body(response.contentString), ContentType(response.mediaType.getOrElse("")))
+    override def apply(response: Response): ServiceResponse = {
+      ServiceResponse(status = Status(response.status.code), body = Body(response.contentString), headers = response.headerMap.map { case (n, v) => Header(n, v) }.toList)
+    }
   }
 
   implicit object ToServiceRequest extends ToServiceRequest[Request] {
-    override def apply(request: Request): ServiceRequest = ServiceRequest(Get, Uri(request.path), request.headerMap.get("Accept").map(AcceptHeader(_)))
+    override def apply(request: Request): ServiceRequest = {
+      val headers = request.headerMap.map { case (n, v) => Header(n, v) }.toList
+      val string = Strings.toOption(request.contentString)
+      ServiceRequest(Get, uri = Uri(request.uri), headers = headers, body = string.map(Body.apply))
+    }
   }
 
   implicit object FromServiceRequestForFinatraRequest extends FromServiceRequest[TFuture, Request] {
-    override def apply(serviceRequest: ServiceRequest) = TFuture.value(Request(Method(serviceRequest.method.toString.toUpperCase), serviceRequest.uri.asUriString))
+    override def apply(serviceRequest: ServiceRequest) = {
+      val request = Request(Method(serviceRequest.method.toString.toUpperCase), serviceRequest.uri.asUriString)
+      serviceRequest.headers.foreach { h => request.headerMap.add(h.name, h.value) }
+      serviceRequest.body.foreach(body => request.setContentString(body.s))
+      TFuture.value(request)
+    }
   }
-
-
 }
