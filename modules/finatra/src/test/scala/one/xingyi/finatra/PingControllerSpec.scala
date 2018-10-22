@@ -9,7 +9,6 @@ class PingControllerSpec extends FeatureTest {
 
   override val server = new EmbeddedHttpServer(new FinatraServer(9004, new PingController))
 
-
   test("ExampleServer#perform feature") {
     server.httpGet(
       path = "/ping",
