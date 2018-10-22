@@ -34,8 +34,6 @@ object MostPopularQuery extends DomainRequestCompanionQuery[MostPopularQuery] {
     override def apply(v1: ServiceRequest) = MostPopularQuery(false).liftM
   }
 
-  implicit def fromHomePageQuery(h: HomePageQuery) = MostPopularQuery(h.bypassCache)
-
 }
 
 
