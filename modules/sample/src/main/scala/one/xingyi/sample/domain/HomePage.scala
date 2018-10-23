@@ -3,13 +3,11 @@ package one.xingyi.sample.domain
 
 import one.xingyi.core.aggregate.FindReq
 import one.xingyi.core.cache.{CachableKey, UnitId}
-import one.xingyi.core.domain.{BypassCache, DomainRequestCompanionQuery, DomainResponseCompanionObject}
 import one.xingyi.core.http._
 import one.xingyi.core.json._
 import one.xingyi.core.monad.Liftable
 //import io.circe.syntax._
 import scala.language.higherKinds
-import JsonParserLanguage._
 
 // need this, but it may be removed by 'organise imports' import io.circe.generic.auto._
 import one.xingyi.core.language.Language._
@@ -18,15 +16,15 @@ import scala.language.implicitConversions
 
 case class HomePage(mostPopular: EnrichedMostPopular, promotions: EnrichedPromotion)
 
-object HomePage extends DomainResponseCompanionObject[HomePageQuery, HomePage] {
+object HomePage  {
   implicit def homePageToJson[J: JsonWriter](implicit forMostPopular: ToJsonLib[EnrichedMostPopular], forPromotions: ToJsonLib[EnrichedPromotion]): ToJsonLib[HomePage] = {
     homePage => JsonObject("mostPopular" -> forMostPopular(homePage.mostPopular), "promotions" -> forPromotions(homePage.promotions))
   }
 }
 
-case class HomePageQuery(bypassCache: Boolean) extends BypassCache
+case class HomePageQuery(bypassCache: Boolean)
 
-object HomePageQuery extends DomainRequestCompanionQuery[HomePageQuery] {
+object HomePageQuery  {
 
   implicit def fromServiceRequestForHomePageQuery[M[_] : Liftable] = new FromServiceRequestForHomePageQuery[M]
 

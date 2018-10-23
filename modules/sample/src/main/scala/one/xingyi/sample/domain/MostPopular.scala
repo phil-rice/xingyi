@@ -3,7 +3,6 @@ package one.xingyi.sample.domain
 
 import one.xingyi.core.aggregate.{Enricher, HasChildren}
 import one.xingyi.core.cache.{CachableKey, UnitId}
-import one.xingyi.core.domain.{BypassCache, DomainRequestCompanionQuery, DomainResponseCompanionObject}
 import one.xingyi.core.json._
 import one.xingyi.core.monad.Liftable
 //needs to be here import io.circe.generic.auto._
@@ -12,9 +11,9 @@ import one.xingyi.core.language.Language._
 
 import scala.language.{higherKinds, implicitConversions}
 
-case class MostPopularQuery(bypassCache: Boolean) extends BypassCache
+case class MostPopularQuery(bypassCache: Boolean)
 
-object MostPopularQuery extends DomainRequestCompanionQuery[MostPopularQuery] {
+object MostPopularQuery  {
 
   implicit object CachableKeyForMostPopularQuery extends CachableKey[MostPopularQuery] {
     //    override def apply(v1: MostPopularQuery) = ()
@@ -40,7 +39,7 @@ object MostPopularQuery extends DomainRequestCompanionQuery[MostPopularQuery] {
 case class MostPopular(programmeIds: Seq[ProgrammeId])
 
 
-object MostPopular extends DomainResponseCompanionObject[MostPopularQuery, MostPopular] {
+object MostPopular{
 
   implicit object HasChildrenForMostPopular extends HasChildren[MostPopular, ProgrammeId] {
     override def apply(p: MostPopular): Seq[ProgrammeId] = p.programmeIds
@@ -54,7 +53,7 @@ object MostPopular extends DomainResponseCompanionObject[MostPopularQuery, MostP
 
 case class EnrichedMostPopular(programmes: Seq[Programme])
 
-object EnrichedMostPopular extends DomainResponseCompanionObject[MostPopularQuery, EnrichedMostPopular] {
+object EnrichedMostPopular  {
   implicit object EnricherFor extends Enricher[MostPopularQuery, MostPopular, ProgrammeId, Programme, EnrichedMostPopular] {
     override def apply(v1: MostPopularQuery, v2: MostPopular, v3: Seq[(ProgrammeId, Programme)]) = EnrichedMostPopular(v3.map(_._2))
   }

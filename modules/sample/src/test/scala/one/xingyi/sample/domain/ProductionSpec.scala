@@ -1,10 +1,12 @@
 package one.xingyi.sample.domain
 import one.xingyi.core.UtilsSpec
 import one.xingyi.core.cache.{CachableKey, ObjectId}
-import one.xingyi.core.http.{Get, ServiceRequest, ToServiceRequest, Uri}
+import one.xingyi.core.http._
 import one.xingyi.core.json._
+import one.xingyi.core.monad.IdentityMonad
 
 import scala.reflect.ClassTag
+import scala.util.Success
 
 class ProductionSpec[J: JsonWriter : JsonParser : ClassTag] extends UtilsSpec with DomainFixture {
 
@@ -22,6 +24,10 @@ class ProductionSpec[J: JsonWriter : JsonParser : ClassTag] extends UtilsSpec wi
     implicitly[ToServiceRequest[ProductionId]].apply(productionId2) shouldBe ServiceRequest(Get, Uri(s"/production/${productionId2.id}"))
   }
 
+  it should "have a FromServiceRequest" in {
+    implicitly[FromServiceRequest[IdentityMonad, ProductionId]].apply(ServiceRequest(Get, Uri("/something/id"))).value shouldBe Success(ProductionId("id", false))
+  }
+
   it should "have a CachableKey" in {
     val key = implicitly[CachableKey[ProductionId]]
     key.id(productionId2) shouldBe ObjectId(productionId2)
@@ -37,7 +43,7 @@ class ProductionSpec[J: JsonWriter : JsonParser : ClassTag] extends UtilsSpec wi
   }
 
   it should "have a toJson" in {
-    implicitly[ToJson[Production]].apply(production2) shouldBe """{productionInfo: "someProduction"}"""
+    implicitly[ToJson[Production]].apply(production2).noWhiteSpace shouldBe """{"productionInfo":"someProduction"}"""
   }
 
 }

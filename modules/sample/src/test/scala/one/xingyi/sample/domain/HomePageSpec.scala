@@ -14,7 +14,9 @@ abstract class HomePageSpec[J: JsonWriter : ClassTag] extends UtilsSpec with Dom
   behavior of "HomePage for " + implicitly[ClassTag[J]].runtimeClass.getName
 
   it should " have a toJson" in {
-    implicitly[ToJson[HomePage]].apply(homePage).noWhiteSpace shouldBe """{"mostPopular":{"programmes":["thisisprogramme1","thisisprogramme2"]},"promotions":{"productions":["someProduction"]}}"""
+    implicitly
+      [ToJson[HomePage]].apply(homePage).noWhiteSpace shouldBe """{"mostPopular":{"programmes":["thisisprogramme1","thisisprogramme2"]},"promotions":{"productions":[{"productionInfo":"someProduction"}]}}"""
+
   }
 
   behavior of "HomePageQuery for " + implicitly[ClassTag[J]].runtimeClass.getName

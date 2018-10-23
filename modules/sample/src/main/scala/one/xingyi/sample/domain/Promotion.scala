@@ -2,8 +2,7 @@
 package one.xingyi.sample.domain
 
 import one.xingyi.core.aggregate.{Enricher, HasChildren}
-import one.xingyi.core.cache.{CachableKey, ObjectId, UnitId}
-import one.xingyi.core.domain.{BypassCache, DomainRequestCompanionQuery, DomainResponseCompanionObject}
+import one.xingyi.core.cache.{CachableKey, UnitId}
 import one.xingyi.core.http._
 import one.xingyi.core.json._
 import one.xingyi.core.language.Language._
@@ -11,9 +10,9 @@ import one.xingyi.core.monad.Monad
 
 import scala.language.{higherKinds, implicitConversions}
 
-case class PromotionQuery(bypassCache: Boolean) extends BypassCache
+case class PromotionQuery(bypassCache: Boolean)
 
-object PromotionQuery extends DomainRequestCompanionQuery[PromotionQuery] {
+object PromotionQuery {
 
   implicit object CachableKeyForPromotionQuery extends CachableKey[PromotionQuery] {
     override def id(req: PromotionQuery) = UnitId
@@ -32,7 +31,7 @@ object PromotionQuery extends DomainRequestCompanionQuery[PromotionQuery] {
 
 case class Promotion(productionIds: List[ProductionId])
 
-object Promotion extends DomainResponseCompanionObject[PromotionQuery, Promotion] {
+object Promotion {
 
   implicit object HasChildrenForPromotion extends HasChildren[Promotion, ProductionId] {
     override def apply(p: Promotion): Seq[ProductionId] = p.productionIds
@@ -48,7 +47,7 @@ object Promotion extends DomainResponseCompanionObject[PromotionQuery, Promotion
 
 case class EnrichedPromotion(productions: Seq[Production])
 
-object EnrichedPromotion extends DomainResponseCompanionObject[PromotionQuery, EnrichedPromotion] {
+object EnrichedPromotion {
   implicit object EnricherForEP extends Enricher[PromotionQuery, Promotion, ProductionId, Production, EnrichedPromotion] {
     override def apply(v1: PromotionQuery, v2: Promotion, v3: Seq[(ProductionId, Production)]) = EnrichedPromotion(v3.map(_._2))
   }

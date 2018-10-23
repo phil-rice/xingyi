@@ -6,15 +6,16 @@ import one.xingyi.tagless.TaglessLanguage
 import one.xingyi.sample.domain.{ProductionId, Programme, ProgrammeId}
 import one.xingyi.core.endpoint.MatchesServiceRequest
 import one.xingyi.core.http.{Failer, Get, ServiceRequest, ServiceResponse}
+import one.xingyi.core.json.{JsonParser, JsonWriter}
 import one.xingyi.core.monad.MonadCanFail
 
 import scala.language.higherKinds
 
-class FnordSetup[ M[_],Wrapper[_, _], Fail](interpreter: TaglessLanguage[M, Wrapper])
-                                           (implicit
-                                            monadCanFail: MonadCanFail[M, Fail],
-                                            failer: Failer[Fail]
-                                           ) extends PromotionServiceNames {
+class FnordSetup[M[_], J: JsonWriter : JsonParser, Wrapper[_, _], Fail](interpreter: TaglessLanguage[M, Wrapper])
+                                                                       (implicit
+                                                                        monadCanFail: MonadCanFail[M, Fail],
+                                                                        failer: Failer[Fail]
+                                                                       ) extends PromotionServiceNames {
 
   import interpreter._
 

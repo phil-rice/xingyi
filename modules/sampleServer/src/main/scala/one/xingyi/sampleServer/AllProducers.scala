@@ -6,7 +6,7 @@ import java.util.concurrent.Executors
 
 import one.xingyi.core.cache.{CachingServiceFactory, DurationStaleCacheStategy}
 import one.xingyi.core.http._
-import one.xingyi.core.json.JsonWriter
+import one.xingyi.core.json.{JsonParser, JsonWriter}
 import one.xingyi.core.local.ExecutionContextWithLocal
 import one.xingyi.core.logging.{LogRequestAndResult, PrintlnLoggingAdapter, SimpleLogRequestAndResult}
 import one.xingyi.core.map.NoMapSizeStrategy
@@ -15,7 +15,6 @@ import one.xingyi.core.monad.AsyncForScalaFuture._
 import one.xingyi.core.monad.MonadCanFail
 import one.xingyi.core.simpleServer.{EndpointHandler, SimpleHttpServer}
 import one.xingyi.core.strings.IndentAnd
-
 import one.xingyi.sample.{BillboardSetup, FnordSetup, VogueSetup}
 import one.xingyi.tagless.{TaglessInterpreterForToString, TaglessLanguageLanguageForKleislis, _}
 import org.json4s.JsonAST.JValue
@@ -23,9 +22,9 @@ import org.json4s.JsonAST.JValue
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.higherKinds
 
-class AllProducers[M[_], J: JsonWriter, Wrapper[_, _], Fail](language: TaglessLanguage[M, Wrapper])(implicit
-                                                                                     monadCanFail: MonadCanFail[M, Fail],
-                                                                                     failer: Failer[Fail]) {
+class AllProducers[M[_], J: JsonWriter:JsonParser, Wrapper[_, _], Fail](language: TaglessLanguage[M, Wrapper])(implicit
+                                                                                                               monadCanFail: MonadCanFail[M, Fail],
+                                                                                                               failer: Failer[Fail]) {
   val vogueSetup = new VogueSetup(language)
   val billboardSetup = new BillboardSetup(language)
   val fnordSetup = new FnordSetup(language)
@@ -43,6 +42,7 @@ class AllProducers[M[_], J: JsonWriter, Wrapper[_, _], Fail](language: TaglessLa
 
 class AllProducersApp(port: Int) {
   import one.xingyi.json4s.Json4sWriter._
+  import one.xingyi.json4s.Json4sParser._
   println("All producers")
   implicit val executors = Executors.newFixedThreadPool(10)
   implicit val exc = new ExecutionContextWithLocal(ExecutionContext.fromExecutor(executors))

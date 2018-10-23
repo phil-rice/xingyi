@@ -19,7 +19,7 @@ trait CachableKey[Req] {
 }
 
 object CachableKey {
-  implicit def cachableKeyDefault[T] = new CachableKey[T] {
+  implicit def cachableKeyDefault[T]: CachableKey[T] = new CachableKey[T] {
     override def id(req: T): Id = ObjectId(req)
 
     override def bypassCache(req: T): Boolean = false
