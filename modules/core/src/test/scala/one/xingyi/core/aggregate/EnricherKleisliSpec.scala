@@ -12,7 +12,7 @@ import scala.util.Success
 class EnricherKleisliSpec[M[_], Fail](implicit monadCanFail: MonadCanFailWithException[M, Fail], async: Async[M]) extends UtilsSpec with AsyncFixture[M] {
 
   type Kleisli[Req, Res] = Req => M[Res]
-  val enricher = new EnrichLanguage[Kleisli] with EnrichKleisli[M] {
+  val enricher = new EnrichForTaglessLanguage[Kleisli] with EnrichKleisli[M] {
     override protected implicit def monad: Monad[M] = monadCanFail
   }
 

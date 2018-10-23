@@ -5,7 +5,6 @@ import java.util.concurrent.Executors
 
 import com.twitter.finagle.http.{Request, Response}
 import com.twitter.finatra.http.Controller
-import com.twitter.finatra.http.response.ResponseBuilder
 import com.twitter.finatra.utils.FuturePools
 import com.twitter.util.{Future, FuturePool}
 import one.xingyi.core.cache._
@@ -16,7 +15,6 @@ import one.xingyi.core.metrics.PrintlnPutMetrics
 import one.xingyi.finatra.{AsyncForTwitterFuture, FinatraServer, PingController}
 import one.xingyi.json4s.{Json4sParser, Json4sWriter}
 import one.xingyi.sample.{PromotionServiceNames, PromotionSetup}
-import one.xingyi.tagless.TaglessLanguageLanguageForKleislis
 import org.json4s.JsonAST.JValue
 
 
@@ -33,15 +31,11 @@ class FinatraPromotionSetup(implicit futurePool: FuturePool) extends Controller 
   }
   implicit val cacheFactory = new CachingServiceFactory[Future](new DurationStaleCacheStategy(100000000l, 10000000000l), new MaxMapSizeStrategy(1000, 100))
 
-  val interpreter = new TaglessLanguageLanguageForKleislis[Future, Throwable]
 
   implicit val executors = Executors.newFixedThreadPool(10)
 
-  import one.xingyi.core.http.Failer.failerForThrowable
-
-  private val language = interpreter.NonFunctionalLanguageService()
   //    private val debugLanguage = new DebugEachObjectifyEndpoint(language)
-  val setup = new PromotionSetup[Future, interpreter.Kleisli, Throwable, JValue](language)
+  val setup = new PromotionSetup[Future,  Throwable, JValue]
 
   import one.xingyi.finatra.FinatraImplicits._
 

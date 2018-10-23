@@ -10,12 +10,21 @@ trait HasChildren[Main, Children] extends (Main => Seq[Children])
 
 trait Enricher[Req, Parent, ChildId, Child, Res] extends ((Req, Parent, Seq[(ChildId, Child)]) => Res)
 
-trait EnrichLanguage[Wrapper[_, _]] {
+trait EnrichForTaglessLanguage[Wrapper[_, _]] {
   def enrichPrim[ReqP: ClassTag, ResP, ReqC, ResC, ResE: ClassTag](parent: Wrapper[ReqP, ResP], child: Wrapper[ReqC, ResC])(implicit findChildIds: HasChildren[ResP, ReqC], enricher: Enricher[ReqP, ResP, ReqC, ResC, ResE]): Wrapper[ReqP, ResE]
 
   case class enrich[ReqP: ClassTag, ResP](parent: Wrapper[ReqP, ResP]) {
     case class withChild[ReqC, ResC](child: Wrapper[ReqC, ResC])(implicit findChildIds: HasChildren[ResP, ReqC]) {
       def mergeInto[ResE: ClassTag](implicit enricher: Enricher[ReqP, ResP, ReqC, ResC, ResE]): Wrapper[ReqP, ResE] = enrichPrim(parent, child)
+    }
+  }
+
+}
+trait EnrichLanguage[M[_]] extends EnrichKleisli[M] {
+
+  case class enrich[ReqP: ClassTag, ResP](parent: ReqP => M[ResP]) {
+    case class withChild[ReqC, ResC](child: ReqC => M[ResC])(implicit findChildIds: HasChildren[ResP, ReqC]) {
+      def mergeInto[ResE: ClassTag](implicit enricher: Enricher[ReqP, ResP, ReqC, ResC, ResE]): ReqP => M[ResE] = enrichPrim[ReqP, ResP, ReqC, ResC, ResE](parent, child)
     }
   }
 

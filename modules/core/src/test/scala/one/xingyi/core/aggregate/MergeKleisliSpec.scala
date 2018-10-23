@@ -12,7 +12,7 @@ import scala.util.{Failure, Success}
 abstract class MergeKleisliSpec[M[_], Fail](implicit monadCanFail: MonadCanFailWithException[M, Fail], async: Async[M]) extends UtilsSpec with AsyncFixture[M] {
 
   type Kleisli[Req, Res] = Req => M[Res]
-  val merger = new MergeLanguage[Kleisli] with MergeKleisli[M] {
+  val merger = new MergeForTaglessLanguage[Kleisli] with MergeKleisli[M] {
     override protected implicit def monad: Monad[M] = monadCanFail
   }
 

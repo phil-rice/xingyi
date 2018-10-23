@@ -126,9 +126,9 @@ val cddscalatest = (project in file("modules/cddscalatest")).
   settings(scalatestSettings)
 
 
-lazy val tagless = (project in file("modules/tagless")).
-  settings(publishSettings: _*).
-  dependsOn(core % "test->test;compile->compile").aggregate(core)
+//lazy val tagless = (project in file("modules/tagless")).
+//  settings(publishSettings: _*).
+//  dependsOn(core % "test->test;compile->compile").aggregate(core)
 
 lazy val cddscenario = (project in file("modules/cddscenario")).
   settings(reflectionSettings: _*).
@@ -173,7 +173,7 @@ lazy val sampleServer = (project in file("modules/sampleServer")).
   settings(publishSettings: _*).
   settings(publishArtifact := false).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
-  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
+//  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   dependsOn(sample % "test->test;compile->compile").aggregate(sample).
   dependsOn(json4s)
 
@@ -187,7 +187,7 @@ lazy val json4s = (project in file("modules/json4s")).
 
 lazy val sample = (project in file("modules/sample")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
-  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
+//  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
 
@@ -222,6 +222,6 @@ val root = (project in file(".")).
     sample,
     sampleServer,
     json4s, //
-    tagless ,//
+//    tagless ,//
     test
   )

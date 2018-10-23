@@ -5,16 +5,15 @@ import java.util.ResourceBundle
 import java.util.concurrent.Executors
 
 import one.xingyi.core.cache.{CachingServiceFactory, DurationStaleCacheStategy}
-import one.xingyi.core.monad.AsyncForScalaFuture.ImplicitsForTest._
-import one.xingyi.core.monad.AsyncForScalaFuture._
 import one.xingyi.core.http._
-import one.xingyi.core.logging.{AbstractLogRequestAndResult, LogRequestAndResult, PrintlnLoggingAdapter, SimpleLogRequestAndResult}
+import one.xingyi.core.logging.{LogRequestAndResult, PrintlnLoggingAdapter, SimpleLogRequestAndResult}
 import one.xingyi.core.map.NoMapSizeStrategy
 import one.xingyi.core.metrics.PrintlnPutMetrics
+import one.xingyi.core.monad.AsyncForScalaFuture.ImplicitsForTest._
+import one.xingyi.core.monad.AsyncForScalaFuture._
 import one.xingyi.core.simpleServer.{EndpointHandler, SimpleHttpServer}
 import one.xingyi.json4s.{Json4sParser, Json4sWriter}
 import one.xingyi.sample.PromotionSetup
-import one.xingyi.tagless.TaglessLanguageLanguageForKleislis
 import org.json4s.JValue
 
 import scala.concurrent.Future
@@ -32,16 +31,14 @@ class SampleServer(port: Int) extends Json4sWriter with Json4sParser {
   implicit val logRequestAndResult: LogRequestAndResult[Throwable] = new SimpleLogRequestAndResult
   implicit val cacheFactory = new CachingServiceFactory[Future](DurationStaleCacheStategy(10000000000L, 10000000000000L), NoMapSizeStrategy)
 
-  val interpreter = new TaglessLanguageLanguageForKleislis[Future, Throwable]
 
 
   implicit val executors = Executors.newFixedThreadPool(10)
 
   import one.xingyi.core.http.Failer.failerForThrowable
 
-  private val language = interpreter.NonFunctionalLanguageService()
   //  private val debugLanguage = new DebugEachObjectifyEndpoint(language)
-  val setup = new PromotionSetup[Future, interpreter.Kleisli, Throwable, JValue](language)
+  val setup = new PromotionSetup[Future,  Throwable, JValue]
 
   //  println("Dumping")
   //  println(debugLanguage.dump)
