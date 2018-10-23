@@ -23,7 +23,7 @@ object ProductionId extends DomainRequestCompanionQuery[ProductionId] {
   implicit object CachableKeyForProductionId extends CachableKey[ProductionId] {
     //    override def apply(v1: ProductionId) = v1.id
     override def id(req: ProductionId) = ObjectId(req)
-    override def bypassCache(req: ProductionId) = false
+    override def bypassCache(req: ProductionId) = req.bypassCache
   }
   implicit def fromServiceRequest[M[_] : Monad] = new FromServiceRequest[M, ProductionId] {
     override def apply(v1: ServiceRequest) = ProductionId(Strings.lastSection("/")(v1.body.map(_.s).getOrElse("")), false).liftM
