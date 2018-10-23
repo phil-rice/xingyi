@@ -14,6 +14,9 @@ case class ProductionId(id: String, bypassCache: Boolean) extends BypassCache
 
 object ProductionId extends DomainRequestCompanionQuery[ProductionId] {
 
+  implicit object ToJsonLibForProductionId extends ToJsonLib[ProductionId] {
+    override def apply(v1: ProductionId): JsonValue = JsonString(v1.id)
+  }
   implicit object toRequestForProductionId extends ToServiceRequest[ProductionId] {
     override def apply(v1: ProductionId): ServiceRequest = ServiceRequest(Get, Uri(s"/production/${v1.id}"))
   }

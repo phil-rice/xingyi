@@ -6,12 +6,13 @@ import one.xingyi.tagless.TaglessLanguage
 import one.xingyi.sample.domain._
 import one.xingyi.core.endpoint.MatchesServiceRequest
 import one.xingyi.core.http.{Failer, Get, ServiceRequest, ServiceResponse}
+import one.xingyi.core.json.JsonWriter
 import one.xingyi.core.monad.MonadCanFail
 
 import scala.language.{higherKinds, implicitConversions}
 
 //class BillboardSetup[M[_], Fail](interpreter: MicroserviceBuilder[M, Fail] with MicroserviceComposers[M])
-class BillboardSetup[ M[_],Wrapper[_, _], Fail](interpreter: TaglessLanguage[M, Wrapper])
+class BillboardSetup[ M[_],J: JsonWriter, Wrapper[_, _], Fail](interpreter: TaglessLanguage[M, Wrapper])
                                                (implicit
                                                 monadCanFail: MonadCanFail[M, Fail],
                                                 failer: Failer[Fail]

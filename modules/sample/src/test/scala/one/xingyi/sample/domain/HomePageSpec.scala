@@ -2,10 +2,8 @@ package one.xingyi.sample.domain
 import one.xingyi.core.UtilsSpec
 import one.xingyi.core.aggregate.FindReq
 import one.xingyi.core.cache.{CachableKey, UnitId}
-import one.xingyi.core.domain.BypassCache
 import one.xingyi.core.http.{FromServiceRequest, Get, ServiceRequest, Uri}
 import one.xingyi.core.json.{JsonWriter, ToJson}
-import one.xingyi.core.json.JsonWriterLangauge._
 import one.xingyi.core.monad.IdentityMonad
 
 import scala.reflect.ClassTag

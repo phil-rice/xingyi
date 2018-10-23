@@ -2,7 +2,7 @@
 package one.xingyi.sample.domain
 
 import one.xingyi.core.aggregate.{Enricher, HasChildren}
-import one.xingyi.core.cache.{CachableKey, ObjectId}
+import one.xingyi.core.cache.{CachableKey, ObjectId, UnitId}
 import one.xingyi.core.domain.{BypassCache, DomainRequestCompanionQuery, DomainResponseCompanionObject}
 import one.xingyi.core.http._
 import one.xingyi.core.json._
@@ -16,7 +16,7 @@ case class PromotionQuery(bypassCache: Boolean) extends BypassCache
 object PromotionQuery extends DomainRequestCompanionQuery[PromotionQuery] {
 
   implicit object CachableKeyForPromotionQuery extends CachableKey[PromotionQuery] {
-    override def id(req: PromotionQuery) = ObjectId(req)
+    override def id(req: PromotionQuery) = UnitId
     override def bypassCache(req: PromotionQuery) = req.bypassCache
   }
 
@@ -38,8 +38,8 @@ object Promotion extends DomainResponseCompanionObject[PromotionQuery, Promotion
     override def apply(p: Promotion): Seq[ProductionId] = p.productionIds
   }
 
-  implicit object ToJsonFoPromotion extends ToJson[Promotion] {
-    override def apply(v1: Promotion) = s"""{id: [${v1.productionIds.map(id => s""""$id"""").mkString(",")}]"""
+  implicit object ToJsonFoPromotion extends ToJsonLib[Promotion] with JsonWriterLangauge {
+    override def apply(v1: Promotion) = toListT(v1.productionIds)
   }
 
   implicit def fromJsonFromPromotion[J: JsonParser](implicit forId: FromJsonLib[J, ProductionId]): FromJsonLib[J, Promotion] =

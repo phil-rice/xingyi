@@ -5,22 +5,25 @@ import java.util.ResourceBundle
 import java.util.concurrent.Executors
 
 import one.xingyi.core.cache.{CachingServiceFactory, DurationStaleCacheStategy}
-import one.xingyi.core.monad.AsyncForScalaFuture._
 import one.xingyi.core.http._
+import one.xingyi.core.json.JsonWriter
 import one.xingyi.core.local.ExecutionContextWithLocal
-import one.xingyi.core.logging.{AbstractLogRequestAndResult, LogRequestAndResult, PrintlnLoggingAdapter, SimpleLogRequestAndResult}
+import one.xingyi.core.logging.{LogRequestAndResult, PrintlnLoggingAdapter, SimpleLogRequestAndResult}
 import one.xingyi.core.map.NoMapSizeStrategy
 import one.xingyi.core.metrics.PrintlnPutMetrics
+import one.xingyi.core.monad.AsyncForScalaFuture._
 import one.xingyi.core.monad.MonadCanFail
 import one.xingyi.core.simpleServer.{EndpointHandler, SimpleHttpServer}
 import one.xingyi.core.strings.IndentAnd
+
 import one.xingyi.sample.{BillboardSetup, FnordSetup, VogueSetup}
 import one.xingyi.tagless.{TaglessInterpreterForToString, TaglessLanguageLanguageForKleislis, _}
+import org.json4s.JsonAST.JValue
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.higherKinds
 
-class AllProducers[M[_], Wrapper[_, _], Fail](language: TaglessLanguage[M, Wrapper])(implicit
+class AllProducers[M[_], J: JsonWriter, Wrapper[_, _], Fail](language: TaglessLanguage[M, Wrapper])(implicit
                                                                                      monadCanFail: MonadCanFail[M, Fail],
                                                                                      failer: Failer[Fail]) {
   val vogueSetup = new VogueSetup(language)
@@ -39,6 +42,7 @@ class AllProducers[M[_], Wrapper[_, _], Fail](language: TaglessLanguage[M, Wrapp
 }
 
 class AllProducersApp(port: Int) {
+  import one.xingyi.json4s.Json4sWriter._
   println("All producers")
   implicit val executors = Executors.newFixedThreadPool(10)
   implicit val exc = new ExecutionContextWithLocal(ExecutionContext.fromExecutor(executors))
@@ -62,7 +66,7 @@ class AllProducersApp(port: Int) {
 
     val experiment = new TaglessModelLanguage[Future] {}
     val modelLanguage = new experiment.ModelLanguage(kleisliLanguage)
-    val model: AllProducers[Future, experiment.Model, Throwable] = new AllProducers(modelLanguage)
+    val model: AllProducers[Future, JValue, experiment.Model, Throwable] = new AllProducers(modelLanguage)
     val x: experiment.Model[ServiceRequest, Option[ServiceResponse]] = model.rawMicroservice.map(new experiment.ProfileTx("/profile")).map(new experiment.StructureTx("/structure"))
     //still have the problem of how to add the endpoints, although this feels pretty clean...
     val k = x.kleisli
@@ -73,7 +77,7 @@ class AllProducersApp(port: Int) {
     val htmlEndpoint = TaglessInterpreterForToString.systemHtmlEndpoint("/html", profiledAllLanguage)(new AllProducers(_).allEndpoints())
 
     val (allProducers, profileEndpoint) = profile2.makeSystemAndProfileEndpoint(kleisliLanguage, "/profiles", new AllProducers(_),
-      { allProducers: AllProducers[Future, profile2.ProfilingWrapper, _] => allProducers.allEndpoints() })
+      { allProducers: AllProducers[Future, JValue, profile2.ProfilingWrapper, _] => allProducers.allEndpoints() })
 
     val microservice = allProducers.allEndpoints(htmlEndpoint, profileEndpoint)
     val indentAndString = microservice.indents(pf => (s"${pf.name} ${pf.description}", pf.tryProfileData.toShortString))
