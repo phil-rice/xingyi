@@ -10,7 +10,7 @@ import scala.util.Success
 
 class FinatraSampleSpec extends UtilsSpec {
   val serviceRequest = ServiceRequest(Get, Uri("/someUri"), Seq(), Some(Body("theBody")))
-  val serviceResponse = ServiceResponse(Status(200), Body("response; theBody"), List(ContentType("text/html")))
+  val serviceResponse = ServiceResponse(Status(200), Body("response: theBody"), List(ContentType("text/html")))
 
   behavior of "FinatraSample"
 
@@ -19,7 +19,7 @@ class FinatraSampleSpec extends UtilsSpec {
     setup.monad should be(a[AsyncForTwitterFuture])
     setup.loggingAdapter shouldBe PrintlnLoggingAdapter
     capturePrintln(    setup.logRequestAndResult.apply[ServiceRequest, ServiceResponse](this, "someMessagePrefix").apply(serviceRequest, Success(Right( serviceResponse))))._2.trim shouldBe
-    """[DEBUG] success.success:ServiceRequest(Get,None,Path(/someUri),WrappedArray(),List(),Some(Body(theBody))),ServiceRequest(Get,None,Path(/someUri),WrappedArray(),List(),Some(Body(theBody))),ServiceResponse(Status(200),Body(response; theBody),List(ContentType(text/html))),ServiceResponse(Status(200),Body(response; theBody),List(ContentType(text/html)))"""
+    """[DEBUG] success.success:ServiceRequest(Get,None,Path(/someUri),WrappedArray(),List(),Some(Body(theBody))),ServiceRequest(Get,None,Path(/someUri),WrappedArray(),List(),Some(Body(theBody))),ServiceResponse(Status(200),Body(response: theBody),List(ContentType(text/html))),ServiceResponse(Status(200),Body(response: theBody),List(ContentType(text/html)))"""
     Await.result(setup.httpFactory.apply(ServiceName("unused"))(serviceRequest)) shouldBe serviceResponse
 
   }

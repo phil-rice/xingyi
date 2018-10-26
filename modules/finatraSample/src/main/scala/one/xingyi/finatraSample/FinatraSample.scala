@@ -21,7 +21,7 @@ import org.json4s.JsonAST.JValue
 class FinatraPromotionSetup(implicit futurePool: FuturePool) extends Controller with Json4sParser with Json4sWriter {
   implicit val monad = new AsyncForTwitterFuture
   implicit val httpFactory = new HttpFactory[Future, ServiceRequest, ServiceResponse] {
-    override def apply(v1: ServiceName) = { req => Future.value(ServiceResponse(Status(200), Body(s"response; ${req.body.map(_.s).getOrElse("")}"), ContentType("text/html"))) }
+    override def apply(v1: ServiceName) = { req => Future.value(ServiceResponse(Status(200), Body(s"response: ${req.body.map(_.s).getOrElse("")}"), ContentType("text/html"))) }
   }
   implicit val loggingAdapter = PrintlnLoggingAdapter
   //  implicit val resourceBundle = ResourceBundle.getBundle("messages")
