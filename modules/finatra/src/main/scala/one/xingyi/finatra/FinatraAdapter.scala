@@ -2,8 +2,9 @@
 package one.xingyi.finatra
 
 import com.twitter.finagle.http.{Method, Request, Response}
+import com.twitter.finatra.http.response.ResponseBuilder
 import com.twitter.finatra.utils.FuturePools
-import com.twitter.util.{Await, FuturePool, Local, Return, Throw, Duration => TDuration, Future => TFuture}
+import com.twitter.util.{Await,  FuturePool, Local, Return, Throw, Duration => TDuration, Future => TFuture}
 import one.xingyi.core.http.{Header, _}
 import one.xingyi.core.local.{Holder, SimpleLocalOps}
 import one.xingyi.core.monad.{Async, LocalVariable, MonadCanFailWithException, MonadWithState}
@@ -68,6 +69,16 @@ class AsyncForTwitterFuture(implicit futurePool: FuturePool) extends Async[TFutu
   }
 }
 
+object FinatraAdapter{
+  def liftEndpoint(response: ResponseBuilder, fn: ServiceRequest => TFuture[Option[ServiceResponse]])(implicit toServiceRequest: ToServiceRequest[Request]): Request => TFuture[Response] = { request: Request =>
+    val serviceRequest = implicitly[ToServiceRequest[Request]] apply (request)
+    val result = fn(serviceRequest)
+    result.map {
+      case Some(serRes) => response.status(serRes.status.code).body(serRes.body.s).contentType(serviceRequest.contentType.map(_.value).getOrElse("text/html"))
+      case None => response.status(404).body(s"Endpoint  ${serviceRequest.method}  ${serviceRequest.uri} not found").contentType("text/html")
+    }
+  }
+}
 object FinatraImplicits {
 
   val localHolder = new Holder[Local] {

@@ -33,6 +33,10 @@ class OpticsSpec extends UtilsSpec with FunctionFixture {
     lensMainChildGrandchilde.set(main, 6) shouldBe OpticsMain(1, OpticsChild(2, OpticsGrandchild(6)))
   }
 
+  it should "have a setFn" in {
+    lensMaina.setFn(3)(main) shouldBe OpticsMain(3, OpticsChild(2, OpticsGrandchild(3)))
+    lensMainChildGrandchilde.setFn(6)(main) shouldBe OpticsMain(1, OpticsChild(2, OpticsGrandchild(6)))
+  }
   it should "allow values to be mapped " in {
     lensMaina.map(_ + 1)(main) shouldBe OpticsMain(2, OpticsChild(2, OpticsGrandchild(3)))
     lensMainChildGrandchilde.map(_ + 1)(main) shouldBe OpticsMain(1, OpticsChild(2, OpticsGrandchild(4)))
@@ -42,10 +46,6 @@ class OpticsSpec extends UtilsSpec with FunctionFixture {
     lensMaina andGet (_.toString) apply main shouldBe "1"
     lensMainChildGrandchilde andGet (_.toString) apply main shouldBe "3"
   }
-  //  it should "have an 'andSet' method" in {
-  //    lensMaina andSet(_ * 2) apply main shouldBe "1"
-  //    lensMainChildGrandchilde andGet(_.toString) apply main shouldBe "3"
-  //  }
 
   it should "have an identity Lens" in {
     Lens.identity(main) shouldBe main

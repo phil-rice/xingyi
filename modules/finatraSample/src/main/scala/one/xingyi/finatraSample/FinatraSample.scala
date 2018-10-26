@@ -12,7 +12,7 @@ import one.xingyi.core.http._
 import one.xingyi.core.logging.{AbstractLogRequestAndResult, LogRequestAndResult, PrintlnLoggingAdapter}
 import one.xingyi.core.map.MaxMapSizeStrategy
 import one.xingyi.core.metrics.PrintlnPutMetrics
-import one.xingyi.finatra.{AsyncForTwitterFuture, FinatraServer, PingController}
+import one.xingyi.finatra.{AsyncForTwitterFuture, FinatraAdapter, FinatraServer, PingController}
 import one.xingyi.json4s.{Json4sParser, Json4sWriter}
 import one.xingyi.sample.{PromotionServiceNames, PromotionSetup}
 import org.json4s.JsonAST.JValue
@@ -39,16 +39,9 @@ class FinatraPromotionSetup(implicit futurePool: FuturePool) extends Controller 
 
   import one.xingyi.finatra.FinatraImplicits._
 
-  def liftEndpoint(fn: ServiceRequest => Future[Option[ServiceResponse]]): Request => Future[Response] = { request: Request =>
-    val serviceRequest = implicitly[ToServiceRequest[Request]] apply (request)
-    val result = fn(serviceRequest)
-    result.map {
-      case Some(serRes) => response.status(serRes.status.code).body(serRes.body.s).contentType(serviceRequest.contentType.map(_.value).getOrElse("text/html"))
-      case None => response.status(404).body(s"Endpoint  ${serviceRequest.method}  ${serviceRequest.uri} not found").contentType("text/html")
-    }
-  }
 
-  get("/")(liftEndpoint(setup.homePageEndPoint))
+
+  get("/")(FinatraAdapter.liftEndpoint(response, setup.homePageEndPoint))
 
 }
 

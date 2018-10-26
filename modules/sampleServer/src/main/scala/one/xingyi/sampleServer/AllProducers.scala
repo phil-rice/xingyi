@@ -51,7 +51,7 @@ class AllProducers[M[_], J: JsonWriter : JsonParser, Fail](port: Int)(implicit e
 import one.xingyi.json4s.Json4sParser._
 import one.xingyi.json4s.Json4sWriter._
 
-object AllProducersApp {
+trait AllProducersSetup{
   implicit val executors = Executors.newFixedThreadPool(10)
   implicit val exc = new ExecutionContextWithLocal(ExecutionContext.fromExecutor(executors))
 
@@ -64,6 +64,9 @@ object AllProducersApp {
   implicit val logRequestAndResult: LogRequestAndResult[Throwable] = new SimpleLogRequestAndResult
   implicit val cacheFactory = new CachingServiceFactory[Future](DurationStaleCacheStategy(10000000000L, 10000000000000L), NoMapSizeStrategy)
 
+
+}
+object AllProducersApp extends AllProducersSetup {
   import one.xingyi.core.http.Failer.failerForThrowable
 
   val producers = new AllProducers(port = 9010)

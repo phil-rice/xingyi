@@ -19,5 +19,5 @@ case class Lens[A, B](get: A => B, set: (A, B) => A) extends Immutable {
     (c, b) => that.transform(c, set(_, b)))
   def andThen[C](that: Lens[B, C]) = that compose this
   def andGet[C](fn: B => C) = get andThen fn
-  def andSet[C](fn: (B, C) => B): (A, C) => A = (a, c) => set(a, fn(get(a), c))
+//  def andSet[C](fn: (B, C) => B): (A, C) => A = (a, c) => set(a, fn(get(a), c))
 }
