@@ -46,7 +46,7 @@ object DecisionTreeFolder {
   def apply[P, R](list: List[Scenario[P, R]])(implicit decisionTreeFolder: DecisionTreeFolder[P, R], default: DefaultFunction[P, R]): DecisionTree[P, R] =
     list.foldLeft[DecisionTree[P, R]](DecisionTree.empty)(decisionTreeFolder)
 
-  def trace[P, R](list: List[Scenario[P, R]])(implicit validation: Validation[P, R], decisionTreeFolder: DecisionTreeFolder[P, R]): List[TraceData[P, R]] =
+  def trace[P, R](list: Seq[Scenario[P, R]])(implicit validation: Validation[P, R], decisionTreeFolder: DecisionTreeFolder[P, R]): List[TraceData[P, R]] =
     list.zipWithIndex.foldLeft[List[TraceData[P, R]]](List()) {
       case (acc, (s, i)) =>
         val tree = acc.headOption.fold(DecisionTree.empty[P, R])(t => t.tree)

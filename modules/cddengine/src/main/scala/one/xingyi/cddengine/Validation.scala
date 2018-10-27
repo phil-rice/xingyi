@@ -6,7 +6,7 @@ import one.xingyi.cddscenario.Scenario
 sealed trait ValidationIssues[P, R]
 case class ScenarioComesToWrongConclusion[P, R](s: Scenario[P, R], actualResult: R) extends ValidationIssues[P, R]
 
-case class ValidationReport[P, R](engine: Engine[P, R], issues: List[ValidationIssues[P, R]])
+case class ValidationReport[P, R](engine: Engine[P, R], issues: Seq[ValidationIssues[P, R]])
 trait Validation[P, R] extends (Engine[P, R] => ValidationReport[P, R])
 
 class SimpleValidation[P, R] extends Validation[P, R] {
@@ -16,6 +16,4 @@ class SimpleValidation[P, R] extends Validation[P, R] {
       println(s" s is [${s.situation}]\n Actual is    $r\nExpected is ${s.result} result: $result")
       result
     })
-
-
 }
