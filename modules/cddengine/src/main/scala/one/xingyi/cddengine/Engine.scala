@@ -67,10 +67,10 @@ case class BuildEngineRawData[P, R](tree: DecisionTree[P, R], useCases: Seq[UseC
 trait DecisionTreeMaker[T[_, _], P, R] extends (T[P, R] => BuildEngineRawData[P, R])
 
 object DecisionTreeMaker {
-  implicit def defaultDecisionTreeMaker[T[_, _], P, R](implicit hasScenarios: HasScenarios[T], hasUseCases: HasUseCases[T], dtFolder: DecisionTreeFolder[P, R]): DecisionTreeMaker[T, P, R] = {
+  implicit def defaultDecisionTreeMaker[T[_, _], P, R](implicit hasScenarios: HasScenarios[T], hasUseCases: HasUseCases[T], dtFolder: DecisionTreeFolder): DecisionTreeMaker[T, P, R] = {
     t =>
       val scenarios = hasScenarios.allScenarios[P, R](t)
-      val decisionTree = scenarios.foldLeft(DecisionTree.empty[P, R])(dtFolder)
+      val decisionTree = scenarios.foldLeft(DecisionTree.empty[P, R])(dtFolder.apply)
       cddengine.BuildEngineRawData(decisionTree, hasUseCases.useCases[P, R](t), scenarios)
   }
 }

@@ -4,18 +4,18 @@ import one.xingyi.cddscenario.{CompositeScenarioLogic, Scenario}
 import one.xingyi.core.UtilsSpec
 import one.xingyi.core.reflection.DefinedInSourceCodeAtLanguage
 
-class DecisionTreeSimpleFoldSpec extends UtilsSpec with DecisionTreeFixture with DefinedInSourceCodeAtLanguage{
+class DecisionTreeSimpleFoldSpec extends UtilsSpec with DecisionTreeFixture with DefinedInSourceCodeAtLanguage {
 
-  val x = implicitly[DecisionTreeFolder[String, String]]
+  val x = implicitly[DecisionTreeFolder]
 
-  def folder(s: List[Scenario[String, String]])(implicit f: DecisionTreeFolder[String, String]) = {
-    val result = s.foldLeft(DecisionTree.empty[String, String])(f)
+  def folder(s: List[Scenario[String, String]])(implicit f: DecisionTreeFolder) = {
+    val result = s.foldLeft(DecisionTree.empty[String, String])(f.apply)
     result.issues shouldBe List()
     result.root
   }
 
-  def folderHasIssues(s: List[Scenario[String, String]])(implicit f: DecisionTreeFolder[String, String]) =
-    s.foldLeft(DecisionTree.empty[String, String])(f)
+  def folderHasIssues(s: List[Scenario[String, String]])(implicit f: DecisionTreeFolder) =
+    s.foldLeft(DecisionTree.empty[String, String])(f.apply)
 
   behavior of "Decision tree folding"
 
