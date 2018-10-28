@@ -11,17 +11,18 @@ class DataNeededToMakeANewTreeSpec extends UtilsSpec with DecisionTreeFixture {
   val issue1 = DecisionIssueForTest[String, String](conca, snormal)
   val issue2 = DecisionIssueForTest[String, String](concb, sa)
 
-//  lazy val data = DecisionTreeFoldingData(treeNormalPassport, mock[])
+  private val treeAndScenario = TreeAndScenario(treeNormalPassport, snormal2)
+  val data = DataNeededToMakeANewTree(treeAndScenario, mock[DTFolderStrategy])
 
-  //  it should "turn an issue into a DecisionTree, like the old one but with one extra issue" in {
-  //    val treeWithIssue1 = treeNormalPassport.copy(issues = List(issue1))
-  //    val treeWithIssue1And2 = treeNormalPassport.copy(issues = List(issue1, issue2))
-  //    DecisionTreeFolder.recordError(treeNormalPassport)(issue1) shouldBe treeWithIssue1
-  //    DecisionTreeFolder.recordError(treeWithIssue1)(issue2) shouldBe treeWithIssue1And2
-  //  }
-  //  it should "throw exceptions that aren't decision issues" in {
-  //    val exception = new RuntimeException
-  //    intercept[RuntimeException](DecisionTreeFolder.recordError(mock[DecisionTree[String, String]])(exception)) shouldBe exception
-  //
-  //  }
+  behavior of "DataNeededToMakeANewTree"
+
+  it should "have the old tree as the tree in the 'TreeAndScenario'" in {
+    data.oldTree shouldBe treeNormalPassport
+  }
+  it should " delegate conclusionAndScenario to the 'TreeAndScenario'" in {
+    data.conclusionAndScenario shouldBe treeAndScenario.conclusionAndScenario
+  }
+  it should "delegate lens to the 'TreeAndScenario'" in {
+    data.lens shouldBe treeAndScenario.lens
+  }
 }

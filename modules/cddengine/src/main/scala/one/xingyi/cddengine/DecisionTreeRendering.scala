@@ -7,25 +7,14 @@ import one.xingyi.cddscenario.{HasEngineComponentData, Scenario}
 import one.xingyi.core.json.JsonLanguage._
 import one.xingyi.core.json.{JsonList, JsonObject, JsonValue}
 import one.xingyi.core.language.AnyLanguage._
-import one.xingyi.core.reflection.IsDefinedInSourceCodeAt
-import one.xingyi.core.strings.{Files, ShortPrint, Strings}
 import one.xingyi.core.language.FunctionLanguage._
+import one.xingyi.core.reflection.IsDefinedInSourceCodeAt
+import one.xingyi.core.strings.{Files, ShortPrint}
 
-trait UrlGenerator[T] extends (T => String) {
-  def trace(prefix: String, t: T)(implicit renderConfig: RenderingConfig) = Strings.uri(renderConfig.rootTraceDirectory, prefix, apply(t))
-  def print(prefix: String, t: T)(implicit renderConfig: RenderingConfig) = Strings.uri(renderConfig.rootPrintDirectory, prefix, apply(t))
-}
-
-object RenderingConfig {
-  implicit val default = RenderingConfig()
-}
-case class RenderingConfig(rootTraceDirectory: String = "target/cdd/trace", rootPrintDirectory: String = "target/cdd/print")
 
 object DecisionTreeRendering {
   def simple[P: ShortPrint, R: ShortPrint](implicit urlGenerator: EngineUrlGenerators[P, R]): DecisionTreeRendering[JsonObject, P, R] = new SimpleDecisionTreeRendering[P, R]
-  def withScenario[P: ShortPrint, R: ShortPrint](data: WithScenarioData[P, R])(implicit urlGenerator: EngineUrlGenerators[P, R]): DecisionTreeRendering[JsonObject, P, R] = new WithScenarioRendering[P, R](data)
-  //  def trace = new TraceRenderer
-  //  def print = new PrintPagesRenderer
+  def withScenario[P: ShortPrint, R: ShortPrint](data: ScenarioAndPathThroughTree[P, R])(implicit urlGenerator: EngineUrlGenerators[P, R]): DecisionTreeRendering[JsonObject, P, R] = new ScenarioAndPathThroughTreeRendering[P, R](data)
 }
 
 object PrintRenderToFile {
@@ -36,9 +25,9 @@ class PrintRenderToFile {
 }
 
 class TraceRenderer {
-  def apply[P, R](rendering: WithScenarioData[P, R] => DecisionTreeRendering[String, P, R], prefix: String)(engine: Engine[P, R])(implicit validation: Validation[P, R], finder: DtFolderStrategyFinder, renderingConfig: RenderingConfig, printRenderToFile: PrintRenderToFile, urlGenerators: EngineUrlGenerators[P, R]) = {
+  def apply[P, R](rendering: ScenarioAndPathThroughTree[P, R] => DecisionTreeRendering[String, P, R], prefix: String)(engine: Engine[P, R])(implicit validation: Validation[P, R], finder: DtFolderStrategyFinder, renderingConfig: RenderingConfig, printRenderToFile: PrintRenderToFile, urlGenerators: EngineUrlGenerators[P, R]) = {
     val scenarios = engine.tools.scenarios
-    val list: Seq[NewTreeAndTraceData[P, R]] = DecisionTreeTracing.trace[P, R](scenarios).reverse
+    val list: Seq[NewTreeAndTraceData[P, R]] = DecisionTreeBuildTracing.trace[P, R](scenarios).reverse
     val indexs = list.zipWithIndex.collect {
       case (n: NewTreeAndTraceDataWithNewNode[P, R], i) => s"<a href=${urlGenerators.scenario(n.scenario)}>${n.scenario.logic.definedInSourceCodeAt} ${n.st.getClass.getSimpleName} ${n.scenario.situation}</a>"
       case (n: NewTreeAndTraceDataWithIssue[P, R], i) => s"<a href=${urlGenerators.scenario(n.scenario)}>${n.scenario.logic.definedInSourceCodeAt} ${n.newIssue.getClass.getSimpleName} ${n.scenario.situation}</a>"
@@ -46,7 +35,7 @@ class TraceRenderer {
     val indexPage = indexs.mkString("<br />\n")
     list.zipWithIndex.foreach { case t@(traceData, i) => printRenderToFile(urlGenerators.scenario.trace(prefix, traceData.scenario)) { pw =>
       val theseScenarios = scenarios.take(i + 1)
-      val actualRendering = rendering(WithScenarioData(traceData.scenario, DecisionTree.findWithParentsForScenario(traceData.newTree)(traceData.scenario)))
+      val actualRendering = rendering(ScenarioAndPathThroughTree(traceData.scenario, DecisionTree.findWithParentsForScenario(traceData.newTree)(traceData.scenario)))
       pw.write(actualRendering.traceDataWithIndex apply TraceDataWithIndex(traceData, indexPage))
     }
     }
@@ -56,11 +45,11 @@ class TraceRenderer {
 
 class PrintPagesRenderer {
 
-  def apply[P, R](rendering: DecisionTreeRendering[String, P, R], scenarioRendering: WithScenarioData[P, R] => DecisionTreeRendering[String, P, R])(prefix: String, engine: Engine[P, R])(implicit renderingConfig: RenderingConfig, printRenderToFile: PrintRenderToFile, urlGenerators: EngineUrlGenerators[P, R]) = {
+  def apply[P, R](rendering: DecisionTreeRendering[String, P, R], scenarioRendering: ScenarioAndPathThroughTree[P, R] => DecisionTreeRendering[String, P, R])(prefix: String, engine: Engine[P, R])(implicit renderingConfig: RenderingConfig, printRenderToFile: PrintRenderToFile, urlGenerators: EngineUrlGenerators[P, R]) = {
     printRenderToFile(urlGenerators.engine.print(prefix, engine))(_.print(rendering.engine(engine)))
     engine.tools.useCases.zipWithIndex.foreach { case (uc, i) => printRenderToFile(urlGenerators.usecase.print(prefix, uc))(pw => pw.print(rendering.useCase(uc))) }
     engine.tools.scenarios.zipWithIndex.foreach { case (s, i) =>
-      val actualRendering = scenarioRendering(WithScenarioData(s, DecisionTree.findWithParentsForScenario(engine.tools.decisionTree)(s)))
+      val actualRendering = scenarioRendering(ScenarioAndPathThroughTree(s, DecisionTree.findWithParentsForScenario(engine.tools.decisionTree)(s)))
       printRenderToFile(urlGenerators.scenario.print(prefix, s))(pw => pw.print(actualRendering.engine(engine)))
     }
   }
@@ -123,7 +112,7 @@ class SimpleDecisionTreeRendering[P, R](implicit shortPrintP: ShortPrint[P], sho
   override def issue: DecisionIssue[P, R] => JsonObject = e => JsonObject("issue" -> e.toString)
 }
 
-case class WithScenarioData[P, R](s: Scenario[P, R], nodes: List[DecisionTreeNode[P, R]])
+case class ScenarioAndPathThroughTree[P, R](s: Scenario[P, R], nodes: List[DecisionTreeNode[P, R]])
 
 sealed abstract class NodeEffect(val json: String)
 case object GoesThrough extends NodeEffect("goes_through")
@@ -131,7 +120,7 @@ case object WouldGoThrough extends NodeEffect("would_go_through")
 case object Fails extends NodeEffect("fails")
 case object NotApplicable extends NodeEffect("not_on_path")
 object NodeEffect {
-  type NodeEffectNodeFn[P, R] = WithScenarioData[P, R] => DecisionTreeNode[P, R] => Option[NodeEffect]
+  type NodeEffectNodeFn[P, R] = ScenarioAndPathThroughTree[P, R] => DecisionTreeNode[P, R] => Option[NodeEffect]
 
   def goesThroughNode[P, R]: NodeEffectNodeFn[P, R] = withScenarioData => node => withScenarioData.nodes.find(_ == node).map(_ => GoesThrough)
   def wouldGoThroughNode[P, R]: NodeEffectNodeFn[P, R] = withScenarioData => node => node.logic.accept(withScenarioData.s).toOption(WouldGoThrough)
@@ -139,10 +128,10 @@ object NodeEffect {
     case node: DecisionNode[P, R] => Some(Fails);
     case _ => None
   }
-  def apply[P, R](withScenarioData: WithScenarioData[P, R]): DecisionTreeNode[P, R] => NodeEffect = goesThroughNode[P, R] orElse wouldGoThroughNode orElse failsDecisionNode orDefault NotApplicable apply withScenarioData
+  def apply[P, R](withScenarioData: ScenarioAndPathThroughTree[P, R]): DecisionTreeNode[P, R] => NodeEffect = goesThroughNode[P, R] orElse wouldGoThroughNode orElse failsDecisionNode orDefault NotApplicable apply withScenarioData
 }
 
-class WithScenarioRendering[P, R](withScenarioData: WithScenarioData[P, R])(implicit urlGenerator: EngineUrlGenerators[P, R]) extends SimpleDecisionTreeRendering[P, R] {
+class ScenarioAndPathThroughTreeRendering[P, R](withScenarioData: ScenarioAndPathThroughTree[P, R])(implicit urlGenerator: EngineUrlGenerators[P, R]) extends SimpleDecisionTreeRendering[P, R] {
   implicit class WithSituationJsonObjectOps[From <: DecisionTreeNode[P, R]](j: From => JsonObject) {
     def addNodeEffect: From => JsonObject = { from => j(from) |+| ("node" -> NodeEffect(withScenarioData)(from).json) }
   }

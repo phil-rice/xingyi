@@ -163,6 +163,7 @@ lazy val cddscripts = (project in file("modules/cddscripts")).
 lazy val test = (project in file("modules/test")).
   settings(publishSettings: _*).
   dependsOn(core % "test->test;compile->compile").
+  dependsOn(cddengine % "test->test;compile->compile").
   dependsOn(cep % "test->test;compile->compile").
   dependsOn(apachejdbc % "test->test;compile->compile").
   dependsOn(json4s % "test->test;compile->compile").
