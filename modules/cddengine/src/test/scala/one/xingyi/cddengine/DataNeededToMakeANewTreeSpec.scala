@@ -2,7 +2,7 @@ package one.xingyi.cddengine
 import one.xingyi.cddscenario.Scenario
 import one.xingyi.core.UtilsSpec
 
-class DecisionTreeFoldingDataSpec extends UtilsSpec with DecisionTreeFixture {
+class DataNeededToMakeANewTreeSpec extends UtilsSpec with DecisionTreeFixture {
 
   behavior of "DecisionTreeFoldingData"
 

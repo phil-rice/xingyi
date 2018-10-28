@@ -66,14 +66,18 @@ case class BuildEngineRawData[P, R](tree: DecisionTree[P, R], useCases: Seq[UseC
 
 trait DecisionTreeMaker[T[_, _], P, R] extends (T[P, R] => BuildEngineRawData[P, R])
 
-object DecisionTreeMaker {
-  implicit def defaultDecisionTreeMaker[T[_, _], P, R](implicit hasScenarios: HasScenarios[T], hasUseCases: HasUseCases[T], dtFolder: DecisionTreeFolder): DecisionTreeMaker[T, P, R] = {
-    t =>
-      val scenarios = hasScenarios.allScenarios[P, R](t)
-      val decisionTree = scenarios.foldLeft(DecisionTree.empty[P, R])(dtFolder.apply)
-      cddengine.BuildEngineRawData(decisionTree, hasUseCases.useCases[P, R](t), scenarios)
+case class SimpleDecisionMaker[T[_, _], P, R](implicit hasScenarios: HasScenarios[T], hasUseCases: HasUseCases[T], dtFolder: DecisionTreeFolder) extends DecisionTreeMaker[T, P, R] {
+  override def apply(t: T[P, R]): BuildEngineRawData[P, R] = {
+    val scenarios = hasScenarios.allScenarios[P, R](t)
+    val decisionTree = scenarios.foldLeft(DecisionTree.empty[P, R])(dtFolder.foldFn)
+    BuildEngineRawData(decisionTree, hasUseCases.useCases[P, R](t), scenarios)
   }
 }
+
+object DecisionTreeMaker {
+  implicit def defaultDecisionTreeMaker[T[_, _], P, R](implicit hasScenarios: HasScenarios[T], hasUseCases: HasUseCases[T], dtFolder: DecisionTreeFolder): DecisionTreeMaker[T, P, R] = new SimpleDecisionMaker
+}
+
 object Engine {
   def apply[T[_, _] : HasScenarios : HasUseCases, P, R](t: T[P, R])(implicit decisionTreeMaker: DecisionTreeMaker[T, P, R]): Engine[P, R] = {
     val rawData = decisionTreeMaker(t)

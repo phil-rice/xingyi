@@ -2,21 +2,32 @@
 package one.xingyi.cddengine
 
 import one.xingyi.cddscenario.Scenario
-import one.xingyi.core.optics.Lens
 
 import scala.util.{Success, Try}
 
+trait DecisionTreeFolder {
+  def apply[P, R]: TreeAndScenario[P, R] => DecisionTree[P, R]
+  def foldFn[P, R]: (DecisionTree[P, R], Scenario[P, R]) => DecisionTree[P, R] = (t, s) => apply(TreeAndScenario(t, s))
+}
 
-trait DecisionTreeFolder {def apply[P, R](tree: DecisionTree[P, R], scenario: Scenario[P, R]): DecisionTree[P, R]}
-class SimpleDecisionTreeFolder(implicit folderStrategyFinder: DtFolderStrategyFinder, decisionTreeFoldingDataToNewTreeAndTraceData: DecisionTreeFoldingDataToNewTreeAndTraceData) extends DecisionTreeFolder {
-  override def apply[P, R](tree: DecisionTree[P, R], scenario: Scenario[P, R]): DecisionTree[P, R] =
-    decisionTreeFoldingDataToNewTreeAndTraceData(folderStrategyFinder.findStrategyAndApply[P, R](tree, scenario)).newTree
+case class TreeAndScenario[P, R](tree: DecisionTree[P, R], scenario: Scenario[P, R]) {
+  val lens = tree.root.findLens(scenario.situation)
+  val node: ConclusionNode[P, R] = (lens andThen DecisionTreeNode.nodeToConcL) (tree.root)
+  val conclusionAndScenario = ConclusionAndScenario(node, scenario)
+}
+
+class SimpleDecisionTreeFolder(implicit folderStrategyFinder: DtFolderStrategyFinder, decisionTreeFoldingDataToNewTreeAndTraceData: MakeANewTree) extends DecisionTreeFolder {
+  override def apply[P, R]: TreeAndScenario[P, R] => DecisionTree[P, R] =
+    folderStrategyFinder.findStrategyAndApply[P, R] andThen decisionTreeFoldingDataToNewTreeAndTraceData.apply andThen (_.newTree)
 }
 
 object DecisionTreeFolder {
   implicit def folder[P, R](implicit folderStrategyFinder: DtFolderStrategyFinder): DecisionTreeFolder = new SimpleDecisionTreeFolder
- }
+}
 
+object ConclusionAndScenario {
+  def apply[P, R](treeAndScenario: TreeAndScenario[P, R]): ConclusionAndScenario[P, R] = ConclusionAndScenario(treeAndScenario.node, treeAndScenario.scenario)
+}
 
 case class ConclusionAndScenario[P, R](conclusionNode: ConclusionNode[P, R], scenario: Scenario[P, R]) {
   private def findFails(list: List[Scenario[P, R]])(code: P => R) = list.filterNot(s => Try(s.acceptResult(s.situation, code(s.situation))) == Success(true))

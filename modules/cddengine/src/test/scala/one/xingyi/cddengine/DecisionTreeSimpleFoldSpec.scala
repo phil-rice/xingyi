@@ -14,13 +14,13 @@ class DecisionTreeSimpleFoldSpec extends UtilsSpec with DecisionTreeFixture with
   val x = implicitly[DecisionTreeFolder]
 
   def folder(s: List[Scenario[String, String]])(implicit f: DecisionTreeFolder) = {
-    val result = s.foldLeft(DecisionTree.empty[String, String])(f.apply)
+    val result = s.foldLeft(DecisionTree.empty[String, String])(f.foldFn)
     result.issues shouldBe List()
     result.root
   }
 
   def folderHasIssues(s: List[Scenario[String, String]])(implicit f: DecisionTreeFolder) =
-    s.foldLeft(DecisionTree.empty[String, String])(f.apply)
+    s.foldLeft(DecisionTree.empty[String, String])(f.foldFn)
 
   behavior of "Decision tree folding"
 
