@@ -5,14 +5,14 @@ import one.xingyi.core.UtilsSpec
 
 class AbstractDtFolderStrategySpec(val fold: DTFolderStrategy) extends UtilsSpec with DecisionTreeFixture {
 
-  def isDefinedAt[P, R](c: ConclusionNode[P, R], s: Scenario[P, R]) = fold.isDefinedAt(FolderData(c, s))
+  def isDefinedAt[P, R](c: ConclusionNode[P, R], s: Scenario[P, R]) = fold.isDefinedAt(ConclusionAndScenario(c, s))
   def foldit[P, R](c: ConclusionNode[P, R], s: Scenario[P, R]) = {
-    val fd = FolderData(c, s)
+    val fd = ConclusionAndScenario(c, s)
     isDefinedAt(c, s) shouldBe true
     fold(fd)
   }
   def foldClashes[P, R](c: ConclusionNode[P, R], s: Scenario[P, R]) = {
-    val fd = FolderData(c, s)
+    val fd = ConclusionAndScenario(c, s)
     isDefinedAt(c, s) shouldBe true
     intercept[CannotAddScenarioBecauseClashes[P, R]](fold(fd))
   }
@@ -29,7 +29,7 @@ class NullOpSpec extends AbstractDtFolderStrategySpec(NullOp) with DecisionTreeF
     isDefinedAt(c(sawa), sb) shouldBe false
   }
   it should "throw exception if called" in {
-    intercept[IllegalStateException](fold(FolderData(cEmpty, sa)))
+    intercept[IllegalStateException](fold(ConclusionAndScenario(cEmpty, sa)))
   }
 }
 class AddScenarioToEmptyConclusionSpec extends AbstractDtFolderStrategySpec(AddScenarioToEmptyConclusion) with DecisionTreeFixture {

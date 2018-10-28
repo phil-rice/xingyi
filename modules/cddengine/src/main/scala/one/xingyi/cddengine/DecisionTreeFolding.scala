@@ -3,34 +3,19 @@ package one.xingyi.cddengine
 
 import one.xingyi.cddscenario.Scenario
 import one.xingyi.core.optics.Lens
-import one.xingyi.core.functions.SemiGroupLanguage._
+
 import scala.util.{Failure, Success, Try}
 
 
-case class IssueTraceData[P, R](tree: DecisionTree[P, R], s: Scenario[P, R], oldNode: ConclusionNode[P, R], issue: DecisionIssue[P, R]) extends TraceData[P, R]
-
-case class TraceDataWithIndex[P, R](traceData: TraceData[P, R], index: String)
-sealed trait TraceData[P, R] {
-  def tree: DecisionTree[P, R]
-  def s: Scenario[P, R]
-
-}
-case class AddNodeTraceData[P, R](tree: DecisionTree[P, R], decisionTreeFoldingData: DecisionTreeFoldingData[P, R]) extends TraceData[P, R] {
-  val oldNode: ConclusionNode[P, R] = decisionTreeFoldingData.fd.conclusionNode
-  val newNode: DecisionTreeNode[P, R] = decisionTreeFoldingData.newNode
-
-  override def s: Scenario[P, R] = decisionTreeFoldingData.fd.scenario
-}
-
-case class DecisionTreeFoldingData[P, R](st: DTFolderStrategy, lens: Lens[DecisionTreeNode[P, R], DecisionTreeNode[P, R]], fd: FolderData[P, R]) {
+case class DecisionTreeFoldingData[P, R](st: DTFolderStrategy, lens: Lens[DecisionTreeNode[P, R], DecisionTreeNode[P, R]], fd: ConclusionAndScenario[P, R]) {
   val newNode = st(fd)
 }
 
 object DecisionTreeFolder {
-  def findStrategy[P, R](tree: DecisionTree[P, R], s: Scenario[P, R])(implicit folderStrategyFinder: DtFolderStrategyFinder[P, R]): Try[DecisionTreeFoldingData[P, R]] = {
+  def findStrategy[P, R](tree: DecisionTree[P, R], s: Scenario[P, R])(implicit folderStrategyFinder: DtFolderStrategyFinder): Try[DecisionTreeFoldingData[P, R]] = {
     val (lens, lensCn) = tree.root.findLensAndCnLens(s.situation)
     val node: ConclusionNode[P, R] = lensCn(tree.root)
-    val fd = FolderData(node, s)
+    val fd = ConclusionAndScenario(node, s)
     Try(folderStrategyFinder(fd)).map(s => DecisionTreeFoldingData(s, lens, fd))
   }
 
@@ -45,7 +30,7 @@ object DecisionTreeFolder {
 
   def findNewTree[P, R](tree: DecisionTree[P, R])(tryD: Try[DecisionTreeFoldingData[P, R]]) = tryD.map(applyStrategy(tree)).fold(recordError(tree), t => t)
 
-  implicit def folder[P, R](implicit folderStrategyFinder: DtFolderStrategyFinder[P, R]): DecisionTreeFolder[P, R] = {
+  implicit def folder[P, R](implicit folderStrategyFinder: DtFolderStrategyFinder): DecisionTreeFolder[P, R] = {
     (tree, s) => findNewTree(tree)(findStrategy[P, R](tree, s))
   }
 
@@ -66,19 +51,11 @@ object DecisionTreeFolder {
             IssueTraceData[P, R](recordError(tree)(e), s, d.conclusionNode, d) :: acc
           case Failure(e) => throw e
         }
-
     }
-
-
 }
 trait DecisionTreeFolder[P, R] extends ((DecisionTree[P, R], Scenario[P, R]) => DecisionTree[P, R])
 
-
-object FolderData {
-  def create[P, R]: (ConclusionNode[P, R], Scenario[P, R]) => FolderData[P, R] = (c, s) => new FolderData(c, s)
-}
-
-case class FolderData[P, R](conclusionNode: ConclusionNode[P, R], scenario: Scenario[P, R]) {
+case class ConclusionAndScenario[P, R](conclusionNode: ConclusionNode[P, R], scenario: Scenario[P, R]) {
   private def findFails(list: List[Scenario[P, R]])(code: P => R) = list.filterNot(s => Try(s.acceptResult(s.situation, code(s.situation))) == Success(true))
   lazy val (sAccepts, sRejects) = (scenario :: conclusionNode.scenarios).partition(s => scenario.logic.fn.isDefinedAt(s.situation))
   lazy val (cAccepts, cRejects) = (scenario :: conclusionNode.scenarios).partition(s => conclusionNode.logic.fn.isDefinedAt(s.situation))
@@ -86,64 +63,22 @@ case class FolderData[P, R](conclusionNode: ConclusionNode[P, R], scenario: Scen
   lazy val sAcceptsFailUsingScenarioLogic = findFails(sAccepts)(scenario.logic.fn)
 }
 
-
-sealed trait DTFolderStrategy {
-  def isDefinedAt[P, R](fd: FolderData[P, R]): Boolean
-  def apply[P, R](fd: FolderData[P, R]): DecisionTreeNode[P, R]
-
-}
-trait DFFolderSimpleStrategy extends DTFolderStrategy {
-  def apply[P, R](c: ConclusionNode[P, R], s: Scenario[P, R]): DecisionTreeNode[P, R]
-  def isDefinedAt[P, R](conclusionNode: ConclusionNode[P, R], scenario: Scenario[P, R]): Boolean
-  def isDefinedAt[P, R](fd: FolderData[P, R]): Boolean = isDefinedAt(fd.conclusionNode, fd.scenario)
-  def apply[P, R](fd: FolderData[P, R]): DecisionTreeNode[P, R] = apply(fd.conclusionNode, fd.scenario)
-}
-
-case object NullOp extends DFFolderSimpleStrategy {
-  override def isDefinedAt[P, R](conclusionNode: ConclusionNode[P, R], scenario: Scenario[P, R]): Boolean = false
-  override def apply[P, R](c: ConclusionNode[P, R], s: Scenario[P, R]): DecisionTreeNode[P, R] = throw new IllegalStateException("should not be called")
-}
-
-case object AddScenarioToEmptyConclusion extends DFFolderSimpleStrategy {
-  def isDefinedAt[P, R](conclusionNode: ConclusionNode[P, R], scenario: Scenario[P, R]): Boolean = conclusionNode.scenarios.isEmpty
-  def apply[P, R](c: ConclusionNode[P, R], s: Scenario[P, R]): DecisionTreeNode[P, R] = c.copy(scenarios = c.scenarios :+ s, logic = s.logic)
-}
-case object AddScenarioToConclusion extends DFFolderSimpleStrategy {
-  def isDefinedAt[P, R](c: ConclusionNode[P, R], s: Scenario[P, R]): Boolean = c.accept(s)
-  def apply[P, R](c: ConclusionNode[P, R], s: Scenario[P, R]): DecisionTreeNode[P, R] = c.copy(scenarios = c.scenarios :+ s)
-}
-case object AddScenarioReplaceLogic extends DFFolderSimpleStrategy {
-  override def isDefinedAt[P, R](c: ConclusionNode[P, R], s: Scenario[P, R]): Boolean = !c.logic.hasCondition && s.logic.hasCondition && c.scenarios.forall(s.logic.accept)
-  def apply[P, R](c: ConclusionNode[P, R], s: Scenario[P, R]): DecisionTreeNode[P, R] = c.copy(scenarios = c.scenarios :+ s, logic = s.logic)
-}
-case object AddScenarioMergeCondition extends DFFolderSimpleStrategy {
-  def isDefinedAt[P, R](c: ConclusionNode[P, R], s: Scenario[P, R]): Boolean = c.logic.hasCondition && s.logic.hasCondition && c.accept(s)
-  def apply[P, R](c: ConclusionNode[P, R], s: Scenario[P, R]): DecisionTreeNode[P, R] = c.copy(scenarios = c.scenarios :+ s, logic = c.logic or s.logic)
-}
-case object MakeDecisionNodeScenarioAsFalse extends DFFolderSimpleStrategy {
-  def isDefinedAt[P, R](c: ConclusionNode[P, R], s: Scenario[P, R]): Boolean = c.logic.hasCondition && !c.logic.fn.isDefinedAt(s.situation) && !c.accept(s)
-  def apply[P, R](c: ConclusionNode[P, R], s: Scenario[P, R]): DecisionTreeNode[P, R] = DecisionNode(c.logic, ConclusionNode(List(s), s.logic), c)
-}
-case object MakeDecisionNodeScenarioAsTrue extends DTFolderStrategy {
-  override def isDefinedAt[P, R](fd: FolderData[P, R]): Boolean = fd.scenario.logic.hasCondition && fd.sAcceptsFailUsingScenarioLogic.isEmpty && !fd.conclusionNode.logic.accept(fd.scenario)
-  def apply[P, R](fd: FolderData[P, R]) = DecisionNode(fd.scenario.logic, fd.conclusionNode.copy(scenarios = fd.sRejects), ConclusionNode(fd.sAccepts, fd.scenario.logic))
-}
-case object ScenariosClash extends DTFolderStrategy {
-  override def isDefinedAt[P, R](fd: FolderData[P, R]): Boolean = fd.sAcceptsFailUsingScenarioLogic.size > 0
-  override def apply[P, R](fd: FolderData[P, R]): DecisionTreeNode[P, R] = throw CannotAddScenarioBecauseClashes(fd.scenario, fd.conclusionNode, fd.sAcceptsFailUsingScenarioLogic)
-}
-
-
 object DtFolderStrategyFinder {
-  implicit def defaultFinder[P, R]: DtFolderStrategyFinder[P, R] = new SimpleDtFolderStrategyFinder[P, R]
+  implicit val defaultFinder: DtFolderStrategyFinder = new SimpleDtFolderStrategyFinder
 }
 
-trait DtFolderStrategyFinder[P, R] extends (FolderData[P, R] => DTFolderStrategy)
+trait DtFolderStrategyFinder {
+  def apply[P, R](conclusionAndScenario: ConclusionAndScenario[P, R]): DTFolderStrategy
+  def findStrategy[P, R](tree: DecisionTree[P, R], s: Scenario[P, R])(implicit folderStrategyFinder: DtFolderStrategyFinder): Try[DecisionTreeFoldingData[P, R]] = {
+    val (lens, lensCn) = tree.root.findLensAndCnLens(s.situation)
 
-class SimpleDtFolderStrategyFinder[P, R] extends DtFolderStrategyFinder[P, R] {
+    val node: ConclusionNode[P, R] = lensCn(tree.root)
+    val fd = ConclusionAndScenario(node, s)
+    Try(folderStrategyFinder(fd)).map(s => DecisionTreeFoldingData(s, lens, fd))
+  }
 
-  type SS = PartialFunction[(ConclusionNode[P, R], Scenario[P, R]), DTFolderStrategy]
-
+}
+class SimpleDtFolderStrategyFinder extends DtFolderStrategyFinder{
   val folders = List[DTFolderStrategy](
     AddScenarioToEmptyConclusion,
     AddScenarioReplaceLogic,
@@ -153,6 +88,8 @@ class SimpleDtFolderStrategyFinder[P, R] extends DtFolderStrategyFinder[P, R] {
     MakeDecisionNodeScenarioAsTrue,
     ScenariosClash)
 
-  def apply(fd: FolderData[P, R]): DTFolderStrategy = folders.find(_.isDefinedAt(fd)).getOrElse(throw new RuntimeException(s"Cannot work out how to deal with $fd"))
+  def apply[P, R](fd: ConclusionAndScenario[P, R]): DTFolderStrategy = folders.find(_.isDefinedAt(fd)).getOrElse(throw new RuntimeException(s"Cannot work out how to deal with $fd"))
+
+
 }
 
