@@ -53,7 +53,7 @@ object DecisionTreeNode {
   def DNLtoTrue[P, R] = Lens[DecisionNode[P, R], DecisionTreeNode[P, R]](_.ifTrue, (dn, c) => dn.copy(ifTrue = c))
 }
 
-sealed abstract class DecisionIssue[P, R] (msg: String)extends RuntimeException(msg){
+ abstract class DecisionIssue[P, R] (msg: String)extends RuntimeException(msg){
   def conclusionNode: ConclusionNode[P,R]
   def scenario: Scenario[P, R]
 }

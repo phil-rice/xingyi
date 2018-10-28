@@ -36,17 +36,17 @@ class PrintRenderToFile {
 }
 
 class TraceRenderer {
-  def apply[P, R](rendering: WithScenarioData[P, R] => DecisionTreeRendering[String, P, R], prefix: String)(engine: Engine[P, R])(implicit validation: Validation[P, R], finder: DtFolderStrategyFinder,  renderingConfig: RenderingConfig, printRenderToFile: PrintRenderToFile, urlGenerators: EngineUrlGenerators[P, R]) = {
+  def apply[P, R](rendering: WithScenarioData[P, R] => DecisionTreeRendering[String, P, R], prefix: String)(engine: Engine[P, R])(implicit validation: Validation[P, R], finder: DtFolderStrategyFinder, renderingConfig: RenderingConfig, printRenderToFile: PrintRenderToFile, urlGenerators: EngineUrlGenerators[P, R]) = {
     val scenarios = engine.tools.scenarios
-    val list = DecisionTreeFolder.trace[P, R](scenarios).reverse
+    val list: Seq[NewTreeAndTraceData[P, R]] = DecisionTreeFolder.trace[P, R](scenarios).reverse
     val indexs = list.zipWithIndex.collect {
-      case (AddNodeTraceData(newTree, DecisionTreeFoldingData(oldTree, st, lens, ConclusionAndScenario(conclusionNode, s))), i) => s"<a href=${urlGenerators.scenario(s)}>${s.logic.definedInSourceCodeAt} ${st.getClass.getSimpleName} ${s.situation}</a>"
-      case (IssueTraceData(newTree, oldTree, s, on, e), i) => s"<a href=${urlGenerators.scenario(s)}>${s.logic.definedInSourceCodeAt} ${e.getClass.getSimpleName} ${s.situation}</a>"
+      case (n: NewTreeAndTraceDataWithNewNode[P, R], i) => s"<a href=${urlGenerators.scenario(n.scenario)}>${n.scenario.logic.definedInSourceCodeAt} ${n.st.getClass.getSimpleName} ${n.scenario.situation}</a>"
+      case (n: NewTreeAndTraceDataWithIssue[P, R], i) => s"<a href=${urlGenerators.scenario(n.scenario)}>${n.scenario.logic.definedInSourceCodeAt} ${n.newIssue.getClass.getSimpleName} ${n.scenario.situation}</a>"
     }
     val indexPage = indexs.mkString("<br />\n")
-    list.zipWithIndex.foreach { case t@(traceData, i) => printRenderToFile(urlGenerators.scenario.trace(prefix, traceData.s)) { pw =>
+    list.zipWithIndex.foreach { case t@(traceData, i) => printRenderToFile(urlGenerators.scenario.trace(prefix, traceData.scenario)) { pw =>
       val theseScenarios = scenarios.take(i + 1)
-      val actualRendering = rendering(WithScenarioData(traceData.s, DecisionTree.findWithParentsForScenario(traceData.newTree)(traceData.s)))
+      val actualRendering = rendering(WithScenarioData(traceData.scenario, DecisionTree.findWithParentsForScenario(traceData.newTree)(traceData.scenario)))
       pw.write(actualRendering.traceDataWithIndex apply TraceDataWithIndex(traceData, indexPage))
     }
     }
@@ -70,7 +70,7 @@ class PrintPagesRenderer {
 //We could have broken this down to individual type classes, but the type signatures would be horrible as we need to be able to pass in custom renderers and there is one per entity
 trait DecisionTreeRendering[J, P, R] {
   def traceDataWithIndex: TraceDataWithIndex[P, R] => J
-  def traceData: TraceData[P, R] => J
+  def traceData: NewTreeAndTraceData[P, R] => J
   def engine: Engine[P, R] => J
   def tree: DecisionTree[P, R] => J
   def useCase: UseCase[P, R] => J
@@ -84,7 +84,7 @@ trait DecisionTreeRendering[J, P, R] {
 
 class TransformingTreeRending[J, J1, P, R](val rendering: DecisionTreeRendering[J, P, R], val transform: J => J1) extends DecisionTreeRendering[J1, P, R] {
   override def traceDataWithIndex: TraceDataWithIndex[P, R] => J1 = rendering.traceDataWithIndex andThen transform
-  override def traceData: TraceData[P, R] => J1 = rendering.traceData andThen transform
+  override def traceData: NewTreeAndTraceData[P, R] => J1 = rendering.traceData andThen transform
   override def engine: Engine[P, R] => J1 = rendering.engine andThen transform
   override def tree: DecisionTree[P, R] => J1 = rendering.tree andThen { p => println("in println" + p); p } andThen transform
   override def useCase(): UseCase[P, R] => J1 = rendering.useCase andThen transform
@@ -102,19 +102,17 @@ class SimpleDecisionTreeRendering[P, R](implicit shortPrintP: ShortPrint[P], sho
 
   }
   override def traceDataWithIndex: TraceDataWithIndex[P, R] => JsonObject = td => JsonObject("traceData" -> traceData(td.traceData), "index" -> td.index)
-  override def traceData: TraceData[P, R] => JsonObject = {
-    case t: AddNodeTraceData[P, R] => JsonObject(
-      "tree" -> tree(t.newTree),
-      "scenario" -> scenario(t.s),
-      "oldNode" -> conclusionNode(t.oldNode),
-      "newNode" -> node(t.newNode)
-    )
-    case t: IssueTraceData[P, R] => JsonObject(
-      "tree" -> tree(t.newTree),
-      "scenario" -> scenario(t.s),
-      "oldNode" -> conclusionNode(t.oldNode),
-      "issue" -> issue(t.issue)
-    )
+  override def traceData: NewTreeAndTraceData[P, R] => JsonObject = {
+    t =>
+      val raw = JsonObject(
+        "tree" -> tree(t.newTree),
+        "scenario" -> scenario(t.scenario),
+        "oldNode" -> conclusionNode(t.oldNode),
+      )
+      t match {
+        case n: NewTreeAndTraceDataWithIssue[P, R] => raw |+| ("issue" -> issue(n.newIssue))
+        case n: NewTreeAndTraceDataWithNewNode[P, R] => raw |+| ("newNode" -> node(n.newNode))
+      }
   }
   override def engine = e => JsonObject("useCases" -> JsonList(e.tools.useCases.map(useCase)), "tree" -> tree(e.tools.decisionTree), "url" -> urlGenerator.engine(e))
   override def tree = tree => JsonObject("root" -> node(tree.root)) addOptList ("issues" -> tree.issues.map(issue))
