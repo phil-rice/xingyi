@@ -6,25 +6,6 @@ import one.xingyi.core.optics.Lens
 
 import scala.util.{Success, Try}
 
-case class DecisionTreeFoldingData[P, R](oldTree: DecisionTree[P, R], st: DTFolderStrategy, lens: Lens[DecisionTreeNode[P, R], DecisionTreeNode[P, R]], fd: ConclusionAndScenario[P, R])
-
-trait DecisionTreeFoldingDataToNewTreeAndTraceData {
-  def apply[P, R](treeFoldingData: DecisionTreeFoldingData[P, R]): NewTreeAndTraceData[P, R]
-}
-
-class SimpleDecisionTreeFoldingDataToNewTreeAndTraceData extends DecisionTreeFoldingDataToNewTreeAndTraceData {
-  override def apply[P, R](treeFoldingData: DecisionTreeFoldingData[P, R]): NewTreeAndTraceData[P, R] = {
-    import treeFoldingData._
-    st(fd) match {
-      case Left(issue) => NewTreeAndTraceDataWithIssue(treeFoldingData, oldTree.copy(issues = issue :: oldTree.issues), issue)
-      case Right(node) => NewTreeAndTraceDataWithNewNode(treeFoldingData, oldTree.copy(root = lens.set(oldTree.root, node)), node)
-    }
-  }
-}
-
-object DecisionTreeFoldingDataToNewTreeAndTraceData {
-  implicit def defaultDecisionTreeFoldingDataToNewTreeAndTraceData[P, R]: DecisionTreeFoldingDataToNewTreeAndTraceData = new SimpleDecisionTreeFoldingDataToNewTreeAndTraceData
-}
 
 trait DecisionTreeFolder {def apply[P, R](tree: DecisionTree[P, R], scenario: Scenario[P, R]): DecisionTree[P, R]}
 class SimpleDecisionTreeFolder(implicit folderStrategyFinder: DtFolderStrategyFinder, decisionTreeFoldingDataToNewTreeAndTraceData: DecisionTreeFoldingDataToNewTreeAndTraceData) extends DecisionTreeFolder {
@@ -34,10 +15,7 @@ class SimpleDecisionTreeFolder(implicit folderStrategyFinder: DtFolderStrategyFi
 
 object DecisionTreeFolder {
   implicit def folder[P, R](implicit folderStrategyFinder: DtFolderStrategyFinder): DecisionTreeFolder = new SimpleDecisionTreeFolder
-  private def treeFrom[P, R](list: List[NewTreeAndTraceData[P, R]]) = list.headOption.fold(DecisionTree.empty[P, R])(_.newTree)
-  def trace[P, R](list: Seq[Scenario[P, R]])(implicit strategy: DtFolderStrategyFinder, decisionTreeFoldingDataToNewTreeAndTraceData: DecisionTreeFoldingDataToNewTreeAndTraceData): List[NewTreeAndTraceData[P, R]] =
-    list.zipWithIndex.foldLeft[List[NewTreeAndTraceData[P, R]]](List()) { case (acc, (s, i)) => decisionTreeFoldingDataToNewTreeAndTraceData(strategy.findStrategyAndApply(treeFrom(acc), s)) :: acc }
-}
+ }
 
 
 case class ConclusionAndScenario[P, R](conclusionNode: ConclusionNode[P, R], scenario: Scenario[P, R]) {

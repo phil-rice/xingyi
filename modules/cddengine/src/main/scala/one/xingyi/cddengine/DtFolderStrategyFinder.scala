@@ -1,9 +1,12 @@
 package one.xingyi.cddengine
 import one.xingyi.cddscenario.Scenario
+import one.xingyi.core.optics.Lens
 
 object DtFolderStrategyFinder {
   implicit val defaultFinder: DtFolderStrategyFinder = new SimpleDtFolderStrategyFinder
 }
+case class DecisionTreeFoldingData[P, R](oldTree: DecisionTree[P, R], st: DTFolderStrategy, lens: Lens[DecisionTreeNode[P, R], DecisionTreeNode[P, R]], fd: ConclusionAndScenario[P, R])
+
 trait DtFolderStrategyFinder {
   def apply[P, R](conclusionAndScenario: ConclusionAndScenario[P, R]): DTFolderStrategy
   def findStrategyAndApply[P, R](tree: DecisionTree[P, R], s: Scenario[P, R]): DecisionTreeFoldingData[P, R] = {
@@ -13,7 +16,6 @@ trait DtFolderStrategyFinder {
     DecisionTreeFoldingData(tree, apply(fd), lens, fd)
   }
 }
-
 
 class SimpleDtFolderStrategyFinder extends DtFolderStrategyFinder {
   val folders = List[DTFolderStrategy](

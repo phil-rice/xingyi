@@ -38,7 +38,7 @@ class PrintRenderToFile {
 class TraceRenderer {
   def apply[P, R](rendering: WithScenarioData[P, R] => DecisionTreeRendering[String, P, R], prefix: String)(engine: Engine[P, R])(implicit validation: Validation[P, R], finder: DtFolderStrategyFinder, renderingConfig: RenderingConfig, printRenderToFile: PrintRenderToFile, urlGenerators: EngineUrlGenerators[P, R]) = {
     val scenarios = engine.tools.scenarios
-    val list: Seq[NewTreeAndTraceData[P, R]] = DecisionTreeFolder.trace[P, R](scenarios).reverse
+    val list: Seq[NewTreeAndTraceData[P, R]] = DecisionTreeTracing.trace[P, R](scenarios).reverse
     val indexs = list.zipWithIndex.collect {
       case (n: NewTreeAndTraceDataWithNewNode[P, R], i) => s"<a href=${urlGenerators.scenario(n.scenario)}>${n.scenario.logic.definedInSourceCodeAt} ${n.st.getClass.getSimpleName} ${n.scenario.situation}</a>"
       case (n: NewTreeAndTraceDataWithIssue[P, R], i) => s"<a href=${urlGenerators.scenario(n.scenario)}>${n.scenario.logic.definedInSourceCodeAt} ${n.newIssue.getClass.getSimpleName} ${n.scenario.situation}</a>"
