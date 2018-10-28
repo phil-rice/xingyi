@@ -9,12 +9,14 @@ class AbstractDtFolderStrategySpec(val fold: DTFolderStrategy) extends UtilsSpec
   def foldit[P, R](c: ConclusionNode[P, R], s: Scenario[P, R]) = {
     val fd = ConclusionAndScenario(c, s)
     isDefinedAt(c, s) shouldBe true
-    fold(fd)
+    val result = fold(fd)
+    result.getOrElse(fail(s"failed: result is $result"))
   }
   def foldClashes[P, R](c: ConclusionNode[P, R], s: Scenario[P, R]) = {
     val fd = ConclusionAndScenario(c, s)
     isDefinedAt(c, s) shouldBe true
-    intercept[CannotAddScenarioBecauseClashes[P, R]](fold(fd))
+    val result = fold(fd)
+    result.left.getOrElse(s"failed: result is $result")
   }
 
 

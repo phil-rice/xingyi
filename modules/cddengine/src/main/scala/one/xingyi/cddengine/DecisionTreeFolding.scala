@@ -8,9 +8,12 @@ import one.xingyi.core.optics.Lens
 import scala.util.{Failure, Success, Try}
 
 
-case class DecisionTreeFoldingData[P, R](tree: DecisionTree[P, R], st: DTFolderStrategy, lens: Lens[DecisionTreeNode[P, R], DecisionTreeNode[P, R]], fd: ConclusionAndScenario[P, R]) {
-  val newNode = st(fd)
-
+case class DecisionTreeFoldingData[P, R](oldTree: DecisionTree[P, R], st: DTFolderStrategy, lens: Lens[DecisionTreeNode[P, R], DecisionTreeNode[P, R]], fd: ConclusionAndScenario[P, R]) extends TraceData[P, R] {
+  private val issueOrNewNode: Either[DecisionIssue[P, R], DecisionTreeNode[P, R]] = st(fd)
+  val newNode: DecisionTreeNode[P, R] = issueOrNewNode.getOrElse(fd.conclusionNode)
+  val newIssues = issueOrNewNode.fold(i => i :: oldTree.issues, _ => oldTree.issues)
+  val newTree = DecisionTree(lens.set(oldTree.root, newNode), newIssues)
+  override def s: Scenario[P, R] = fd.scenario
 }
 
 object DecisionTreeFolder {
@@ -33,16 +36,7 @@ object DecisionTreeFolder {
     list.zipWithIndex.foldLeft[List[TraceData[P, R]]](List()) {
       case (acc, (s, i)) =>
         val tree = acc.headOption.fold(DecisionTree.empty[P, R])(t => t.newTree)
-        strategy.findStrategy(tree, s) match {
-          case Success(d) =>
-            val st: DTFolderStrategy = d.st
-            val newTree: DecisionTree[P, R] = applyStrategy(tree)(d)
-            AddNodeTraceData(newTree, d) :: acc
-          case Failure(e: DecisionIssue[_, _]) =>
-            val d = e.asInstanceOf[DecisionIssue[P, R]]
-            IssueTraceData[P, R](recordError(tree)(e), tree, s, d.conclusionNode, d) :: acc
-          case Failure(e) => throw e
-        }
+        strategy.findStrategy(tree, s) :: acc
     }
 }
 trait DecisionTreeFolder {
@@ -51,7 +45,7 @@ trait DecisionTreeFolder {
 
 class SimpleDecisionTreeFolder(implicit folderStrategyFinder: DtFolderStrategyFinder) extends DecisionTreeFolder {
   override def apply[P, R](tree: DecisionTree[P, R], scenario: Scenario[P, R]): DecisionTree[P, R] =
-    folderStrategyFinder.findStrategy[P, R](tree, scenario) map applyStrategy(tree) fold(recordError(tree), t => t)
+    folderStrategyFinder.findStrategy[P, R](tree, scenario).newTree
 }
 
 
@@ -69,12 +63,11 @@ object DtFolderStrategyFinder {
 
 trait DtFolderStrategyFinder {
   def apply[P, R](conclusionAndScenario: ConclusionAndScenario[P, R]): DTFolderStrategy
-  def findStrategy[P, R](tree: DecisionTree[P, R], s: Scenario[P, R])(implicit folderStrategyFinder: DtFolderStrategyFinder): Try[DecisionTreeFoldingData[P, R]] = {
+  def findStrategy[P, R](tree: DecisionTree[P, R], s: Scenario[P, R])(implicit folderStrategyFinder: DtFolderStrategyFinder): DecisionTreeFoldingData[P, R] = {
     val (lens, lensCn) = tree.root.findLensAndCnLens(s.situation)
-
     val node: ConclusionNode[P, R] = lensCn(tree.root)
     val fd = ConclusionAndScenario(node, s)
-    Try(folderStrategyFinder(fd)).map(s => DecisionTreeFoldingData(tree, s, lens, fd))
+    DecisionTreeFoldingData(tree, folderStrategyFinder(fd), lens, fd)
   }
 
 }
