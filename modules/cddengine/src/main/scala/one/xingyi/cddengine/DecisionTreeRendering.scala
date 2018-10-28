@@ -40,7 +40,7 @@ class TraceRenderer {
     val scenarios = engine.tools.scenarios
     val list = DecisionTreeFolder.trace[P, R](scenarios).reverse
     val indexs = list.zipWithIndex.collect {
-      case (AddNodeTraceData(tree, s, st, on, nn), i) => s"<a href=${urlGenerators.scenario(s)}>${s.logic.definedInSourceCodeAt} ${st.getClass.getSimpleName} ${s.situation}</a>"
+      case (AddNodeTraceData(tree, DecisionTreeFoldingData(st, lens, FolderData(conclusionNode, s))), i) => s"<a href=${urlGenerators.scenario(s)}>${s.logic.definedInSourceCodeAt} ${st.getClass.getSimpleName} ${s.situation}</a>"
       case (IssueTraceData(tree, s, on, e), i) => s"<a href=${urlGenerators.scenario(s)}>${s.logic.definedInSourceCodeAt} ${e.getClass.getSimpleName} ${s.situation}</a>"
     }
     val indexPage = indexs.mkString("<br />\n")
