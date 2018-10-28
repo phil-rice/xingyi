@@ -36,17 +36,17 @@ class PrintRenderToFile {
 }
 
 class TraceRenderer {
-  def apply[P, R](rendering: WithScenarioData[P, R] => DecisionTreeRendering[String, P, R], prefix: String)(engine: Engine[P, R])(implicit validation: Validation[P, R], renderingConfig: RenderingConfig, printRenderToFile: PrintRenderToFile, urlGenerators: EngineUrlGenerators[P, R]) = {
+  def apply[P, R](rendering: WithScenarioData[P, R] => DecisionTreeRendering[String, P, R], prefix: String)(engine: Engine[P, R])(implicit validation: Validation[P, R], finder: DtFolderStrategyFinder,  renderingConfig: RenderingConfig, printRenderToFile: PrintRenderToFile, urlGenerators: EngineUrlGenerators[P, R]) = {
     val scenarios = engine.tools.scenarios
     val list = DecisionTreeFolder.trace[P, R](scenarios).reverse
     val indexs = list.zipWithIndex.collect {
-      case (AddNodeTraceData(tree, DecisionTreeFoldingData(st, lens, ConclusionAndScenario(conclusionNode, s))), i) => s"<a href=${urlGenerators.scenario(s)}>${s.logic.definedInSourceCodeAt} ${st.getClass.getSimpleName} ${s.situation}</a>"
-      case (IssueTraceData(tree, s, on, e), i) => s"<a href=${urlGenerators.scenario(s)}>${s.logic.definedInSourceCodeAt} ${e.getClass.getSimpleName} ${s.situation}</a>"
+      case (AddNodeTraceData(newTree, DecisionTreeFoldingData(oldTree, st, lens, ConclusionAndScenario(conclusionNode, s))), i) => s"<a href=${urlGenerators.scenario(s)}>${s.logic.definedInSourceCodeAt} ${st.getClass.getSimpleName} ${s.situation}</a>"
+      case (IssueTraceData(newTree, oldTree, s, on, e), i) => s"<a href=${urlGenerators.scenario(s)}>${s.logic.definedInSourceCodeAt} ${e.getClass.getSimpleName} ${s.situation}</a>"
     }
     val indexPage = indexs.mkString("<br />\n")
     list.zipWithIndex.foreach { case t@(traceData, i) => printRenderToFile(urlGenerators.scenario.trace(prefix, traceData.s)) { pw =>
       val theseScenarios = scenarios.take(i + 1)
-      val actualRendering = rendering(WithScenarioData(traceData.s, DecisionTree.findWithParentsForScenario(traceData.tree)(traceData.s)))
+      val actualRendering = rendering(WithScenarioData(traceData.s, DecisionTree.findWithParentsForScenario(traceData.newTree)(traceData.s)))
       pw.write(actualRendering.traceDataWithIndex apply TraceDataWithIndex(traceData, indexPage))
     }
     }
@@ -104,13 +104,13 @@ class SimpleDecisionTreeRendering[P, R](implicit shortPrintP: ShortPrint[P], sho
   override def traceDataWithIndex: TraceDataWithIndex[P, R] => JsonObject = td => JsonObject("traceData" -> traceData(td.traceData), "index" -> td.index)
   override def traceData: TraceData[P, R] => JsonObject = {
     case t: AddNodeTraceData[P, R] => JsonObject(
-      "tree" -> tree(t.tree),
+      "tree" -> tree(t.newTree),
       "scenario" -> scenario(t.s),
       "oldNode" -> conclusionNode(t.oldNode),
       "newNode" -> node(t.newNode)
     )
     case t: IssueTraceData[P, R] => JsonObject(
-      "tree" -> tree(t.tree),
+      "tree" -> tree(t.newTree),
       "scenario" -> scenario(t.s),
       "oldNode" -> conclusionNode(t.oldNode),
       "issue" -> issue(t.issue)

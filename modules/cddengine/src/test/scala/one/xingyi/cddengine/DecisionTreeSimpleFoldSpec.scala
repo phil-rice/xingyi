@@ -4,6 +4,11 @@ import one.xingyi.cddscenario.{CompositeScenarioLogic, Scenario}
 import one.xingyi.core.UtilsSpec
 import one.xingyi.core.reflection.DefinedInSourceCodeAtLanguage
 
+//OK This is an integration test
+//I could simplify it. Make it so that it just makes sure that we have created the correct folder strategy. But
+//this stuff is complicated enough that I want to be sure that it actually works!
+//I'm not sure this is the right strategy, so might change it in the future
+
 class DecisionTreeSimpleFoldSpec extends UtilsSpec with DecisionTreeFixture with DefinedInSourceCodeAtLanguage {
 
   val x = implicitly[DecisionTreeFolder]
@@ -24,6 +29,7 @@ class DecisionTreeSimpleFoldSpec extends UtilsSpec with DecisionTreeFixture with
     cE.logic.definedInSourceCodeAt.toString shouldBe "(DecisionTreeNode.scala:59)"
     cE.scenarios shouldBe List()
   }
+
   it should "fold a scenario and have a conclusion with just that scenario" in {
     folder(List(snormal)) shouldBe concNormal
     folder(List(sgun)) shouldBe concGun
@@ -62,6 +68,7 @@ class DecisionTreeSimpleFoldSpec extends UtilsSpec with DecisionTreeFixture with
   it should "make a decision node with scenario as condition if conclusion and situation come to different results, and conclusion has no condition" in {
     folder(List(sa, sbwb)) shouldBe d(sbwb, sa)
   }
+
   it should "make a decision node with scenario as condition if conclusion and situation come to different results, and conclusion has no condition, and keep supporting scenarios " in {
     folder(List(sa, sax, sa2, sbwb)) shouldBe d(sbwb.logic, c(sa, sax, sa2), c(sbwb))
   }
