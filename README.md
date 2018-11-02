@@ -1,4 +1,4 @@
-# This project is a set of tools for building sofrware, especially microservices
+# This project is a set of tools for building software, especially microservices
 
 It is written in such a way that hopefully it can be used with most if not all Scala web frameworks.  This library is 'common things': Metrics / Profiling / ServeWhileStaleWithADeadTimeCutOff_Caching / Accessing other microservices
 without actually tying down 'what Http library do I use', 'What parsing library do I use', or even 'What Aync strategy 
