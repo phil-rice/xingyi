@@ -8,28 +8,37 @@ class DecisionTreeRenderingSpec extends UtilsSpec with DecisionTreeFixture with 
 
   behavior of "SimpleDecisionTreeRendering"
 
-  val sPassportRendered = JsonObject("situation" -> "woman", "url" -> "scenario_0.html", "defined" -> sNoPassport.data.definedInSourceCodeAt.toString)
-  val sManWIthGunAndPassportRendered = JsonObject("situation" -> "man with gun and passport", "url" -> "scenario_1.html", "defined" -> sgun.definedInSourceCodeAt.toString)
-  val sManWithGunNoPasswportRendered = JsonObject("situation" -> "man with gun", "url" -> "scenario_2.html", "defined" -> sgunNoPassport.definedInSourceCodeAt.toString)
+  val simple = DecisionTreeRendering.simple[String, String]
+  val sPassportRendered = JsonObject("situation" -> "woman", "url" -> "scenario_2.html", "defined" -> sNoPassport.data.definedInSourceCodeAt.toString)
+  val sManWIthGunAndPassportRendered = JsonObject("situation" -> "man with gun and passport", "url" -> "scenario_0.html", "defined" -> sgun.definedInSourceCodeAt.toString)
+  val sManWithGunNoPasswportRendered = JsonObject("situation" -> "man with gun", "url" -> "scenario_3.html", "defined" -> sgunNoPassport.definedInSourceCodeAt.toString)
   val concGunNoPasswordRendered = JsonObject("conclusionNode" ->
                                              JsonObject("scenarios" -> JsonList(List(sManWIthGunAndPassportRendered, sManWithGunNoPasswportRendered))), "defined" -> sgun.definedInSourceCodeAt.toString)
 
-  val simple = DecisionTreeRendering.simple[String, String]
+  val dNormalGunRendered = JsonObject(
+    "decisionNode" ->
+    JsonObject("condition" -> sgun.logic.ifString, "ifTrue" -> simple.conclusionNode(concGun), "ifFalse" -> simple.conclusionNode(concNormal)),
+    "defined" -> sgun.definedInSourceCodeAt.toString)
 
   it should "render a scenario" in {
     simple.scenario(sNoPassport) shouldBe sPassportRendered
   }
 
   it should "render a conclusion node" in {
+    simple.conclusionNode(concGunGunNoPassport) shouldBe concGunNoPasswordRendered
     simple.node(concGunGunNoPassport) shouldBe concGunNoPasswordRendered
   }
 
   it should "render a decision node" in {
-    simple.node(dNormalGun) shouldBe JsonObject(
-      "decisionNode" ->
-      JsonObject("condition" -> sgun.logic.ifString, "ifTrue" -> simple.conclusionNode(concGun), "ifFalse" -> simple.conclusionNode(concNormal)),
-      "defined" -> sgun.definedInSourceCodeAt.toString)
+    simple.decisionNode(dNormalGun) shouldBe dNormalGunRendered
+    simple.node(dNormalGun) shouldBe dNormalGunRendered
   }
+
+  it should "render an issue" in {
+    val issue = mock[DecisionIssue[String, String]]
+    simple.issue(issue) shouldBe JsonObject("issue" -> issue.toString)
+  }
+
 
   it should ""
 }
