@@ -192,6 +192,12 @@ lazy val sample = (project in file("modules/sample")).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
 
+lazy val script = (project in file("modules/script")).
+  dependsOn(core % "test->test;compile->compile").aggregate(core).
+//  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
+  settings(publishArtifact := false).
+  settings(pactSettings: _*)
+
 lazy val finatraSample = (project in file("modules/finatraSample")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(finatra % "test->test;compile->compile").aggregate(finatra).
@@ -220,6 +226,7 @@ val root = (project in file(".")).
     cddexamples, //
     finatra, //
     finatraSample,
+    script,
     sample,
     sampleServer,
     json4s, //
