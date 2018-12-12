@@ -39,8 +39,8 @@ val rootLens = rawLens("person")
   // invoke the global function named "hello"
   override def render(name: String, t: T): String = inv.invokeFunction(s"render_$name", t).asInstanceOf[String]
    def rawLens(name: String): Lens[T, T] =  Lens[T, T](
-    t => inv.invokeFunction(s"lens_${name}_get", t).asInstanceOf[T],
-    { (t, v) => inv.invokeFunction(s"lens_${name}_set", t, v).asInstanceOf[T] })
+    t => inv.invokeFunction("getL", "lens_"+name,  t).asInstanceOf[T],
+    { (t, v) => inv.invokeFunction("setL", "lens_"+name, t, v).asInstanceOf[T] })
   override def parse(s: String): T = inv.invokeFunction("parse", s).asInstanceOf[T]
   override def stringLens(name: String): Lens[T, String] = objectLens(name) andThen Lens.cast[T, String]
   override def objectLens(name: String): Lens[T, T] = rootLens andThen rawLens(name)

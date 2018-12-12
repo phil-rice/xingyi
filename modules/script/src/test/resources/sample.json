@@ -7,23 +7,29 @@
       "edit": "http://localhost:8080/person/123",
       "delete": "http://localhost:8080/person/123"
     },
-    "_comment": "the structure is a gross structure describing the relationship between big objects. Note that there might not be a lens to all these structures...or there might be...",
     "_structure": [
       "person_employer",
       "person_*address"
     ],
     "_code": {
       "url": "http://localhost:8080/code/<hash>",
-      "_comment": "a list of rendering methods ",
-      "render": [
-        "html",
-        "json"
+      "utility":[
+        "parse"
       ],
-      "_comment": "a list of lens and the type on the other end",
+      "new":[
+        "person",
+        "address",
+        "employer"
+      ],
+      "render": [
+        "json",
+        "pretty"
+      ],
       "lens": {
+        "person":"object",
         "person_name": "string",
         "person_job": "string",
-        "person_*address": "*address",
+        "person_*address": "list",
         "person_employername": "string",
         "person_employer_name": "string",
         "address_line1": "string",
