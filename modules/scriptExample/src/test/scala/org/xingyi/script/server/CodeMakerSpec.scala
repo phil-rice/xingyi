@@ -36,6 +36,7 @@ class CodeMakerSpec extends FlatSpec with Matchers {
     setup { xingyi =>
 
       val j = xingyi.parse(json)
+      println(json)
 
       val namesLens = xingyi.objectLens[Payload, Payload]("root") andThen xingyi.stringLens[Payload]("person_name")
       namesLens.get(j) shouldBe "Phil Rice"

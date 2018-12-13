@@ -16,7 +16,7 @@ object Person {
 }
 
 
-class ExampleDomain(implicit xingYi: IXingYi) {
+class   ExampleDomain(implicit xingYi: IXingYi) {
   def root: Lens[Payload, Person] = xingYi.objectLens[Payload, Person]("root")
   def person_name: Lens[Person, String] = xingYi.stringLens[Person]("person_name")
   def person_address: Lens[Person, Address] = xingYi.objectLens("person_address")

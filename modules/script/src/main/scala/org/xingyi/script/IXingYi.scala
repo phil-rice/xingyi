@@ -52,7 +52,7 @@ class DefaultXingYi(engine: ScriptEngine) extends IXingYi {
 
   override def objectLens[T1 <: Domain, T2 <: Domain](name: String)(implicit maker1: DomainMaker[T1], maker2: DomainMaker[T2]): Lens[T1, T2] = Lens[T1, T2](
     { t => println(s"objectLens get$name " + t);val r= maker2.create(inv.invokeFunction("getL", "lens_" + name, t.mirror)) ;println("... " + r);r},
-    { (t, v) => maker1.create(inv.invokeFunction("setL", "lens_" + name, t.mirror, v)) })
+    { (t, v) => maker1.create(inv.invokeFunction("setL", "lens_" + name, t.mirror, v.mirror)) })
   override def stringLens[T <: Domain](name: String)(implicit maker: DomainMaker[T]): Lens[T, String] = Lens[T, String](
     { t => println(s"in stringLen$name get " + t); inv.invokeFunction("getL", "lens_" + name, t.mirror).asInstanceOf[String] },
     { (t, v) => println(s"in string lens$name: " + t + " " + v);val r = maker.create(inv.invokeFunction("setL", "lens_" + name, t.mirror, v)) ;println("... " + r);r})
