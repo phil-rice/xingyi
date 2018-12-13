@@ -1,32 +1,40 @@
 package org.xingyi.script.server.createdCode
 import one.xingyi.core.UtilsSpec
-import org.xingyi.script.{IXingYiLoader, Payload}
+import org.xingyi.script.{IXingYi, IXingYiLoader, Payload}
 import org.xingyi.script.server.{HasLensCodeMaker, Javascript}
 
 import scala.io.Source
 
 class CreatedCodeExampleSpec extends UtilsSpec {
 
+  val json = Source.fromInputStream(getClass.getResourceAsStream("/sample.json")).mkString
   behavior of "Example"
-
-  it should "allow the person's name to be extracted" in {
-    //    HasLensCodeMaker.maker[Javascript]
+  def setup(fn: (IXingYi, ExampleDomain) => Unit): Unit = {
     val codeMaker = implicitly[HasLensCodeMaker[Javascript]]
     val javascript = codeMaker.apply(new org.xingyi.script.server.ExampleDomain)
-    val xingyi = implicitly[IXingYiLoader].apply(javascript)
+    implicit val xingyi = implicitly[IXingYiLoader].apply(javascript)
+    fn(xingyi, new ExampleDomain)
+  }
 
-    val json = Source.fromInputStream(getClass.getResourceAsStream("/sample.json")).mkString
-    val j = xingyi.parse(json)
 
-    val namesLens = xingyi.objectLens[Payload, Payload]("root") andThen xingyi.stringLens[Payload]("person_name")
-    namesLens.get(j) shouldBe "Phil Rice"
-    val j1 = namesLens.set(j, "New Name")
-    val j2 = namesLens.set(j1, "Newer Name")
+  it should "allow the person's name to be extracted" in {
+    setup { (xingyi, exampleDomain: ExampleDomain) => //    HasLensCodeMaker.maker[Javascript]
+      import exampleDomain._
+      val thePayload = payload(json)
+      val namesLens = root andThen person_name
 
-    namesLens.get(j1) shouldBe "New Name"
-    namesLens.get(j2) shouldBe "Newer Name"
+      val person: Person = root.get(thePayload)
+      val address: Address = person_address.get(person)
 
-    namesLens.get(j1) shouldBe "New Name"
-    namesLens.get(j2) shouldBe "Newer Name"
+      //      val namesLens = xingyi.objectLens[Payload, Payload]("root") andThen xingyi.stringLens[Payload]("person_name")
+      namesLens.get(thePayload) shouldBe "Phil Rice"
+      val payload1 = namesLens.set(thePayload, "New Name")
+      val payload2 = namesLens.set(payload1, "Newer Name")
+      namesLens.get(payload1) shouldBe "New Name"
+      namesLens.get(payload2) shouldBe "Newer Name"
+
+      (root andThen person_address andThen address_line1).get(thePayload) shouldBe "No fixed abode"
+      address_line1.get(address) shouldBe "No fixed abode"
+    }
   }
 }
