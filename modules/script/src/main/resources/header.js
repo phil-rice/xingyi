@@ -46,16 +46,3 @@ function render_pretty(t) {
 function lens_root() {
     return compose(lens("payload"), lens("_embedded"));
 }
-
-function lens_person_name() {
-    return lens("name")
-}
-function lens_person_job() {
-    return lens("job")
-}
-function lens_person_employer_name() {
-    return compose(lens("employername"), lens("name"));
-}
-function lens_person_employername() {
-    return lens_person_employername()
-}
