@@ -10,10 +10,10 @@ class IXIngYiSpec extends UtilsSpec with JsonWriterLangauge {
 
   it should "allow the person's name to be extracted" in {
     val xingyi = implicitly[IXingYiLoader[Object]].apply("demo.js")
+
     val json = Source.fromInputStream(getClass.getResourceAsStream("/sample.json")).mkString
-//    println(json)
     val j = xingyi.parse(json)
-//    (xingyi.rootLens ).get(j) shouldBe "Phil Rice"
+
     val namesLens = xingyi.stringLens("person_name")
     namesLens.get(j) shouldBe "Phil Rice"
     val j1 = namesLens.set(j, "New Name")
