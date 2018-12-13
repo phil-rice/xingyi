@@ -1,4 +1,5 @@
 package org.xingyi.script
+
 import one.xingyi.core.UtilsSpec
 import one.xingyi.core.json.{JsonObject, JsonValue, JsonWriterLangauge}
 

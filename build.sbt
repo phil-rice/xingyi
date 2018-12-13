@@ -198,6 +198,12 @@ lazy val script = (project in file("modules/script")).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
 
+lazy val scriptExample = (project in file("modules/scriptExample")).
+  dependsOn(core % "test->test;compile->compile").aggregate(core).
+//  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
+  settings(publishArtifact := false).
+  settings(pactSettings: _*)
+
 lazy val finatraSample = (project in file("modules/finatraSample")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(finatra % "test->test;compile->compile").aggregate(finatra).
