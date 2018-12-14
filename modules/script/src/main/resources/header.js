@@ -1,6 +1,7 @@
 function parse(t) {
     return JSON.parse(t)
 }
+
 function getL(lensName, t) {
     var lens = eval(lensName)()
     return lens.get(t)
@@ -10,13 +11,29 @@ function setL(lensName, t, v) {
     return eval(lensName)().set(t, v)
 }
 
+function makeArray() {
+    var result = []
+    for (var i = 0; i < arguments.length; i++) {
+        result.push(arguments[i])
+    }
+    return result
+}
+
+function shallowCopy(t) {
+    var result = {}
+    for (var key in t) {
+        result[key] = t[key];
+    }
+    return result;
+}
+
 function lens(field) {
     return {
         "get": function (t) {
             return t[field];
         },
-        "set": function (t,v) {
-            var copy = JSON.parse(JSON.stringify(t));
+        "set": function (t, v) {
+            var copy = shallowCopy(t)
             copy[field] = v
             return copy
         }

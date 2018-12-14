@@ -29,7 +29,8 @@ class ScalaTraitMaker extends LensCodeMaker[ScalaTrait] {
     import lens._
     lens.b match {
       case "String" => s"""   def $name: Lens[$a,String] = xingYi.stringLens("$name") """
-      case s => s"""   def $name: Lens[$a,$b] = xingYi.objectLens("$name") """
+      case s if !lens.isList => s"""   def $name: Lens[$a,$b] = xingYi.objectLens("$name") """
+      case s if lens.isList => s"""   def $name: Lens[$a,List[$b]] = xingYi.listLens("$name") """
     }
   }
 }

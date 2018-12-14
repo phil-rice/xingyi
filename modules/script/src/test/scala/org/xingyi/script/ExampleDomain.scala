@@ -21,9 +21,9 @@ object Person extends JsonWriterLangauge {
 class ExampleDomain extends ScriptDomain {
   override def renderers: List[String] = List("json", "pretty")
 
-  val personNameL = LensDefn[Person, String]("person_name", List("name"))
-  val personAddressL = LensDefn[Person, Address]("person_address", List("address"))
-  val addressLine1L = LensDefn[Address, String]("address_line1", List("line1"))
-  val addressLine2L = LensDefn[Address, String]("address_line2", List("line2"))
-  val persontelL = LensDefn[Person, String]("person_telephone", List("telephoneNumber"))
+  val personNameL = LensDefn.string[Person, String]("name")
+  val personAddressL = LensDefn.list[Person, Address]("address")
+  val addressLine1L = LensDefn.string[Address, String]("line1")
+  val addressLine2L = LensDefn.string[Address, String]("line2")
+  val persontelL = LensDefn.string[Person, String]("telephoneNumber")
 }

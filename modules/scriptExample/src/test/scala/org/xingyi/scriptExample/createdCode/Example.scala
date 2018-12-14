@@ -17,9 +17,9 @@ class ExampleDomain(implicit xingYi:IXingYi) {
    def root: Lens[Payload,Person] = xingYi.objectLens("root")
    def renderjson(domain: Domain): String = xingYi.render("json",domain)
    def renderpretty(domain: Domain): String = xingYi.render("pretty",domain)
-   def person_address: Lens[Person,Address] = xingYi.objectLens("person_address") 
+   def person_telephoneNumber: Lens[Person,String] = xingYi.stringLens("person_telephoneNumber") 
    def person_name: Lens[Person,String] = xingYi.stringLens("person_name") 
-   def address_line1: Lens[Address,String] = xingYi.stringLens("address_line1") 
-   def person_telephone: Lens[Person,String] = xingYi.stringLens("person_telephone") 
+   def person_address_list: Lens[Person,List[Address]] = xingYi.listLens("person_address_list") 
    def address_line2: Lens[Address,String] = xingYi.stringLens("address_line2") 
+   def address_line1: Lens[Address,String] = xingYi.stringLens("address_line1") 
 }

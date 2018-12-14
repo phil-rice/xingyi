@@ -9,6 +9,7 @@ import scala.reflect.ClassTag
 trait ClassTags {
   def clazz[T](implicit classTag: ClassTag[T]) = classTag.runtimeClass
   def nameOf[T](implicit classTag: ClassTag[T]) = classTag.runtimeClass.getSimpleName
+  def lowerCaseNameOf[T](implicit classTag: ClassTag[T]) = classTag.runtimeClass.getSimpleName.toLowerCase
 
   def isA[T](t: Any)(implicit classTag: ClassTag[T]) = classTag.runtimeClass.isAssignableFrom(t.getClass)
 

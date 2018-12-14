@@ -13,10 +13,10 @@
     ],
     "_code": {
       "url": "http://localhost:8080/code/<hash>",
-      "utility":[
+      "utility": [
         "parse"
       ],
-      "new":[
+      "new": [
         "person",
         "address",
         "employer"
@@ -26,7 +26,7 @@
         "pretty"
       ],
       "lens": {
-        "person":"object",
+        "person": "object",
         "person_name": "string",
         "person_job": "string",
         "person_*address": "list",
@@ -43,12 +43,16 @@
       "employer": {
         "name": "ING"
       },
-      "address":
+      "address": [
         {
           "line1": "No fixed abode",
           "line2": "or anywhere"
+        },
+        {
+          "line1": "A second address",
+          "line2": "somewhere"
         }
-
+      ]
     }
   }
 }

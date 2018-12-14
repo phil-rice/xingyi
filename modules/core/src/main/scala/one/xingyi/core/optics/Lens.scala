@@ -10,14 +10,15 @@ object Lens {
 
 
 case class Lens[A, B](get: A => B, set: (A, B) => A) extends Immutable {
-  def setFn: B => A => A = {b => a => set(a,b)}
+  def setFn: B => A => A = { b => a => set(a, b) }
   def apply(whole: A): B = get(whole)
-  def transform(a: A, f: B => B): A = set(a, f(get(a)))
+  def map(a: A, f: B => B): A = set(a, f(get(a)))
   def map(f: B => B): A => A = a => set(a, f(get(a)))
   def compose[C](that: Lens[C, A]) = Lens[C, B](
     c => get(that.get(c)),
-    (c, b) => that.transform(c, set(_, b)))
+    (c, b) => that.map(c, set(_, b)))
   def andThen[C](that: Lens[B, C]) = that compose this
   def andGet[C](fn: B => C) = get andThen fn
-//  def andSet[C](fn: (B, C) => B): (A, C) => A = (a, c) => set(a, fn(get(a), c))
+  //  def andSet[C](fn: (B, C) => B): (A, C) => A = (a, c) => set(a, fn(get(a), c))
 }
+

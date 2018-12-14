@@ -85,7 +85,7 @@ trait EngineBuilderLanguage extends IdMaker {
   implicit class LensToEngineDataOps[T](t: T)(implicit toDataL: Lens[T, EngineComponentData]) {
     def comment(comment: String) = toDataL andThen toCommentL set(t, Some(comment))
     def title(title: String) = toDataL andThen toTitleL set(t, Some(title))
-    def reference(doc: Document) = toDataL andThen toReferencesL transform(t, _ :+ Reference(doc))
+    def reference(doc: Document) = toDataL andThen toReferencesL map(t, _ :+ Reference(doc))
   }
 
 
