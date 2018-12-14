@@ -1,8 +1,5 @@
-package org.xingyi.script.server
+package org.xingyi.script
 
-import one.xingyi.core.optics.Lens
-
-import scala.io.Source
 import scala.reflect.ClassTag
 
 case class LensDefn[A, B](name: String, names: List[String])(implicit val classA: ClassTag[A], val classB: ClassTag[B]) {

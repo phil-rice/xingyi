@@ -1,4 +1,4 @@
-package org.xingyi.script.server
+package org.xingyi.script
 
 trait ScriptDomain {
   def renderers: List[String]

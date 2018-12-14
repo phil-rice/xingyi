@@ -1,4 +1,5 @@
-package org.xingyi.script.server
+package org.xingyi.script
+
 import one.xingyi.core.json._
 
 case class Address(line1: String, line2: String, postcode: String)

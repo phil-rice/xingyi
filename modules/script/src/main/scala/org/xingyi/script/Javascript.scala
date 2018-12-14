@@ -1,4 +1,5 @@
-package org.xingyi.script.server
+package org.xingyi.script
+
 import scala.io.Source
 
 trait Javascript extends CodeFragment

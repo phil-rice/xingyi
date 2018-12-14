@@ -1,7 +1,6 @@
-package org.xingyi.script.server
+package org.xingyi.script
 
 import org.scalatest.{FlatSpec, Matchers}
-import org.xingyi.script.{IXingYi, IXingYiLoader, Payload}
 
 import scala.io.Source
 

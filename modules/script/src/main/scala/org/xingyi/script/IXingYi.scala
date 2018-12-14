@@ -61,6 +61,6 @@ class DefaultXingYi(engine: ScriptEngine) extends IXingYi {
 
 
   //  override def stringLens[T1 <: Domain](name: String)(implicit maker: DomainMaker[T1]): Lens[T1, String] = objectLens(name) andThen Lens.cast[T1, String]
-}
+  }
 
 

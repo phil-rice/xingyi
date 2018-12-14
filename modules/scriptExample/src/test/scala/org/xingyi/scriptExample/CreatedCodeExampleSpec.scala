@@ -1,7 +1,8 @@
-package org.xingyi.script.server.createdCode
+package org.xingyi.scriptExample
+
 import one.xingyi.core.UtilsSpec
-import org.xingyi.script.{IXingYi, IXingYiLoader, Payload}
-import org.xingyi.script.server.{HasLensCodeMaker, Javascript}
+import org.xingyi.script.{IXingYi, IXingYiLoader}
+import org.xingyi.scriptExample.createdCode._
 
 import scala.io.Source
 
@@ -9,16 +10,16 @@ class CreatedCodeExampleSpec extends UtilsSpec {
 
   val json = Source.fromInputStream(getClass.getResourceAsStream("/sample.json")).mkString
   behavior of "Example"
-  def setup(fn: (IXingYi, ExampleDomain) => Unit): Unit = {
-    val codeMaker = implicitly[HasLensCodeMaker[Javascript]]
-    val javascript = codeMaker.apply(new org.xingyi.script.server.ExampleDomain)
+
+  def setup(fn: (IXingYi, org.xingyi.scriptExample.createdCode.ExampleDomain) => Unit): Unit = {
+    val javascript = Source.fromInputStream(getClass.getClassLoader.getResourceAsStream("example.js")).mkString
     implicit val xingyi = implicitly[IXingYiLoader].apply(javascript)
     fn(xingyi, new ExampleDomain)
   }
 
 
   it should "allow the person's name to be extracted" in {
-    setup { (xingyi, exampleDomain: ExampleDomain) => //    HasLensCodeMaker.maker[Javascript]
+    setup { (xingyi, exampleDomain) => //    HasLensCodeMaker.maker[Javascript]
       import exampleDomain._
       val thePayload = payload(json)
       val namesLens = root andThen person_name
