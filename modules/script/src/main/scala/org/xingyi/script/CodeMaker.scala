@@ -9,6 +9,8 @@ case class LensDefn[A, B](name: String, names: List[String])(implicit val classA
 
 trait Header[L] extends (String => String)
 
+trait Renderer[L] extends (String => String)
+
 trait Footer[L] extends (() => String)
 
 trait LensCodeMaker[L] extends (LensDefn[_, _] => String)
@@ -16,24 +18,23 @@ trait LensCodeMaker[L] extends (LensDefn[_, _] => String)
 trait CodeFragment
 
 
-
 trait HasLensCodeMaker[L <: CodeFragment] {
-  def defns(anyRef: AnyRef): Seq[LensDefn[_, _]] = {
-    val methods = anyRef.getClass.getMethods.filter(field => classOf[LensDefn[_, _]].isAssignableFrom(field.getReturnType))
+  def defns(anyRef: AnyRef): List[LensDefn[_, _]] = {
+    val methods = anyRef.getClass.getMethods.filter(field => classOf[LensDefn[_, _]].isAssignableFrom(field.getReturnType)).toList
     methods.map(m => m.invoke(anyRef)).collect { case lens: LensDefn[_, _] => lens }
   }
 
   def apply(anyRef: ScriptDomain): String
 }
 
-class SimpleHasLensCodeMaker[L<: CodeFragment](implicit lensCodeMaker: LensCodeMaker[L], header: Header[L], footer: Footer[L]) extends HasLensCodeMaker[L] {
+class SimpleHasLensCodeMaker[L <: CodeFragment](implicit lensCodeMaker: LensCodeMaker[L], header: Header[L], render: Renderer[L], footer: Footer[L]) extends HasLensCodeMaker[L] {
 
   def apply(anyRef: ScriptDomain): String =
-    defns(anyRef).map(lensCodeMaker).mkString(header(anyRef.getClass.getSimpleName), "\n", footer())
+    (header(anyRef.name) :: anyRef.renderers.map(render) ::: defns(anyRef).map(lensCodeMaker) ::: List(footer())).mkString("\n")
 
 }
 
 object HasLensCodeMaker {
-  implicit def maker[L<: CodeFragment: Header : Footer : LensCodeMaker]: HasLensCodeMaker[L] = new SimpleHasLensCodeMaker[L]
+  implicit def maker[L <: CodeFragment : Header : Renderer: Footer : LensCodeMaker]: HasLensCodeMaker[L] = new SimpleHasLensCodeMaker[L]
 }
 

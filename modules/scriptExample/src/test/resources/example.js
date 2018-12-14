@@ -46,8 +46,11 @@ function render_pretty(t) {
 function lens_root() {
     return compose(lens("payload"), lens("_embedded"));
 }
+
+
+
+function lens_person_address(){ return lens("address");}; 
 function lens_person_name(){ return lens("name");}; 
-"function lens_person_address(){ return compose(lens("addresslist"),lens("address"));; }
 function lens_address_line1(){ return lens("line1");}; 
-function lens_address_line2(){ return lens("line2");}; 
 function lens_person_telephone(){ return lens("telephoneNumber");}; 
+function lens_address_line2(){ return lens("line2");}; 

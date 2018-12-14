@@ -8,6 +8,7 @@ object Javascript {
   implicit def lensCodeMaker: LensCodeMaker[Javascript] = new JsMaker
 
   implicit def header: Header[Javascript] = name => Source.fromInputStream(getClass.getClassLoader.getResourceAsStream("header.js")).mkString
+  implicit def renderer: Renderer[Javascript] = _ => ""
 
   implicit def footer: Footer[Javascript] = () => ""
 }
@@ -19,6 +20,6 @@ class JsMaker extends LensCodeMaker[Javascript] {
 
   override def apply(lens: LensDefn[_, _]): String = lens.names match {
     case one :: Nil => s"""function lens_${lens.name}(){ return ${oneLens(one)};}; """
-    case names => s""""function lens_${lens.name}(){ return ${manyLens(names)}; }"""
+    case names => s"""function lens_${lens.name}(){ return ${manyLens(names)}; }"""
   }
 }

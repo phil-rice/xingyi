@@ -220,7 +220,7 @@ lazy val finatraSample = (project in file("modules/finatraSample")).
 //    cep,
 //  )
 
-val root = (project in file(".")).
+val xingYi = (project in file(".")).
   settings(publishSettings).
   settings(publishArtifact := false).
   aggregate(
