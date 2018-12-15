@@ -22,6 +22,21 @@ object Strings {
     indent(filler, left) + tuple._1 + indent(filler, padding) + tuple._2
   }
 
+  //This can obviously be optimised and actually should be I think...
+  //Using a library is possible but painful and it's a lot of pulled in code just to escape a string
+   def escapeJson(raw: String) = {
+    var escaped = raw
+    escaped = escaped.replace("\\", "\\\\")
+    escaped = escaped.replace("\"", "\\\"")
+    escaped = escaped.replace("\b", "\\b")
+    escaped = escaped.replace("\f", "\\f")
+    escaped = escaped.replace("\n", "\\n")
+    escaped = escaped.replace("\r", "\\r")
+    escaped = escaped.replace("\t", "\\t")
+    // TODO: escape other non-printing characters using uXXXX notation
+    escaped
+  }
+
 
   def removeWhiteSpace(s: String): String = s.replaceAll("\\s+", "")
 

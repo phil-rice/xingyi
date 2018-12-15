@@ -4,3 +4,6 @@ trait ScriptDomain {
   def renderers: List[String]
   def name = getClass.getSimpleName
 }
+
+
+object ScriptDomain
