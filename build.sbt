@@ -16,7 +16,7 @@ val versions = new {
 }
 
 lazy val commonSettings = Seq(
-  version := "0.4",
+  version := "0.5",
   organization := "one.xingyi",
   publishMavenStyle := true,
   scalaVersion := versions.scala,
