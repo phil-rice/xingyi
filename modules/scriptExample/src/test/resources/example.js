@@ -67,7 +67,8 @@ function lens_root() {
 
 
 function lens_person_name(){ return lens("name");}; 
+function lens_person_telephone(){ return lens("telephoneNumber");}; 
+function lens_telephone_number(){ return lens("number");}; 
 function lens_person_address_list(){ return lens("address");}; 
-function lens_address_line2(){ return lens("line2");}; 
-function lens_person_telephoneNumber(){ return lens("telephoneNumber");}; 
 function lens_address_line1(){ return lens("line1");}; 
+function lens_address_line2(){ return lens("line2");}; 

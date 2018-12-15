@@ -31,10 +31,11 @@ object Person extends JsonWriterLangauge {
 
 class ExampleDomain extends ScriptDomain {
   override def renderers: List[String] = List("json", "pretty")
+  override def lens: Seq[LensDefn[_, _]] = implicitly[ProjectionToLensDefns].apply(Person.projection)
 
-  val personNameL = LensDefn.string[Person]("name")
-  val personAddressL = LensDefn.list[Person, Address]("address")
-  val addressLine1L = LensDefn.string[Address]("line1")
-  val addressLine2L = LensDefn.string[Address]("line2")
-  val persontelL = LensDefn.string[Person]("telephoneNumber")
+//  val personNameL = LensDefn.string[Person]("name")
+//  val personAddressL = LensDefn.list[Person, Address]("address")
+//  val addressLine1L = LensDefn.string[Address]("line1")
+//  val addressLine2L = LensDefn.string[Address]("line2")
+//  val persontelL = LensDefn.string[Person]("telephoneNumber")
 }
