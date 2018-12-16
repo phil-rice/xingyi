@@ -2,10 +2,9 @@
 package org.xingyi.scriptExample
 
 import one.xingyi.core.UtilsSpec
-import org.xingyi.script.{IXingYi, IXingYiLoader}
-import org.xingyi.scriptExample.createdCode._
+import one.xingyi.scriptExample.createdCode.{Address, ExampleDomain, Person}
+import org.xingyi.script.IXingYiLoader
 
-import scala.collection.immutable
 import scala.io.Source
 
 class CreatedCodeExampleSpec extends UtilsSpec {
@@ -13,7 +12,7 @@ class CreatedCodeExampleSpec extends UtilsSpec {
   val json = Source.fromInputStream(getClass.getResourceAsStream("/sample.json")).mkString
   behavior of "Example"
 
-  def setup(fn: (org.xingyi.scriptExample.createdCode.ExampleDomain) => Unit): Unit = {
+  def setup(fn: (ExampleDomain) => Unit): Unit = {
     val javascript = Source.fromInputStream(getClass.getClassLoader.getResourceAsStream("example.js")).mkString
     implicit val xingyi = implicitly[IXingYiLoader].apply(javascript)
     fn(new ExampleDomain)
@@ -23,6 +22,7 @@ class CreatedCodeExampleSpec extends UtilsSpec {
   it should "allow the person's name (lens and stringLens) to be extracted" in {
     setup { exampleDomain =>
       import exampleDomain._
+
       val thePayload = payload(json)
 
       val namesLens = root andThen person_name
@@ -39,6 +39,7 @@ class CreatedCodeExampleSpec extends UtilsSpec {
   it should "allow the address to be extracted (listLens)" in {
     setup { exampleDomain =>
       import exampleDomain._
+
       val thePayload = payload(json)
 
       val person: Person = root.get(thePayload)
@@ -50,6 +51,7 @@ class CreatedCodeExampleSpec extends UtilsSpec {
   it should "allow the address to be manipulated (listLens)" in {
     setup { exampleDomain =>
       import exampleDomain._
+
       val thePayload = payload(json)
 
       val person: Person = root.get(thePayload)

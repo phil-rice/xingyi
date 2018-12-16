@@ -23,6 +23,9 @@ trait JsonParser[J] extends (String => J) {
 
 trait FromJsonLib[J, T] extends (J => T)
 
+object FromJsonLib{
+  implicit def fromString[J](implicit jsonParser: JsonParser[J]): FromJsonLib[J,String] = jsonParser.extractString(_)
+}
 object JsonParserLanguage extends JsonParserLanguage
 trait JsonParserLanguage {
   implicit def jsonToString[J](j: J)(implicit parser: JsonParser[J]) = parser.extractString(j)
@@ -34,6 +37,7 @@ trait JsonParserLanguage {
   implicit class JsonParserOps[J](j: J)(implicit jsonParser: JsonParser[J]) {
     def map[T1](fn: J => T1): List[T1] = jsonParser.asList(j).map(fn)
     def asList[T1](implicit fromJson: FromJsonLib[J, T1]): List[T1] = map[T1](fromJson)
+    def asListP[T1](implicit projection: Projection[T1]): List[T1] = map[T1](projection.fromJson)
     def as[T1](implicit fromJson: FromJsonLib[J, T1]): T1 = fromJson(j)
     def \(s: String): J = jsonParser.\(j, s)
   }

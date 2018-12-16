@@ -198,9 +198,17 @@ lazy val script = (project in file("modules/script")).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
 
-lazy val scriptExample = (project in file("modules/scriptExample")).
+lazy val scriptBackend = (project in file("modules/scriptBackend")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(script % "test->test;compile->compile").aggregate(script).
+  dependsOn(json4s % "test->test;compile->compile").
+  //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
+  settings(publishArtifact := false).
+  settings(pactSettings: _*)
+
+lazy val scriptWebsite = (project in file("modules/scriptWebsite")).
+  dependsOn(core % "test->test;compile->compile").aggregate(core).
+  dependsOn(scriptBackend % "test->test;compile->compile").aggregate(script).
   dependsOn(json4s % "test->test;compile->compile").
   //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   settings(publishArtifact := false).
@@ -235,7 +243,8 @@ val xingYi = (project in file(".")).
     finatra, //
     finatraSample,
     script,
-    scriptExample,
+    scriptBackend,
+    scriptWebsite,
     sample,
     sampleServer,
     json4s, //
