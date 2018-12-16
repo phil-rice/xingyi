@@ -3,6 +3,7 @@ package org.xingyi.script
 
 import javax.script.{Invocable, ScriptEngine}
 import jdk.nashorn.api.scripting.{ScriptObjectMirror, ScriptUtils}
+import one.xingyi.core.json.{JsonObject, Projection, ToJsonLib}
 import one.xingyi.core.optics.Lens
 
 import scala.language.postfixOps
@@ -31,16 +32,16 @@ trait Domain {
   def mirror: Object
 }
 case class Payload(mirror: Object) extends Domain
-case class DomainList(mirror: Object) {
-  val actualMirror = mirror.asInstanceOf[ScriptObjectMirror]
-  def length: Int = actualMirror.get("length").asInstanceOf[Integer]
-  def get(i: Int): Object = actualMirror.get(i.toString)
-  def toList: List[Object] = (0 to length - 1).map(get).toList
-}
 object Payload {
   implicit def payloadMaker: DomainMaker[Payload] = new DomainMaker[Payload] {
     override def create(mirror: Object): Payload = Payload(mirror)
   }
+}
+
+case class ServerPayload[T](domainObject: T)
+object ServerPayload {
+  implicit def toJson[T](implicit projection: Projection[T]): ToJsonLib[ServerPayload[T]] =
+    payload => JsonObject("payload" -> JsonObject("_embedded" -> projection.toJson(payload.domainObject)))
 }
 
 trait IXingYi {
@@ -85,10 +86,10 @@ class DefaultXingYi(engine: ScriptEngine) extends IXingYi {
     (0 to length - 1) map (i => jsOriginal.get("" + i)) toList
   }
 
-//  def fromMirror(d: Domain) = d.mirror.asInstanceOf[ScriptObjectMirror].
+  //  def fromMirror(d: Domain) = d.mirror.asInstanceOf[ScriptObjectMirror].
   def fromList(list: List[Domain]): Object = {
-    println("from list: " + list  )
-    inv.invokeFunction("makeArray",  list.map(_.mirror): _*)
+    println("from list: " + list)
+    inv.invokeFunction("makeArray", list.map(_.mirror): _*)
   }
 
 

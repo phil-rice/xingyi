@@ -45,7 +45,7 @@ class Website[M[_], Fail, J: JsonParser : JsonWriter](implicit val monad: MonadC
 object Website extends App {
   implicit val ssl: Option[SSLContext] = None
 
-  private val domain: Domain = Domain(Protocol("http"), HostName("localhost"), Port(9000))
+  private val domain: Domain = Domain(Protocol("http"), HostName("localhost"), Port(9001))
   implicit val httpFactory = new HttpFactory[IdentityMonad, ServiceRequest, ServiceResponse] {
     override def apply(v1: ServiceName) = HttpClient.apply[IdentityMonad](domain)
   }
@@ -58,6 +58,11 @@ object Website extends App {
   implicit val executors = Executors.newFixedThreadPool(10)
 
   import one.xingyi.core.http.Failer.failerForThrowable
+
+  println("Checking backend")
+
+  val client: ServiceRequest => IdentityMonad[ServiceResponse] = httpFactory(ServiceName("Backend"))
+  println("found: " + client(ServiceRequest(Method("get"), Uri("http://localhost:9001/person/someName"))).value)
 
 
   val website = new Website[IdentityMonad, Throwable, JValue]

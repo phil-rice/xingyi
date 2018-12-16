@@ -33,7 +33,7 @@ object Person extends JsonWriterLangauge {
     "address" -> ListFieldProjection[Person, Address](_.address, (p, list) => p.copy(address = list))
   )
 
-  implicit def toJson[J](implicit projection: ObjectProjection[Person]): ToJsonLib[Person] = person => projection.toJson(person)
+//  implicit def toJson[J](implicit projection: ObjectProjection[Person]): ToJsonLib[Person] = person => projection.toJson(person)
 
 }
 
