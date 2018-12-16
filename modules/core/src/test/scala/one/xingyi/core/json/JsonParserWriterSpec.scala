@@ -9,7 +9,7 @@ import scala.reflect.ClassTag
 case class ThingForJsonTests(a: Int, b: String, children: Seq[ChildForJsonTests])
 case class ChildForJsonTests(c: Double, d: Boolean)
 
-abstract class JsonParserWriterSpec[J: ClassTag](implicit val jsonParser: JsonParser[J], jsonWriter: JsonWriter[J]) extends UtilsSpec with JsonParserLanguage with JsonWriterLangauge {
+abstract class JsonParserWriterSpec[J: ClassTag](implicit val jsonParser: JsonParser[J], jsonWriter: JsonWriter[J]) extends UtilsSpec with JsonParserLanguage with JsonWriterLanguage {
 
   def intAsJ(i: Int): J = jsonWriter.toJ(JsonInt(i))
   def stringAsJ(s: String): J = jsonWriter.toJ(JsonString(s))

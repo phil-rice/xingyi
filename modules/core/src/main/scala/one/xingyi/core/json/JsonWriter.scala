@@ -35,8 +35,8 @@ trait JsonWriter[J] extends (JsonValue => String) {
 
 trait ToJsonLib[T] extends (T => JsonValue)
 
-object JsonWriterLangauge extends JsonWriterLangauge
-trait JsonWriterLangauge {
+object JsonWriterLanguage extends JsonWriterLanguage
+trait JsonWriterLanguage {
   implicit def toJsonString(s: String) = JsonString(s)
   implicit def toJsonInt(i: Int) = JsonInt(i)
   implicit def toJsonBoolean(b: Boolean) = JsonBoolean(b)

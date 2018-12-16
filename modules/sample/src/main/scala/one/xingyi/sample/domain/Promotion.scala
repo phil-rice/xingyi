@@ -37,7 +37,7 @@ object Promotion {
     override def apply(p: Promotion): Seq[ProductionId] = p.productionIds
   }
 
-  implicit object ToJsonFoPromotion extends ToJsonLib[Promotion] with JsonWriterLangauge {
+  implicit object ToJsonFoPromotion extends ToJsonLib[Promotion] with JsonWriterLanguage {
     override def apply(v1: Promotion) = toListT(v1.productionIds)
   }
 

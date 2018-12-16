@@ -2,9 +2,9 @@
 package one.xingyi.cddengine
 import one.xingyi.core.UtilsSpec
 import one.xingyi.core.json.JsonLanguage.toJsonString
-import one.xingyi.core.json.{JsonList, JsonObject, JsonWriterLangauge}
+import one.xingyi.core.json.{JsonList, JsonObject, JsonWriterLanguage}
 
-class DecisionTreeRenderingSpec extends UtilsSpec with DecisionTreeFixture with JsonWriterLangauge {
+class DecisionTreeRenderingSpec extends UtilsSpec with DecisionTreeFixture with JsonWriterLanguage {
 
   behavior of "SimpleDecisionTreeRendering"
 

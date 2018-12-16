@@ -2,7 +2,7 @@
 package one.xingyi.core.language
 
 import one.xingyi.core.functions._
-import one.xingyi.core.json.{JsonParserLanguage, JsonWriterLangauge}
+import one.xingyi.core.json.{JsonParserLanguage, JsonWriterLanguage}
 import one.xingyi.core.monad.{Async, MonadCanFail, MonadWithException}
 
 import scala.language.higherKinds
@@ -26,4 +26,4 @@ trait AsyncLanguage {
 
 }
 
-object Language extends AnyLanguage with FunctionLanguage with MonadFunctionLanguage with AsyncLanguage with JsonParserLanguage with JsonWriterLangauge
+object Language extends AnyLanguage with FunctionLanguage with MonadFunctionLanguage with AsyncLanguage with JsonParserLanguage with JsonWriterLanguage

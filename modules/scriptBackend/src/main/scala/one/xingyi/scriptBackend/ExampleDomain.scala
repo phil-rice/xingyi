@@ -15,9 +15,9 @@ object Telephone {
 
 case class Address(line1: String, line2: String, postcode: String)
 
-object Address extends JsonWriterLangauge {
-  //Note that I can change this to reflection or a macro for the happy case
-  implicit val projection = ObjectProjection[Address](Address("", "", ""),
+object Address extends JsonWriterLanguage {
+   val prototype = Address("", "", "")
+  implicit val projection = ObjectProjection[Address](prototype,
     "line1" -> StringFieldProjection(_.line1, (a, l1) => a.copy(line1 = l1)),
     "line2" -> StringFieldProjection(_.line2, (a, l2) => a.copy(line2 = l2)),
     "postcode" -> StringFieldProjection(_.postcode, (a, pc) => a.copy(postcode = pc))
@@ -25,16 +25,13 @@ object Address extends JsonWriterLangauge {
 }
 case class Person(name: String, address: List[Address], telephoneNumber: Telephone)
 
-object Person extends JsonWriterLangauge {
+object Person extends JsonWriterLanguage {
   val prototype = Person("", List(), Telephone.prototype)
   implicit val projection = ObjectProjection[Person](prototype,
     "name" -> StringFieldProjection(_.name, (p, n) => p.copy(name = n)),
     "telephoneNumber" -> ObjectFieldProjection[Person, Telephone](_.telephoneNumber, (p, a) => p.copy(telephoneNumber = a)),
     "address" -> ListFieldProjection[Person, Address](_.address, (p, list) => p.copy(address = list))
   )
-
-//  implicit def toJson[J](implicit projection: ObjectProjection[Person]): ToJsonLib[Person] = person => projection.toJson(person)
-
 }
 
 

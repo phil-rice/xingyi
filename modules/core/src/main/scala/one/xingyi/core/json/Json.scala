@@ -2,4 +2,4 @@
 package one.xingyi.core.json
 
 object JsonLanguage extends JsonLanguage
-trait JsonLanguage extends JsonWriterLangauge with JsonParserLanguage
+trait JsonLanguage extends JsonWriterLanguage with JsonParserLanguage
