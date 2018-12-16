@@ -5,7 +5,7 @@ import one.xingyi.core.http._
 import one.xingyi.core.json._
 import one.xingyi.core.monad.Monad
 import one.xingyi.core.strings.Strings
-import org.xingyi.script._
+import one.xingyi.core.script.DomainDefn
 
 case class Telephone(number: String)
 object Telephone {
@@ -50,11 +50,11 @@ object EditPersonRequest {
     if (name != newPerson) throw new RuntimeException("Cannot edit name")
     monad.liftM(EditPersonRequest(newPerson))
   }
-
 }
 
-
-class ExampleDomain extends ScriptDomain {
+class ExampleDomainDefn extends DomainDefn {
+  override def packageName: String = "one.xingyi.scriptExample.createdCode"
+  override def name: String = "ExampleDomain"
   override def renderers: List[String] = List("json", "pretty")
   override def lens: Seq[LensDefn[_, _]] = implicitly[ProjectionToLensDefns].apply(Person.projection)
 }

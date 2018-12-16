@@ -6,9 +6,9 @@ import java.util.concurrent.Executors
 
 import one.xingyi.core.aggregate.{EnrichLanguage, MergeLanguage}
 import one.xingyi.core.cache.{CacheFactory, CachingServiceFactory, DurationStaleCacheStategy}
-import one.xingyi.core.endpoint.{EndPoint, MatchesServiceRequest}
+import one.xingyi.core.endpoint.MatchesServiceRequest
 import one.xingyi.core.http._
-import one.xingyi.core.json.{JsonParser, JsonWriter, ToJson, ToJsonLib}
+import one.xingyi.core.json.{JsonParser, JsonWriter}
 import one.xingyi.core.language._
 import one.xingyi.core.logging.{DetailedLogging, LogRequestAndResult, PrintlnLoggingAdapter, SimpleLogRequestAndResult}
 import one.xingyi.core.map.NoMapSizeStrategy
@@ -16,8 +16,8 @@ import one.xingyi.core.metrics.{PrintlnPutMetrics, PutMetrics}
 import one.xingyi.core.monad.{Async, IdentityMonad, MonadCanFailWithException}
 import one.xingyi.core.simpleServer.{EndpointHandler, SimpleHttpServer}
 import one.xingyi.core.time.NanoTimeService
+import one.xingyi.core.script._
 import org.json4s.JValue
-import org.xingyi.script.{HasLensCodeMaker, Javascript, ScalaTrait, ServerPayload}
 
 import scala.language.higherKinds
 import scala.util.Success
@@ -41,25 +41,24 @@ class Backend[M[_], Fail, J: JsonParser : JsonWriter](implicit val monad: MonadC
   var people = Map[String, Person]("someName" -> person)
 
 
-
   def edit(name: String, person: Person) = {
     people = people + (name -> person)
     println(s"changing $name people now $people")
     ServerPayload(person)
   }
 
-//  val q: ToJsonLib[ServerPayload[Person]] = ServerPayload.toJson[Person]
-//  ToJson.default[J, ServerPayload[Person]]
-//  val x = implicitly[ToJson[org.xingyi.script.ServerPayload[one.xingyi.scriptBackend.Person]]]
-//  val y = implicitly[ToServiceResponse]
+  //  val q: ToJsonLib[ServerPayload[Person]] = ServerPayload.toJson[Person]
+  //  ToJson.default[J, ServerPayload[Person]]
+  //  val x = implicitly[ToJson[org.xingyi.script.ServerPayload[one.xingyi.scriptBackend.Person]]]
+  //  val y = implicitly[ToServiceResponse]
 
 
-//  val newPerson = function[PersonRequest, ServerPayload[Person]]("newPerson") { req => edit(req.name, Person.prototype.copy(name = req.name)) } |+| endpoint[PersonRequest, ServerPayload[Person]]("/person", MatchesServiceRequest.idAtEnd(Method("post")))
+  //  val newPerson = function[PersonRequest, ServerPayload[Person]]("newPerson") { req => edit(req.name, Person.prototype.copy(name = req.name)) } |+| endpoint[PersonRequest, ServerPayload[Person]]("/person", MatchesServiceRequest.idAtEnd(Method("post")))
 
   val code = function[CodeRequest, Code]("code") { codeRequest =>
-    val domain = new ExampleDomain
+    val domain = new ExampleDomainDefn
     val javascript = implicitly[HasLensCodeMaker[Javascript]].apply(domain)
-    val scala = ScalaTrait.makeFile("one.xingyi.scriptExample", domain)
+    val scala = implicitly[HasLensCodeMaker[ScalaFull]].apply(domain)
     Code(javascript, scala)
   } |+| endpoint[CodeRequest, Code]("/code", MatchesServiceRequest.fixedPath(Method("get")))
 
@@ -72,7 +71,7 @@ class Backend[M[_], Fail, J: JsonParser : JsonWriter](implicit val monad: MonadC
   val keepalive: ServiceRequest => M[Option[ServiceResponse]] = function[ServiceRequest, ServiceResponse]("keepalive")(sr => ServiceResponse("Alive")) |+| endpoint[ServiceRequest, ServiceResponse]("/ping", MatchesServiceRequest.fixedPath(Method("get")))
 
 
-  val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(newPerson, getPerson, editPerson, code,keepalive)
+  val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(newPerson, getPerson, editPerson, code, keepalive)
 
 
 }

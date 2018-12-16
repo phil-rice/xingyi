@@ -5,7 +5,7 @@ import java.io.File
 
 import one.xingyi.core.UtilsSpec
 import one.xingyi.core.strings.Files
-import org.xingyi.script.{HasLensCodeMaker, Javascript, ScalaTrait}
+import one.xingyi.core.script.{HasLensCodeMaker, Javascript, ScalaFull, ScalaTrait}
 
 class CreateFilesFromExample extends UtilsSpec {
 
@@ -26,12 +26,13 @@ class CreateFilesFromExample extends UtilsSpec {
     checkCorrectDirectory
 
     val codeMaker = implicitly[HasLensCodeMaker[Javascript]]
-    val javascript = codeMaker.apply(new ExampleDomain)
+    val javascript = codeMaker.apply(new ExampleDomainDefn)
     Files.printToFile(javascriptFile)(pw => pw.print(javascript))
   }
 
   it should "make the scala" in {
-    val scala = ScalaTrait.makeFile("one.xingyi.scriptExample.createdCode",new ExampleDomain)
+    val codeMaker = implicitly[HasLensCodeMaker[ScalaFull]]
+    val scala = codeMaker(new ExampleDomainDefn)
     Files.printToFile(scalaFile)(pw => pw.print(scala))
 
   }

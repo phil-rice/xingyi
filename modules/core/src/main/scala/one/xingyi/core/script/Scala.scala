@@ -1,20 +1,14 @@
 /** Copyright (c) 2018, Phil Rice. Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS AS IS AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
-package org.xingyi.script
+package one.xingyi.core.script
 
 import one.xingyi.core.json.LensDefn
+import one.xingyi.core.script.ScalaTrait.getClass
 
 import scala.io.Source
 
 trait ScalaTrait extends CodeFragment
 
 object ScalaTrait {
-
-  def makeFile(pack: String, domain: ScriptDomain)(implicit scalaDomain: HasLensCodeMaker[ScalaDomain], scalaTrait: HasLensCodeMaker[ScalaTrait]) =
-    List(s"package $pack",
-      Source.fromInputStream(getClass.getClassLoader.getResourceAsStream("header.scala")).mkString,
-      scalaDomain(domain),
-      scalaTrait(domain)).mkString("\n")
-
   implicit def lensCodeMaker: LensCodeMaker[ScalaTrait] = new ScalaTraitMaker
 
   implicit def header: Header[ScalaTrait] = name =>
@@ -40,11 +34,11 @@ class ScalaTraitMaker extends LensCodeMaker[ScalaTrait] {
 
 trait ScalaDomain extends CodeFragment
 
-object ScalaDomain {
+object ScalaDomain extends ScalaDomain {
   val ignore = Set("String")
 
   implicit def hasLensCodeMaker: HasLensCodeMaker[ScalaDomain] = new HasLensCodeMaker[ScalaDomain] {
-    override def apply(anyRef: ScriptDomain): String = {
+    override def apply(anyRef: DomainDefn): String = {
       defns(anyRef).foldLeft(Set[String]())((set, d) => set ++ Set(d.a, d.b)).filterNot(ignore.contains).map(t =>
         s"""case class $t(mirror: Object) extends Domain
            |object $t {
@@ -57,3 +51,13 @@ object ScalaDomain {
 
 }
 
+trait ScalaFull extends CodeFragment
+object ScalaFull extends ScalaFull {
+  implicit def hasLensCodeMaker(implicit scalaTrait: HasLensCodeMaker[ScalaTrait], scalaDomain: HasLensCodeMaker[ScalaDomain]): HasLensCodeMaker[ScalaFull] = { defn =>
+    import defn._
+    List(s"package $packageName",
+      Source.fromInputStream(this.getClass.getClassLoader.getResourceAsStream("header.scala")).mkString,
+      scalaDomain(defn),
+      scalaTrait(defn)).mkString("\n")
+  }
+}

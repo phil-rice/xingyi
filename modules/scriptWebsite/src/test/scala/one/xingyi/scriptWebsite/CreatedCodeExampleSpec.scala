@@ -2,8 +2,8 @@
 package org.xingyi.scriptExample
 
 import one.xingyi.core.UtilsSpec
+import one.xingyi.core.script.IXingYiLoader
 import one.xingyi.scriptExample.createdCode.{Address, ExampleDomain, Person}
-import org.xingyi.script.IXingYiLoader
 
 import scala.io.Source
 
@@ -21,7 +21,7 @@ class CreatedCodeExampleSpec extends UtilsSpec {
 
   it should "allow the person's name (lens and stringLens) to be extracted" in {
     setup { exampleDomain =>
-      import exampleDomain._
+import exampleDomain._
 
       val thePayload = payload(json)
 

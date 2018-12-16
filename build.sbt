@@ -16,7 +16,7 @@ val versions = new {
 }
 
 lazy val commonSettings = Seq(
-  version := "0.5",
+  version := "0.5.1",
   organization := "one.xingyi",
   publishMavenStyle := true,
   scalaVersion := versions.scala,
@@ -192,15 +192,9 @@ lazy val sample = (project in file("modules/sample")).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
 
-lazy val script = (project in file("modules/script")).
-  dependsOn(core % "test->test;compile->compile").aggregate(core).
-//  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
-  settings(publishArtifact := false).
-  settings(pactSettings: _*)
 
 lazy val scriptBackend = (project in file("modules/scriptBackend")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
-  dependsOn(script % "test->test;compile->compile").aggregate(script).
   dependsOn(json4s % "test->test;compile->compile").
   //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   settings(publishArtifact := false).
@@ -208,8 +202,8 @@ lazy val scriptBackend = (project in file("modules/scriptBackend")).
 
 lazy val scriptWebsite = (project in file("modules/scriptWebsite")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
-  dependsOn(scriptBackend % "test->test;compile->compile").aggregate(script).
   dependsOn(json4s % "test->test;compile->compile").
+  dependsOn(scriptBackend % "test->test;compile->compile").
   //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
@@ -242,7 +236,6 @@ val xingYi = (project in file(".")).
     cddexamples, //
     finatra, //
     finatraSample,
-    script,
     scriptBackend,
     scriptWebsite,
     sample,
