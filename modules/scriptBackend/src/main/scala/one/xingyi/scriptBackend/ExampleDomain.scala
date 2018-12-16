@@ -23,23 +23,6 @@ object Address extends JsonWriterLangauge {
     "postcode" -> StringFieldProjection(_.postcode, (a, pc) => a.copy(postcode = pc))
   )
 }
-
-
-case class PersonRequest(name: String)
-object PersonRequest {
-  implicit def fromServiceRequest[M[_]](implicit monad: Monad[M]): FromServiceRequest[M, PersonRequest] = { sr =>
-    monad.liftM(PersonRequest(Strings.lastSection("/")(sr.uri.path.path)))
-  }
-}
-
-case class EditPersonRequest(person: Person) // aha need to be able to make from projection
-object EditPersonRequest {
-  implicit def fromServiceRequest[M[_]](implicit monad: Monad[M]): FromServiceRequest[M, PersonRequest] = { sr =>
-    monad.liftM(PersonRequest(Strings.lastSection("/")(sr.uri.path.path)))
-  }
-
-}
-
 case class Person(name: String, address: List[Address], telephoneNumber: Telephone)
 
 object Person extends JsonWriterLangauge {
@@ -55,13 +38,24 @@ object Person extends JsonWriterLangauge {
 }
 
 
+case class PersonRequest(name: String)
+object PersonRequest {
+  implicit def fromServiceRequest[M[_]](implicit monad: Monad[M]): FromServiceRequest[M, PersonRequest] = { sr =>
+    monad.liftM(PersonRequest(Strings.lastSection("/")(sr.uri.path.path)))
+  }
+}
+
+case class EditPersonRequest(person: Person) // aha need to be able to make from projection
+object EditPersonRequest {
+  implicit def fromServiceRequest[M[_],J:JsonParser](implicit monad: Monad[M], projection: Projection[Person]): FromServiceRequest[M, EditPersonRequest] = { sr =>
+    monad.liftM(EditPersonRequest(projection.fromJsonString(sr.body.getOrElse(throw new RuntimeException("cannot create person as body of request empty")).s)))
+  }
+
+}
+
+
+
 class ExampleDomain extends ScriptDomain {
   override def renderers: List[String] = List("json", "pretty")
   override def lens: Seq[LensDefn[_, _]] = implicitly[ProjectionToLensDefns].apply(Person.projection)
-
-  //  val personNameL = LensDefn.string[Person]("name")
-  //  val personAddressL = LensDefn.list[Person, Address]("address")
-  //  val addressLine1L = LensDefn.string[Address]("line1")
-  //  val addressLine2L = LensDefn.string[Address]("line2")
-  //  val persontelL = LensDefn.string[Person]("telephoneNumber")
 }

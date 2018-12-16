@@ -8,6 +8,7 @@ sealed trait Projection[T] {
   def classTag: ClassTag[T]
   def toJson(t: T): JsonValue
   def fromJson[J: JsonParser](j: J): T
+  def fromJsonString[J](json: String)(implicit jsonParser: JsonParser[J]): T = fromJson(jsonParser(json))
 }
 
 case class ObjectProjection[T](prototype: T, children: (String, FieldProjection[T, _])*)(implicit val classTag: ClassTag[T]) extends Projection[T] {
