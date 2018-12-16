@@ -16,18 +16,18 @@ trait CodeFragment
 
 
 trait HasLensCodeMaker[L <: CodeFragment] {
-  def defns(anyRef: DomainDefn): List[LensDefn[_, _]] = anyRef.lens.toList
+  def defns[T](anyRef: DomainDefn[T]): List[LensDefn[_, _]] = anyRef.lens.toList
 //  {
 //    val methods = anyRef.getClass.getMethods.filter(field => classOf[LensDefn[_, _]].isAssignableFrom(field.getReturnType)).toList
 //    methods.map(m => m.invoke(anyRef)).collect { case lens: LensDefn[_, _] => lens }
 //  }
 
-  def apply(anyRef: DomainDefn): String
+  def apply[T](anyRef: DomainDefn[T]): String
 }
 
 class SimpleHasLensCodeMaker[L <: CodeFragment](implicit lensCodeMaker: LensCodeMaker[L], header: Header[L], render: Renderer[L], footer: Footer[L]) extends HasLensCodeMaker[L] {
 
-  def apply(anyRef: DomainDefn): String =
+  def apply[T](anyRef: DomainDefn[T]): String =
     (header(anyRef.name) :: anyRef.renderers.map(render) ::: defns(anyRef).map(lensCodeMaker) ::: List(footer())).mkString("\n")
 
 }

@@ -4,8 +4,8 @@ package one.xingyi.scriptBackend
 import one.xingyi.core.http._
 import one.xingyi.core.json._
 import one.xingyi.core.monad.Monad
-import one.xingyi.core.strings.Strings
 import one.xingyi.core.script.DomainDefn
+import one.xingyi.core.strings.Strings
 
 case class Telephone(number: String)
 object Telephone {
@@ -52,7 +52,7 @@ object EditPersonRequest {
   }
 }
 
-class ExampleDomainDefn extends DomainDefn {
+class ExampleDomainDefn extends DomainDefn [Person]{
   override def packageName: String = "one.xingyi.scriptExample.createdCode"
   override def name: String = "ExampleDomain"
   override def renderers: List[String] = List("json", "pretty")

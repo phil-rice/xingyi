@@ -11,8 +11,8 @@ object Base64Codec {
   implicit def defaultBase64Codec = new SimpleBase64Codec
 }
 class SimpleBase64Codec extends Base64Codec {
-  val encoder = Base64.getEncoder()
-  val decoder = Base64.getDecoder()
+  val encoder = Base64.getUrlEncoder()
+  val decoder = Base64.getUrlDecoder()
   override def forwards: Array[Byte] => String = from => new String(encoder.encode(from), "UTF-8")
   override def backwards: String => Array[Byte] = from => decoder.decode(from.getBytes("UTF-8"))
 }

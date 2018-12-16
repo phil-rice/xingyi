@@ -14,9 +14,9 @@ import one.xingyi.core.logging.{DetailedLogging, LogRequestAndResult, PrintlnLog
 import one.xingyi.core.map.NoMapSizeStrategy
 import one.xingyi.core.metrics.{PrintlnPutMetrics, PutMetrics}
 import one.xingyi.core.monad.{Async, IdentityMonad, MonadCanFailWithException}
+import one.xingyi.core.script._
 import one.xingyi.core.simpleServer.{EndpointHandler, SimpleHttpServer}
 import one.xingyi.core.time.NanoTimeService
-import one.xingyi.core.script._
 import org.json4s.JValue
 
 import scala.language.higherKinds
@@ -55,12 +55,15 @@ class Backend[M[_], Fail, J: JsonParser : JsonWriter](implicit val monad: MonadC
 
   //  val newPerson = function[PersonRequest, ServerPayload[Person]]("newPerson") { req => edit(req.name, Person.prototype.copy(name = req.name)) } |+| endpoint[PersonRequest, ServerPayload[Person]]("/person", MatchesServiceRequest.idAtEnd(Method("post")))
 
-  val code = function[CodeRequest, Code]("code") { codeRequest =>
-    val domain = new ExampleDomainDefn
-    val javascript = implicitly[HasLensCodeMaker[Javascript]].apply(domain)
-    val scala = implicitly[HasLensCodeMaker[ScalaFull]].apply(domain)
-    Code(javascript, scala)
-  } |+| endpoint[CodeRequest, Code]("/code", MatchesServiceRequest.fixedPath(Method("get")))
+  implicit val domainDetails: DomainDetails[Person] = implicitly[DomainDefnToDetails[Person]].apply(new ExampleDomainDefn)
+  val javascript = domainDetails.code(Javascript)
+  val scala = domainDetails.code(ScalaFull)
+  val codeMap = Map(javascript.hash -> javascript.code, scala.hash -> scala.code)
+
+  val allCode = function[CodeRequest, Code[Person]]("code") { codeRequest => Code(domainDetails) } |+| endpoint[CodeRequest, Code[Person]]("/code", MatchesServiceRequest.fixedPath(Method("get")))
+  val codeDetails = function[CodeDetailsRequest, CodeDetailsResponse]("codeDetails") {
+    codeRequest => CodeDetailsResponse(codeMap.getOrElse(codeRequest.hash, throw new RuntimeException("Cannot find hash. values are" + codeMap.keys)))
+  } |+| endpoint[CodeDetailsRequest, CodeDetailsResponse]("/code", MatchesServiceRequest.idAtEnd(Method("get")))
 
   val newPerson = function[PersonRequest, ServerPayload[Person]]("newPerson") { req => edit(req.name, Person.prototype.copy(name = req.name)) } |+| endpoint[PersonRequest, ServerPayload[Person]]("/person", MatchesServiceRequest.idAtEnd(Method("post")))
   val getPerson = function[PersonRequest, ServerPayload[Person]]("findPerson")(req => ServerPayload(people.getOrElse(req.name, throw new RuntimeException("not found")))) |+| endpoint[PersonRequest, ServerPayload[Person]]("/person", MatchesServiceRequest.idAtEnd(Method("get")))
@@ -71,7 +74,7 @@ class Backend[M[_], Fail, J: JsonParser : JsonWriter](implicit val monad: MonadC
   val keepalive: ServiceRequest => M[Option[ServiceResponse]] = function[ServiceRequest, ServiceResponse]("keepalive")(sr => ServiceResponse("Alive")) |+| endpoint[ServiceRequest, ServiceResponse]("/ping", MatchesServiceRequest.fixedPath(Method("get")))
 
 
-  val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(newPerson, getPerson, editPerson, code, keepalive)
+  val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(newPerson, getPerson, editPerson, allCode, codeDetails,keepalive)
 
 
 }

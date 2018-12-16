@@ -5,18 +5,18 @@ import one.xingyi.core.crypto.Digestor
 import one.xingyi.core.json.LensDefn
 import one.xingyi.core.script
 
-trait DomainDefn {
+trait DomainDefn [T]{
   def packageName: String = getClass.getPackage.getName;
   def name = getClass.getSimpleName
   def renderers: List[String]
   def lens: Seq[LensDefn[_, _]]
 }
 
-trait DomainDefnToDetails extends (DomainDefn => DomainDetails)
+trait DomainDefnToDetails[T] extends (DomainDefn[T] => DomainDetails[T])
 
 object DomainDefnToDetails {
-  implicit def default(implicit javascript: HasLensCodeMaker[Javascript], scala: HasLensCodeMaker[ScalaFull]): DomainDefnToDetails =
-    defn => DomainDetails(defn.name, defn.packageName, Map(Javascript -> script.CodeDetails(javascript(defn)), ScalaFull -> CodeDetails(scala(defn))))
+  implicit def default[T](implicit javascript: HasLensCodeMaker[Javascript], scala: HasLensCodeMaker[ScalaFull]): DomainDefnToDetails[T] =
+    defn => DomainDetails[T](defn.name, defn.packageName, Map(Javascript -> script.CodeDetails(javascript(defn)), ScalaFull -> CodeDetails(scala(defn))))
 
 }
 
@@ -24,4 +24,4 @@ case class CodeDetails(code: String)(implicit digestor: Digestor) {
   val hash = digestor(code)
 }
 
-case class DomainDetails(name: String, packageName: String, code: Map[CodeFragment, CodeDetails])
+case class DomainDetails[T](name: String, packageName: String, code: Map[CodeFragment, CodeDetails])

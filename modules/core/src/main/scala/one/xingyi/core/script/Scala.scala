@@ -38,7 +38,7 @@ object ScalaDomain extends ScalaDomain {
   val ignore = Set("String")
 
   implicit def hasLensCodeMaker: HasLensCodeMaker[ScalaDomain] = new HasLensCodeMaker[ScalaDomain] {
-    override def apply(anyRef: DomainDefn): String = {
+    override def apply[T](anyRef: DomainDefn[T]): String = {
       defns(anyRef).foldLeft(Set[String]())((set, d) => set ++ Set(d.a, d.b)).filterNot(ignore.contains).map(t =>
         s"""case class $t(mirror: Object) extends Domain
            |object $t {
@@ -53,11 +53,13 @@ object ScalaDomain extends ScalaDomain {
 
 trait ScalaFull extends CodeFragment
 object ScalaFull extends ScalaFull {
-  implicit def hasLensCodeMaker(implicit scalaTrait: HasLensCodeMaker[ScalaTrait], scalaDomain: HasLensCodeMaker[ScalaDomain]): HasLensCodeMaker[ScalaFull] = { defn =>
-    import defn._
-    List(s"package $packageName",
-      Source.fromInputStream(this.getClass.getClassLoader.getResourceAsStream("header.scala")).mkString,
-      scalaDomain(defn),
-      scalaTrait(defn)).mkString("\n")
+  implicit def hasLensCodeMaker(implicit scalaTrait: HasLensCodeMaker[ScalaTrait], scalaDomain: HasLensCodeMaker[ScalaDomain]): HasLensCodeMaker[ScalaFull] = new HasLensCodeMaker[ScalaFull] {
+    override def apply[T](defn: DomainDefn[T]): String = {
+      import defn._
+      List(s"package $packageName",
+        Source.fromInputStream(this.getClass.getClassLoader.getResourceAsStream("header.scala")).mkString,
+        scalaDomain(defn),
+        scalaTrait(defn)).mkString("\n")
+    }
   }
 }
