@@ -45,14 +45,16 @@ object PersonRequest {
   }
 }
 
-case class EditPersonRequest(person: Person) // aha need to be able to make from projection
+case class EditPersonRequest( person: Person) // aha need to be able to make from projection
 object EditPersonRequest {
-  implicit def fromServiceRequest[M[_],J:JsonParser](implicit monad: Monad[M], projection: Projection[Person]): FromServiceRequest[M, EditPersonRequest] = { sr =>
-    monad.liftM(EditPersonRequest(projection.fromJsonString(sr.body.getOrElse(throw new RuntimeException("cannot create person as body of request empty")).s)))
+  implicit def fromServiceRequest[M[_], J: JsonParser](implicit monad: Monad[M], projection: Projection[Person]): FromServiceRequest[M, EditPersonRequest] = { sr =>
+    val name = Strings.lastSection("/")(sr.uri.path.path)
+    val newPerson: Person = projection.fromJsonString(sr.body.getOrElse(throw new RuntimeException("cannot create person as body of request empty")).s)
+    if (name != newPerson) throw new RuntimeException("Cannot edit name")
+    monad.liftM(EditPersonRequest(newPerson))
   }
 
 }
-
 
 
 class ExampleDomain extends ScriptDomain {
