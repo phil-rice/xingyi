@@ -24,7 +24,7 @@ class DefaultXingYiLoader() extends IXingYiLoader {
   }
 }
 
-trait DomainMaker[T] {
+trait DomainMaker[T <: Domain] {
   def create(mirror: Object): T
 }
 
@@ -32,19 +32,18 @@ trait Domain {
   def mirror: Object
 }
 case class Payload(mirror: Object) extends Domain
-object Payload {
-  implicit def payloadMaker: DomainMaker[Payload] = new DomainMaker[Payload] {
-    override def create(mirror: Object): Payload = Payload(mirror)
-  }
+object Payload{
+  implicit val domainMaker: DomainMaker[Payload] = Payload.apply
 }
 
 case class ServerPayload[T](domainObject: T)(implicit val domainDetails: DomainDetails[T])
 object ServerPayload extends JsonWriterLanguage {
   implicit def toJson[T](implicit projection: Projection[T]): ToJsonLib[ServerPayload[T]] =
     payload => JsonObject("payload" -> JsonObject(
-      "_links" -> JsonObject("javascript" -> ("/code/"+payload.domainDetails.code(Javascript).hash), "scala" -> ("/code/" + payload.domainDetails.code(ScalaFull).hash)),
+      "_links" -> JsonObject("javascript" -> ("/code/" + payload.domainDetails.code(Javascript).hash), "scala" -> ("/code/" + payload.domainDetails.code(ScalaFull).hash)),
       "_embedded" -> projection.toJson(payload.domainObject)))
 }
+
 
 trait IXingYi {
   def parse(s: String): Payload

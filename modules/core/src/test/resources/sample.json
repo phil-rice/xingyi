@@ -1,58 +1,20 @@
 {
-  "payload": {
-    "_links": {
-      "self": {
-        "href": "http://localhost:8080/person/123"
-      },
-      "edit": "http://localhost:8080/person/123",
-      "delete": "http://localhost:8080/person/123"
+  "_embedded": {
+    "id": "123",
+    "name": "Phil Rice",
+    "job": "developer",
+    "employer": {
+      "name": "ING"
     },
-    "_structure": [
-      "person_employer",
-      "person_*address"
-    ],
-    "_code": {
-      "url": "http://localhost:8080/code/<hash>",
-      "utility": [
-        "parse"
-      ],
-      "new": [
-        "person",
-        "address",
-        "employer"
-      ],
-      "render": [
-        "json",
-        "pretty"
-      ],
-      "lens": {
-        "person": "object",
-        "person_name": "string",
-        "person_job": "string",
-        "person_*address": "list",
-        "person_employername": "string",
-        "person_employer_name": "string",
-        "address_line1": "string",
-        "address_line2": "string"
+    "address": [
+      {
+        "line1": "No fixed abode",
+        "line2": "or anywhere"
+      },
+      {
+        "line1": "A second address",
+        "line2": "somewhere"
       }
-    },
-    "_embedded": {
-      "id": "123",
-      "name": "Phil Rice",
-      "job": "developer",
-      "employer": {
-        "name": "ING"
-      },
-      "address": [
-        {
-          "line1": "No fixed abode",
-          "line2": "or anywhere"
-        },
-        {
-          "line1": "A second address",
-          "line2": "somewhere"
-        }
-      ]
-    }
+    ]
   }
 }

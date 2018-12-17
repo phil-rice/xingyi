@@ -3,20 +3,27 @@ package one.xingyi.core.script
 
 import one.xingyi.core.crypto.Digestor
 import one.xingyi.core.json.LensDefn
+import one.xingyi.core.reflection.ClassTags
 import one.xingyi.core.script
 
-trait DomainDefn [T]{
-  def packageName: String = getClass.getPackage.getName;
-  def name = getClass.getSimpleName
-  def renderers: List[String]
-  def lens: Seq[LensDefn[_, _]]
+import scala.reflect.ClassTag
+
+abstract class DomainDefn[T: ClassTag](
+                                        val renderers: List[String] = List(),
+                                        val lens: Seq[LensDefn[_, _]] = List()) {
+  def rootName: String = ClassTags.nameOf[T]
+  def packageName: String = getClass.getPackage.getName
+  def domainName: String = getClass.getSimpleName
+
+
 }
+
 
 trait DomainDefnToDetails[T] extends (DomainDefn[T] => DomainDetails[T])
 
 object DomainDefnToDetails {
   implicit def default[T](implicit javascript: HasLensCodeMaker[Javascript], scala: HasLensCodeMaker[ScalaFull]): DomainDefnToDetails[T] =
-    defn => DomainDetails[T](defn.name, defn.packageName, Map(Javascript -> script.CodeDetails(javascript(defn)), ScalaFull -> CodeDetails(scala(defn))))
+    defn => DomainDetails[T](defn.domainName, defn.packageName, Map(Javascript -> script.CodeDetails(javascript(defn)), ScalaFull -> CodeDetails(scala(defn))))
 
 }
 

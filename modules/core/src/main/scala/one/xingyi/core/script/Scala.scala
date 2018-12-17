@@ -11,8 +11,8 @@ trait ScalaTrait extends CodeFragment
 object ScalaTrait {
   implicit def lensCodeMaker: LensCodeMaker[ScalaTrait] = new ScalaTraitMaker
 
-  implicit def header: Header[ScalaTrait] = name =>
-    s"""class $name(implicit xingYi:IXingYi) {
+  implicit def header: Header[ScalaTrait] = defn =>
+    s"""class ${defn.domainName}(implicit xingYi:IXingYi) {
        |   def payload(json: String): Payload = xingYi.parse(json)
        |   def root: Lens[Payload,Person] = xingYi.objectLens("root")""".stripMargin
 

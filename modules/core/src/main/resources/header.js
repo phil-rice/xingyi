@@ -62,5 +62,5 @@ function render_pretty(t) {
 };
 
 function lens_root() {
-    return compose(lens("payload"), lens("_embedded"));
+    return  lens("_embedded");
 }

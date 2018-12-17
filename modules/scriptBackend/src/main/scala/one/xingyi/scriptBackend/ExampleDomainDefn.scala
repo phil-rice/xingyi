@@ -16,7 +16,7 @@ object Telephone {
 case class Address(line1: String, line2: String, postcode: String)
 
 object Address extends JsonWriterLanguage {
-   val prototype = Address("", "", "")
+  val prototype = Address("", "", "")
   implicit val projection = ObjectProjection[Address](prototype,
     "line1" -> StringFieldProjection(_.line1, (a, l1) => a.copy(line1 = l1)),
     "line2" -> StringFieldProjection(_.line2, (a, l2) => a.copy(line2 = l2)),
@@ -42,7 +42,7 @@ object PersonRequest {
   }
 }
 
-case class EditPersonRequest( person: Person) // aha need to be able to make from projection
+case class EditPersonRequest(person: Person) // aha need to be able to make from projection
 object EditPersonRequest {
   implicit def fromServiceRequest[M[_], J: JsonParser](implicit monad: Monad[M], projection: Projection[Person]): FromServiceRequest[M, EditPersonRequest] = { sr =>
     val name = Strings.lastSection("/")(sr.uri.path.path)
@@ -52,9 +52,7 @@ object EditPersonRequest {
   }
 }
 
-class ExampleDomainDefn extends DomainDefn [Person]{
+class ExampleDomainDefn extends DomainDefn[Person](List("json", "pretty"), implicitly[ProjectionToLensDefns].apply(Person.projection)) {
   override def packageName: String = "one.xingyi.scriptExample.createdCode"
-  override def name: String = "ExampleDomain"
-  override def renderers: List[String] = List("json", "pretty")
-  override def lens: Seq[LensDefn[_, _]] = implicitly[ProjectionToLensDefns].apply(Person.projection)
+  override def domainName: String = "ExampleDomain"
 }

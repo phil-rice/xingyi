@@ -21,7 +21,7 @@ class CreatedCodeExampleSpec extends UtilsSpec {
 
   it should "allow the person's name (lens and stringLens) to be extracted" in {
     setup { exampleDomain =>
-import exampleDomain._
+      import exampleDomain._
 
       val thePayload = payload(json)
 

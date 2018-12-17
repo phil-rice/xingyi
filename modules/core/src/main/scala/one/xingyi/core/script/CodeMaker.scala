@@ -4,7 +4,7 @@ package one.xingyi.core.script
 import one.xingyi.core.json._
 
 
-trait Header[L] extends (String => String)
+trait Header[L] extends (DomainDefn[_] => String)
 
 trait Renderer[L] extends (String => String)
 
@@ -27,8 +27,8 @@ trait HasLensCodeMaker[L <: CodeFragment] {
 
 class SimpleHasLensCodeMaker[L <: CodeFragment](implicit lensCodeMaker: LensCodeMaker[L], header: Header[L], render: Renderer[L], footer: Footer[L]) extends HasLensCodeMaker[L] {
 
-  def apply[T](anyRef: DomainDefn[T]): String =
-    (header(anyRef.name) :: anyRef.renderers.map(render) ::: defns(anyRef).map(lensCodeMaker) ::: List(footer())).mkString("\n")
+  def apply[T](defn: DomainDefn[T]): String =
+    (header(defn) :: defn.renderers.map(render) ::: defns(defn).map(lensCodeMaker) ::: List(footer())).mkString("\n")
 
 }
 
