@@ -44,7 +44,7 @@ class Backend[M[_], Fail, J: JsonParser : JsonWriter](implicit val monad: MonadC
   def edit(name: String, person: Person) = {
     people = people + (name -> person)
     println(s"changing $name people now $people")
-    ServerPayload(person)
+    ServerPayload(Status(200), person)
   }
 
   //  val q: ToJsonLib[ServerPayload[Person]] = ServerPayload.toJson[Person]
@@ -66,7 +66,7 @@ class Backend[M[_], Fail, J: JsonParser : JsonWriter](implicit val monad: MonadC
   } |+| endpoint[CodeDetailsRequest, CodeDetailsResponse]("/code", MatchesServiceRequest.idAtEnd(Method("get")))
 
   val newPerson = function[PersonRequest, ServerPayload[Person]]("newPerson") { req => edit(req.name, Person.prototype.copy(name = req.name)) } |+| endpoint[PersonRequest, ServerPayload[Person]]("/person", MatchesServiceRequest.idAtEnd(Method("post")))
-  val getPerson = function[PersonRequest, ServerPayload[Person]]("findPerson")(req => ServerPayload(people.getOrElse(req.name, throw new RuntimeException("not found")))) |+| endpoint[PersonRequest, ServerPayload[Person]]("/person", MatchesServiceRequest.idAtEnd(Method("get")))
+  val getPerson = function[PersonRequest, ServerPayload[Person]]("findPerson")(req => ServerPayload(Status(200), people.getOrElse(req.name, throw new RuntimeException("not found")))) |+| endpoint[PersonRequest, ServerPayload[Person]]("/person", MatchesServiceRequest.idAtEnd(Method("get")))
   val editPerson = function[EditPersonRequest, ServerPayload[Person]]("editPerson") { req => edit(req.person.name, req.person) } |+| endpoint[EditPersonRequest, ServerPayload[Person]]("/person", MatchesServiceRequest.idAtEnd(Method("put")))
 
   //  val getPerson = function[PersonRequest, Person]("findPerson")(req => people.find(_ == req.name).getOrElse(throw new RuntimeException("not found"))) |+| endpoint[PersonRequest, Person]("/person", MatchesServiceRequest.idAtEnd(Method("get")))
@@ -74,7 +74,7 @@ class Backend[M[_], Fail, J: JsonParser : JsonWriter](implicit val monad: MonadC
   val keepalive: ServiceRequest => M[Option[ServiceResponse]] = function[ServiceRequest, ServiceResponse]("keepalive")(sr => ServiceResponse("Alive")) |+| endpoint[ServiceRequest, ServiceResponse]("/ping", MatchesServiceRequest.fixedPath(Method("get")))
 
 
-  val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(newPerson, getPerson, editPerson, allCode, codeDetails,keepalive)
+  val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(newPerson, getPerson, editPerson, allCode, codeDetails, keepalive)
 
 
 }

@@ -12,11 +12,9 @@ import scala.reflect.ClassTag
 trait EndpointKleisli[M[_]] {
   protected implicit def monad: Monad[M]
   def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: Req => M[Res])
-                                            (implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Res]): ServiceRequest => M[Option[ServiceResponse]] =
+                                            (implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Req, Res]): ServiceRequest => M[Option[ServiceResponse]] =
     EndPoint(normalisedPath, matchesServiceRequest)(raw)
 }
-
-
 
 
 trait ChainKleisli[M[_], Fail] {
@@ -44,13 +42,13 @@ trait ChainKleisli[M[_], Fail] {
 }
 case class EndPoint[M[_] : Monad, Req, Res](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(kleisli: Req => M[Res])
                                            (implicit fromServiceRequest: FromServiceRequest[M, Req],
-                                            toServiceResponse: ToServiceResponse[Res],
+                                            toServiceResponse: ToServiceResponse[Req, Res],
                                            ) extends PartialFunction[ServiceRequest, M[Option[ServiceResponse]]] {
   def debugInfo(req: ServiceRequest) = s"Endpoint($normalisedPath, $matchesServiceRequest) called with $req results in ${isDefinedAt(req)}"
 
   override def apply(serviceRequest: ServiceRequest): M[Option[ServiceResponse]] = {
     if (isDefinedAt(serviceRequest))
-      (fromServiceRequest |==> kleisli |=> toServiceResponse |=> toSome) (serviceRequest)
+      (fromServiceRequest |==> (kleisli |=+> toServiceResponse) |=> toSome) (serviceRequest)
     else
       Option.empty[ServiceResponse].liftM
   }

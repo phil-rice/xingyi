@@ -4,7 +4,7 @@ package one.xingyi.finatra
 import com.twitter.finagle.http.{Method, Request, Response}
 import com.twitter.finatra.http.response.ResponseBuilder
 import com.twitter.finatra.utils.FuturePools
-import com.twitter.util.{Await,  FuturePool, Local, Return, Throw, Duration => TDuration, Future => TFuture}
+import com.twitter.util.{Await, FuturePool, Local, Return, Throw, Duration => TDuration, Future => TFuture}
 import one.xingyi.core.http.{Header, _}
 import one.xingyi.core.local.{Holder, SimpleLocalOps}
 import one.xingyi.core.monad.{Async, LocalVariable, MonadCanFailWithException, MonadWithState}
@@ -69,7 +69,7 @@ class AsyncForTwitterFuture(implicit futurePool: FuturePool) extends Async[TFutu
   }
 }
 
-object FinatraAdapter{
+object FinatraAdapter {
   def liftEndpoint(response: ResponseBuilder, fn: ServiceRequest => TFuture[Option[ServiceResponse]])(implicit toServiceRequest: ToServiceRequest[Request]): Request => TFuture[Response] = { request: Request =>
     val serviceRequest = implicitly[ToServiceRequest[Request]] apply (request)
     val result = fn(serviceRequest)
@@ -94,11 +94,9 @@ object FinatraImplicits {
 
   }
 
-  implicit object ToServiceResponseForFinatraResponse extends ToServiceResponse[Response] {
-    override def apply(response: Response): ServiceResponse = {
-      ServiceResponse(status = Status(response.status.code), body = Body(response.contentString), headers = response.headerMap.map { case (n, v) => Header(n, v) }.toList)
-    }
-  }
+  implicit def ToServiceResponseForFinatraResponse[Req]: ToServiceResponse[Req, Response] = sr => response =>
+    ServiceResponse(status = Status(response.status.code), body = Body(response.contentString), headers = response.headerMap.map { case (n, v) => Header(n, v) }.toList)
+
 
   implicit object ToServiceRequest extends ToServiceRequest[Request] {
     override def apply(request: Request): ServiceRequest = {

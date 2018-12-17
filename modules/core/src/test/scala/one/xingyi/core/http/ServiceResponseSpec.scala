@@ -11,14 +11,15 @@ import org.mockito.Mockito._
 
 class ServiceResponseSpec extends UtilsSpec {
 
+  val serviceRequest = ServiceRequest(Method("get"), Uri("/someuri"))
   val serviceResponse = ServiceResponse(Status(200), Body("someBody"), ContentType("application/json"))
 
   "default from service response when have FromJson" should "use the tojson on the body" in {
     implicit val toJson = mock[ToJson[String]]
-    val toServiceResponse = implicitly[ToServiceResponse[String]]
+    val toServiceResponse = implicitly[ToServiceResponse[String, String]]
     when(toJson.apply("someString")) thenReturn "someBody"
 
-    toServiceResponse("someString") shouldBe serviceResponse
+    toServiceResponse("someIgnoredReq")("someString") shouldBe serviceResponse
   }
 
   behavior of "ServiceResponse"

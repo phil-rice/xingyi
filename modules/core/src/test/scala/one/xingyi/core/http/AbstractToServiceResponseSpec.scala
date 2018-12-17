@@ -4,14 +4,15 @@ import one.xingyi.core.UtilsSpec
 
 import scala.reflect.ClassTag
 
-abstract class AbstractToServiceResponseSpec[T: ClassTag](implicit toServiceResponse: ToServiceResponse[T]) extends UtilsSpec {
+abstract class AbstractToServiceResponseSpec[Req, T: ClassTag](implicit toServiceResponse: ToServiceResponse[Req, T]) extends UtilsSpec {
 
+  def makeReq: Req
   def makeT: T
 
   behavior of s"toServiceResponse for ${implicitly[ClassTag[T]].runtimeClass.getName}"
 
   it should "turn a T to a ServiceResponse" in {
-    toServiceResponse(makeT) shouldBe ServiceResponse(Status(200), Body("someBody"), List(Header("header1", "value1")))
+    toServiceResponse(makeReq)(makeT) shouldBe ServiceResponse(Status(200), Body("someBody"), List(Header("header1", "value1")))
   }
 
 }

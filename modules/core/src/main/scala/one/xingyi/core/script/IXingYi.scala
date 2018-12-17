@@ -3,7 +3,8 @@ package one.xingyi.core.script
 
 import javax.script.{Invocable, ScriptEngine}
 import jdk.nashorn.api.scripting.{ScriptObjectMirror, ScriptUtils}
-import one.xingyi.core.json.{JsonObject, JsonWriterLanguage, Projection, ToJsonLib}
+import one.xingyi.core.http._
+import one.xingyi.core.json._
 import one.xingyi.core.optics.Lens
 
 import scala.language.postfixOps
@@ -32,16 +33,17 @@ trait Domain {
   def mirror: Object
 }
 case class Payload(mirror: Object) extends Domain
-object Payload{
+object Payload {
   implicit val domainMaker: DomainMaker[Payload] = Payload.apply
 }
 
-case class ServerPayload[T](domainObject: T)(implicit val domainDetails: DomainDetails[T])
+case class ServerPayload[T](status: Status, domainObject: T)(implicit val domainDetails: DomainDetails[T])
 object ServerPayload extends JsonWriterLanguage {
-  implicit def toJson[T](implicit projection: Projection[T]): ToJsonLib[ServerPayload[T]] =
-    payload => JsonObject("payload" -> JsonObject(
-      "_links" -> JsonObject("javascript" -> ("/code/" + payload.domainDetails.code(Javascript).hash), "scala" -> ("/code/" + payload.domainDetails.code(ScalaFull).hash)),
-      "_embedded" -> projection.toJson(payload.domainObject)))
+  //  implicit def toJson[T](implicit projection: Projection[T]): ToJsonLib[ServerPayload[T]] =
+  //    payload => JsonObject("_embedded" -> projection.toJson(payload.domainObject))
+  implicit def toServerResponse[J, Req, T](implicit jsonWriter: JsonWriter[J], projection: Projection[T]): ToServiceResponse[Req, ServerPayload[T]] =
+    req => payload => ServiceResponse(payload.status, Body(jsonWriter(JsonObject("_embedded" -> projection.toJson(payload.domainObject)))), ContentType(s"appliction/xingyi.${payload.domainDetails.code(ScalaFull).hash}"))
+
 }
 
 

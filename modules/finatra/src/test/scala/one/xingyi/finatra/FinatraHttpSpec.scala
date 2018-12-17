@@ -9,7 +9,8 @@ import org.mockito.Mockito._
 import com.twitter.util.{Future => TFuture}
 import one.xingyi.core.strings.Strings
 
-class ResponseToServiceResponseSpec extends AbstractToServiceResponseSpec[Response] {
+class ResponseToServiceResponseSpec extends AbstractToServiceResponseSpec[String, Response] {
+  override def makeReq: String = "some ignored parameter"
 
   override def makeT: Response = {
     val response = spy(classOf[Response])

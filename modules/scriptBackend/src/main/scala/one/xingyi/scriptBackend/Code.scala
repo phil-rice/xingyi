@@ -13,10 +13,11 @@ object CodeRequest {
 }
 case class Code[T](domainDetails: DomainDetails[T])
 object Code {
-  implicit def toServiceResponse[T]: ToServiceResponse[Code[T]] = {
-    code =>
-      val s = code.domainDetails.code.toList.sortBy(_._1.toString).map { case (hash, code) => code.hash + "\n" + code.code + "\n\n\n" }.mkString("\n")
-      ServiceResponse(Status(200), Body(s), ContentType("text/plain"))
+  implicit def toServiceResponse[T]: ToServiceResponse[CodeRequest, Code[T]] = {
+    codeRequest =>
+      code: Code[T] =>
+        val s = code.domainDetails.code.toList.sortBy(_._1.toString).map { case (hash, code) => code.hash + "\n" + code.code + "\n\n\n" }.mkString("\n")
+        ServiceResponse(Status(200), Body(s), ContentType("text/plain"))
   }
 
 }
@@ -27,6 +28,6 @@ object CodeDetailsRequest {
 
 case class CodeDetailsResponse(code: String)
 object CodeDetailsResponse {
-  implicit def toServiceResponse: ToServiceResponse[CodeDetailsResponse] = cdr => ServiceResponse(Status(200), Body(cdr.code), ContentType("text/plain"))
+  implicit def toServiceResponse: ToServiceResponse[CodeDetailsRequest, CodeDetailsResponse] = cdreq => cdres => ServiceResponse(Status(200), Body(cdres.code), ContentType("text/plain"))
 }
 
