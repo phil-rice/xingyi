@@ -37,12 +37,14 @@ object Payload {
   implicit val domainMaker: DomainMaker[Payload] = Payload.apply
 }
 
-case class ServerPayload[T](status: Status, domainObject: T)(implicit val domainDetails: DomainDetails[T])
+case class ServerPayload[T](status: Status, domainObject: T, domain: DomainDetails[T])
 object ServerPayload extends JsonWriterLanguage {
   //  implicit def toJson[T](implicit projection: Projection[T]): ToJsonLib[ServerPayload[T]] =
   //    payload => JsonObject("_embedded" -> projection.toJson(payload.domainObject))
   implicit def toServerResponse[J, Req, T](implicit jsonWriter: JsonWriter[J], projection: Projection[T]): ToServiceResponse[Req, ServerPayload[T]] =
-    req => payload => ServiceResponse(payload.status, Body(jsonWriter(JsonObject("_embedded" -> projection.toJson(payload.domainObject)))), ContentType(s"appliction/xingyi.${payload.domainDetails.code(ScalaFull).hash}"))
+    req => payload =>
+      ServiceResponse(payload.status, Body(jsonWriter(JsonObject("_embedded" -> projection.toJson(payload.domainObject)))),
+        List(Header("content-type", "application/xingyi"), Header("xingyi", payload.domain.codeHeader)))
 
 }
 

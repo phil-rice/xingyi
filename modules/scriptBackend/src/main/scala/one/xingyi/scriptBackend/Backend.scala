@@ -41,10 +41,10 @@ class Backend[M[_], Fail, J: JsonParser : JsonWriter](implicit val monad: MonadC
   var people = Map[String, Person]("someName" -> person)
 
 
-  def edit(name: String, person: Person) = {
+  def edit(name: String, person: Person, xingYiHeader: Option[String])(implicit domainList: DomainList[Person]) = {
     people = people + (name -> person)
-    println(s"changing $name people now $people")
-    ServerPayload(Status(200), person)
+    println(s"changing $name people now $people header was $xingYiHeader" )
+    ServerPayload(Status(200), person, domainList.accept(xingYiHeader))
   }
 
   //  val q: ToJsonLib[ServerPayload[Person]] = ServerPayload.toJson[Person]
@@ -55,7 +55,9 @@ class Backend[M[_], Fail, J: JsonParser : JsonWriter](implicit val monad: MonadC
 
   //  val newPerson = function[PersonRequest, ServerPayload[Person]]("newPerson") { req => edit(req.name, Person.prototype.copy(name = req.name)) } |+| endpoint[PersonRequest, ServerPayload[Person]]("/person", MatchesServiceRequest.idAtEnd(Method("post")))
 
-  implicit val domainDetails: DomainDetails[Person] = implicitly[DomainDefnToDetails[Person]].apply(new ExampleDomainDefn)
+  val domainDetails: DomainDetails[Person] = implicitly[DomainDefnToDetails[Person]].apply(new ExampleDomainDefn)
+
+  implicit val domainList = DomainList(domainDetails)
   val javascript = domainDetails.code(Javascript)
   val scala = domainDetails.code(ScalaFull)
   val codeMap = Map(javascript.hash -> javascript.code, scala.hash -> scala.code)
@@ -65,9 +67,9 @@ class Backend[M[_], Fail, J: JsonParser : JsonWriter](implicit val monad: MonadC
     codeRequest => CodeDetailsResponse(codeMap.getOrElse(codeRequest.hash, throw new RuntimeException("Cannot find hash. values are" + codeMap.keys)))
   } |+| endpoint[CodeDetailsRequest, CodeDetailsResponse]("/code", MatchesServiceRequest.idAtEnd(Method("get")))
 
-  val newPerson = function[PersonRequest, ServerPayload[Person]]("newPerson") { req => edit(req.name, Person.prototype.copy(name = req.name)) } |+| endpoint[PersonRequest, ServerPayload[Person]]("/person", MatchesServiceRequest.idAtEnd(Method("post")))
-  val getPerson = function[PersonRequest, ServerPayload[Person]]("findPerson")(req => ServerPayload(Status(200), people.getOrElse(req.name, throw new RuntimeException("not found")))) |+| endpoint[PersonRequest, ServerPayload[Person]]("/person", MatchesServiceRequest.idAtEnd(Method("get")))
-  val editPerson = function[EditPersonRequest, ServerPayload[Person]]("editPerson") { req => edit(req.person.name, req.person) } |+| endpoint[EditPersonRequest, ServerPayload[Person]]("/person", MatchesServiceRequest.idAtEnd(Method("put")))
+  val newPerson = function[PersonRequest, ServerPayload[Person]]("newPerson") { req => edit(req.name, Person.prototype.copy(name = req.name), req.xingYiHeader) } |+| endpoint[PersonRequest, ServerPayload[Person]]("/person", MatchesServiceRequest.idAtEnd(Method("post")))
+  val getPerson = function[PersonRequest, ServerPayload[Person]]("findPerson")(req => ServerPayload(Status(200), people.getOrElse(req.name, throw new RuntimeException("not found")), domainList.accept(req.xingYiHeader))) |+| endpoint[PersonRequest, ServerPayload[Person]]("/person", MatchesServiceRequest.idAtEnd(Method("get")))
+  val editPerson = function[EditPersonRequest, ServerPayload[Person]]("editPerson") { req => edit(req.person.name, req.person, req.xingYiHeader) } |+| endpoint[EditPersonRequest, ServerPayload[Person]]("/person", MatchesServiceRequest.idAtEnd(Method("put")))
 
   //  val getPerson = function[PersonRequest, Person]("findPerson")(req => people.find(_ == req.name).getOrElse(throw new RuntimeException("not found"))) |+| endpoint[PersonRequest, Person]("/person", MatchesServiceRequest.idAtEnd(Method("get")))
   //  ;

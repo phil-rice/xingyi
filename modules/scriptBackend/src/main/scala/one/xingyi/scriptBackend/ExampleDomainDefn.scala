@@ -7,6 +7,8 @@ import one.xingyi.core.monad.Monad
 import one.xingyi.core.script.DomainDefn
 import one.xingyi.core.strings.Strings
 
+import scala.language.higherKinds
+
 case class Telephone(number: String)
 object Telephone {
   val prototype = Telephone("prototype")
@@ -35,20 +37,20 @@ object Person extends JsonWriterLanguage {
 }
 
 
-case class PersonRequest(name: String)
+case class PersonRequest(name: String, xingYiHeader: Option[String])
 object PersonRequest {
   implicit def fromServiceRequest[M[_]](implicit monad: Monad[M]): FromServiceRequest[M, PersonRequest] = { sr =>
-    monad.liftM(PersonRequest(Strings.lastSection("/")(sr.uri.path.path)))
+    monad.liftM(PersonRequest(Strings.lastSection("/")(sr.uri.path.path), sr.header("xingyi")))
   }
 }
 
-case class EditPersonRequest(person: Person) // aha need to be able to make from projection
+case class EditPersonRequest(person: Person, xingYiHeader: Option[String]) // aha need to be able to make from projection
 object EditPersonRequest {
   implicit def fromServiceRequest[M[_], J: JsonParser](implicit monad: Monad[M], projection: Projection[Person]): FromServiceRequest[M, EditPersonRequest] = { sr =>
     val name = Strings.lastSection("/")(sr.uri.path.path)
     val newPerson: Person = projection.fromJsonString(sr.body.getOrElse(throw new RuntimeException("cannot create person as body of request empty")).s)
     if (name != newPerson.name) throw new RuntimeException("Cannot edit name")
-    monad.liftM(EditPersonRequest(newPerson))
+    monad.liftM(EditPersonRequest(newPerson, sr.header("xingyi")))
   }
 }
 

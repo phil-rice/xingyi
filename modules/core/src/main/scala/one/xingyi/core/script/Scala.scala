@@ -13,6 +13,7 @@ object ScalaTrait {
 
   implicit def header: Header[ScalaTrait] = defn =>
     s"""class ${defn.domainName}(implicit xingYi:IXingYi) {
+       |   def header: String = "${defn.accepts}"
        |   def payload(json: String): Payload = xingYi.parse(json)
        |   def root: Lens[Payload,Person] = xingYi.objectLens("root")""".stripMargin
 

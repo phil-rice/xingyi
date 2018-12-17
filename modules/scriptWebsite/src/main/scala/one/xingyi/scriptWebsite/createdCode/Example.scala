@@ -19,6 +19,7 @@ object Address {
 }
 
 class ExampleDomain(implicit xingYi:IXingYi) {
+   def header: String = "application/xingyi.address_line1.address_line2.address_postcode.person_address_list.person_name.person_telephone.telephone_number"
    def payload(json: String): Payload = xingYi.parse(json)
    def root: Lens[Payload,Person] = xingYi.objectLens("root")
    def renderjson(domain: Domain): String = xingYi.render("json",domain)

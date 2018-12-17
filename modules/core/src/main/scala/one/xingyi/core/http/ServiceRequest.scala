@@ -18,6 +18,7 @@ case class ServiceRequest(method: Method, domain: Option[Domain], path: Path, pa
   lazy val contentType: Option[ContentType] = getHeader[ContentType]
   lazy val accept: Option[AcceptHeader] = getHeader[AcceptHeader]
   lazy val uri = Uri(domain, path, params: _*)
+  def header(name: String)= headers.find(_.name.equalsIgnoreCase(name)).map(_.value)
 }
 
 object ServiceRequest {

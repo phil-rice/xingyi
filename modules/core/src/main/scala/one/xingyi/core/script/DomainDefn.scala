@@ -8,13 +8,16 @@ import one.xingyi.core.script
 
 import scala.reflect.ClassTag
 
+object DomainDefn {
+  val xingyiHeaderPrefix = "application/xingyi."
+}
 abstract class DomainDefn[T: ClassTag](
                                         val renderers: List[String] = List(),
                                         val lens: Seq[LensDefn[_, _]] = List()) {
   def rootName: String = ClassTags.nameOf[T]
   def packageName: String = getClass.getPackage.getName
   def domainName: String = getClass.getSimpleName
-
+  def accepts: String = DomainDefn.xingyiHeaderPrefix + DomainDetails.stringsToString(lens.map(_.name))
 
 }
 
@@ -22,8 +25,11 @@ abstract class DomainDefn[T: ClassTag](
 trait DomainDefnToDetails[T] extends (DomainDefn[T] => DomainDetails[T])
 
 object DomainDefnToDetails {
-  implicit def default[T](implicit javascript: HasLensCodeMaker[Javascript], scala: HasLensCodeMaker[ScalaFull]): DomainDefnToDetails[T] =
-    defn => DomainDetails[T](defn.domainName, defn.packageName, Map(Javascript -> script.CodeDetails(javascript(defn)), ScalaFull -> CodeDetails(scala(defn))))
+  implicit def default[T](implicit javascript: HasLensCodeMaker[Javascript], scala: HasLensCodeMaker[ScalaFull]): DomainDefnToDetails[T] = { defn =>
+    val scalaDetails = CodeDetails(scala(defn))
+    val javascriptDetails = script.CodeDetails(javascript(defn))
+    DomainDetails[T](defn.domainName, defn.packageName, defn.accepts, javascriptDetails.hash, defn.lens.map(_.name).toSet, Map(Javascript -> javascriptDetails, ScalaFull -> scalaDetails))
+  }
 
 }
 
@@ -31,4 +37,40 @@ case class CodeDetails(code: String)(implicit digestor: Digestor) {
   val hash = digestor(code)
 }
 
-case class DomainDetails[T](name: String, packageName: String, code: Map[CodeFragment, CodeDetails])
+case class DomainDetails[T](name: String, packageName: String, accept: String, codeHeader: String, lensNames: Set[String], code: Map[CodeFragment, CodeDetails]) {
+  def normalisedLens = DomainDetails.stringsToString(lensNames)
+  def isDefinedAt(lensNames: Set[String]) = lensNames.forall(this.lensNames.contains)
+}
+object DomainDetails {
+  def stringsToString(set: Iterable[String]) = set.toList.sorted.mkString(".")
+}
+
+
+class CannotRespondToQuery(header: String, normalisedHeader: String, allowed: List[String]) extends RuntimeException(s"Header[$header] normalised[$normalisedHeader], allowed: ${allowed.mkString(";")}")
+object DomainList {
+  def stringToSet(s: String) = s.split("\\.").filterNot(_.isEmpty).toSet
+}
+case class DomainList[T](firstDomain: DomainDetails[T], restDomains: DomainDetails[T]*) {
+  val domains = firstDomain :: restDomains.toList
+  def accept(xingyiHeader: Option[String]) = {
+    println(s"in Domain list$xingyiHeader")
+    xingyiHeader match {
+      case None => firstDomain
+      case Some(header) =>
+        if (!header.startsWith(DomainDefn.xingyiHeaderPrefix)) throw new RuntimeException(s"Must start with ${DomainDefn.xingyiHeaderPrefix} actually is header")
+        val withoutPrefix= header.substring(DomainDefn.xingyiHeaderPrefix.length)
+        println(s"in Domain list header $withoutPrefix")
+        println(s"in Domain list split ${withoutPrefix.split("\\.").toList}")
+        val set = DomainList.stringToSet(withoutPrefix)
+        println(s"in Domain list set $set")
+        domains.find(_.isDefinedAt(set)) match {
+          case Some(foundDomain) =>
+            println(s"in Domain list  found$xingyiHeader")
+            foundDomain
+          case None => println("throwing exception"); throw new CannotRespondToQuery(header, DomainDetails.stringsToString(set), domains.map(_.normalisedLens))
+        }
+    }
+  }
+
+
+}
