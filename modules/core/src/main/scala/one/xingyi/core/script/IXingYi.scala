@@ -32,9 +32,11 @@ trait DomainMaker[T <: Domain] {
 trait Domain {
   def mirror: Object
 }
+//TODO COnsider [T<:Domain]
 case class Payload(mirror: Object) extends Domain
 object Payload {
   implicit val domainMaker: DomainMaker[Payload] = Payload.apply
+  implicit def toJson[T](implicit xingYi: DefaultXingYi) = xingYi.render("json", _)
 }
 
 case class ServerPayload[T](status: Status, domainObject: T, domain: DomainDetails[T])
