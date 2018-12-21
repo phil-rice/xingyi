@@ -1,15 +1,42 @@
 package one.xingyi.scriptShared
 
-import one.xingyi.core.optics.Lens
+import one.xingyi.core.json.{IXingYiLens, IXingYiShared, IXingYiSharedOps}
 
-trait IPerson
-trait IAddress
-trait ITelephoneNumber
+import scala.language.higherKinds
 
-trait IPersonName extends IPerson
-trait IPersonLine1 extends Lens[IPerson, String]  // This is a legacy thing from 'model 1' when line 1 was directly under person
-trait IPersonLine2 extends Lens[IPerson, String]
-trait IPersonAddress extends Lens[IPerson, IAddress]
-trait IPersonAddressList extends Lens[IPerson, List[IAddress]]
-trait IPersonTelephoneNumber extends Lens[IPerson, ITelephoneNumber]
-trait ITelephoneNumberNumber extends Lens[ITelephoneNumber, String]
+
+trait IPerson extends IXingYiShared
+trait IPersonNameOps[L[_, _]] extends IXingYiSharedOps[L, IPerson] {
+  def name: L[IPerson, String]
+}
+
+trait IPersonAddressListOps[L[_, _]] extends IXingYiSharedOps[L, IPerson] {
+  def addressList: L[IPerson, List[IAddress]]
+}
+
+@Deprecated
+trait IPersonAddressOps[L[_, _]] extends IXingYiSharedOps[L,IPerson] {
+  def address: L[IPerson, IAddress]
+}
+
+@Deprecated
+trait IPersonLine12Ops[L[_, _]] extends IXingYiSharedOps[L,IPerson] {
+  def line1: L[IPerson, String]
+  def line2: L[IPerson, String]
+}
+
+trait IPersonTelephoneOps[L[_, _]] extends IXingYiSharedOps[L, IPerson] {
+  def telephoneNumber: L[IPerson, ITelephoneNumber]
+}
+
+trait IAddress extends IXingYiShared
+trait IAddressOps[L[_, _]] extends IXingYiSharedOps[L, IAddress] {
+  def line1: L[IAddress, String]
+  def line2: L[IAddress, String]
+}
+
+trait ITelephoneNumber extends IXingYiShared
+trait ITelephoneNumberOps[L[_, _]] extends IXingYiSharedOps[L, ITelephoneNumber] {
+  def number: L[ITelephoneNumber, String]
+}
+

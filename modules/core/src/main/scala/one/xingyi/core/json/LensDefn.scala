@@ -1,7 +1,9 @@
 package one.xingyi.core.json
-import one.xingyi.core.reflection.ClassTags
+
+import one.xingyi.core.reflection.{ClassTags, Reflect}
 
 import scala.reflect.ClassTag
+
 
 class ProjectionToLensDefns {
   def apply[T](projection: Projection[T])(implicit classTag: ClassTag[T]): Seq[LensDefn[_, _]] = {
@@ -11,7 +13,7 @@ class ProjectionToLensDefns {
         children.flatMap {
           case (name, StringFieldProjection(get, set)) => List(LensDefn.string[T](name))
           case (name, o@ObjectFieldProjection(get, set)) => LensDefn.obj(name)(classTag, o.classTag) :: apply(o.projection)(o.classTag).toList
-          case (name, l@ListFieldProjection(get, set)) => LensDefn.list(name)(classTag,l.classTag) :: apply(l.projection)(l.classTag).toList
+          case (name, l@ListFieldProjection(get, set)) => LensDefn.list(name)(classTag, l.classTag) :: apply(l.projection)(l.classTag).toList
         }
     }
   }

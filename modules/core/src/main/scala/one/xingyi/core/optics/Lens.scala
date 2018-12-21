@@ -5,6 +5,7 @@ object Lens {
   implicit def identity[X] = Lens[X, X](a => a, (a, b) => b)
   def cast[X, Y] = Lens[X, Y](a => a.asInstanceOf[Y], (a, b) => b.asInstanceOf[X])
 
+  def firstItemL[T]: Lens[List[T],T] = Lens(_.head, (ts, t) => t :: ts.tail)
 
 }
 
