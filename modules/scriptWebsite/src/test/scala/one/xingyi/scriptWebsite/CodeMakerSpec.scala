@@ -2,8 +2,6 @@
 package one.xingyi.scriptWebsite
 
 import one.xingyi.core.script._
-import one.xingyi.scriptBackend.ExampleDomainDefn
-import one.xingyi.scriptExample.createdCode.Person
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.io.Source
@@ -11,12 +9,11 @@ import scala.io.Source
 class CodeMakerSpec extends FlatSpec with Matchers {
 
   behavior of "Java script code maker"
-  val exampleDomain = new ExampleDomainDefn
 
   val json = Source.fromInputStream(getClass.getResourceAsStream("/sample.json")).mkString
   def setup(fn: IXingYi => Unit): Unit = {
-    val codeMaker = implicitly[HasLensCodeMaker[Javascript]]
-    val javascript = codeMaker.apply(exampleDomain)
+//    val codeMaker = implicitly[HasLensCodeMaker[Javascript]]
+    val javascript = Source.fromResource("example.js").mkString
     val xingyi = implicitly[IXingYiLoader].apply(javascript)
     fn(xingyi)
   }
@@ -50,10 +47,10 @@ class CodeMakerSpec extends FlatSpec with Matchers {
     }
   }
 
-  it should "make a scala class" in {
-    val file = List("package org.xingyi.testing", implicitly[HasLensCodeMaker[ScalaDomain]].apply(exampleDomain), implicitly[HasLensCodeMaker[ScalaTrait]].apply(exampleDomain)).mkString("\n")
-    println(file)
-  }
+//  it should "make a scala class" in {
+//    val file = List("package org.xingyi.testing", implicitly[HasLensCodeMaker[ScalaDomain]].apply(exampleDomain), implicitly[HasLensCodeMaker[ScalaTrait]].apply(exampleDomain)).mkString("\n")
+//    println(file)
+//  }
 
   //  it should "make a string with a function for each lens" in {
   //    println
