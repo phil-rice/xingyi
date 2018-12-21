@@ -74,7 +74,9 @@ object Person extends JsonWriterLanguage {
   implicit val projection = ObjectProjection[Person](prototype,
     "name" -> StringFieldProjection(personNameOps.name),
     "telephoneNumber" -> ObjectFieldProjection(personTelephoneOps.telephoneNumber),
-    "address" -> ListFieldProjection(personAddressListOps.addressList))
+    "placesTheyLive" -> JsonHolder(
+      "addresses" -> ListFieldProjection(personAddressListOps.addressList))
+  ))
 }
 
 
@@ -119,4 +121,8 @@ case class NewExampleDomainDefn(list: IXingYiSharedOps[IXingYiLens, _]) {
   )
 
 
+}
+
+object TestItQuick extends App {
+  println(List(Person.projection, Address.projection, Telephone.projection).map(_.walk { case (name, child) => name + ": " + child }.mkString("\n")).mkString("\n\n"))
 }

@@ -2,39 +2,12 @@
 package one.xingyi.core.json
 
 import one.xingyi.core.optics.Lens
-import one.xingyi.core.reflection.Reflect
-
-import scala.language.implicitConversions
-import scala.language.higherKinds
+import one.xingyi.core.language.AnyLanguage._
+import scala.language.{higherKinds, implicitConversions}
 trait IXingYiShared
 trait IXingYiSharedOps[Lens[_, _], T]
 trait IXingYiLens[A, B] {
 }
-
-
-//Run time check, but it's on the client...
-case class XingYiManualPath[A, B](javascript: String)
-
-
-
-trait FromSharedToDomainForJavaScript[Shared, Domain]{
-//  def lens: Seq[LensDefn[_,_]]
-}
-object FromSharedToDomainForJavaScript{
-  implicit def workItOutFromProjection[Shared, Domain](tuple: (IXingYiSharedOps[IXingYiLens, Shared], ObjectProjection[Domain]))
-                                                      (implicit proof: ProofOfBinding[Shared, Domain]): WorkOutJavascriptLensFromProjects[Shared, Domain] =
-    WorkOutJavascriptLensFromProjects(tuple._1, tuple._2)
-
-}
-
-case class WorkOutJavascriptLensFromProjects[Shared, Domain](ops: IXingYiSharedOps[IXingYiLens, Shared], projection: ObjectProjection[Domain])(implicit proof: ProofOfBinding[Shared, Domain]) extends FromSharedToDomainForJavaScript[Shared, Domain] {
-//  override def lens: Seq[LensDefn[_, _]] = Reflect(ops).fieldNameAndValues[IXingYiSharedOps[_,_]] .map{
-//    case (name, x: IXingYiSharedOps[_,_]) => LensDefn(name, List(), false)
-//  }
-}
-case class WorkOutJavascriptLensManually[Shared, Domain](ops: IXingYiSharedOps[IXingYiLens, Shared], IXingYiSharedOps: IXingYiSharedOps[XingYiManualPath, Shared])
-                                                        (implicit proof: ProofOfBinding[Shared, Domain]) extends FromSharedToDomainForJavaScript[Shared, Domain]
-
 
 
 class ProofOfBinding[Shared, Domain]
@@ -59,13 +32,15 @@ sealed trait Projection[T] {
   def toJson(t: T): JsonValue
   def fromJson[J: JsonParser](j: J): T
   def fromJsonString[J](json: String)(implicit jsonParser: JsonParser[J]): T = fromJson(jsonParser(json))
+  def walk[T1](fn: (Seq[String], FieldProjection[_, _]) => T1, prefix: List[String] = List()): Seq[T1]
 }
 
 case class ObjectProjection[T](prototype: T, children: (String, FieldProjection[T, _])*)(implicit val classTag: ClassTag[T]) extends Projection[T] {
   override def toJson(t: T): JsonValue = JsonObject(children.map { nameAndToChild => nameAndToChild._1 -> nameAndToChild._2.childJson(t) }: _*)
   def fromJson[J: JsonParser](j: J): T =
     children.foldLeft(prototype) { case (acc, (name, fieldProjection)) => fieldProjection.setFromJson(acc, j \ name) }
-
+  override def walk[T1](fn: (Seq[String], FieldProjection[_, _]) => T1, prefix: List[String]): Seq[T1] =
+    children.flatMap { case (name, child) => child.walk(fn, prefix :+ name) }
 }
 
 sealed trait FieldProjection[T, Child] {
@@ -73,6 +48,7 @@ sealed trait FieldProjection[T, Child] {
   def set: (T, Child) => T
   def childFromJson[J: JsonParser](j: J): Child
   def setFromJson[J: JsonParser](t: T, j: J) = set(t, childFromJson(j))
+  def walk[T1](fn: (Seq[String], FieldProjection[_, _]) => T1, prefix: List[String] = List()): List[T1] = List(fn( prefix, this))
 }
 
 object ObjectFieldProjection {
@@ -85,6 +61,8 @@ object ObjectFieldProjection {
 case class ObjectFieldProjection[T, Child](fn: T => Child, set: (T, Child) => T)(implicit val projection: ObjectProjection[Child], val classTag: ClassTag[Child]) extends FieldProjection[T, Child] {
   override def childJson(t: T): JsonValue = JsonObject(projection.children.map { nameAndToChild => nameAndToChild._1 -> nameAndToChild._2.childJson(fn(t)) }: _*)
   override def childFromJson[J: JsonParser](j: J): Child = projection.fromJson(j)
+//  override def walk[T1](fn: (Seq[String], FieldProjection[_, _]) => T1, prefix: List[String]): List[T1] =
+
 }
 
 object ListFieldProjection {
@@ -96,6 +74,8 @@ object ListFieldProjection {
 case class ListFieldProjection[T, Child](fn: T => List[Child], set: (T, List[Child]) => T)(implicit val projection: Projection[Child], val classTag: ClassTag[Child]) extends FieldProjection[T, List[Child]] {
   override def childJson(t: T): JsonValue = JsonList(fn(t).map(projection.toJson))
   override def childFromJson[J: JsonParser](j: J): List[Child] = j.asListP[Child]
+//  override def walk[T1](fn: (Seq[String], FieldProjection[_, _]) => T1, prefix: List[String]): List[T1] =
+//    fn( prefix, this) :: projection.walk(fn, prefix).toList
 }
 
 object StringFieldProjection {
@@ -105,4 +85,6 @@ object StringFieldProjection {
 case class StringFieldProjection[T](get: T => String, set: (T, String) => T) extends FieldProjection[T, String] {
   override def childJson(t: T): JsonValue = JsonString(get(t))
   override def childFromJson[J: JsonParser](j: J): String = j.as[String]
+//  override def walk[T1](fn: (Seq[String], FieldProjection[_, _]) => T1, prefix: List[String]): List[T1] = List(fn(prefix,this))
 }
+
