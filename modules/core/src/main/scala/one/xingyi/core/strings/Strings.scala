@@ -6,15 +6,20 @@ import java.io.{ByteArrayOutputStream, PrintStream, StringWriter}
 import one.xingyi.core.metrics.PrintlnPutMetrics
 
 object Strings {
-  def toOption(s: String) =  if (s == null || s== "") None else Some(s)
+  def toOption(s: String) = if (s == null || s == "") None else Some(s)
 
-  def useStringWriter(fn: StringWriter => Unit)= {
+  def uppercaseFirst(s: String) = s.take(1).map(_.toUpper) ++ s.drop(1)
+  def lowercaseFirst(s: String) = s.take(1).map(_.toLower) ++ s.drop(1)
+
+  def useStringWriter(fn: StringWriter => Unit) = {
     val writer = new StringWriter()
     fn(writer)
     writer.flush()
     writer.toString
   }
+
   def classNameOfObject(obj: Object): String = obj.getClass.getSimpleName.dropRight(1)
+
   def indent(filler: String, depth: Int): String = List.fill(depth)(filler).mkString("")
 
   def indentTuple(filler: String, left: Int, mid: Int)(tuple: (String, String)) = {
@@ -24,7 +29,7 @@ object Strings {
 
   //This can obviously be optimised and actually should be I think...
   //Using a library is possible but painful and it's a lot of pulled in code just to escape a string
-   def escapeJson(raw: String) = {
+  def escapeJson(raw: String) = {
     var escaped = raw
     escaped = escaped.replace("\\", "\\\\")
     escaped = escaped.replace("\"", "\\\"")
@@ -43,7 +48,9 @@ object Strings {
   def ellipses(maxLength: Int)(s: String): String = if (s.length > maxLength) s.take(maxLength) + ".." else s
 
   def lastSection(marker: String)(s: String) = s.split(marker).last
+
   def allButlastSection(marker: String)(s: String) = s.split(marker).dropRight(1).mkString(marker)
+
   def recordPrintln[X](x: => X): (X, String) = {
     val bytes = new ByteArrayOutputStream()
     val result = Console.withOut(new PrintStream(bytes))(x)

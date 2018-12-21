@@ -24,14 +24,13 @@ class CreatedCodeExampleSpec extends UtilsSpec {
       import exampleDomain._
 
       val thePayload = payload(json)
-
       val namesLens = root andThen person_name
+      namesLens.get(thePayload) shouldBe "Phil Rice"
 
       val payload1 = namesLens.set(thePayload, "New Name")
-
-      namesLens.get(thePayload) shouldBe "Phil Rice"
-      val payload2 = namesLens.set(payload1, "Newer Name")
       namesLens.get(payload1) shouldBe "New Name"
+
+      val payload2 = namesLens.set(payload1, "Newer Name")
       namesLens.get(payload2) shouldBe "Newer Name"
 
     }
@@ -53,12 +52,14 @@ class CreatedCodeExampleSpec extends UtilsSpec {
       import exampleDomain._
 
       val thePayload = payload(json)
-
       val person: Person = root.get(thePayload)
       val addresses: List[Address] = person_address_list.get(person)
-      val addresses2: List[Address] = addresses.map(address_line1.map(_ + "changed"))
+
 
       addresses.map(address_line1.get) shouldBe List("No fixed abode", "A second address")
+
+
+      val addresses2: List[Address] = addresses.map(address_line1.map(_ + "changed"))
       addresses2.map(address_line1.get) shouldBe List("No fixed abodechanged", "A second addresschanged")
 
       val person2 = person_address_list.set(person, addresses2)

@@ -3,6 +3,7 @@ package one.xingyi.core.script
 
 import one.xingyi.core.json.LensDefn
 import one.xingyi.core.script.ScalaTrait.getClass
+import one.xingyi.core.strings.Strings
 
 import scala.io.Source
 
@@ -41,18 +42,23 @@ object ScalaDomain extends ScalaDomain {
   implicit def hasLensCodeMaker: HasLensCodeMaker[ScalaDomain] = new HasLensCodeMaker[ScalaDomain] {
     override def apply[T](anyRef: DomainDefn[T]): String = {
       defns(anyRef).foldLeft(Set[String]())((set, d) => set ++ Set(d.a, d.b)).filterNot(ignore.contains).map(t =>
-        s"""case class $t(mirror: Object) extends Domain
-           |object $t {
+        s"""object $t {
            |   implicit def ${t}Maker: DomainMaker[$t] = $t.apply
-           |}""".stripMargin
-        //      s"trait $t"
-      ).mkString("\n", "\n", "\n")
+           |}
+           |case class $t(mirror: Object) extends Domain{
+           |""".stripMargin +
+          anyRef.lens.map { defn =>
+            import defn._
+            s"""   def get$b(): $b
+               |""".stripMargin
+          }.mkString("\n")).mkString("\n", "\n", "\n")
     }
   }
 
 }
 
 trait ScalaFull extends CodeFragment
+
 object ScalaFull extends ScalaFull {
   implicit def hasLensCodeMaker(implicit scalaTrait: HasLensCodeMaker[ScalaTrait], scalaDomain: HasLensCodeMaker[ScalaDomain]): HasLensCodeMaker[ScalaFull] = new HasLensCodeMaker[ScalaFull] {
     override def apply[T](defn: DomainDefn[T]): String = {

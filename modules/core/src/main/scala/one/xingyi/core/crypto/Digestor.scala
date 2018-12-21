@@ -2,8 +2,6 @@ package one.xingyi.core.crypto
 
 import java.security.MessageDigest
 
-import sun.misc.BASE64Encoder
-
 trait Digestor extends (String => String)
 object Digestor {
   implicit def default(implicit toBase64: Base64Codec): Digestor = new Sha256Digestor
