@@ -16,9 +16,9 @@ class ProjectionToLensDefns {
         println("Children is " + children)
         val x = children
         children.toList.flatMap {
-          case (name, s: StringFieldProjection[_, _]) => List(LensDefn.string(name)(s.sharedClassTag))
-          case (name, o@ObjectFieldProjection(get, set)) => LensDefn.obj(name)(o.sharedClassTag, o.sharedTargetClassTag) :: apply(o.projection)
-          case (name, l: ListFieldProjection[_, _, _, _]) => LensDefn.list(name)(l.sharedClassTag, l.sharedTargetClassTag) :: apply(l.projection)
+          case (name, s: StringFieldProjection[_, _]) => List(LensDefn.string(name)(s.sharedClassTag, s.lensName))
+          case (name, o@ObjectFieldProjection(get, set)) => LensDefn.obj(name)(o.sharedClassTag, o.sharedTargetClassTag, o.lensName) :: apply(o.projection)
+          case (name, l: ListFieldProjection[_, _, _, _]) => LensDefn.list(name)(l.sharedClassTag, l.sharedTargetClassTag, l.lensName) :: apply(l.projection)
         }
     }
   }
@@ -39,11 +39,26 @@ case class ManualLensListLensDefn[A: ClassTag, B: ClassTag](name: String, names:
 case class ManualLensDefn[A: ClassTag, B: ClassTag](name: String, isList: Boolean, javascript: String) extends LensDefn[A, B]
 
 
+trait LensNameForJavascript[A, B] {
+  def apply(name: String, isList: Boolean = false): String
+}
+object LensNameForJavascript {
+  def removedFirstLetterIfI(s: String) = if (s.startsWith("I")) s.substring(1) else s
+  def objectName[T](implicit classTag: ClassTag[T]) = removedFirstLetterIfI(classTag.runtimeClass.getSimpleName)
+
+  implicit def default[A: ClassTag, B: ClassTag] = new LensNameForJavascript[A, B] {
+    override def apply(name: String, isList: Boolean): String =
+      (List(objectName[A], name, objectName[B]).mkString("_") + (if (isList) "List" else "")).toLowerCase
+  }
+}
+
 object LensDefn {
-  def string[A: ClassTag](name: String): LensDefn[A, String] = SimpleLensDefn(ClassTags.lowerCaseNameOf[A] + "_" + name, List(name), false)
-  def obj[A: ClassTag, B: ClassTag](names: String*): LensDefn[A, B] = SimpleLensDefn(ClassTags.lowerCaseNameOf[A] + "_" + ClassTags.lowerCaseNameOf[B], names.toList, false)
-  def list[A: ClassTag, B: ClassTag](names: String*): LensDefn[A, B] = {
+  def string[A: ClassTag](name: String)(implicit lensNameForJavascript: LensNameForJavascript[A, String]): LensDefn[A, String] =
+    SimpleLensDefn(lensNameForJavascript(name), List(name), false)
+  def obj[A: ClassTag, B: ClassTag](name: String)(implicit lensNameForJavascript: LensNameForJavascript[A, B]): LensDefn[A, B] =
+    SimpleLensDefn(lensNameForJavascript(name), List(name), false)
+  def list[A: ClassTag, B: ClassTag](name: String)(implicit lensNameForJavascript: LensNameForJavascript[A, B]): LensDefn[A, B] = {
     println(s"Making LensDefn.list(${ClassTags.nameOf[A]},${ClassTags.nameOf[B]})")
-    SimpleLensDefn(ClassTags.lowerCaseNameOf[A] + "_" + ClassTags.lowerCaseNameOf[B] + "_list", names.toList, true)
+    SimpleLensDefn(lensNameForJavascript(name, true), List(name), true)
   }
 }

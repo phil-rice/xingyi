@@ -67,17 +67,17 @@ function lens_root() {
 
 
 
-function lens_iperson_name(){ return lens("name");}; 
-function lens_iperson_itelephonenumber(){ return lens("telephoneNumber");}; 
-function lens_itelephonenumber_number(){ return lens("number");}; 
-function lens_iperson_iaddress_list(){ return lens("addresses");}; 
-function lens_iaddress_line1(){ return lens("line1");}; 
-function lens_iaddress_line2(){ return lens("line2");}; 
-function lens_iaddress_postcode(){ return lens("postcode");}; 
-function lens_iaddress_line1(){ return lens("line1");}; 
-function lens_iaddress_line2(){ return lens("line2");}; 
-function lens_iaddress_postcode(){ return lens("postcode");}; 
-function lens_itelephonenumber_number(){ return lens("number");}; 
+function lens_person_name_string(){ return lens("name");}; 
+function lens_person_telephonenumber_telephonenumber(){ return lens("telephoneNumber");}; 
+function lens_telephonenumber_number_string(){ return lens("number");}; 
+function lens_person_addresses_addresslist(){ return lens("addresses");}; 
+function lens_address_line1_string(){ return lens("line1");}; 
+function lens_address_line2_string(){ return lens("line2");}; 
+function lens_address_postcode_string(){ return lens("postcode");}; 
+function lens_address_line1_string(){ return lens("line1");}; 
+function lens_address_line2_string(){ return lens("line2");}; 
+function lens_address_postcode_string(){ return lens("postcode");}; 
+function lens_telephonenumber_number_string(){ return lens("number");}; 
 legacy_person_line1_lens
 legacy_person_line1_lens
 legacy_address
