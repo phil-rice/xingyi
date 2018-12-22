@@ -23,13 +23,19 @@ object ProjectionToLensDefns {
 }
 
 
-case class LensDefn[A, B](name: String, names: List[String], isList: Boolean = false)(implicit val classA: ClassTag[A], val classB: ClassTag[B]) {
+trait LensDefn[A,B]{
+  def name: String
+  def a: String
+  def b: String
+  def isList: Boolean
+}
+case class SimpleLensDefn[A, B](name: String, names: List[String], isList: Boolean = false)(implicit val classA: ClassTag[A], val classB: ClassTag[B])  extends LensDefn [A,B]{
   val a = classA.runtimeClass.getSimpleName
   val b = classB.runtimeClass.getSimpleName
 }
 
 object LensDefn {
-  def string[A: ClassTag](name: String): LensDefn[A, String] = LensDefn(ClassTags.lowerCaseNameOf[A] + "_" + name, List(name), false)
-  def obj[A: ClassTag, B: ClassTag](names: String*): LensDefn[A, B] = LensDefn(ClassTags.lowerCaseNameOf[A] + "_" + ClassTags.lowerCaseNameOf[B], names.toList, false)
-  def list[A: ClassTag, B: ClassTag](names: String*): LensDefn[A, B] = LensDefn(ClassTags.lowerCaseNameOf[A] + "_" + ClassTags.lowerCaseNameOf[B] + "_list", names.toList, true)
+  def string[A: ClassTag](name: String): LensDefn[A, String] = SimpleLensDefn(ClassTags.lowerCaseNameOf[A] + "_" + name, List(name), false)
+  def obj[A: ClassTag, B: ClassTag](names: String*): LensDefn[A, B] = SimpleLensDefn(ClassTags.lowerCaseNameOf[A] + "_" + ClassTags.lowerCaseNameOf[B], names.toList, false)
+  def list[A: ClassTag, B: ClassTag](names: String*): LensDefn[A, B] = SimpleLensDefn(ClassTags.lowerCaseNameOf[A] + "_" + ClassTags.lowerCaseNameOf[B] + "_list", names.toList, true)
 }
