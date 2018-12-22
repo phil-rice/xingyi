@@ -36,11 +36,11 @@ class ScalaTraitMaker extends LensCodeMaker[ScalaTrait] {
 trait ScalaDomain extends CodeFragment
 
 object ScalaDomain extends ScalaDomain {
-  val ignore = Set("String")
 
   implicit def hasLensCodeMaker: HasLensCodeMaker[ScalaDomain] = new HasLensCodeMaker[ScalaDomain] {
     override def apply[T](anyRef: DomainDefn[T]): String = {
-      defns(anyRef).foldLeft(Set[String]())((set, d) => set ++ Set(d.a, d.b)).filterNot(ignore.contains).map(t =>
+      println("In scala domain start: " + anyRef)
+      anyRef.projections.map(_.classTag.runtimeClass.getSimpleName).map { x => println(" in scaladomain: " + x); x }.map(t =>
         s"""case class $t(mirror: Object) extends Domain
            |object $t {
            |   implicit def ${t}Maker: DomainMaker[$t] = $t.apply

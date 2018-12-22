@@ -74,3 +74,10 @@ function lens_person_address_list(){ return lens("addresses");};
 function lens_address_line1(){ return lens("line1");}; 
 function lens_address_line2(){ return lens("line2");}; 
 function lens_address_postcode(){ return lens("postcode");}; 
+function lens_address_line1(){ return lens("line1");}; 
+function lens_address_line2(){ return lens("line2");}; 
+function lens_address_postcode(){ return lens("postcode");}; 
+function lens_telephone_number(){ return lens("number");}; 
+legacy_person_line1_lens
+legacy_person_line1_lens
+legacy_address

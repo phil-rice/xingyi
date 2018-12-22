@@ -16,7 +16,7 @@ trait CodeFragment
 
 
 trait HasLensCodeMaker[L <: CodeFragment] {
-  def defns[T](anyRef: DomainDefn[T]): List[LensDefn[_, _]] = anyRef.lens.toList
+  def defns[T](anyRef: DomainDefn[T]): List[LensDefn[_, _]] = anyRef.lens
 //  {
 //    val methods = anyRef.getClass.getMethods.filter(field => classOf[LensDefn[_, _]].isAssignableFrom(field.getReturnType)).toList
 //    methods.map(m => m.invoke(anyRef)).collect { case lens: LensDefn[_, _] => lens }

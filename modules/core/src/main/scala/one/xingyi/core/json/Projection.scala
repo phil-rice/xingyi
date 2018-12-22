@@ -3,6 +3,7 @@ package one.xingyi.core.json
 
 import one.xingyi.core.optics.{DelegateLens, Lens}
 import one.xingyi.core.language.AnyLanguage._
+import one.xingyi.core.reflection.ClassTags
 
 import scala.language.{higherKinds, implicitConversions}
 trait IXingYiShared
@@ -46,13 +47,14 @@ case class ObjectProjection[T](prototype: T, children: (String, FieldProjection[
 }
 
 sealed trait FieldProjection[T, Child] {
-  protected def classTag: ClassTag[T]
+  def classTag: ClassTag[T]
   def childJson(t: T): JsonValue
   def set: (T, Child) => T
   def childFromJson[J: JsonParser](j: J): Child
   def setFromJson[J: JsonParser](t: T, j: J) = set(t, childFromJson(j))
   def walk[T1](fn: (List[String], FieldProjection[_, _]) => T1, prefix: List[String] = List()): List[T1] = List(fn(prefix, this))
   def nameOfT: String = classTag.runtimeClass.getSimpleName
+  def isList: Boolean = false
 }
 
 object ObjectFieldProjection {
@@ -65,6 +67,7 @@ object ObjectFieldProjection {
 case class ObjectFieldProjection[T, Child](fn: T => Child, set: (T, Child) => T)(implicit val projection: ObjectProjection[Child], val classTag: ClassTag[T], val childClassTag: ClassTag[Child]) extends FieldProjection[T, Child] {
   override def childJson(t: T): JsonValue = JsonObject(projection.children.map { nameAndToChild => nameAndToChild._1 -> nameAndToChild._2.childJson(fn(t)) }: _*)
   override def childFromJson[J: JsonParser](j: J): Child = projection.fromJson(j)
+  override def toString: String = s"""ObjectFieldProjection[${ClassTags.nameOf[T]}, ${ClassTags.nameOf[Child]}](isList = $isList)"""
 }
 
 object ListFieldProjection {
@@ -76,6 +79,8 @@ object ListFieldProjection {
 case class ListFieldProjection[T, Child](fn: T => List[Child], set: (T, List[Child]) => T)(implicit val projection: Projection[Child], val classTag: ClassTag[T], val childClassTag: ClassTag[Child]) extends FieldProjection[T, List[Child]] {
   override def childJson(t: T): JsonValue = JsonList(fn(t).map(projection.toJson))
   override def childFromJson[J: JsonParser](j: J): List[Child] = j.asListP[Child]
+  override def isList: Boolean = true
+  override def toString: String = s"""ListFieldProjection[${ClassTags.nameOf[T]}, ${ClassTags.nameOf[Child]}](isList = $isList)"""
 }
 
 object StringFieldProjection {
@@ -85,5 +90,6 @@ object StringFieldProjection {
 case class StringFieldProjection[T](get: T => String, set: (T, String) => T)(implicit val classTag: ClassTag[T]) extends FieldProjection[T, String] {
   override def childJson(t: T): JsonValue = JsonString(get(t))
   override def childFromJson[J: JsonParser](j: J): String = j.as[String]
+  override def toString: String = s"""StringFieldProjection[${ClassTags.nameOf[T]},String](isList = $isList)"""
 }
 

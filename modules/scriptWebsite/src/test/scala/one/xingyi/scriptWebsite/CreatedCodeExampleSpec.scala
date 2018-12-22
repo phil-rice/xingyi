@@ -42,7 +42,7 @@ class CreatedCodeExampleSpec extends UtilsSpec {
       val thePayload = payload(json)
 
       val person: Person = root.get(thePayload)
-      val addresses: List[Address] = person_address_list.get(person)
+      val addresses: List[Address] = person_addresses.get(person)
       addresses.map(address_line1.get) shouldBe List("No fixed abode", "A second address")
       //
     }

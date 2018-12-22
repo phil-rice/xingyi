@@ -9,17 +9,17 @@ case class Person(mirror: Object) extends Domain
 object Person {
    implicit def PersonMaker: DomainMaker[Person] = Person.apply
 }
-case class Telephone(mirror: Object) extends Domain
-object Telephone {
-   implicit def TelephoneMaker: DomainMaker[Telephone] = Telephone.apply
-}
 case class Address(mirror: Object) extends Domain
 object Address {
    implicit def AddressMaker: DomainMaker[Address] = Address.apply
 }
+case class Telephone(mirror: Object) extends Domain
+object Telephone {
+   implicit def TelephoneMaker: DomainMaker[Telephone] = Telephone.apply
+}
 
 class ExampleDomain(implicit xingYi:IXingYi) {
-   def header: String = "application/xingyi.address_line1.address_line2.address_postcode.person_address_list.person_name.person_telephone.telephone_number"
+   def header: String = "application/xingyi.address_line1.address_line1.address_line2.address_line2.address_postcode.address_postcode.person_address.person_address_list.person_line1.person_line2.person_name.person_telephone.telephone_number.telephone_number"
    def payload(json: String): Payload = xingYi.parse(json)
    def root: Lens[Payload,Person] = xingYi.objectLens("root")
    def renderjson(domain: Domain): String = xingYi.render("json",domain)
@@ -31,4 +31,11 @@ class ExampleDomain(implicit xingYi:IXingYi) {
    def address_line1: Lens[Address,String] = xingYi.stringLens("address_line1") 
    def address_line2: Lens[Address,String] = xingYi.stringLens("address_line2") 
    def address_postcode: Lens[Address,String] = xingYi.stringLens("address_postcode") 
+   def address_line1: Lens[Address,String] = xingYi.stringLens("address_line1") 
+   def address_line2: Lens[Address,String] = xingYi.stringLens("address_line2") 
+   def address_postcode: Lens[Address,String] = xingYi.stringLens("address_postcode") 
+   def telephone_number: Lens[Telephone,String] = xingYi.stringLens("telephone_number") 
+   def person_line1: Lens[IPerson,String] = xingYi.stringLens("person_line1") 
+   def person_line2: Lens[IPerson,String] = xingYi.stringLens("person_line2") 
+   def person_address: Lens[IPerson,List[IAddress]] = xingYi.listLens("person_address") 
 }

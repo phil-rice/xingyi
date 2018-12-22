@@ -100,7 +100,16 @@ object EditPersonRequest {
   }
 }
 
-class ExampleDomainDefn extends DomainDefn[Person](List("json", "pretty"), implicitly[ProjectionToLensDefns].apply(Person.projection)) {
+class ExampleDomainDefn extends DomainDefn[Person](List("json", "pretty"),
+  List(Person.projection, Address.projection, Telephone.projection),
+  List(new IPersonLine12Ops[XingYiManualPath] {
+    override val line1 = XingYiManualPath[IPerson, String]("person", "legacy_person_line1_lens")
+    override def line2 = XingYiManualPath[IPerson, String]("person", "legacy_person_line1_lens")
+    override def toString: String = "Working out Person"
+  },
+    new IPersonAddressOps[XingYiManualPath] {
+      override def address = XingYiManualPath[IPerson, IAddress]("person", "legacy_address", isList = true)
+    })) {
   override def packageName: String = "one.xingyi.scriptExample.createdCode"
   override def domainName: String = "ExampleDomain"
 }
@@ -137,19 +146,19 @@ object TestItQuick extends App {
   projectionLens.foreach(println)
   println("manual")
 
-  val manual = List(new IPersonLine12Ops[XingYiManualPath] {
-    override val line1 = XingYiManualPath("legacy_person_line1_lens")
-    override def line2 = XingYiManualPath("legacy_person_line1_lens")
-    override def toString: String = "Working out Person"
-  },
-    new IPersonAddressOps[XingYiManualPath] {
-      override def address = XingYiManualPath[IPerson, IAddress]("legacy_address", isList = true)
-    }).map(Reflect(_).zeroParamMethodsNameAndValue[XingYiManualPath[_, _]].
-    map { case (name, path) => ManualLensDefn(name, path.isList, path.javascript) }
-    //      path.walk { case (names, projection) => SimpleLensDefn((projection.nameOfT + "_" + names.mkString("_")).toLowerCase, names, false) }))
-  )
-
-  manual.foreach(println)
+  ////  val manual = List(new IPersonLine12Ops[XingYiManualPath] {
+  ////    override val line1 = XingYiManualPath("legacy_person_line1_lens")
+  ////    override def line2 = XingYiManualPath("legacy_person_line1_lens")
+  ////    override def toString: String = "Working out Person"
+  ////  },
+  ////    new IPersonAddressOps[XingYiManualPath] {
+  ////      override def address = XingYiManualPath[IPerson, IAddress]("legacy_address", isList = true)
+  ////    }).map(Reflect(_).zeroParamMethodsNameAndValue[XingYiManualPath[_, _]].
+  ////    map { case (name, path) => ManualLensDefn(name, path.isList, path.javascript) }
+  ////    //      path.walk { case (names, projection) => SimpleLensDefn((projection.nameOfT + "_" + names.mkString("_")).toLowerCase, names, false) }))
+  ////  )
+  //
+  //  manual.foreach(println)
 
 
   //  println("Defns from projection... just need a list of projections")

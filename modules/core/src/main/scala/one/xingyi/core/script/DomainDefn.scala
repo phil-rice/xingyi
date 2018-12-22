@@ -2,25 +2,37 @@
 package one.xingyi.core.script
 
 import one.xingyi.core.crypto.Digestor
-import one.xingyi.core.json.LensDefn
-import one.xingyi.core.reflection.ClassTags
+import one.xingyi.core.json.{ProjectionToLensDefns, _}
+import one.xingyi.core.reflection.{ClassTags, Reflect}
 import one.xingyi.core.script
 
+import scala.collection.immutable
 import scala.reflect.ClassTag
-case class XingYiManualPath[A, B](javascript: String, isList: Boolean = false)
-
+case class XingYiManualPath[A, B](prefix: String, javascript: String, isList: Boolean = false)(implicit val classTag: ClassTag[A], val childClassTag: ClassTag[B]) {
+  def makeManualLens(name: String) = ManualLensDefn[A, B](prefix + "_" + name, isList, javascript)
+}
 
 object DomainDefn {
   val xingyiHeaderPrefix = "application/xingyi."
 }
-abstract class DomainDefn[T: ClassTag](
-                                        val renderers: List[String] = List(),
-                                        val lens: Seq[LensDefn[_, _]] = List()) {
+
+
+abstract class DomainDefn[T: ClassTag](val renderers: List[String], val projections: List[Projection[_]] = List(),
+                                       val manual: List[IXingYiSharedOps[XingYiManualPath, _]] = List())(implicit projectionToLensDefns: ProjectionToLensDefns) {
   def rootName: String = ClassTags.nameOf[T]
   def packageName: String = getClass.getPackage.getName
   def domainName: String = getClass.getSimpleName
+  val projectionLens: List[LensDefn[_, _]] = projections.flatMap(x => projectionToLensDefns(x))
+  val manualLens: List[LensDefn[_, _]] = manual.flatMap(Reflect(_).zeroParamMethodsNameAndValue[XingYiManualPath[_, _]].map { case (name, path) => path.makeManualLens(name) }.toList)
+  val lens = (projectionLens ++ manualLens)
   def accepts: String = DomainDefn.xingyiHeaderPrefix + DomainDetails.stringsToString(lens.map(_.name))
-
+  override def toString: String =
+    s"""${getClass.getSimpleName}(
+       |renderers = ${renderers.mkString(",")}
+       |projections =
+       |${projections.mkString("\n")}
+       |manual = ${manual.mkString(",")}
+       |""".stripMargin
 }
 
 
