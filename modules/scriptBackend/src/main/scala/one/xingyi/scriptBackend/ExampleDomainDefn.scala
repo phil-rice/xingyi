@@ -21,7 +21,7 @@ object Telephone {
     override def number = XingYiDomainStringLens.stringLens[ITelephoneNumber, Telephone](_.number, (t, n) => t.copy(number = n))
   }
 
-  implicit val projection = ObjectProjection[Telephone](prototype, "number" -> StringFieldProjection[Telephone](_.number, (t, n) => t.copy(number = n)))
+  implicit val projection = ObjectProjection[ITelephoneNumber, Telephone](prototype, "number" -> StringFieldProjection(_.number, (t, n) => t.copy(number = n)))
 }
 
 case class Address(line1: String, line2: String, postcode: String)
@@ -37,7 +37,7 @@ object Address extends JsonWriterLanguage {
     override def line2 = XingYiDomainStringLens.stringLens[IAddress, Address](_.line2, (a, s) => a.copy(line2 = s))
   }
 
-  implicit val projection = ObjectProjection[Address](prototype,
+  implicit val projection = ObjectProjection[IAddress, Address](prototype,
     "line1" -> StringFieldProjection(addressOps.line1),
     "line2" -> StringFieldProjection(addressOps.line2),
     "postcode" -> StringFieldProjection(_.postcode, (a, s) => a.copy(postcode = s))
@@ -73,9 +73,9 @@ object Person extends JsonWriterLanguage {
     override def telephoneNumber = XingYiDomainObjectLens(telephoneL)
   }
   val prototype = Person("", List(), Telephone.prototype)
-  implicit val projection = ObjectProjection[Person](prototype,
+  implicit val projection = ObjectProjection[IPerson, Person](prototype,
     "name" -> StringFieldProjection(personNameOps.name),
-    "telephoneNumber" -> ObjectFieldProjection(personTelephoneOps.telephoneNumber),
+    "telephoneNumber" -> ObjectFieldProjection[IPerson, ITelephoneNumber, Person, Telephone](personTelephoneOps.telephoneNumber),
     //    "placesTheyLive" -> JsonHolder(  // work out how to do this
     "addresses" -> ListFieldProjection(personAddressListOps.addressList))
 
@@ -92,7 +92,7 @@ object PersonRequest {
 
 case class EditPersonRequest(person: Person, xingYiHeader: Option[String]) // aha need to be able to make from projection
 object EditPersonRequest {
-  implicit def fromServiceRequest[M[_], J: JsonParser](implicit monad: Monad[M], projection: Projection[Person]): FromServiceRequest[M, EditPersonRequest] = { sr =>
+  implicit def fromServiceRequest[M[_], J: JsonParser](implicit monad: Monad[M], projection: Projection[IPerson, Person]): FromServiceRequest[M, EditPersonRequest] = { sr =>
     val name = Strings.lastSection("/")(sr.uri.path.path)
     val newPerson: Person = projection.fromJsonString(sr.body.getOrElse(throw new RuntimeException("cannot create person as body of request empty")).s)
     if (name != newPerson.name) throw new RuntimeException("Cannot edit name")

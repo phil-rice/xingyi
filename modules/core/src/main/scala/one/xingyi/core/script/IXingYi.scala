@@ -36,14 +36,14 @@ trait Domain {
 case class Payload(mirror: Object) extends Domain
 object Payload {
   implicit val domainMaker: DomainMaker[Payload] = Payload.apply
-  implicit def toJson[T<:Domain](implicit xingYi: DefaultXingYi): ToJson[T] = d => xingYi.render("json", d)
+  implicit def toJson[T <: Domain](implicit xingYi: DefaultXingYi): ToJson[T] = d => xingYi.render("json", d)
 }
 
 case class ServerPayload[T](status: Status, domainObject: T, domain: DomainDetails[T])
 object ServerPayload extends JsonWriterLanguage {
-  //  implicit def toJson[T](implicit projection: Projection[T]): ToJsonLib[ServerPayload[T]] =
+  //  implicit def toJson[Domain](implicit projection: Projection[Domain]): ToJsonLib[ServerPayload[Domain]] =
   //    payload => JsonObject("_embedded" -> projection.toJson(payload.domainObject))
-  implicit def toServerResponse[J, Req, T](implicit jsonWriter: JsonWriter[J], projection: Projection[T]): ToServiceResponse[Req, ServerPayload[T]] =
+  implicit def toServerResponse[J, Req, Server, Domain](implicit jsonWriter: JsonWriter[J], projection: Projection[Server, Domain]): ToServiceResponse[Req, ServerPayload[Domain]] =
     req => payload =>
       ServiceResponse(payload.status, Body(jsonWriter(JsonObject("_embedded" -> projection.toJson(payload.domainObject)))),
         List(Header("content-type", "application/xingyi"), Header("xingyi", payload.domain.codeHeader)))

@@ -17,7 +17,7 @@ object DomainDefn {
 }
 
 
-abstract class DomainDefn[T: ClassTag](val renderers: List[String], val projections: List[Projection[_]] = List(),
+abstract class DomainDefn[T: ClassTag](val renderers: List[String], val projections: List[Projection[_, _]] = List(),
                                        val manual: List[IXingYiSharedOps[XingYiManualPath, _]] = List())(implicit projectionToLensDefns: ProjectionToLensDefns) {
   def rootName: String = ClassTags.nameOf[T]
   def packageName: String = getClass.getPackage.getName

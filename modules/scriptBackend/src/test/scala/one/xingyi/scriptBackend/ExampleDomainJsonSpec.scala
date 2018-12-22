@@ -3,6 +3,7 @@ package one.xingyi.scriptBackend
 
 import one.xingyi.core.UtilsSpec
 import one.xingyi.core.json.{JsonParser, JsonWriter, ObjectProjection}
+import one.xingyi.scriptShared.IPerson
 
 abstract class ExampleDomainJsonSpec[J: JsonParser](implicit writer: JsonWriter[J]) extends UtilsSpec {
 
@@ -29,11 +30,11 @@ abstract class ExampleDomainJsonSpec[J: JsonParser](implicit writer: JsonWriter[
   }]
 }"""
   it should "use the projection to turn a person into json" in {
-    writer(implicitly[ObjectProjection[Person]].toJson(person)).noWhiteSpace shouldBe
+    writer(implicitly[ObjectProjection[IPerson, Person]].toJson(person)).noWhiteSpace shouldBe
     json.stripMargin.noWhiteSpace
   }
 
   it should "use the projection to turn json into a person" in {
-    implicitly[ObjectProjection[Person]].fromJson[J](json) shouldBe person
+    implicitly[ObjectProjection[IPerson,Person]].fromJson[J](json) shouldBe person
   }
 }

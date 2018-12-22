@@ -40,7 +40,7 @@ object ScalaDomain extends ScalaDomain {
   implicit def hasLensCodeMaker: HasLensCodeMaker[ScalaDomain] = new HasLensCodeMaker[ScalaDomain] {
     override def apply[T](anyRef: DomainDefn[T]): String = {
       println("In scala domain start: " + anyRef)
-      anyRef.projections.map(_.classTag.runtimeClass.getSimpleName).map { x => println(" in scaladomain: " + x); x }.map(t =>
+      anyRef.projections.map(_.domainClassTag.runtimeClass.getSimpleName).map { x => println(" in scaladomain: " + x); x }.map(t =>
         s"""case class $t(mirror: Object) extends Domain
            |object $t {
            |   implicit def ${t}Maker: DomainMaker[$t] = $t.apply
