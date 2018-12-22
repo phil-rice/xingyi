@@ -5,21 +5,25 @@ object Lens {
   implicit def identity[X] = Lens[X, X](a => a, (a, b) => b)
   def cast[X, Y] = Lens[X, Y](a => a.asInstanceOf[Y], (a, b) => b.asInstanceOf[X])
 
-  def firstItemL[T]: Lens[List[T],T] = Lens(_.head, (ts, t) => t :: ts.tail)
-
+  def firstItemL[T]: Lens[List[T], T] = Lens(_.head, (ts, t) => t :: ts.tail)
+def apply[A,B](get: A=>B, set: (A,B)=>A): Lens[A,B] = SimpleLens(get,set)
 }
-
-
-case class Lens[A, B](get: A => B, set: (A, B) => A) extends Immutable {
+trait Lens[A, B] {
+  def get: A => B
+  def set: (A, B) => A
   def setFn: B => A => A = { b => a => set(a, b) }
   def apply(whole: A): B = get(whole)
   def map(a: A, f: B => B): A = set(a, f(get(a)))
   def map(f: B => B): A => A = a => set(a, f(get(a)))
-  def compose[C](that: Lens[C, A]) = Lens[C, B](
-    c => get(that.get(c)),
-    (c, b) => that.map(c, set(_, b)))
+  def compose[C](that: Lens[C, A]) = SimpleLens[C, B](c => get(that.get(c)), (c, b) => that.map(c, set(_, b)))
   def andThen[C](that: Lens[B, C]) = that compose this
   def andGet[C](fn: B => C) = get andThen fn
-  //  def andSet[C](fn: (B, C) => B): (A, C) => A = (a, c) => set(a, fn(get(a), c))
 }
+
+trait DelegateLens[A,B] extends Lens[A,B]{
+  def lens: Lens[A,B]
+  override def get: A => B = lens.get
+  override def set: (A, B) => A = lens.set
+}
+case class SimpleLens[A, B](get: A => B, set: (A, B) => A) extends Lens[A,B]
 

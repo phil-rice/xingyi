@@ -17,7 +17,7 @@ class ExampleDomainDomainDefnSpec extends UtilsSpec {
       LensDefn("address_line1", List("line1"), false),
       LensDefn("address_line2", List("line2"), false),
       LensDefn("address_postcode", List("postcode"), false),
-      LensDefn("person_address_list", List("address"), true),
+      LensDefn("person_address_list", List("addresses"), true),
       LensDefn("person_name", List("name"), false),
       LensDefn("person_telephone", List("telephoneNumber"), false),
       LensDefn("telephone_number", List("number"), false)

@@ -61,22 +61,23 @@ object Person extends JsonWriterLanguage {
 
   }
   implicit object personAddressOps extends IPersonAddressOps[IXingYiLens] {
-    override def address: IXingYiLens[IPerson, IAddress] = XingYiDomainLens(personAddressL)
+    override def address: IXingYiLens[IPerson, IAddress] = XingYiDomainObjectLens(personAddressL)
   }
   implicit object personAddressListOps extends IPersonAddressListOps[IXingYiLens] {
-    override def addressList = XingYiDomainLens(personAddressListL)
+    override def addressList = XingYiDomainObjectLens(personAddressListL)
   }
 
   implicit object personTelephoneOps extends IPersonTelephoneOps[IXingYiLens] {
-    override def telephoneNumber = XingYiDomainLens(telephoneL)
+    override def telephoneNumber = XingYiDomainObjectLens(telephoneL)
   }
   val prototype = Person("", List(), Telephone.prototype)
   implicit val projection = ObjectProjection[Person](prototype,
     "name" -> StringFieldProjection(personNameOps.name),
     "telephoneNumber" -> ObjectFieldProjection(personTelephoneOps.telephoneNumber),
-    "placesTheyLive" -> JsonHolder(
-      "addresses" -> ListFieldProjection(personAddressListOps.addressList))
-  ))
+    //    "placesTheyLive" -> JsonHolder(  // work out how to do this
+    "addresses" -> ListFieldProjection(personAddressListOps.addressList))
+
+
 }
 
 

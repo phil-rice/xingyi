@@ -18,7 +18,7 @@ abstract class ExampleDomainJsonSpec[J: JsonParser](implicit writer: JsonWriter[
   "telephoneNumber":{
     "number":"someNumber"
   },
-  "address":[{
+  "addresses":[{
     "line1":"line1",
     "line2":"line2",
     "postcode":"pc1"
