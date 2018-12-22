@@ -7,6 +7,8 @@ import one.xingyi.core.reflection.ClassTags
 import one.xingyi.core.script
 
 import scala.reflect.ClassTag
+case class XingYiManualPath[A, B](javascript: String, isList: Boolean = false)
+
 
 object DomainDefn {
   val xingyiHeaderPrefix = "application/xingyi."
@@ -58,7 +60,7 @@ case class DomainList[T](firstDomain: DomainDetails[T], restDomains: DomainDetai
       case None => firstDomain
       case Some(header) =>
         if (!header.startsWith(DomainDefn.xingyiHeaderPrefix)) throw new RuntimeException(s"Must start with ${DomainDefn.xingyiHeaderPrefix} actually is header")
-        val withoutPrefix= header.substring(DomainDefn.xingyiHeaderPrefix.length)
+        val withoutPrefix = header.substring(DomainDefn.xingyiHeaderPrefix.length)
         println(s"in Domain list header $withoutPrefix")
         println(s"in Domain list split ${withoutPrefix.split("\\.").toList}")
         val set = DomainList.stringToSet(withoutPrefix)
