@@ -2,22 +2,20 @@
 package one.xingyi.scriptBackend
 
 import one.xingyi.core.http._
-import one.xingyi.core.json.{IXingYiLens, IXingYiSharedOps, StringFieldProjection, _}
+import one.xingyi.core.json.{IXingYiLens, StringFieldProjection, _}
 import one.xingyi.core.monad.Monad
 import one.xingyi.core.optics.Lens
-import one.xingyi.core.reflection.Reflect
 import one.xingyi.core.script.{DomainDefn, XingYiManualPath}
 import one.xingyi.core.strings.Strings
 import one.xingyi.scriptShared.{IPersonAddressOps, _}
 
-import scala.language.implicitConversions
-import scala.language.higherKinds
+import scala.language.{higherKinds, implicitConversions}
 
 case class Telephone(number: String)
 object Telephone {
   val prototype = Telephone("prototype")
   implicit object telephoneProof extends ProofOfBinding[ITelephoneNumber, Telephone]
-  implicit object telephoneOps extends ITelephoneNumberOps[IXingYiLens] {
+  implicit object telephoneOps extends ITelephoneNumberOps[IXingYiLens, ITelephoneNumber] {
     override def number = XingYiDomainStringLens.stringLens[ITelephoneNumber, Telephone](_.number, (t, n) => t.copy(number = n))
   }
 
@@ -32,7 +30,7 @@ object Address extends JsonWriterLanguage {
   val line2L = Lens[Address, String](_.line2, (a, s) => a.copy(line2 = s))
 
   implicit object addressProof extends ProofOfBinding[IAddress, Address]
-  implicit object addressOps extends IAddressOps[IXingYiLens] {
+  implicit object addressOps extends IAddressOps[IXingYiLens, IAddress] {
     override def line1 = XingYiDomainStringLens(line1L)
     override def line2 = XingYiDomainStringLens.stringLens[IAddress, Address](_.line2, (a, s) => a.copy(line2 = s))
   }
@@ -54,22 +52,22 @@ object Person extends JsonWriterLanguage {
   implicit val telephoneL = Lens[Person, Telephone](_.telephoneNumber, (p, t) => p.copy(telephoneNumber = t))
 
   implicit object personProof extends ProofOfBinding[IPerson, Person]
-  implicit object personNameOps extends IPersonNameOps[IXingYiLens] {
+  implicit object personNameOps extends IPersonNameOps[IXingYiLens, IPerson] {
     override def name = XingYiDomainStringLens(nameL)
   }
-  implicit object personLine12Ops extends IPersonLine12Ops[IXingYiLens] {
+  implicit object personLine12Ops extends IPersonLine12Ops[IXingYiLens,IPerson] {
     override def line1: IXingYiLens[IPerson, String] = XingYiDomainStringLens(personAddressL andThen Address.line1L)
     override def line2: IXingYiLens[IPerson, String] = XingYiDomainStringLens(personAddressL andThen Address.line2L)
 
   }
-  implicit object personAddressOps extends IPersonAddressOps[IXingYiLens] {
+  implicit object personAddressOps extends IPersonAddressOps[IXingYiLens,IPerson, IAddress] {
     override def address: IXingYiLens[IPerson, IAddress] = XingYiDomainObjectLens(personAddressL)
   }
-  implicit object personAddressListOps extends IPersonAddressListOps[IXingYiLens] {
+  implicit object personAddressListOps extends IPersonAddressListOps[IXingYiLens, IPerson, IAddress] {
     override def addressList = XingYiDomainObjectLens(personAddressListL)
   }
 
-  implicit object personTelephoneOps extends IPersonTelephoneOps[IXingYiLens] {
+  implicit object personTelephoneOps extends IPersonTelephoneOps[IXingYiLens,IPerson, ITelephoneNumber] {
     override def telephoneNumber = XingYiDomainObjectLens(telephoneL)
   }
   val prototype = Person("", List(), Telephone.prototype)
@@ -102,12 +100,12 @@ object EditPersonRequest {
 
 class ExampleDomainDefn extends DomainDefn[Person](List("json", "pretty"),
   List(Person.projection, Address.projection, Telephone.projection),
-  List(new IPersonLine12Ops[XingYiManualPath] {
+  List(new IPersonLine12Ops[XingYiManualPath, IPerson] {
     override val line1 = XingYiManualPath[IPerson, String]("person", "legacy_person_line1_lens")
     override def line2 = XingYiManualPath[IPerson, String]("person", "legacy_person_line1_lens")
     override def toString: String = "Working out Person"
   },
-    new IPersonAddressOps[XingYiManualPath] {
+    new IPersonAddressOps[XingYiManualPath, IPerson, IAddress] {
       override def address = XingYiManualPath[IPerson, IAddress]("person", "legacy_address", isList = true)
     })) {
   override def packageName: String = "one.xingyi.scriptExample.createdCode"
