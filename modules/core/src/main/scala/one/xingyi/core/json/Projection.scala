@@ -61,37 +61,25 @@ sealed trait FieldProjection[T, Child] {
   def isList: Boolean = false
 }
 
-object ObjectFieldProjection {
-  def apply[Shared: ClassTag, SharedTarget: ClassTag, Domain: ClassTag, DomainTarget: ClassTag](lens: XingYiDomainObjectLens[Shared, SharedTarget, Domain, DomainTarget])
-                                                                                               (implicit sharedProof: ProofOfBinding[Shared, Domain],
-                                                                                                projection: ObjectProjection[SharedTarget, DomainTarget],
-                                                                                                targetProof: ProofOfBinding[SharedTarget, DomainTarget]): ObjectFieldProjection[Shared, SharedTarget, Domain, DomainTarget] =
-    new ObjectFieldProjection[Shared, SharedTarget, Domain, DomainTarget](lens.lens.get, lens.lens.set)
-
+trait HasXingYiLens[Shared, SharedTarget] {
+  def lens: IXingYiLens[Shared, SharedTarget]
 }
-case class ObjectFieldProjection[Shared, SharedTarget, Domain, DomainTarget](fn: Domain => DomainTarget, set: (Domain, DomainTarget) => Domain)
+
+case class ObjectFieldProjection[Shared, SharedTarget, Domain, DomainTarget](lens: XingYiDomainObjectLens[Shared, SharedTarget, Domain, DomainTarget])
                                                                             (implicit val projection: ObjectProjection[SharedTarget, DomainTarget], sharedProof: ProofOfBinding[Shared, Domain],
                                                                              targetProof: ProofOfBinding[SharedTarget, DomainTarget],
                                                                              val sharedClassTag: ClassTag[Shared],
                                                                              val sharedTargetClassTag: ClassTag[SharedTarget],
                                                                              val domainClassTag: ClassTag[Domain],
                                                                              val domainTargetClassTag: ClassTag[DomainTarget],
-                                                                             val lensName: LensNameForJavascript[Shared, SharedTarget]) extends FieldProjection[Domain, DomainTarget] {
-  override def childJson(t: Domain): JsonValue = JsonObject(projection.children.map { nameAndToChild => nameAndToChild._1 -> nameAndToChild._2.childJson(fn(t)) }: _*)
+                                                                             val lensName: LensNameForJavascript[Shared, SharedTarget]) extends FieldProjection[Domain, DomainTarget]
+  with DelegateLens[Domain, DomainTarget] with HasXingYiLens[Shared, SharedTarget] {
+  override def childJson(t: Domain): JsonValue = JsonObject(projection.children.map { nameAndToChild => nameAndToChild._1 -> nameAndToChild._2.childJson(lens(t)) }: _*)
   override def childFromJson[J: JsonParser](j: J): DomainTarget = projection.fromJson(j)
   override def toString: String = s"""ObjectFieldProjection[${ClassTags.nameOf[Domain]}, ${ClassTags.nameOf[DomainTarget]}](isList = $isList)"""
 }
 
-object ListFieldProjection {
-  def apply[Shared: ClassTag, SharedTarget: ClassTag, Domain: ClassTag, DomainTarget: ClassTag](lens: XingYiDomainObjectLens[Shared, List[SharedTarget], Domain, List[DomainTarget]])
-                                                                                               (implicit sharedProof: ProofOfBinding[Shared, Domain],
-                                                                                                projection: Projection[SharedTarget, DomainTarget],
-                                                                                                targetProof: ProofOfBinding[SharedTarget, DomainTarget],
-                                                                                                lensName: LensNameForJavascript[Shared, SharedTarget]
-                                                                                               ): ListFieldProjection[Shared, SharedTarget, Domain, DomainTarget] =
-    new ListFieldProjection[Shared, SharedTarget, Domain, DomainTarget](lens.lens.get, lens.lens.set)
-}
-case class ListFieldProjection[Shared, SharedTarget, Domain, DomainTarget](fn: Domain => List[DomainTarget], set: (Domain, List[DomainTarget]) => Domain)
+case class ListFieldProjection[Shared, SharedTarget, Domain, DomainTarget](lens: XingYiDomainObjectLens[Shared, List[SharedTarget], Domain, List[DomainTarget]])
                                                                           (implicit val projection: Projection[SharedTarget, DomainTarget],
                                                                            sharedProof: ProofOfBinding[Shared, Domain],
                                                                            targetProof: ProofOfBinding[SharedTarget, DomainTarget],
@@ -100,23 +88,28 @@ case class ListFieldProjection[Shared, SharedTarget, Domain, DomainTarget](fn: D
                                                                            val domainClassTag: ClassTag[Domain],
                                                                            val domainTargetClassTag: ClassTag[DomainTarget],
                                                                            val lensName: LensNameForJavascript[Shared, SharedTarget]
-                                                                          ) extends FieldProjection[Domain, List[DomainTarget]] {
-  override def childJson(t: Domain): JsonValue = JsonList(fn(t).map(projection.toJson))
+                                                                          ) extends FieldProjection[Domain, List[DomainTarget]]
+  with DelegateLens[Domain, List[DomainTarget]] with HasXingYiLens[Shared, List[SharedTarget]] {
+  override def childJson(t: Domain): JsonValue = JsonList(lens(t).map(projection.toJson))
   override def childFromJson[J: JsonParser](j: J): List[DomainTarget] = j.asListP[SharedTarget, DomainTarget]
   override def isList: Boolean = true
   override def toString: String = s"""ListFieldProjection[${ClassTags.nameOf[Domain]}, ${ClassTags.nameOf[DomainTarget]}](isList = $isList)"""
 }
 
-object StringFieldProjection {
-  def apply[Shared: ClassTag, Domain: ClassTag](lens: XingYiDomainStringLens[Shared, Domain])(implicit proof: ProofOfBinding[Shared, Domain]) = new StringFieldProjection[Shared, Domain](lens.lens.get, lens.lens.set)
-
-}
-case class StringFieldProjection[Shared, Domain](get: Domain => String, set: (Domain, String) => Domain)
+case class StringFieldProjection[Shared, Domain](lens: XingYiDomainStringLens[Shared, Domain])
                                                 (implicit proof: ProofOfBinding[Shared, Domain],
                                                  val sharedClassTag: ClassTag[Shared],
                                                  val domainClassTag: ClassTag[Domain],
-                                                 val lensName: LensNameForJavascript[Shared, String]) extends FieldProjection[Domain, String] {
-  override def childJson(t: Domain): JsonValue = JsonString(get(t))
+                                                 val lensName: LensNameForJavascript[Shared, String]) extends FieldProjection[Domain, String]
+  with HasXingYiLens[Shared, String]
+  with DelegateLens[Domain, String] {
+  override def childJson(t: Domain): JsonValue = JsonString(lens.get(t))
+  override def childFromJson[J: JsonParser](j: J): String = j.as[String]
+  override def toString: String = s"""StringFieldProjection[${ClassTags.nameOf[Domain]},String](isList = $isList)"""
+}
+
+case class StringField[Domain](lens: Lens[Domain, String])(implicit val domainClassTag: ClassTag[Domain]) extends FieldProjection[Domain, String] with DelegateLens[Domain, String] {
+  override def childJson(t: Domain): JsonValue = JsonString(lens.get(t))
   override def childFromJson[J: JsonParser](j: J): String = j.as[String]
   override def toString: String = s"""StringFieldProjection[${ClassTags.nameOf[Domain]},String](isList = $isList)"""
 }

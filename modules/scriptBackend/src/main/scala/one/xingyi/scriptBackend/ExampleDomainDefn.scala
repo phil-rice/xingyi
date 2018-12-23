@@ -5,7 +5,7 @@ import one.xingyi.core.http._
 import one.xingyi.core.json.{IXingYiLens, StringFieldProjection, _}
 import one.xingyi.core.monad.Monad
 import one.xingyi.core.optics.Lens
-import one.xingyi.core.script.{DomainDefn, XingYiManualPath}
+import one.xingyi.core.script._
 import one.xingyi.core.strings.Strings
 import one.xingyi.scriptShared.{IPersonAddressOps, _}
 
@@ -18,8 +18,8 @@ object Telephone {
   implicit object telephoneOps extends ITelephoneNumberOps[IXingYiLens, ITelephoneNumber] {
     override def number = XingYiDomainStringLens.stringLens[ITelephoneNumber, Telephone](_.number, (t, n) => t.copy(number = n))
   }
-
-  implicit val projection = ObjectProjection[ITelephoneNumber, Telephone](prototype, "number" -> StringFieldProjection(_.number, (t, n) => t.copy(number = n)))
+  val numberL: Lens[Telephone, String] = Lens(_.number, (t, n) => t.copy(number = n))
+  implicit val projection = ObjectProjection[ITelephoneNumber, Telephone](prototype, "number" -> StringFieldProjection(telephoneOps.number))
 }
 
 case class Address(line1: String, line2: String, postcode: String)
@@ -38,7 +38,7 @@ object Address extends JsonWriterLanguage {
   implicit val projection = ObjectProjection[IAddress, Address](prototype,
     "line1" -> StringFieldProjection(addressOps.line1),
     "line2" -> StringFieldProjection(addressOps.line2),
-    "postcode" -> StringFieldProjection(_.postcode, (a, s) => a.copy(postcode = s))
+    "postcode" -> StringField(Lens(_.postcode, (a, s) => a.copy(postcode = s)))
   )
 }
 case class Person(name: String, address: List[Address], telephoneNumber: Telephone)
@@ -55,19 +55,19 @@ object Person extends JsonWriterLanguage {
   implicit object personNameOps extends IPersonNameOps[IXingYiLens, IPerson] {
     override def name = XingYiDomainStringLens(nameL)
   }
-  implicit object personLine12Ops extends IPersonLine12Ops[IXingYiLens,IPerson] {
+  implicit object personLine12Ops extends IPersonLine12Ops[IXingYiLens, IPerson] {
     override def line1: IXingYiLens[IPerson, String] = XingYiDomainStringLens(personAddressL andThen Address.line1L)
     override def line2: IXingYiLens[IPerson, String] = XingYiDomainStringLens(personAddressL andThen Address.line2L)
 
   }
-  implicit object personAddressOps extends IPersonAddressOps[IXingYiLens,IPerson, IAddress] {
+  implicit object personAddressOps extends IPersonAddressOps[IXingYiLens, IPerson, IAddress] {
     override def address: IXingYiLens[IPerson, IAddress] = XingYiDomainObjectLens(personAddressL)
   }
   implicit object personAddressListOps extends IPersonAddressListOps[IXingYiLens, IPerson, IAddress] {
     override def addressList = XingYiDomainObjectLens(personAddressListL)
   }
 
-  implicit object personTelephoneOps extends IPersonTelephoneOps[IXingYiLens,IPerson, ITelephoneNumber] {
+  implicit object personTelephoneOps extends IPersonTelephoneOps[IXingYiLens, IPerson, ITelephoneNumber] {
     override def telephoneNumber = XingYiDomainObjectLens(telephoneL)
   }
   val prototype = Person("", List(), Telephone.prototype)
@@ -99,7 +99,12 @@ object EditPersonRequest {
 }
 
 class ExampleDomainDefn extends DomainDefn[Person](List("json", "pretty"),
-  List(Person.projection, Address.projection, Telephone.projection),
+  List(
+    Person.personNameOps -> Person.projection,
+    Person.personTelephoneOps -> Person.projection,
+    Person.personAddressListOps -> Person.projection,
+    Address.addressOps -> Address.projection,
+    Telephone.telephoneOps -> Telephone.projection),
   List(new IPersonLine12Ops[XingYiManualPath, IPerson] {
     override val line1 = XingYiManualPath[IPerson, String]("person", "legacy_person_line1_lens")
     override def line2 = XingYiManualPath[IPerson, String]("person", "legacy_person_line1_lens")
@@ -118,58 +123,9 @@ class NewExampleDomainDefn() {
 }
 
 object TestItQuick extends App {
-  //  println(List(Person.projection, Address.projection, Telephone.projection).map(_.walk { case (name, child) => name + ": " + child }.mkString("\n")).mkString("\n\n"))
-
-
-  //  val list = List[FromSharedToDomainForJavaScript[_, _]](
-  //    Person.personNameOps -> Person.projection, // this says 'work it out from the projectíon' which must have the Person.projection inside it
-  //    Person.personTelephoneOps -> Person.projection,
-  //    Person.personAddressOps -> Person.projection,
-  //    Address.addressOps -> Address.projection,
-  //    Telephone.telephoneOps -> Telephone.projection,
-  //    WorkOutJavascriptLensManually[IPerson, Person](Person.personLine12Ops, new IPersonLine12Ops[XingYiManualPath] {
-  //      override val line1 = XingYiManualPath("legacy_person_line1_lens")
-  //      override def line2 = XingYiManualPath("legacy_person_line1_lens")
-  //      override def toString: String = "Working out Person"
-  //    }),
-  //    WorkOutJavascriptLensManually[IPerson, Person](Person.personAddressOps, new IPersonAddressOps[XingYiManualPath] {
-  //      override def address = XingYiManualPath[IPerson, IAddress]("legacy_address")
-  //    })
-  //  )
-
-
-  val projectionLens: List[Seq[SimpleLensDefn[_, _]]] = List(Person.projection, Address.projection, Telephone.projection).
-    map(_.walk { case (names, projection) => SimpleLensDefn((projection.nameOfT + "_" + names.mkString("_")).toLowerCase, names, false) })
-  println("projection")
-  projectionLens.foreach(println)
-  println("manual")
-
-  ////  val manual = List(new IPersonLine12Ops[XingYiManualPath] {
-  ////    override val line1 = XingYiManualPath("legacy_person_line1_lens")
-  ////    override def line2 = XingYiManualPath("legacy_person_line1_lens")
-  ////    override def toString: String = "Working out Person"
-  ////  },
-  ////    new IPersonAddressOps[XingYiManualPath] {
-  ////      override def address = XingYiManualPath[IPerson, IAddress]("legacy_address", isList = true)
-  ////    }).map(Reflect(_).zeroParamMethodsNameAndValue[XingYiManualPath[_, _]].
-  ////    map { case (name, path) => ManualLensDefn(name, path.isList, path.javascript) }
-  ////    //      path.walk { case (names, projection) => SimpleLensDefn((projection.nameOfT + "_" + names.mkString("_")).toLowerCase, names, false) }))
-  ////  )
-  //
-  //  manual.foreach(println)
-
-
-  //  println("Defns from projection... just need a list of projections")
-  //  val defns = list.collect { case WorkOutJavascriptLensFromProjects(ops, projection) => projection }.distinct.
-  //    map(_.walk { case (names, projection) => SimpleLensDefn((projection.nameOfT + "_" + names.mkString("_")).toLowerCase, names, false) })
-  //  defns.foreach(println)
-  //
-  //  println("Defns from manual")
-  //
-  //  val manualDefns = list.collect { case WorkOutJavascriptLensManually(ops, projection) => Reflect(projection).zeroParamMethodsNameAndValue[XingYiManualPath[_, _]].
-  //    map { case (name, path) => SimpleLensDefn(name, List(path.javascript), false) }
-  //  }
-  //  manualDefns.foreach(println)
-
-
+//  val x: ToScalaCode[IXingYiLensAndLensDefn] => ToScalaCode[InterfaceAndLens[Any, Any]] = ToScalaCode.makeScaleForInterface[Any, Any]
+//  ToScalaCode.makeScaleForInterface[Any, Any]
+//  val x = ToScalaCode.makeScalaCode[DomainDefn[Person]]
+  val makeScala = implicitly[ToScalaCode[DomainDefn[Person]]]
+  println(makeScala(new ExampleDomainDefn))
 }

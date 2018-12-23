@@ -8,6 +8,7 @@ import one.xingyi.core.metrics.PrintlnPutMetrics
 object Strings {
   def toOption(s: String) = if (s == null || s == "") None else Some(s)
 
+  def removeOptional$(s: String) = s.reverse.dropWhile(_ == '$' ).reverse
   def uppercaseFirst(s: String) = s.take(1).map(_.toUpper) ++ s.drop(1)
   def lowercaseFirst(s: String) = s.take(1).map(_.toLower) ++ s.drop(1)
 

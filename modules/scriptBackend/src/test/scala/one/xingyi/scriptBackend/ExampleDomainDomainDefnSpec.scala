@@ -13,15 +13,16 @@ class ExampleDomainDomainDefnSpec extends UtilsSpec {
   behavior of "Example Domain turned into a sequence of LensDefns using projections"
 
   it should "make some lens defns" in {
-    implicitly[ProjectionToLensDefns].apply(Person.projection).sortBy(_.name) shouldBe List(
-      SimpleLensDefn("address_line1", List("line1"), false),
-      SimpleLensDefn("address_line2", List("line2"), false),
-      SimpleLensDefn("address_postcode", List("postcode"), false),
-      SimpleLensDefn("person_address_list", List("addresses"), true),
-      SimpleLensDefn("person_name", List("name"), false),
-      SimpleLensDefn("person_telephone", List("telephoneNumber"), false),
-      SimpleLensDefn("telephone_number", List("number"), false)
-    )
+    fail()
+//    implicitly[ProjectionToLensDefns].apply(Person.projection).sortBy(_.name) shouldBe List(
+//      SimpleLensDefn("address_line1", List("line1"), false),
+//      SimpleLensDefn("address_line2", List("line2"), false),
+//      SimpleLensDefn("address_postcode", List("postcode"), false),
+//      SimpleLensDefn("person_address_list", List("addresses"), true),
+//      SimpleLensDefn("person_name", List("name"), false),
+//      SimpleLensDefn("person_telephone", List("telephoneNumber"), false),
+//      SimpleLensDefn("telephone_number", List("number"), false)
+//    )
   }
 
 

@@ -5,6 +5,7 @@ import one.xingyi.core.crypto.Digestor
 import one.xingyi.core.json.{ProjectionToLensDefns, _}
 import one.xingyi.core.reflection.{ClassTags, Reflect}
 import one.xingyi.core.script
+import scala.language.implicitConversions
 
 import scala.collection.immutable
 import scala.reflect.ClassTag
@@ -16,21 +17,25 @@ object DomainDefn {
   val xingyiHeaderPrefix = "application/xingyi."
 }
 
-
-abstract class DomainDefn[T: ClassTag](val renderers: List[String], val projections: List[Projection[_, _]] = List(),
+case class InterfaceAndProjection[Shared, Domain](sharedOps: IXingYiSharedOps[IXingYiLens, Shared], projection: ObjectProjection[Shared, Domain])
+object InterfaceAndProjection {
+  implicit def tupleTo[Shared, Domain](tuple: (IXingYiSharedOps[IXingYiLens, Shared], ObjectProjection[Shared, Domain])) =
+    InterfaceAndProjection(tuple._1, tuple._2)
+}
+abstract class DomainDefn[T: ClassTag](val renderers: List[String], val interfacesToProjections: List[InterfaceAndProjection[_, _]] = List(),
                                        val manual: List[IXingYiSharedOps[XingYiManualPath, _]] = List())(implicit projectionToLensDefns: ProjectionToLensDefns) {
   def rootName: String = ClassTags.nameOf[T]
   def packageName: String = getClass.getPackage.getName
   def domainName: String = getClass.getSimpleName
-  val projectionLens: List[LensDefn[_, _]] = projections.flatMap(x => projectionToLensDefns(x))
+  val projectionLens: Map[IXingYiLens[_, _], LensDefn[_, _]] = interfacesToProjections.flatMap(x => projectionToLensDefns(x.projection)).distinct.toMap
   val manualLens: List[LensDefn[_, _]] = manual.flatMap(Reflect(_).zeroParamMethodsNameAndValue[XingYiManualPath[_, _]].map { case (name, path) => path.makeManualLens(name) }.toList)
-  val lens = (projectionLens ++ manualLens)
+  val lens = (projectionLens.values ++ manualLens).toList
   def accepts: String = DomainDefn.xingyiHeaderPrefix + DomainDetails.stringsToString(lens.map(_.name))
   override def toString: String =
     s"""${getClass.getSimpleName}(
        |renderers = ${renderers.mkString(",")}
        |projections =
-       |${projections.mkString("\n")}
+       |${interfacesToProjections.mkString("\n")}
        |manual = ${manual.mkString(",")}
        |""".stripMargin
 }
