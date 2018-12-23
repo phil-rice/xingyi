@@ -44,10 +44,10 @@ abstract class DomainDefn[T: ClassTag](val renderers: List[String], val interfac
 trait DomainDefnToDetails[T] extends (DomainDefn[T] => DomainDetails[T])
 
 object DomainDefnToDetails {
-  implicit def default[T](implicit javascript: HasLensCodeMaker[Javascript], scala: HasLensCodeMaker[ScalaFull]): DomainDefnToDetails[T] = { defn =>
+  implicit def default[T](implicit javascript: HasLensCodeMaker[Javascript], scala: ToScalaCode[DomainDefn[T]]): DomainDefnToDetails[T] = { defn =>
     val scalaDetails = CodeDetails(scala(defn))
     val javascriptDetails = script.CodeDetails(javascript(defn))
-    DomainDetails[T](defn.domainName, defn.packageName, defn.accepts, javascriptDetails.hash, defn.lens.map(_.name).toSet, Map(Javascript -> javascriptDetails, ScalaFull -> scalaDetails))
+    DomainDetails[T](defn.domainName, defn.packageName, defn.accepts, javascriptDetails.hash, defn.lens.map(_.name).toSet, Map(Javascript -> javascriptDetails, ScalaCode -> scalaDetails))
   }
 
 }

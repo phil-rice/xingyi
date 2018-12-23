@@ -4,8 +4,8 @@ package one.xingyi.scriptBackend
 import java.io.File
 
 import one.xingyi.core.UtilsSpec
+import one.xingyi.core.script.{DomainDefn, HasLensCodeMaker, Javascript, ToScalaCode}
 import one.xingyi.core.strings.Files
-import one.xingyi.core.script.{HasLensCodeMaker, Javascript, ScalaFull, ScalaTrait}
 
 class CreateFilesFromExample extends UtilsSpec {
 
@@ -31,7 +31,8 @@ class CreateFilesFromExample extends UtilsSpec {
   }
 
   it should "make the scala" in {
-    val codeMaker = implicitly[HasLensCodeMaker[ScalaFull]]
+    ToScalaCode.makeScalaCode[Person]
+    val codeMaker = implicitly[ToScalaCode[DomainDefn[Person]]]
     val scala = codeMaker(new ExampleDomainDefn)
     Files.printToFile(scalaFile)(pw => pw.print(scala))
 

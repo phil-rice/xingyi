@@ -59,7 +59,7 @@ class Backend[M[_], Fail, J: JsonParser : JsonWriter](implicit val monad: MonadC
 
   implicit val domainList = DomainList(domainDetails)
   val javascript = domainDetails.code(Javascript)
-  val scala = domainDetails.code(ScalaFull)
+  val scala = domainDetails.code(ScalaCode)
   val codeMap = Map(javascript.hash -> javascript.code, scala.hash -> scala.code)
 
   val allCode = function[CodeRequest, Code[Person]]("code") { codeRequest => Code(domainDetails) } |+| endpoint[CodeRequest, Code[Person]]("/code", MatchesServiceRequest.fixedPath(Method("get")))
