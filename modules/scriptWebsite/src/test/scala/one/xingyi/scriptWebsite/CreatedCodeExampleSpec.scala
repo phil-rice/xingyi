@@ -4,7 +4,6 @@ package org.xingyi.scriptExample
 import one.xingyi.core.UtilsSpec
 import one.xingyi.core.script.{IXingYi, IXingYiLoader}
 import one.xingyi.scriptExample.createdCode._
-import one.xingyi.scriptShared.{IPersonAddressListOps, IPersonNameOps}
 
 import scala.io.Source
 
@@ -18,35 +17,28 @@ class CreatedCodeExampleSpec extends UtilsSpec {
     implicit val xingyi = implicitly[IXingYiLoader].apply(javascript)
     fn(xingyi)
   }
-
-
   it should "allow the person's name (lens and stringLens) to be extracted" in {
     setup { implicit xingyi =>
       val ops = new PersonNameOpsImpl
       import ops._
+
       val person = xingyi.parse[Person](json)
+      val person2 = nameLens.set(person, "New Name")
+      val person3 = nameLens.set(person2, "Newer Name")
 
-      ops.nameLens.get(person) shouldBe "Phil Rice"
-
-      val payload1 = nameLens.set(person, "New Name")
-      nameLens.get(payload1) shouldBe "New Name"
-
-      val payload2 = nameLens.set(payload1, "Newer Name")
-      nameLens.get(payload2) shouldBe "Newer Name"
-
+      nameLens.get(person) shouldBe "Phil Rice"
+      nameLens.get(person2) shouldBe "New Name"
+      nameLens.get(person3) shouldBe "Newer Name"
     }
   }
   it should "allow the address to be extracted (listLens)" in {
     setup { implicit xingyi =>
-      val addressListOps = new PersonAddressListOpsImpl {}
-      import addressListOps._
+      val personAddressOps = new PersonAddressListOpsImpl
       val addressOps = new AddressOpsImpl
 
-
       val person: Person = xingyi.parse[Person](json)
-      val addresses: List[Address] = addressListLens.get(person)
+      val addresses: List[Address] = personAddressOps.addressListLens.get(person)
       addresses.map(addressOps.line1Lens.get) shouldBe List("No fixed abode", "A second address")
-      //
     }
   }
   //  it should "allow the address to be manipulated (listLens)" in {

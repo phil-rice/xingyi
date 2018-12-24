@@ -105,13 +105,16 @@ class ExampleDomainDefn extends DomainDefn[Person](classOf[IPerson].getPackageNa
     Person.personAddressListOps -> Person.projection,
     Address.addressOps -> Address.projection,
     Telephone.telephoneOps -> Telephone.projection),
-  List(new IPersonLine12Ops[XingYiManualPath, IPerson] {
-    override val line1Lens = XingYiManualPath[IPerson, String]("person", "legacy_person_line1_lens")
-    override def line2Lens = XingYiManualPath[IPerson, String]("person", "legacy_person_line1_lens")
-    override def toString: String = "Working out Person"
-  },
+  List(
     new IPersonAddressOps[XingYiManualPath, IPerson, IAddress] {
-      override def addressLens = XingYiManualPath[IPerson, IAddress]("person", "legacy_address", isList = true)
+      override def addressLens = XingYiManualPath[IPerson, IAddress]("person",
+        """function legacy_address() { return compose(lens("addresses"), lensForFirstItemInList())}""", isList = true)
+    },
+    new IPersonLine12Ops[XingYiManualPath, IPerson] {
+      override val line1Lens = XingYiManualPath[IPerson, String]("person",
+        """function legacy_person_line1_lens() { return compose(legacy_address(), lens("line1"))}""")
+      override def line2Lens = XingYiManualPath[IPerson, String]("person",
+        """function legacy_person_line1_lens() { return compose(legacy_address(), lens("line1"))}""")
     })) {
   override def packageName: String = "one.xingyi.scriptExample.createdCode"
   override def domainName: String = "ExampleDomain"
@@ -123,9 +126,9 @@ class NewExampleDomainDefn() {
 }
 
 object TestItQuick extends App {
-//  val x: ToScalaCode[IXingYiLensAndLensDefn] => ToScalaCode[InterfaceAndLens[Any, Any]] = ToScalaCode.makeScaleForInterface[Any, Any]
-//  ToScalaCode.makeScaleForInterface[Any, Any]
-//  val x = ToScalaCode.makeScalaCode[DomainDefn[Person]]
+  //  val x: ToScalaCode[IXingYiLensAndLensDefn] => ToScalaCode[InterfaceAndLens[Any, Any]] = ToScalaCode.makeScaleForInterface[Any, Any]
+  //  ToScalaCode.makeScaleForInterface[Any, Any]
+  //  val x = ToScalaCode.makeScalaCode[DomainDefn[Person]]
   val makeScala = implicitly[ToScalaCode[DomainDefn[Person]]]
   println(makeScala(new ExampleDomainDefn))
 }

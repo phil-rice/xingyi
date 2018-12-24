@@ -41,6 +41,15 @@ function lens(field) {
     };
 }
 
+function lensForFirstItemInList() {
+  return {
+     "get" : function(list) { return t[0];},
+     "set" : function(list, item) {
+       var newArray = list.slice()
+       newArray[0] = item
+     return newArray}
+     }
+}
 function compose(l1, l2) {
     return {
         "get": function (t) {

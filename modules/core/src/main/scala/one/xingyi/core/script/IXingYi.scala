@@ -32,12 +32,7 @@ trait DomainMaker[T <: Domain] {
 trait Domain {
   def mirror: Object
 }
-//TODO COnsider [T<:Domain]
-//case class Payload(mirror: Object) extends Domain
-//object Payload {
-//  implicit val domainMaker: DomainMaker[Payload] = Payload.apply
-//  implicit def toJson[T <: Domain](implicit xingYi: DefaultXingYi): ToJson[T] = d => xingYi.render("json", d)
-//}
+
 
 case class ServerPayload[T](status: Status, domainObject: T, domain: DomainDetails[T])
 object ServerPayload extends JsonWriterLanguage {
@@ -52,7 +47,7 @@ object ServerPayload extends JsonWriterLanguage {
 
 
 trait IXingYi {
-  def parse[T <: Domain](s: String)(implicit domainMaker: DomainMaker[T]):T
+  def parse[T <: Domain](s: String)(implicit domainMaker: DomainMaker[T]): T
 
   protected def rawRender(name: String, t: Object): String
 
@@ -73,11 +68,11 @@ class DefaultXingYi(engine: ScriptEngine) extends IXingYi {
 
   override def objectLens[T1 <: Domain, T2 <: Domain](name: String)(implicit maker1: DomainMaker[T1], maker2: DomainMaker[T2]): Lens[T1, T2] = Lens[T1, T2](
     { t => println(s"objectLens get$name " + t); val r = maker2.create(inv.invokeFunction("getL", name, t.mirror)); println("... " + r); r },
-    { (t, v) => maker1.create(inv.invokeFunction("setL",  name, t.mirror, v.mirror)) })
+    { (t, v) => maker1.create(inv.invokeFunction("setL", name, t.mirror, v.mirror)) })
 
   override def stringLens[T <: Domain](name: String)(implicit maker: DomainMaker[T]): Lens[T, String] = Lens[T, String](
-    { t => println(s"in stringLen$name get " + t); inv.invokeFunction("getL",  name, t.mirror).asInstanceOf[String] },
-    { (t, v) => println(s"in string lens$name: " + t + " " + v); val r = maker.create(inv.invokeFunction("setL",   name, t.mirror, v)); println("... " + r); r })
+    { t => println(s"in stringLen$name get " + t); inv.invokeFunction("getL", name, t.mirror).asInstanceOf[String] },
+    { (t, v) => println(s"in string lens$name: " + t + " " + v); val r = maker.create(inv.invokeFunction("setL", name, t.mirror, v)); println("... " + r); r })
 
   def parse[T <: Domain](s: String)(implicit domainMaker: DomainMaker[T]) = domainMaker.create(inv.invokeFunction("parse", s))
 
@@ -102,7 +97,7 @@ class DefaultXingYi(engine: ScriptEngine) extends IXingYi {
 
   override def listLens[T1 <: Domain, T2 <: Domain](name: String)(implicit maker1: DomainMaker[T1], maker2: DomainMaker[T2]): Lens[T1, List[T2]] = Lens[T1, List[T2]](
     { t => toList(inv.invokeFunction("getL", name, t.mirror)).map(maker2.create) }, {
-      (t, v) => maker1.create(inv.invokeFunction("setL",  name, t.mirror, fromList(v)))
+      (t, v) => maker1.create(inv.invokeFunction("setL", name, t.mirror, fromList(v)))
     })
 }
 

@@ -59,7 +59,8 @@ object ToScalaCode {
     case i@InterfaceAndLens(name, interface, list) =>
       val s = findXingYiInterfaceAnnotationClasses(interface.getClass).map { interfaceToImplName.impl }.mkString(",")
 
-      val classStart = "class " + interfaceToImplName.opsServerSideImpl(interface) + "(implicit xingYi: IXingYi) extends " + interfaceToImplName.opsInterface(interface) + s"[Lens, $s]{"
+      val classStart =
+        s"""class ${interfaceToImplName.opsServerSideImpl(interface)}(implicit val xingYi: IXingYi) extends ${interfaceToImplName.opsInterface(interface)}[Lens, $s]{""".stripMargin
       val middle = list.map(lensAndLensDefnToScala)
       val end = "}"
       (classStart :: middle ::: List(end)).mkString("\n")
@@ -90,7 +91,7 @@ object ToScalaCode {
                |    override def create(mirror: Object): $impl = $impl(mirror)
                |  }
                |}""".stripMargin
-          List( classString, objectString).mkString("\n")
+          List(classString, objectString).mkString("\n")
       }.mkString("\n")
       val ops: String = domainDefn.interfacesToProjections.map {
         case InterfaceAndProjection(interface, projection) =>
@@ -103,7 +104,7 @@ object ToScalaCode {
                 }")))
             })
       }.map(interfaceAndLensToScala).mkString("\n")
-      List(s"package ${domainDefn.packageName}" , s"import ${domainDefn.sharedPackageName}._\nimport one.xingyi.core.optics.Lens\nimport one.xingyi.core.script.{Domain,DomainMaker, IXingYi}",
+      List(s"package ${domainDefn.packageName}", s"import ${domainDefn.sharedPackageName}._\nimport one.xingyi.core.optics.Lens\nimport one.xingyi.core.script.{Domain,DomainMaker, IXingYi}",
         classes, ops).mkString("\n\n\n")
   }
 

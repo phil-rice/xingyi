@@ -41,6 +41,15 @@ function lens(field) {
     };
 }
 
+function lensForFirstItemInList() {
+  return {
+     "get" : function(list) { return t[0];},
+     "set" : function(list, item) {
+       var newArray = list.slice()
+       newArray[0] = item
+     return newArray}
+     }
+}
 function compose(l1, l2) {
     return {
         "get": function (t) {
@@ -73,3 +82,6 @@ function lens_person_telephonenumber_telephonenumber(){ return lens("telephoneNu
 function lens_address_line1_string(){ return lens("line1");}; 
 function lens_person_addresses_addresslist(){ return lens("addresses");}; 
 function lens_telephonenumber_number_string(){ return lens("number");}; 
+function legacy_address() { return compose(lens("addresses"), lensForFirstItemInList())}
+function legacy_person_line1_lens() { return compose(legacy_address(), lens("line1"))}
+function legacy_person_line1_lens() { return compose(legacy_address(), lens("line1"))}
