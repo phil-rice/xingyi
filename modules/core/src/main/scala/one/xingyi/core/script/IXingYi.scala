@@ -33,11 +33,11 @@ trait Domain {
   def mirror: Object
 }
 //TODO COnsider [T<:Domain]
-case class Payload(mirror: Object) extends Domain
-object Payload {
-  implicit val domainMaker: DomainMaker[Payload] = Payload.apply
-  implicit def toJson[T <: Domain](implicit xingYi: DefaultXingYi): ToJson[T] = d => xingYi.render("json", d)
-}
+//case class Payload(mirror: Object) extends Domain
+//object Payload {
+//  implicit val domainMaker: DomainMaker[Payload] = Payload.apply
+//  implicit def toJson[T <: Domain](implicit xingYi: DefaultXingYi): ToJson[T] = d => xingYi.render("json", d)
+//}
 
 case class ServerPayload[T](status: Status, domainObject: T, domain: DomainDetails[T])
 object ServerPayload extends JsonWriterLanguage {
@@ -52,7 +52,7 @@ object ServerPayload extends JsonWriterLanguage {
 
 
 trait IXingYi {
-  def parse(s: String): Payload
+  def parse[T <: Domain](s: String)(implicit domainMaker: DomainMaker[T]):T
 
   protected def rawRender(name: String, t: Object): String
 
@@ -79,7 +79,7 @@ class DefaultXingYi(engine: ScriptEngine) extends IXingYi {
     { t => println(s"in stringLen$name get " + t); inv.invokeFunction("getL", "lens_" + name, t.mirror).asInstanceOf[String] },
     { (t, v) => println(s"in string lens$name: " + t + " " + v); val r = maker.create(inv.invokeFunction("setL", "lens_" + name, t.mirror, v)); println("... " + r); r })
 
-  override def parse(s: String): Payload = Payload(inv.invokeFunction("parse", s))
+  def parse[T <: Domain](s: String)(implicit domainMaker: DomainMaker[T]) = domainMaker.create(inv.invokeFunction("parse", s))
 
 
   import jdk.nashorn.api.scripting.ScriptObjectMirror

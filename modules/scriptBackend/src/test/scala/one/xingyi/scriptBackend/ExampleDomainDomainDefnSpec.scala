@@ -12,9 +12,9 @@ class ExampleDomainDomainDefnSpec extends UtilsSpec {
 
   behavior of "Example Domain turned into a sequence of LensDefns using projections"
 
-  it should "make some lens defns" in {
-    fail()
-//    implicitly[ProjectionToLensDefns].apply(Person.projection).sortBy(_.name) shouldBe List(
+//  it should "make some lens defns" in {
+//
+//    implicitly[ProjectionToLensDefns].apply(Person.projection).toSet shouldBe Set(
 //      SimpleLensDefn("address_line1", List("line1"), false),
 //      SimpleLensDefn("address_line2", List("line2"), false),
 //      SimpleLensDefn("address_postcode", List("postcode"), false),
@@ -23,7 +23,7 @@ class ExampleDomainDomainDefnSpec extends UtilsSpec {
 //      SimpleLensDefn("person_telephone", List("telephoneNumber"), false),
 //      SimpleLensDefn("telephone_number", List("number"), false)
 //    )
-  }
-
+//  }
+//
 
 }

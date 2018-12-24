@@ -43,21 +43,28 @@ object InterfaceToImplName {
 object ToScalaCode {
   def lensDefnToXingYiMethod(lensAndDefn: IXingYiLensAndLensDefn)(implicit interfaceToImplName: InterfaceToImplName) =
     lensAndDefn.lensDefn match {
-      case l if l.isList => s"objectLens[${interfaceToImplName.impl(lensAndDefn.lensDefn.classA.runtimeClass)},${interfaceToImplName.impl(lensAndDefn.lensDefn.classB.runtimeClass)}]"
+      case l if l.isList => s"listLens[${interfaceToImplName.impl(lensAndDefn.lensDefn.classA.runtimeClass)},${interfaceToImplName.impl(lensAndDefn.lensDefn.classB.runtimeClass)}]"
       case l if l.b.equalsIgnoreCase("string") => s"stringLens[${interfaceToImplName.impl(lensAndDefn.lensDefn.classA.runtimeClass)}]"
       case l => s"objectLens[${interfaceToImplName.impl(lensAndDefn.lensDefn.classA.runtimeClass)},${interfaceToImplName.impl(lensAndDefn.lensDefn.classB.runtimeClass)}]"
     }
   implicit def makeScalaForIXingYiLensAndLensDefn(implicit interfaceToImplName: InterfaceToImplName): ToScalaCode[IXingYiLensAndLensDefn] = {
-    case l@IXingYiLensAndLensDefn(name, lens, lensDefn: SimpleLensDefn[_, _]) =>
-      s"""   def $name = xingYi.${lensDefnToXingYiMethod(l        )}("${lensDefn.name}")"""
+    case l@IXingYiLensAndLensDefn(name, interface, lens, lensDefn: SimpleLensDefn[_, _]) =>
+      s"""   def $name = xingYi.${lensDefnToXingYiMethod(l)}("${lensDefn.name}")"""
   }
+  def findXingYiInterfaceAnnotationClasses(clazz: Class[_]) = {
+    clazz.getInterfaces.flatMap(_.getAnnotations.collect { case x: XingYiInterface => x }).headOption.getOrElse(throw new RuntimeException(s"could not find XingyiInterface for $clazz")).clazzes()
+  }
+
   implicit def makeScaleForInterface[Shared, SharedTarget](implicit interfaceToImplName: InterfaceToImplName, lensAndLensDefnToScala: ToScalaCode[IXingYiLensAndLensDefn]): ToScalaCode[InterfaceAndLens] = {
     case i@InterfaceAndLens(name, interface, list) =>
-      val classStart = "class " + interfaceToImplName.opsServerSideImpl(interface) + "(implicit xingYi: IXingYi) extends " + interfaceToImplName.opsInterface(interface) + s"[Lens, $name]{"
+      val s = findXingYiInterfaceAnnotationClasses(interface.getClass).map { interfaceToImplName.impl }.mkString(",")
+
+      val classStart = "class " + interfaceToImplName.opsServerSideImpl(interface) + "(implicit xingYi: IXingYi) extends " + interfaceToImplName.opsInterface(interface) + s"[Lens, $s]{"
       val middle = list.map(lensAndLensDefnToScala)
       val end = "}"
       (classStart :: middle ::: List(end)).mkString("\n")
   }
+
 
   //  case class Person(mirror: Object) extends Domain with IPerson
   //  object Person {
@@ -73,27 +80,35 @@ object ToScalaCode {
       val classes = domainDefn.interfacesToProjections.map(_.projection).distinct.map {
         interface =>
           val impl = interfaceToImplName.impl(interface.sharedClassTag.runtimeClass)
-          val classString = s"""class $impl (mirror: Object) extends ${interface.sharedClassTag.runtimeClass.getSimpleName}"""
+          val classString =
+            s"""case class $impl (mirror: Object) extends Domain with ${
+              interface.sharedClassTag.runtimeClass.getSimpleName
+            }"""
           val objectString =
             s"""object $impl {
                |  implicit object default extends DomainMaker[$impl] {
                |    override def create(mirror: Object): $impl = $impl(mirror)
                |  }
                |}""".stripMargin
-          List(classString, objectString).mkString("\n")
+          List( classString, objectString).mkString("\n")
       }.mkString("\n")
-      val ops: String = domainDefn.interfacesToProjections.map { case InterfaceAndProjection(interface, projection) =>
-        InterfaceAndLens(interfaceToImplName.impl(projection.sharedClassTag.runtimeClass), interface, Reflect(interface).zeroParamMethodsNameAndValue[IXingYiLens[_, _]].
-          map { case (name, l) =>
-            println(s"looking for $name in interface $interface")
-            IXingYiLensAndLensDefn(name, l, domainDefn.projectionLens.getOrElse(l, throw new RuntimeException(s"Cannot find name: $name l:$l in the projection. Keys are ${domainDefn.projectionLens.keys.toList.sortBy(_.toString)}")))
-          })
+      val ops: String = domainDefn.interfacesToProjections.map {
+        case InterfaceAndProjection(interface, projection) =>
+          InterfaceAndLens(interfaceToImplName.impl(projection.sharedClassTag.runtimeClass), interface, Reflect(interface).zeroParamMethodsNameAndValue[IXingYiLens[_, _]].
+            map {
+              case (name, l) =>
+                println(s"looking for $name in interface $interface")
+                IXingYiLensAndLensDefn(name, interface, l, domainDefn.projectionLens.getOrElse(l, throw new RuntimeException(s"Cannot find name: $name l:$l in the projection. Keys are ${
+                  domainDefn.projectionLens.keys.toList.sortBy(_.toString)
+                }")))
+            })
       }.map(interfaceAndLensToScala).mkString("\n")
-      List(classes, ops).mkString("\n\n\n")
+      List(s"package ${domainDefn.packageName}" , s"import ${domainDefn.sharedPackageName}._\nimport one.xingyi.core.optics.Lens\nimport one.xingyi.core.script.{Domain,DomainMaker, IXingYi}",
+        classes, ops).mkString("\n\n\n")
   }
 
 
 }
 
-case class IXingYiLensAndLensDefn(name: String, lens: IXingYiLens[_, _], lensDefn: LensDefn[_, _])
+case class IXingYiLensAndLensDefn(name: String, interface: IXingYiSharedOps[IXingYiLens, _], lens: IXingYiLens[_, _], lensDefn: LensDefn[_, _])
 case class InterfaceAndLens(nameOfImpl: String, interface: IXingYiSharedOps[IXingYiLens, _], list: List[IXingYiLensAndLensDefn])

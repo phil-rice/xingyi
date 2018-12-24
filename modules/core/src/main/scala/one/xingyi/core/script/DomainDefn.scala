@@ -2,12 +2,11 @@
 package one.xingyi.core.script
 
 import one.xingyi.core.crypto.Digestor
-import one.xingyi.core.json.{ProjectionToLensDefns, _}
+import one.xingyi.core.json._
 import one.xingyi.core.reflection.{ClassTags, Reflect}
 import one.xingyi.core.script
-import scala.language.implicitConversions
 
-import scala.collection.immutable
+import scala.language.implicitConversions
 import scala.reflect.ClassTag
 case class XingYiManualPath[A, B](prefix: String, javascript: String, isList: Boolean = false)(implicit val classTag: ClassTag[A], val childClassTag: ClassTag[B]) {
   def makeManualLens(name: String) = ManualLensDefn[A, B](prefix + "_" + name, isList, javascript)
@@ -22,7 +21,7 @@ object InterfaceAndProjection {
   implicit def tupleTo[Shared, Domain](tuple: (IXingYiSharedOps[IXingYiLens, Shared], ObjectProjection[Shared, Domain])) =
     InterfaceAndProjection(tuple._1, tuple._2)
 }
-abstract class DomainDefn[T: ClassTag](val renderers: List[String], val interfacesToProjections: List[InterfaceAndProjection[_, _]] = List(),
+abstract class DomainDefn[T: ClassTag](val sharedPackageName: String, val renderers: List[String], val interfacesToProjections: List[InterfaceAndProjection[_, _]] = List(),
                                        val manual: List[IXingYiSharedOps[XingYiManualPath, _]] = List())(implicit projectionToLensDefns: ProjectionToLensDefns) {
   def rootName: String = ClassTags.nameOf[T]
   def packageName: String = getClass.getPackage.getName

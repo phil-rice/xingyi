@@ -1,20 +1,18 @@
 {
-  "_embedded": {
-    "id": "123",
-    "name": "Phil Rice",
-    "job": "developer",
-    "employer": {
-      "name": "ING"
+  "id":       "123",
+  "name":     "Phil Rice",
+  "job":      "developer",
+  "employer": {
+    "name": "ING"
+  },
+  "address":  [
+    {
+      "line1": "No fixed abode",
+      "line2": "or anywhere"
     },
-    "address": [
-      {
-        "line1": "No fixed abode",
-        "line2": "or anywhere"
-      },
-      {
-        "line1": "A second address",
-        "line2": "somewhere"
-      }
-    ]
-  }
+    {
+      "line1": "A second address",
+      "line2": "somewhere"
+    }
+  ]
 }

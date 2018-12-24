@@ -1,19 +1,24 @@
-import one.xingyi.core.optics.Lens
-import one.xingyi.core.script.{DomainMaker, IXingYi}
+package one.xingyi.scriptExample.createdCode
+
+
 import one.xingyi.scriptShared._
-class Person (mirror: Object) extends IPerson
+import one.xingyi.core.optics.Lens
+import one.xingyi.core.script.{Domain,DomainMaker, IXingYi}
+
+
+case class Person (mirror: Object) extends Domain with IPerson
 object Person {
   implicit object default extends DomainMaker[Person] {
     override def create(mirror: Object): Person = Person(mirror)
   }
 }
-class Address (mirror: Object) extends IAddress
+case class Address (mirror: Object) extends Domain with IAddress
 object Address {
   implicit object default extends DomainMaker[Address] {
     override def create(mirror: Object): Address = Address(mirror)
   }
 }
-class TelephoneNumber (mirror: Object) extends ITelephoneNumber
+case class TelephoneNumber (mirror: Object) extends Domain with ITelephoneNumber
 object TelephoneNumber {
   implicit object default extends DomainMaker[TelephoneNumber] {
     override def create(mirror: Object): TelephoneNumber = TelephoneNumber(mirror)
@@ -22,18 +27,18 @@ object TelephoneNumber {
 
 
 class PersonNameOpsImpl(implicit xingYi: IXingYi) extends IPersonNameOps[Lens, Person]{
-   def name = xingYi.stringLens[Person]("lens_person_name_string")
+   def nameLens = xingYi.stringLens[Person]("lens_person_name_string")
 }
-class PersonTelephoneOpsImpl(implicit xingYi: IXingYi) extends IPersonTelephoneOps[Lens, Person]{
-   def telephoneNumber = xingYi.objectLens[Person,TelephoneNumber]("lens_person_telephonenumber_telephonenumber")
+class PersonTelephoneOpsImpl(implicit xingYi: IXingYi) extends IPersonTelephoneOps[Lens, Person,TelephoneNumber]{
+   def telephoneNumberLens = xingYi.objectLens[Person,TelephoneNumber]("lens_person_telephonenumber_telephonenumber")
 }
-class PersonAddressListOpsImpl(implicit xingYi: IXingYi) extends IPersonAddressListOps[Lens, Person]{
-   def addressList = xingYi.objectLens[Person,Address]("lens_person_addresses_addresslist")
+class PersonAddressListOpsImpl(implicit xingYi: IXingYi) extends IPersonAddressListOps[Lens, Person,Address]{
+   def addressListLens = xingYi.listLens[Person,Address]("lens_person_addresses_addresslist")
 }
 class AddressOpsImpl(implicit xingYi: IXingYi) extends IAddressOps[Lens, Address]{
-   def line1 = xingYi.stringLens[Address]("lens_address_line1_string")
-   def line2 = xingYi.stringLens[Address]("lens_address_line2_string")
+   def line1Lens = xingYi.stringLens[Address]("lens_address_line1_string")
+   def line2Lens = xingYi.stringLens[Address]("lens_address_line2_string")
 }
 class TelephoneOpsImpl(implicit xingYi: IXingYi) extends ITelephoneNumberOps[Lens, TelephoneNumber]{
-   def number = xingYi.stringLens[TelephoneNumber]("lens_telephonenumber_number_string")
+   def numberLens = xingYi.stringLens[TelephoneNumber]("lens_telephonenumber_number_string")
 }

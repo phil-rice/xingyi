@@ -6,13 +6,20 @@ import org.scalatest.{FlatSpec, Matchers}
 
 import scala.io.Source
 
-class CodeMakerSpec extends FlatSpec with Matchers {
+trait CodeMakerFixture {
+  case class PayloadForTest(mirror: Object) extends Domain
+  object PayloadForTest {
+    implicit def domainmaker: DomainMaker[PayloadForTest] = PayloadForTest.apply
+  }
+}
+
+class CodeMakerSpec extends FlatSpec with Matchers with CodeMakerFixture {
 
   behavior of "Java script code maker"
 
   val json = Source.fromInputStream(getClass.getResourceAsStream("/sample.json")).mkString
   def setup(fn: IXingYi => Unit): Unit = {
-//    val codeMaker = implicitly[HasLensCodeMaker[Javascript]]
+    //    val codeMaker = implicitly[HasLensCodeMaker[Javascript]]
     val javascript = Source.fromResource("example.js").mkString
     val xingyi = implicitly[IXingYiLoader].apply(javascript)
     fn(xingyi)
@@ -20,7 +27,7 @@ class CodeMakerSpec extends FlatSpec with Matchers {
 
   it should "parse then render" in {
     setup { xingyi =>
-      println("json: " + xingyi.render("pretty", xingyi.parse(json)))
+      println("json: " + xingyi.render("pretty", xingyi.parse[PayloadForTest](json)))
     }
 
   }
@@ -29,10 +36,10 @@ class CodeMakerSpec extends FlatSpec with Matchers {
   it should "allow the person's name to be extracted" in {
     setup { xingyi =>
 
-      val j = xingyi.parse(json)
+      val j = xingyi.parse[PayloadForTest](json)
       println(json)
 
-      val namesLens = xingyi.objectLens[Payload, Payload]("root") andThen xingyi.stringLens[Payload]("person_name")
+      val namesLens = xingyi.stringLens[PayloadForTest]("person_name")
       namesLens.get(j) shouldBe "Phil Rice"
       val j1 = namesLens.set(j, "New Name")
       println("J  is " + j)
@@ -47,10 +54,10 @@ class CodeMakerSpec extends FlatSpec with Matchers {
     }
   }
 
-//  it should "make a scala class" in {
-//    val file = List("package org.xingyi.testing", implicitly[HasLensCodeMaker[ScalaDomain]].apply(exampleDomain), implicitly[HasLensCodeMaker[ScalaTrait]].apply(exampleDomain)).mkString("\n")
-//    println(file)
-//  }
+  //  it should "make a scala class" in {
+  //    val file = List("package org.xingyi.testing", implicitly[HasLensCodeMaker[ScalaDomain]].apply(exampleDomain), implicitly[HasLensCodeMaker[ScalaTrait]].apply(exampleDomain)).mkString("\n")
+  //    println(file)
+  //  }
 
   //  it should "make a string with a function for each lens" in {
   //    println

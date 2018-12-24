@@ -2,69 +2,70 @@
 package org.xingyi.scriptExample
 
 import one.xingyi.core.UtilsSpec
-import one.xingyi.core.script.IXingYiLoader
-import one.xingyi.scriptExample.createdCode.{Address, ExampleDomain, Person}
+import one.xingyi.core.script.{IXingYi, IXingYiLoader}
+import one.xingyi.scriptExample.createdCode.{Person, PersonNameOpsImpl}
+import one.xingyi.scriptShared.IPersonNameOps
 
 import scala.io.Source
 
 class CreatedCodeExampleSpec extends UtilsSpec {
-//
-//  val json = Source.fromInputStream(getClass.getResourceAsStream("/sample.json")).mkString
-//  behavior of "Example"
-//
-//  def setup(fn: (ExampleDomain) => Unit): Unit = {
-//    val javascript = Source.fromInputStream(getClass.getClassLoader.getResourceAsStream("example.js")).mkString
-//    implicit val xingyi = implicitly[IXingYiLoader].apply(javascript)
-//    fn(new ExampleDomain)
-//  }
-//
-//
-//  it should "allow the person's name (lens and stringLens) to be extracted" in {
-//    setup { exampleDomain =>
-//      import exampleDomain._
-//
-//      val thePayload = payload(json)
-//      val namesLens = root andThen person_name
-//      namesLens.get(thePayload) shouldBe "Phil Rice"
-//
-//      val payload1 = namesLens.set(thePayload, "New Name")
-//      namesLens.get(payload1) shouldBe "New Name"
-//
-//      val payload2 = namesLens.set(payload1, "Newer Name")
-//      namesLens.get(payload2) shouldBe "Newer Name"
-//
-//    }
-//  }
-//  it should "allow the address to be extracted (listLens)" in {
-//    setup { exampleDomain =>
-//      import exampleDomain._
-//
-//      val thePayload = payload(json)
-//
-//      val person: Person = root.get(thePayload)
-//      val addresses: List[Address] = person_addresses.get(person)
-//      addresses.map(address_line1.get) shouldBe List("No fixed abode", "A second address")
-//      //
-//    }
-//  }
-//  it should "allow the address to be manipulated (listLens)" in {
-//    setup { exampleDomain =>
-//      import exampleDomain._
-//
-//      val thePayload = payload(json)
-//      val person: Person = root.get(thePayload)
-//      val addresses: List[Address] = person_address_list.get(person)
-//
-//
-//      addresses.map(address_line1.get) shouldBe List("No fixed abode", "A second address")
-//
-//
-//      val addresses2: List[Address] = addresses.map(address_line1.map(_ + "changed"))
-//      addresses2.map(address_line1.get) shouldBe List("No fixed abodechanged", "A second addresschanged")
-//
-//      val person2 = person_address_list.set(person, addresses2)
-//      val addresses3: List[Address] = person_address_list.get(person2)
-//      addresses3.map(address_line1.get) shouldBe List("No fixed abodechanged", "A second addresschanged")
-//    }
-//  }
+
+  val json = Source.fromInputStream(getClass.getResourceAsStream("/sample.json")).mkString
+  behavior of "Example"
+
+  def setup(fn: (IXingYi) => Unit): Unit = {
+    val javascript = Source.fromInputStream(getClass.getClassLoader.getResourceAsStream("example.js")).mkString
+    implicit val xingyi = implicitly[IXingYiLoader].apply(javascript)
+    fn(xingyi)
+  }
+
+
+  it should "allow the person's name (lens and stringLens) to be extracted" in {
+    setup { implicit xingyi =>
+      val ops = new PersonNameOpsImpl
+      import ops._
+      val person = xingyi.parse[Person](json)
+
+      ops.nameLens.get(person) shouldBe "Phil Rice"
+
+      val payload1 = nameLens.set(person, "New Name")
+      nameLens.get(payload1) shouldBe "New Name"
+
+      val payload2 = nameLens.set(payload1, "Newer Name")
+      nameLens.get(payload2) shouldBe "Newer Name"
+
+    }
+  }
+  //  it should "allow the address to be extracted (listLens)" in {
+  //    setup { exampleDomain =>
+  //      import exampleDomain._
+  //
+  //      val thePayload = payload(json)
+  //
+  //      val person: Person = root.get(thePayload)
+  //      val addresses: List[Address] = person_addresses.get(person)
+  //      addresses.map(address_line1.get) shouldBe List("No fixed abode", "A second address")
+  //      //
+  //    }
+  //  }
+  //  it should "allow the address to be manipulated (listLens)" in {
+  //    setup { exampleDomain =>
+  //      import exampleDomain._
+  //
+  //      val thePayload = payload(json)
+  //      val person: Person = root.get(thePayload)
+  //      val addresses: List[Address] = person_address_list.get(person)
+  //
+  //
+  //      addresses.map(address_line1.get) shouldBe List("No fixed abode", "A second address")
+  //
+  //
+  //      val addresses2: List[Address] = addresses.map(address_line1.map(_ + "changed"))
+  //      addresses2.map(address_line1.get) shouldBe List("No fixed abodechanged", "A second addresschanged")
+  //
+  //      val person2 = person_address_list.set(person, addresses2)
+  //      val addresses3: List[Address] = person_address_list.get(person2)
+  //      addresses3.map(address_line1.get) shouldBe List("No fixed abodechanged", "A second addresschanged")
+  //    }
+  //  }
 }
