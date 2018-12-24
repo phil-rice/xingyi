@@ -3,8 +3,8 @@ package org.xingyi.scriptExample
 
 import one.xingyi.core.UtilsSpec
 import one.xingyi.core.script.{IXingYi, IXingYiLoader}
-import one.xingyi.scriptExample.createdCode.{Person, PersonNameOpsImpl}
-import one.xingyi.scriptShared.IPersonNameOps
+import one.xingyi.scriptExample.createdCode._
+import one.xingyi.scriptShared.{IPersonAddressListOps, IPersonNameOps}
 
 import scala.io.Source
 
@@ -36,18 +36,19 @@ class CreatedCodeExampleSpec extends UtilsSpec {
 
     }
   }
-  //  it should "allow the address to be extracted (listLens)" in {
-  //    setup { exampleDomain =>
-  //      import exampleDomain._
-  //
-  //      val thePayload = payload(json)
-  //
-  //      val person: Person = root.get(thePayload)
-  //      val addresses: List[Address] = person_addresses.get(person)
-  //      addresses.map(address_line1.get) shouldBe List("No fixed abode", "A second address")
-  //      //
-  //    }
-  //  }
+  it should "allow the address to be extracted (listLens)" in {
+    setup { implicit xingyi =>
+      val addressListOps = new PersonAddressListOpsImpl {}
+      import addressListOps._
+      val addressOps = new AddressOpsImpl
+
+
+      val person: Person = xingyi.parse[Person](json)
+      val addresses: List[Address] = addressListLens.get(person)
+      addresses.map(addressOps.line1Lens.get) shouldBe List("No fixed abode", "A second address")
+      //
+    }
+  }
   //  it should "allow the address to be manipulated (listLens)" in {
   //    setup { exampleDomain =>
   //      import exampleDomain._

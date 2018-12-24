@@ -23,8 +23,8 @@ class JsMaker extends LensCodeMaker[Javascript] {
   def manyLens(names: List[String]) = names.map(name => oneLens(name)).mkString("compose(", ",", ");")
 
   def lens(name: String, names: List[String]) = names match {
-    case one :: Nil => s"""function lens_$name(){ return ${oneLens(one)};}; """
-    case names => s"""function lens_$name(){ return ${manyLens(names)}; }"""
+    case one :: Nil => s"""function $name(){ return ${oneLens(one)};}; """
+    case names => s"""function $name(){ return ${manyLens(names)}; }"""
   }
 
   override def apply(lensDefn: LensDefn[_, _]): String =
