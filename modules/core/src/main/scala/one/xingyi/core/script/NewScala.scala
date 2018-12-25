@@ -2,7 +2,7 @@ package one.xingyi.core.script
 
 import one.xingyi.core.json._
 import one.xingyi.core.optics.Lens
-import one.xingyi.core.reflection.Reflect
+import one.xingyi.core.reflection.{ClassTags, Reflect}
 import one.xingyi.core.script
 import one.xingyi.core.strings.Strings
 
@@ -15,26 +15,24 @@ trait ScalaCode extends CodeFragment
 trait ToScalaCode[T] extends (T => String)
 
 trait InterfaceToImplName {
-  def opsInterface(ops: IXingYiSharedOps[IXingYiLens, _]): String
-  def opsServerSideImpl(ops: IXingYiSharedOps[IXingYiLens, _]): String
+  def opsInterface[L[_, _]](ops: IXingYiSharedOps[L, _]): String
+  def opsServerSideImpl[L[_, _]](ops: IXingYiSharedOps[L, _]): String
   def impl(projection: Class[_]): String
 }
 object InterfaceToImplName {
   implicit object default extends InterfaceToImplName {
-    override def opsServerSideImpl(v1: IXingYiSharedOps[IXingYiLens, _]): String =
-      Strings.uppercaseFirst(Strings.removeOptional$(v1.getClass.getSimpleName) + "Impl")
+    override def opsServerSideImpl[L[_, _]](v1: IXingYiSharedOps[L, _]): String =
+      impl(Reflect.findParentClassWith(v1.getClass, classOf[IXingYiSharedOps[L, _]]))
+
     override def impl(clazz: Class[_]): String = {
       Strings.removeOptional$(clazz.getSimpleName) match {
+        //        case "String" => "String"
         case s if s.startsWith("I") && s.size > 1 => s.substring(1)
         case s => s + "Impl"
       }
     }
-    def findParentClassWith[T](clazz: Class[_], target: Class[_]): Class[_] = {
-      if (clazz.getInterfaces.contains(target)) clazz else
-        clazz.getInterfaces.map(i => findParentClassWith(i, target)).head
-    }
-    override def opsInterface(ops: IXingYiSharedOps[IXingYiLens, _]): String = {
-      findParentClassWith(ops.getClass, classOf[IXingYiSharedOps[IXingYiLens, _]]).getSimpleName
+    override def opsInterface[L[_, _]](ops: IXingYiSharedOps[L, _]): String = {
+      Reflect.findParentClassWith(ops.getClass, classOf[IXingYiSharedOps[L, _]]).getSimpleName
     }
   }
 }
@@ -78,7 +76,9 @@ object ToScalaCode {
 
   implicit def makeScalaCode[T](implicit interfaceAndLensToScala: ToScalaCode[InterfaceAndLens], interfaceToImplName: InterfaceToImplName): ToScalaCode[DomainDefn[T]] = {
     domainDefn =>
-      val classes = domainDefn.interfacesToProjections.map(_.projection).distinct.map {
+      val packageSring = s"package ${domainDefn.packageName}"
+      val imports = s"import ${domainDefn.sharedPackageName}._\nimport one.xingyi.core.optics.Lens\nimport one.xingyi.core.script.{Domain,DomainMaker, IXingYi}"
+      val domainClasses = domainDefn.interfacesToProjections.map(_.projection).distinct.map {
         interface =>
           val impl = interfaceToImplName.impl(interface.sharedClassTag.runtimeClass)
           val classString =
@@ -93,19 +93,32 @@ object ToScalaCode {
                |}""".stripMargin
           List(classString, objectString).mkString("\n")
       }.mkString("\n")
-      val ops: String = domainDefn.interfacesToProjections.map {
+      val opsFromObjectProjections: String = domainDefn.interfacesToProjections.map {
         case InterfaceAndProjection(interface, projection) =>
           InterfaceAndLens(interfaceToImplName.impl(projection.sharedClassTag.runtimeClass), interface, Reflect(interface).zeroParamMethodsNameAndValue[IXingYiLens[_, _]].
             map {
               case (name, l) =>
-                println(s"looking for $name in interface $interface")
                 IXingYiLensAndLensDefn(name, interface, l, domainDefn.projectionLens.getOrElse(l, throw new RuntimeException(s"Cannot find name: $name l:$l in the projection. Keys are ${
                   domainDefn.projectionLens.keys.toList.sortBy(_.toString)
                 }")))
             })
       }.map(interfaceAndLensToScala).mkString("\n")
-      List(s"package ${domainDefn.packageName}", s"import ${domainDefn.sharedPackageName}._\nimport one.xingyi.core.optics.Lens\nimport one.xingyi.core.script.{Domain,DomainMaker, IXingYi}",
-        classes, ops).mkString("\n\n\n")
+      val opsFromLegacy = domainDefn.manual.map { ops =>
+        val opClass = Reflect.findParentClassWith(ops.getClass, classOf[IXingYiSharedOps[XingYiManualPath, _]])
+        val classes = opClass.getAnnotation(classOf[XingYiInterface]).clazzes().map(interfaceToImplName.impl).mkString(",")
+        val header = "class " + interfaceToImplName.opsServerSideImpl(ops) + s"(implicit val xingYi: IXingYi) extends ${interfaceToImplName.opsInterface(ops)}[Lens, $classes] {//" + ops.getClass
+
+        val middle = Reflect(ops).zeroParamMethodsNameAndValue[XingYiManualPath[_, _]]().map { case (name, value) =>
+          val lensString = value.lensType match {
+            case "stringLens" => s"${value.lensType}[${interfaceToImplName.impl(value.classTag.runtimeClass)}]"
+            case _ => s"${value.lensType}[${interfaceToImplName.impl(value.classTag.runtimeClass)},${interfaceToImplName.impl(value.childClassTag.runtimeClass)}]"
+          }
+          s""" def $name = xingYi.$lensString("${value.prefix}") """
+        }.mkString("\n")
+        List(header, middle, "}").mkString("\n")
+      }.mkString("\n")
+
+      List(packageSring, imports, domainClasses, opsFromObjectProjections, opsFromLegacy).mkString("\n\n\n")
   }
 
 

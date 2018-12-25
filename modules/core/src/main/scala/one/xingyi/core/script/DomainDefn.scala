@@ -8,7 +8,7 @@ import one.xingyi.core.script
 
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
-case class XingYiManualPath[A, B](prefix: String, javascript: String, isList: Boolean = false)(implicit val classTag: ClassTag[A], val childClassTag: ClassTag[B]) {
+case class XingYiManualPath[A, B](prefix: String,  lensType: String, javascript: String, isList: Boolean = false)(implicit val classTag: ClassTag[A], val childClassTag: ClassTag[B]) {
   def makeManualLens(name: String) = ManualLensDefn[A, B](prefix + "_" + name, isList, javascript)
 }
 

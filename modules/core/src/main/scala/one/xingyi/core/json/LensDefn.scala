@@ -13,7 +13,6 @@ class ProjectionToLensDefns {
 
     projection match {
       case ObjectProjection(prototype, children@_*) =>
-        println("Children is " + children)
         val x = children
         children.toList.flatMap {
           case (name, s: StringField[_]) => List()
@@ -60,7 +59,6 @@ object LensDefn {
   def obj[A: ClassTag, B: ClassTag](name: String)(implicit lensNameForJavascript: LensNameForJavascript[A, B]): LensDefn[A, B] =
     SimpleLensDefn(lensNameForJavascript(name, false), List(name), false)
   def list[A: ClassTag, B: ClassTag](name: String)(implicit lensNameForJavascript: LensNameForJavascript[A, B]): LensDefn[A, B] = {
-    println(s"Making LensDefn.list(${ClassTags.nameOf[A]},${ClassTags.nameOf[B]})")
     SimpleLensDefn(lensNameForJavascript(name, true), List(name), true)
   }
 }

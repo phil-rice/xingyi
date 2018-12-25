@@ -107,13 +107,13 @@ class ExampleDomainDefn extends DomainDefn[Person](classOf[IPerson].getPackageNa
     Telephone.telephoneOps -> Telephone.projection),
   List(
     new IPersonAddressOps[XingYiManualPath, IPerson, IAddress] {
-      override def addressLens = XingYiManualPath[IPerson, IAddress]("person",
+      override def addressLens = XingYiManualPath[IPerson, IAddress]("legacy_address","objectLens",
         """function legacy_address() { return compose(lens("addresses"), lensForFirstItemInList())}""", isList = true)
     },
     new IPersonLine12Ops[XingYiManualPath, IPerson] {
-      override val line1Lens = XingYiManualPath[IPerson, String]("person",
+      override val line1Lens = XingYiManualPath[IPerson, String]("legacy_person_line1_lens","stringLens",
         """function legacy_person_line1_lens() { return compose(legacy_address(), lens("line1"))}""")
-      override def line2Lens = XingYiManualPath[IPerson, String]("person",
+      override def line2Lens = XingYiManualPath[IPerson, String]("legacy_person_line1_lens","stringLens",
         """function legacy_person_line1_lens() { return compose(legacy_address(), lens("line1"))}""")
     })) {
   override def packageName: String = "one.xingyi.scriptExample.createdCode"
