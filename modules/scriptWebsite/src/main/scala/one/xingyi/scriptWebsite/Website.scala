@@ -8,6 +8,7 @@ import javax.net.ssl.SSLContext
 import one.xingyi.core.aggregate.{EnrichLanguage, MergeLanguage}
 import one.xingyi.core.cache.{CacheFactory, CachingServiceFactory, DurationStaleCacheStategy}
 import one.xingyi.core.client.HttpClient
+import one.xingyi.core.endpoint.MatchesServiceRequest
 import one.xingyi.core.http._
 import one.xingyi.core.json.{JsonParser, JsonWriter}
 import one.xingyi.core.language._
@@ -15,13 +16,16 @@ import one.xingyi.core.logging._
 import one.xingyi.core.map.NoMapSizeStrategy
 import one.xingyi.core.metrics.{PrintlnPutMetrics, PutMetrics}
 import one.xingyi.core.monad.{Async, IdentityMonad, MonadCanFailWithException}
+import one.xingyi.core.script.IXingYiLoader
 import one.xingyi.core.simpleServer.{CheapServer, EndpointHandler, SimpleHttpServer}
 import one.xingyi.core.strings.Strings
 import one.xingyi.core.time.NanoTimeService
 import one.xingyi.json4s.Json4sParser._
 import one.xingyi.json4s.Json4sWriter._
+import one.xingyi.scriptExample.createdCode.{Person, PersonLine12Ops}
 import org.json4s.JValue
 
+import scala.io.Source
 import scala.language.higherKinds
 
 class Website[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : JsonWriter]
@@ -34,23 +38,14 @@ class Website[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : 
     override def apply(v1: ServiceName) = HttpClient.apply[M](domain)
   }
 
+  val javascript = Source.fromInputStream(getClass.getClassLoader.getResourceAsStream("example.js")).mkString
+  implicit val xingyi = implicitly[IXingYiLoader].apply(javascript)
+
   val keepalive: ServiceRequest => M[Option[ServiceResponse]] = sr => Option(ServiceResponse("Alive")).liftM
 
-  case class PersonAddressRequest(name: String)
-  object PersonAddressRequest {
-    implicit val fromServiceRequest: FromServiceRequest[M, PersonAddressRequest] = {
-      sr => PersonAddressRequest(Strings.lastSection("/")(sr.path.path)).liftM[M]
-    }
-    implicit val toServiceRequest: ToServiceRequest[PersonAddressRequest] = par =>
-      ServiceRequest(Method("get"), Uri(s"http://localhost:9001/person/${par.name}"))
-  }
-  case class PersonAddressResponse(name: String, line1: String, line2: String)
+  val person = http(ServiceName("Backend")) |+| objectify[PersonAddressRequest, PersonAddressResponse] |+| endpoint[PersonAddressRequest, PersonAddressResponse] ("/person", MatchesServiceRequest.idAtEnd(Method("get")))
 
-  object PersonAddressResponse {
-  }
-
-
-  val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(keepalive)
+  val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(person, keepalive)
 
   val client: ServiceRequest => M[ServiceResponse] = httpFactory(ServiceName("Backend"))
   println("found: " + implicitly[Async[M]].await(client(ServiceRequest(Method("get"), Uri("http://localhost:9001/person/someName")))))

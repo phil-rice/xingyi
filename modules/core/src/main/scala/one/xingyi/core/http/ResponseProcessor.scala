@@ -4,6 +4,7 @@ package one.xingyi.core.http
 import one.xingyi.core.exceptions.{EndpointNotFoundException, NotFoundException, ResponseParserException, UnexpectedStatusCodeException}
 import one.xingyi.core.logging.DetailedLogging
 import one.xingyi.core.parser.Parser
+import one.xingyi.core.script.IXingYi
 
 import scala.language.higherKinds
 
@@ -17,6 +18,18 @@ object ResponseParser {
       Right(parser(requestAndServiceResponse.serviceResponse.body.s))
 
   }
+
+  // so this will chance across time. Let's just 'prove it works' and then migrate to other stuff
+ implicit def responseParserForXingyi[Req, Res](implicit xingYi: IXingYi, fromXingYi: FromXingYi[Req, Res]): ResponseParser[Req, Res] = new ResponseParser[Req, Res] {
+    override def parse[Fail](requestAndServiceResponse: RequestAndServiceResponse[Req])(implicit failer: ResponseParserFailer[Fail], reqDetails: DetailedLogging[Req], srDetails: DetailedLogging[ServiceResponse]): Either[Fail, Res] = {
+      import requestAndServiceResponse._
+      serviceResponse.status.code / 100 match {
+        case 2 => Right(fromXingYi(xingYi)(req)(serviceResponse.body.s))
+        case _ => Left(failer.responseParserfailer(requestAndServiceResponse, "Unexpected status code "))
+      }
+    }
+  }
+
 }
 
 trait ResponseParserFailer[Fail] {

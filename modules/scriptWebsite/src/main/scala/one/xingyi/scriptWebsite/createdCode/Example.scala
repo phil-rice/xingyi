@@ -49,5 +49,5 @@ class PersonAddressOps(implicit val xingYi: IXingYi) extends IPersonAddressOps[L
 }
 class PersonLine12Ops(implicit val xingYi: IXingYi) extends IPersonLine12Ops[Lens, Person] {//class one.xingyi.scriptBackend.ExampleDomainDefn$$anon$2
  def line1Lens = xingYi.stringLens[Person]("legacy_person_line1_lens") 
- def line2Lens = xingYi.stringLens[Person]("legacy_person_line1_lens") 
+ def line2Lens = xingYi.stringLens[Person]("legacy_person_line2_lens") 
 }

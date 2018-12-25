@@ -37,7 +37,7 @@ class SampleServerSpec extends UtilsSpec with BeforeAndAfterAll{
   }
   it should "have a SimpleLogRequestAndResult " in {
     implicitly[LogRequestAndResult[Throwable]] shouldBe logRequestAndResult
-    logRequestAndResult.asInstanceOf[SimpleLogRequestAndResult].loggingAdapter shouldBe server.loggingAdapter
+    logRequestAndResult.asInstanceOf[SimpleLogRequestAndResult[_]].loggingAdapter shouldBe server.loggingAdapter
   }
   it should "have a caching service factory" in {
     cacheFactory.sizeStrategy shouldBe NoMapSizeStrategy

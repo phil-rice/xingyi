@@ -113,8 +113,8 @@ class ExampleDomainDefn extends DomainDefn[Person](classOf[IPerson].getPackageNa
     new IPersonLine12Ops[XingYiManualPath, IPerson] {
       override val line1Lens = XingYiManualPath[IPerson, String]("legacy_person_line1_lens","stringLens",
         """function legacy_person_line1_lens() { return compose(legacy_address(), lens("line1"))}""")
-      override def line2Lens = XingYiManualPath[IPerson, String]("legacy_person_line1_lens","stringLens",
-        """function legacy_person_line1_lens() { return compose(legacy_address(), lens("line1"))}""")
+      override def line2Lens = XingYiManualPath[IPerson, String]("legacy_person_line2_lens","stringLens",
+        """function legacy_person_line2_lens() { return compose(legacy_address(), lens("line2"))}""")
     })) {
   override def packageName: String = "one.xingyi.scriptExample.createdCode"
   override def domainName: String = "ExampleDomain"

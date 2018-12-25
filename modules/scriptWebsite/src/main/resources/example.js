@@ -84,4 +84,4 @@ function lens_address_line1_string(){ return lens("line1");};
 function lens_person_addresses_addresslist(){ return lens("addresses");}; 
 function legacy_address() { return compose(lens("addresses"), lensForFirstItemInList())}
 function legacy_person_line1_lens() { return compose(legacy_address(), lens("line1"))}
-function legacy_person_line1_lens() { return compose(legacy_address(), lens("line1"))}
+function legacy_person_line2_lens() { return compose(legacy_address(), lens("line2"))}
