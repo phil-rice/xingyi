@@ -40,7 +40,7 @@ object ServerPayload extends JsonWriterLanguage {
   //    payload => JsonObject("_embedded" -> projection.toJson(payload.domainObject))
   implicit def toServerResponse[J, Req, Server, Domain](implicit jsonWriter: JsonWriter[J], projection: Projection[Server, Domain]): ToServiceResponse[Req, ServerPayload[Domain]] =
     req => payload =>
-      ServiceResponse(payload.status, Body(jsonWriter(JsonObject("_embedded" -> projection.toJson(payload.domainObject)))),
+      ServiceResponse(payload.status, Body(jsonWriter(projection.toJson(payload.domainObject))),
         List(Header("content-type", "application/xingyi"), Header("xingyi", payload.domain.codeHeader)))
 
 }

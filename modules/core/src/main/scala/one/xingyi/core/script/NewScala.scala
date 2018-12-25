@@ -7,6 +7,7 @@ import one.xingyi.core.script
 import one.xingyi.core.strings.Strings
 
 import scala.collection.immutable
+import scala.language.higherKinds
 import scala.reflect.ClassTag
 
 object ScalaCode extends ScalaCode

@@ -19,7 +19,7 @@ class CreatedCodeExampleSpec extends UtilsSpec {
   }
   it should "allow the person's name (lens and stringLens) to be extracted" in {
     setup { implicit xingyi =>
-      val ops = new PersonNameOpsImpl
+      val ops = new PersonNameOps
       import ops._
 
       val person = xingyi.parse[Person](json)
@@ -33,8 +33,8 @@ class CreatedCodeExampleSpec extends UtilsSpec {
   }
   it should "allow the address to be extracted (listLens)" in {
     setup { implicit xingyi =>
-      val personAddressOps = new PersonAddressListOpsImpl
-      val addressOps = new AddressOpsImpl
+      val personAddressOps = new PersonAddressListOps
+      val addressOps = new AddressOps
 
       val person: Person = xingyi.parse[Person](json)
       val addresses: List[Address] = personAddressOps.addressListLens.get(person)

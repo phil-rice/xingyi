@@ -35,7 +35,6 @@ sealed abstract class LensDefn[A, B](implicit val classA: ClassTag[A], val class
   val b = classB.runtimeClass.getSimpleName
 }
 case class SimpleLensDefn[A: ClassTag, B: ClassTag](name: String, names: List[String], isList: Boolean = false) extends LensDefn[A, B]
-case class ManualLensListLensDefn[A: ClassTag, B: ClassTag](name: String, names: List[String], isList: Boolean) extends LensDefn[A, B]
 case class ManualLensDefn[A: ClassTag, B: ClassTag](name: String, isList: Boolean, javascript: String) extends LensDefn[A, B]
 
 
