@@ -48,7 +48,10 @@ abstract class AbstractLogRequestAndResult[Fail: DetailedLogging : SummaryLoggin
   }
 }
 
-class SimpleLogRequestAndResult(implicit val loggingAdapter: LoggingAdapter) extends AbstractLogRequestAndResult[Throwable] {
+object SimpleLogRequestAndResult{
+  implicit def defaultLogRequestAndFail[Fail](implicit loggingAdapter: LoggingAdapter) = new SimpleLogRequestAndResult[Fail]()
+}
+class SimpleLogRequestAndResult[Fail](implicit val loggingAdapter: LoggingAdapter) extends AbstractLogRequestAndResult[Fail] {
   override protected def format(messagePrefix: String, messagePostFix: String)(strings: String*) = messagePostFix + "." + messagePostFix + ":" + strings.mkString(",")
 }
 class LogRequestAndResultForBundle[Fail: DetailedLogging : SummaryLogging](implicit bundle: ResourceBundle, log: LoggingAdapter) extends AbstractLogRequestAndResult[Fail] {

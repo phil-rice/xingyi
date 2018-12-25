@@ -10,12 +10,12 @@ import one.xingyi.core.endpoint.MatchesServiceRequest
 import one.xingyi.core.http._
 import one.xingyi.core.json.{JsonParser, JsonWriter}
 import one.xingyi.core.language._
-import one.xingyi.core.logging.{DetailedLogging, LogRequestAndResult, PrintlnLoggingAdapter, SimpleLogRequestAndResult}
+import one.xingyi.core.logging._
 import one.xingyi.core.map.NoMapSizeStrategy
 import one.xingyi.core.metrics.{PrintlnPutMetrics, PutMetrics}
 import one.xingyi.core.monad.{Async, IdentityMonad, MonadCanFailWithException}
 import one.xingyi.core.script._
-import one.xingyi.core.simpleServer.{EndpointHandler, SimpleHttpServer}
+import one.xingyi.core.simpleServer.{CheapServer, EndpointHandler, SimpleHttpServer}
 import one.xingyi.core.time.NanoTimeService
 import org.json4s.JValue
 
@@ -23,16 +23,9 @@ import scala.language.higherKinds
 import scala.util.Success
 
 
-class Backend[M[_], Fail, J: JsonParser : JsonWriter](implicit val monad: MonadCanFailWithException[M, Fail],
-                                                      val async: Async[M],
-                                                      val failer: Failer[Fail],
-                                                      val cacheFactory: CacheFactory[M],
-                                                      val timeService: NanoTimeService,
-                                                      val logReqAndResult: LogRequestAndResult[Fail],
-                                                      val putMetrics: PutMetrics,
-                                                      val httpFactory: HttpFactory[M, ServiceRequest, ServiceResponse],
-                                                      val detailedLoggingForSR: DetailedLogging[ServiceResponse])
-  extends MicroserviceBuilder[M, Fail] with MicroserviceComposers[M] with EnrichLanguage[M] with MergeLanguage[M] with AnyLanguage with MonadLanguage with AsyncLanguage {
+class Backend[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : JsonWriter]
+(implicit val monad: MonadCanFailWithException[M, Fail], val logReqAndResult: LogRequestAndResult[Fail], loggingAdapter: LoggingAdapter)
+  extends CheapServer[M, Fail](9001) {
 
   val tel = Telephone("someNumber")
   val address1 = Address("line1", "line2", "pc1")
@@ -43,17 +36,9 @@ class Backend[M[_], Fail, J: JsonParser : JsonWriter](implicit val monad: MonadC
 
   def edit(name: String, person: Person, xingYiHeader: Option[String])(implicit domainList: DomainList[Person]) = {
     people = people + (name -> person)
-    println(s"changing $name people now $people header was $xingYiHeader" )
+    println(s"changing $name people now $people header was $xingYiHeader")
     ServerPayload(Status(200), person, domainList.accept(xingYiHeader))
   }
-
-  //  val q: ToJsonLib[ServerPayload[Person]] = ServerPayload.toJson[Person]
-  //  ToJson.default[J, ServerPayload[Person]]
-  //  val x = implicitly[ToJson[org.xingyi.script.ServerPayload[one.xingyi.scriptBackend.Person]]]
-  //  val y = implicitly[ToServiceResponse]
-
-
-  //  val newPerson = function[PersonRequest, ServerPayload[Person]]("newPerson") { req => edit(req.name, Person.prototype.copy(name = req.name)) } |+| endpoint[PersonRequest, ServerPayload[Person]]("/person", MatchesServiceRequest.idAtEnd(Method("post")))
 
   val domainDetails: DomainDetails[Person] = implicitly[DomainDefnToDetails[Person]].apply(new ExampleDomainDefn)
 
@@ -80,29 +65,15 @@ class Backend[M[_], Fail, J: JsonParser : JsonWriter](implicit val monad: MonadC
 
 
 }
-
+import one.xingyi.core.http.Failer.failerForThrowable
+import one.xingyi.json4s.Json4sParser._
+import one.xingyi.json4s.Json4sWriter._
 object Backend extends App {
-  import one.xingyi.json4s.Json4sParser._
-  import one.xingyi.json4s.Json4sWriter._
-  implicit val httpFactory = new HttpFactory[IdentityMonad, ServiceRequest, ServiceResponse] {
-    override def apply(v1: ServiceName) = { req =>
-      IdentityMonad(Success(ServiceResponse(Status(200), Body(s"response: ${req.body.map(_.s).getOrElse("")}"), ContentType("text/html"))), Map())
-    }
-  }
-  implicit val loggingAdapter = PrintlnLoggingAdapter
-  implicit val resourceBundle = ResourceBundle.getBundle("messages")
-  implicit val putMetrics = PrintlnPutMetrics
-  implicit val logRequestAndResult: LogRequestAndResult[Throwable] = new SimpleLogRequestAndResult
-  implicit val cacheFactory = new CachingServiceFactory[IdentityMonad](DurationStaleCacheStategy(10000000000L, 10000000000000L), NoMapSizeStrategy)
-
-  implicit val executors = Executors.newFixedThreadPool(10)
-
-  import one.xingyi.core.http.Failer.failerForThrowable
-
+  implicit val logger: LoggingAdapter = PrintlnLoggingAdapter
+  import SimpleLogRequestAndResult._
 
   val backend = new Backend[IdentityMonad, Throwable, JValue]
-  val server = new SimpleHttpServer(9001, new EndpointHandler[IdentityMonad, Throwable](backend.endpoints))
 
   println("running")
-  server.start()
+  backend.start
 }

@@ -41,24 +41,16 @@ class CreatedCodeExampleSpec extends UtilsSpec {
       addresses.map(addressOps.line1Lens.get) shouldBe List("No fixed abode", "A second address")
     }
   }
-  //  it should "allow the address to be manipulated (listLens)" in {
-  //    setup { exampleDomain =>
-  //      import exampleDomain._
-  //
-  //      val thePayload = payload(json)
-  //      val person: Person = root.get(thePayload)
-  //      val addresses: List[Address] = person_address_list.get(person)
-  //
-  //
-  //      addresses.map(address_line1.get) shouldBe List("No fixed abode", "A second address")
-  //
-  //
-  //      val addresses2: List[Address] = addresses.map(address_line1.map(_ + "changed"))
-  //      addresses2.map(address_line1.get) shouldBe List("No fixed abodechanged", "A second addresschanged")
-  //
-  //      val person2 = person_address_list.set(person, addresses2)
-  //      val addresses3: List[Address] = person_address_list.get(person2)
-  //      addresses3.map(address_line1.get) shouldBe List("No fixed abodechanged", "A second addresschanged")
-  //    }
-  //  }
+
+  it should "allow the legacy person / line code to be used" in {
+    setup { implicit xingyi =>
+      val personLine1Ops = new PersonLine12Ops()
+
+      val person: Person = xingyi.parse[Person](json)
+      personLine1Ops.line1Lens.apply(person) shouldBe "No fixed abode"
+      val person1 = personLine1Ops.line1Lens.set(person, "new address")
+      personLine1Ops.line1Lens.apply(person) shouldBe "No fixed abode"
+      personLine1Ops.line1Lens.apply(person1) shouldBe "new address"
+    }
+  }
 }
