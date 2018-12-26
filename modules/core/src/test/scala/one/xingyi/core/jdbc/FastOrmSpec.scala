@@ -96,7 +96,7 @@ abstract class AbstractFastOrmSpec[M[_] : ClosableM, DS <: DataSource] extends D
 
   behavior of classOf[FastReaderImpl[Person]].getSimpleName
 
-  it should "allow the items to be read" in {
+  it should "allow the items to be read" ignore {
     val reader: FastReaderImpl[Person] = FastReader(OrmBatchConfig(ds, 2))
     reader(main)(0) shouldBe List(Person("Phil", List(Address("Phils first address"), Address("Phils second address")), List()), Person("Bob", List(), List()))
     reader(main)(1) shouldBe List(Person("Jill", List(Address("Jills first address")), List()))
