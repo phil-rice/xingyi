@@ -99,7 +99,7 @@ object EditPersonRequest {
   }
 }
 
-class ExampleDomainDefn extends DomainDefn[Person](classOf[IPerson].getPackageName, List("json", "pretty"),
+class ExampleDomainDefn extends DomainDefn[Person]("one.xingyi.scriptShared", List("json", "pretty"),
   List(
     Person.personNameOps -> Person.projection,
     Person.personTelephoneOps -> Person.projection,
