@@ -39,7 +39,7 @@ class CodeMakerSpec extends FlatSpec with Matchers with CodeMakerFixture {
       val j = xingyi.parse[PayloadForTest](json)
       println(json)
 
-      val namesLens = xingyi.stringLens[PayloadForTest]("person_name")
+      val namesLens = xingyi.stringLens[PayloadForTest]("lens_person_name_string")
       namesLens.get(j) shouldBe "Phil Rice"
       val j1 = namesLens.set(j, "New Name")
       println("J  is " + j)
