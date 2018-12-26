@@ -3,7 +3,7 @@ package one.xingyi.scriptBackend
 
 import one.xingyi.core.endpoint.MatchesServiceRequest
 import one.xingyi.core.http._
-import one.xingyi.core.json.{JsonParser, JsonWriter, ObjectProjection, ToJson}
+import one.xingyi.core.json._
 import one.xingyi.core.logging._
 import one.xingyi.core.monad.{Async, IdentityMonad, Monad, MonadCanFailWithException}
 import one.xingyi.core.script._
@@ -63,6 +63,20 @@ class NewBackend extends PersonStore {
   entity[IPerson, Person] atUrl "/person/<id>" saveUsing save loadUsing people.apply
 }
 
+import one.xingyi.core.language.AnyLanguage._
+case class PersonServiceFinderRequest()
+object PersonServiceFinderRequest {
+  implicit def fromServiceRequest[M[_] : Monad]: FromServiceRequest[M, PersonServiceFinderRequest] = sr => PersonServiceFinderRequest().liftM[M]
+}
+case class PersonServiceFinderResponse(javascriptUrl: String, scalaUrl: String, urlPattern: String, supportedVerbs: List[String])
+object PersonServiceFinderResponse extends JsonWriterLanguage {
+  implicit def toJson[J: JsonWriter]: ToJsonLib[PersonServiceFinderResponse] = { res =>
+    import res._
+    JsonObject(
+      "url" -> urlPattern, "verbs" -> JsonList(supportedVerbs.map(JsonString.apply)),
+      "code" -> JsonObject("javascript" -> javascriptUrl, "scala" -> scalaUrl))
+  }
+}
 
 class Backend[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : JsonWriter]
 (implicit val monad: MonadCanFailWithException[M, Fail], val logReqAndResult: LogRequestAndResult[Fail], loggingAdapter: LoggingAdapter)
@@ -85,12 +99,13 @@ class Backend[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : 
     codeRequest => CodeDetailsResponse(codeMap.getOrElse(codeRequest.hash, throw new RuntimeException("Cannot find hash. values are" + codeMap.keys)))
   } |+| endpoint[CodeDetailsRequest, CodeDetailsResponse]("/code", MatchesServiceRequest.idAtEnd(Method("get")))
 
-//  ServerPayload.toServerResponse[J, PersonRequest, IPerson, Person]
-//  val x = implicitly[ToJson[one.xingyi.core.script.ServerPayload[one.xingyi.scriptBackend.Person]]]
-//  val y = implicitly[ToServiceResponse[Person]]
+  //  ServerPayload.toServerResponse[J, PersonRequest, IPerson, Person]
+  //  val x = implicitly[ToJson[one.xingyi.core.script.ServerPayload[one.xingyi.scriptBackend.Person]]]
+  //  val y = implicitly[ToServiceResponse[Person]]
 
-
-
+  val personDetails = function[PersonServiceFinderRequest, PersonServiceFinderResponse]("persondetails")(
+    _ => PersonServiceFinderResponse(s"/code/${javascript.hash}", s"/code/${scala.hash}", "/person/<id>", List("put", "post", "get"))
+  ) |+| endpoint[PersonServiceFinderRequest, PersonServiceFinderResponse]("/person", MatchesServiceRequest.fixedPath(Method("get")))
 
   val newPerson = function[PersonRequest, ServerPayload[Person]]("newPerson") { req => edit(req.name, Person.prototype.copy(name = req.name), req.xingYiHeader) } |+| endpoint[PersonRequest, ServerPayload[Person]]("/person", MatchesServiceRequest.idAtEnd(Method("post")))
   val getPerson = function[PersonRequest, ServerPayload[Person]]("findPerson")(req => ServerPayload(Status(200), people.getOrElse(req.name, throw new RuntimeException("not found")), domainList.accept(req.xingYiHeader))) |+| endpoint[PersonRequest, ServerPayload[Person]]("/person", MatchesServiceRequest.idAtEnd(Method("get")))
@@ -101,7 +116,7 @@ class Backend[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : 
   val keepalive: ServiceRequest => M[Option[ServiceResponse]] = function[ServiceRequest, ServiceResponse]("keepalive")(sr => ServiceResponse("Alive")) |+| endpoint[ServiceRequest, ServiceResponse]("/ping", MatchesServiceRequest.fixedPath(Method("get")))
 
 
-  val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(newPerson, getPerson, editPerson, allCode, codeDetails, keepalive)
+  val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(personDetails, newPerson, getPerson, editPerson, allCode, codeDetails, keepalive)
 
 
 }
