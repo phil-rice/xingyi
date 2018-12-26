@@ -43,7 +43,7 @@ sealed trait Projection[Shared, Domain] {
   def proof: ProofOfBinding[Shared, Domain]
   def sharedClassTag: ClassTag[Shared]
   def domainClassTag: ClassTag[Domain]
-  def toJson(t: Domain): JsonValue
+  def toJson(t: Domain): JsonObject
   def fromJson[J: JsonParser](j: J): Domain
   def fromJsonString[J](json: String)(implicit jsonParser: JsonParser[J]): Domain = fromJson(jsonParser(json))
   def walk[T1](fn: (List[String], FieldProjection[_, _]) => T1, prefix: List[String] = List()): Seq[T1]
@@ -52,7 +52,7 @@ sealed trait Projection[Shared, Domain] {
 case class ObjectProjection[Shared, Domain](prototype: Domain, children: (String, FieldProjection[Domain, _])*)
                                            (implicit val sharedClassTag: ClassTag[Shared], val domainClassTag: ClassTag[Domain],
                                             val proof: ProofOfBinding[Shared, Domain]) extends Projection[Shared, Domain] {
-  override def toJson(t: Domain): JsonValue = JsonObject(children.map { nameAndToChild => nameAndToChild._1 -> nameAndToChild._2.childJson(t) }: _*)
+  override def toJson(t: Domain): JsonObject = JsonObject(children.map { nameAndToChild => nameAndToChild._1 -> nameAndToChild._2.childJson(t) }: _*)
   def fromJson[J: JsonParser](j: J): Domain =
     children.foldLeft(prototype) { case (acc, (name, fieldProjection)) =>
       JsonParsingException.wrap(s"Field $name for project $fieldProjection", fieldProjection.setFromJson(acc, j \ name))

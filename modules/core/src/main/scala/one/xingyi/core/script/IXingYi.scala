@@ -33,14 +33,15 @@ trait Domain {
   def mirror: Object
 }
 
+case class LinkDetail(verb: String, urlPattern: String)
+trait Links[T] extends (T => List[LinkDetail])
 
-case class ServerPayload[T](status: Status, domainObject: T, domain: DomainDetails[T])
+case class ServerPayload[T](status: Status, domainObject: T, domain: DomainDetails[T])(implicit val links: Links[T])
 object ServerPayload extends JsonWriterLanguage {
-  //  implicit def toJson[Domain](implicit projection: Projection[Domain]): ToJsonLib[ServerPayload[Domain]] =
-  //    payload => JsonObject("_embedded" -> projection.toJson(payload.domainObject))
   implicit def toServerResponse[J, Req, Server, Domain](implicit jsonWriter: JsonWriter[J], projection: Projection[Server, Domain]): ToServiceResponse[Req, ServerPayload[Domain]] =
     req => payload =>
-      ServiceResponse(payload.status, Body(jsonWriter(projection.toJson(payload.domainObject))),
+      ServiceResponse(payload.status, Body("/code/"+payload.domain.codeHeader + "\n" + jsonWriter(projection.toJson(payload.domainObject) |+| ("_links" ->
+        JsonObject(payload.links(payload.domainObject).map { case LinkDetail(verb, pattern) => verb -> JsonString(pattern) }: _*)))),
         List(Header("content-type", "application/xingyi"), Header("xingyi", payload.domain.codeHeader)))
 
 }

@@ -44,6 +44,7 @@ object Address extends JsonWriterLanguage {
 case class Person(name: String, address: List[Address], telephoneNumber: Telephone)
 
 object Person extends JsonWriterLanguage {
+  implicit val links: Links[Person] = _ => List(LinkDetail("self", "/person/<id>"))
   implicit val nameL = Lens[Person, String](_.name, (p, n) => p.copy(name = n))
   implicit val personAddressListL = Lens[Person, List[Address]](_.address, (p, al) => p.copy(address = al))
   implicit val personAddressL = personAddressListL andThen Lens.firstItemL
@@ -107,13 +108,13 @@ class ExampleDomainDefn extends DomainDefn[Person](classOf[IPerson].getPackageNa
     Telephone.telephoneOps -> Telephone.projection),
   List(
     new IPersonAddressOps[XingYiManualPath, IPerson, IAddress] {
-      override def addressLens = XingYiManualPath[IPerson, IAddress]("legacy_address","objectLens",
+      override def addressLens = XingYiManualPath[IPerson, IAddress]("legacy_address", "objectLens",
         """function legacy_address() { return compose(lens("addresses"), lensForFirstItemInList())}""", isList = true)
     },
     new IPersonLine12Ops[XingYiManualPath, IPerson] {
-      override val line1Lens = XingYiManualPath[IPerson, String]("legacy_person_line1_lens","stringLens",
+      override val line1Lens = XingYiManualPath[IPerson, String]("legacy_person_line1_lens", "stringLens",
         """function legacy_person_line1_lens() { return compose(legacy_address(), lens("line1"))}""")
-      override def line2Lens = XingYiManualPath[IPerson, String]("legacy_person_line2_lens","stringLens",
+      override def line2Lens = XingYiManualPath[IPerson, String]("legacy_person_line2_lens", "stringLens",
         """function legacy_person_line2_lens() { return compose(legacy_address(), lens("line2"))}""")
     })) {
   override def packageName: String = "one.xingyi.scriptExample.createdCode"

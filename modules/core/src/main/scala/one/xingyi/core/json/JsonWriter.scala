@@ -16,11 +16,13 @@ case class JsonString(s: String) extends JsonValue
 case class JsonInt(i: Int) extends JsonValue
 case class JsonDouble(d: Double) extends JsonValue
 case class JsonBoolean(b: Boolean) extends JsonValue
-object JsonObject{
-//  def from(name: String, value: JsonValue) = JsonObject(name -> value)
+object JsonObject {
+  //  def from(name: String, value: JsonValue) = JsonObject(name -> value)
 }
 case class JsonObject(nameAndValues: (String, JsonValue)*) extends JsonValue {
-  def |+|(other: (String, JsonValue)*) = JsonObject((nameAndValues ++ other): _*)
+  def |+|(other: (String, JsonValue)*) = add(other)
+  def add(other: Seq[(String, JsonValue)]) = JsonObject((nameAndValues ++ other): _*)
+  def add(other: JsonObject) = JsonObject((nameAndValues ++ other.nameAndValues): _*)
   override def toString: String = s"JsonObject(${nameAndValues.mkString(",")})"
 
 }
