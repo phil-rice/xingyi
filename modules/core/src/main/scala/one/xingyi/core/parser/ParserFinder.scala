@@ -7,7 +7,7 @@ import one.xingyi.core.monad.{Functor, MonadCanFail}
 
 import scala.annotation.implicitNotFound
 import scala.language.higherKinds
-trait Parser[T] extends (String => T)
+trait  Parser[T] extends (String => T)
 
 object Parser {
   implicit def default[J, T](implicit jsonParser: JsonParser[J], fromJsonLib: FromJsonLib[J, T]): FromJson[T] = s => fromJsonLib(jsonParser(s))

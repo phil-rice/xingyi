@@ -1,15 +1,23 @@
 package one.xingyi.scriptWebsite
 
 import one.xingyi.core.http._
+import one.xingyi.core.json.{FromJson, FromJsonLib, JsonParser, JsonParserLanguage}
 import one.xingyi.core.strings.Strings
 import one.xingyi.scriptExample.createdCode.{Person, PersonLine12Ops}
 import one.xingyi.core.language.AnyLanguage._
 import one.xingyi.core.monad.Monad
+import one.xingyi.core.objectify.{EntityDetailsUrl, FromEntityDetailsResponse}
 
 import scala.language.higherKinds
 
+
 case class PersonAddressRequest(name: String)
 object PersonAddressRequest {
+  implicit val entityDetails = EntityDetailsUrl[PersonAddressRequest](Uri("http://localhost:9001/person"))
+  //TODO security flaw here. OK for now
+  implicit def fromEntityDetailsRequest: FromEntityDetailsResponse[PersonAddressRequest] =
+    req => edr => ServiceRequest(Method("get"), Uri(edr.urlPattern.replace("<id>", req.name)))
+
   implicit def fromServiceRequest[M[_] : Monad]: FromServiceRequest[M, PersonAddressRequest] = {
     sr => PersonAddressRequest(Strings.lastSection("/")(sr.path.path)).liftM[M]
   }

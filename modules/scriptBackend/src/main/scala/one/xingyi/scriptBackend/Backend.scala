@@ -104,7 +104,7 @@ class Backend[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : 
   //  val y = implicitly[ToServiceResponse[Person]]
 
   val personDetails = function[PersonServiceFinderRequest, PersonServiceFinderResponse]("persondetails")(
-    _ => PersonServiceFinderResponse(s"/code/${javascript.hash}", s"/code/${scala.hash}", "/person/<id>", List("put", "post", "get"))
+    _ => PersonServiceFinderResponse(s"http://localhost:9001/code/${javascript.hash}", s"http://localhost:9001/code/${scala.hash}", "http://localhost:9001/person/<id>", List("put", "post", "get"))
   ) |+| endpoint[PersonServiceFinderRequest, PersonServiceFinderResponse]("/person", MatchesServiceRequest.fixedPath(Method("get")))
 
   val newPerson = function[PersonRequest, ServerPayload[Person]]("newPerson") { req => edit(req.name, Person.prototype.copy(name = req.name), req.xingYiHeader) } |+| endpoint[PersonRequest, ServerPayload[Person]]("/person", MatchesServiceRequest.idAtEnd(Method("post")))

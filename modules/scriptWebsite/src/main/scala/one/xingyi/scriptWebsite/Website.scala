@@ -10,23 +10,23 @@ import one.xingyi.core.cache.{CacheFactory, CachingServiceFactory, DurationStale
 import one.xingyi.core.client.HttpClient
 import one.xingyi.core.endpoint.MatchesServiceRequest
 import one.xingyi.core.http._
-import one.xingyi.core.json.{JsonParser, JsonWriter}
+import one.xingyi.core.json._
 import one.xingyi.core.language._
 import one.xingyi.core.logging._
 import one.xingyi.core.map.NoMapSizeStrategy
 import one.xingyi.core.metrics.{PrintlnPutMetrics, PutMetrics}
 import one.xingyi.core.monad.{Async, IdentityMonad, MonadCanFailWithException}
+import one.xingyi.core.objectify.{EntityDetailsRequest, EntityDetailsResponse}
 import one.xingyi.core.script.IXingYiLoader
 import one.xingyi.core.simpleServer.{CheapServer, EndpointHandler, SimpleHttpServer}
 import one.xingyi.core.strings.Strings
 import one.xingyi.core.time.NanoTimeService
-import one.xingyi.json4s.Json4sParser._
-import one.xingyi.json4s.Json4sWriter._
 import one.xingyi.scriptExample.createdCode.{Person, PersonLine12Ops}
 import org.json4s.JValue
 
 import scala.io.Source
 import scala.language.higherKinds
+
 
 class Website[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : JsonWriter]
 (implicit val monad: MonadCanFailWithException[M, Fail], val logReqAndResult: LogRequestAndResult[Fail], loggingAdapter: LoggingAdapter)
@@ -43,9 +43,11 @@ class Website[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : 
 
   val keepalive: ServiceRequest => M[Option[ServiceResponse]] = sr => Option(ServiceResponse("Alive")).liftM
 
-  val person = http(ServiceName("Backend")) |+| objectify[PersonAddressRequest, PersonAddressResponse] |+| endpoint[PersonAddressRequest, PersonAddressResponse] ("/person", MatchesServiceRequest.idAtEnd(Method("get")))
 
-  val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(person, keepalive)
+  val person = http(ServiceName("Backend")) |+| objectify[PersonAddressRequest, PersonAddressResponse] |+| endpoint[PersonAddressRequest, PersonAddressResponse]("/personold", MatchesServiceRequest.idAtEnd(Method("get")))
+  val person2 = http(ServiceName("Backend")) |+| xingyi[PersonAddressRequest, PersonAddressResponse] |+| endpoint[PersonAddressRequest, PersonAddressResponse]("/person", MatchesServiceRequest.idAtEnd(Method("get")))
+
+  val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain( person2, keepalive)
 
   val client: ServiceRequest => M[ServiceResponse] = httpFactory(ServiceName("Backend"))
   println("found: " + implicitly[Async[M]].await(client(ServiceRequest(Method("get"), Uri("http://localhost:9001/person/someName")))))
@@ -54,8 +56,11 @@ class Website[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : 
 }
 
 object Website extends App {
+  import one.xingyi.json4s.Json4sParser._
+  import one.xingyi.json4s.Json4sWriter._
 
   implicit val logger: LoggingAdapter = PrintlnLoggingAdapter
+
   import SimpleLogRequestAndResult._
 
   println("Checking backend")
