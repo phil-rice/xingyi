@@ -6,17 +6,22 @@ import one.xingyi.core.json.{FromJsonLib, JsonParser, JsonParserLanguage}
 import one.xingyi.core.language.Language._
 import one.xingyi.core.logging.DetailedLogging
 import one.xingyi.core.monad.{MonadCanFail, MonadCanFailWithException}
+import one.xingyi.core.script.{DomainMaker, IXingYi, IXingYiLoader}
 
 import scala.language.higherKinds
 import scala.reflect.ClassTag
+import one.xingyi.core.language.AnyLanguage._
 
 case class EntityDetailsUrl[Req](url: Uri)
+
 case class EntityDetailsRequest(bookmarkedUrl: String)
+
 object EntityDetailsRequest {
   implicit def toServiceRequest: ToServiceRequest[EntityDetailsRequest] = edr => ServiceRequest(Method("get"), Uri(edr.bookmarkedUrl))
 }
 
 case class EntityDetailsResponse(urlPattern: String)
+
 object EntityDetailsResponse extends JsonParserLanguage {
   implicit def fromServiceResponse[J](implicit jsonParser: JsonParser[J]): FromServiceResponse[EntityDetailsResponse] =
     sr => EntityDetailsResponse(jsonParser(sr.body.s) \ "url")
@@ -28,28 +33,66 @@ trait FromEntityDetailsResponse[Req] extends (Req => EntityDetailsResponse => Se
 
 trait XingyiKleisli[M[_], Fail] {
   protected implicit def monad: MonadCanFailWithException[M, Fail]
+
   protected implicit def failer: Failer[Fail]
+
   protected implicit def detailedLoggingForSR: DetailedLogging[ServiceResponse]
 
-  def xingyi[Req: ClassTag : DetailedLogging, Res: ClassTag](http: ServiceRequest => M[ServiceResponse])
-                                                            (implicit entityDetailsUrl: EntityDetailsUrl[Req],
-                                                             fromServiceResponseForEntityDetails: FromServiceResponse[EntityDetailsResponse],
-                                                             fromEntityDetailsResponse: FromEntityDetailsResponse[Req],
-                                                             categoriser: ResponseCategoriser[Req],
-                                                             responseProcessor: ResponseParser[Req, Res]): Req => M[Res] = {
-    req =>
-      http(ServiceRequest(Method("get"), entityDetailsUrl.url)).map(fromServiceResponseForEntityDetails andThen fromEntityDetailsResponse(req)).
-        flatMap(http).flatMap { sr =>
-        val category: Either[Fail, RequestAndServiceResponse[Req]] = categoriser.categorise[Fail].apply(req)(sr)
-        category.flatMap(responseProcessor.parse[Fail]).fold(monad.fail[Res], _.liftM[M])
+  // so this will chance across time. Let's just 'prove it works' and then migrate to other stuff
+  implicit def responseParserForXingyi[Req, Res](implicit xingYi: IXingYi, fromXingYi: FromXingYi[Req, Res]): ResponseParser[Req, Res] = new ResponseParser[Req, Res] {
+    override def parse[Fail](requestAndServiceResponse: RequestAndServiceResponse[Req])(implicit failer: ResponseParserFailer[Fail], reqDetails: DetailedLogging[Req], srDetails: DetailedLogging[ServiceResponse]): Either[Fail, Res] = {
+      import requestAndServiceResponse._
+      serviceResponse.status.code / 100 match {
+        case 2 =>
+          val body = serviceResponse.body.s
+          val index = body.indexOf("=")
+          if (index == -1) throw new RuntimeException("The response from server is not a XingYi payload ")
+          val code = body.substring(0, index + 1)
+          val json = body.substring(index + 1)
+          Right(fromXingYi(xingYi)(req)(json))
+        case _ => Left(failer.responseParserfailer(requestAndServiceResponse, "Unexpected status code "))
       }
+    }
+  }
+
+  def serviceResponseToCodeAndBody(sr: ServiceResponse): (String, String) = {
+    val body = sr.body.s
+    val index = body.indexOf("=")
+    if (index == -1) throw new RuntimeException("The response from server is not a XingYi payload ")
+    val code = body.substring(0, index + 1)
+    (code, body.substring(index+1))
+  }
+
+
+  def xingyi[Req: ClassTag : DetailedLogging, Res  : ClassTag ](http: ServiceRequest => M[ServiceResponse])
+                                                                                     (implicit entityDetailsUrl: EntityDetailsUrl[Req],
+                                                                                      fromServiceResponseForEntityDetails: FromServiceResponse[EntityDetailsResponse],
+                                                                                      fromEntityDetailsResponse: FromEntityDetailsResponse[Req],
+                                                                                      categoriser: ResponseCategoriser[Req],
+                                                                                      xingYiLoader: IXingYiLoader,
+                                                                                      fromXingYi: FromXingYi[Req, Res]): Req => M[Res] = {
+    req =>
+      for {
+        serviceDiscoveryProducedServiceRequest <- http(ServiceRequest(Method("get"), entityDetailsUrl.url)).map(fromServiceResponseForEntityDetails andThen fromEntityDetailsResponse(req))
+        codeBody <- http(serviceDiscoveryProducedServiceRequest).map(serviceResponseToCodeAndBody)
+        _ = {
+          val x = codeBody
+        }
+        (code, body) = codeBody
+        xingyi <- http(ServiceRequest(Method("get"), Uri(code))).map(sr => xingYiLoader(sr.body.s))
+      } yield {
+        fromXingYi(xingyi)(req)(body)
+      }
+
   }
 }
 
 
 trait ObjectifyKleisli[M[_], Fail] {
   protected implicit def monad: MonadCanFail[M, Fail]
+
   protected implicit def failer: Failer[Fail]
+
   protected implicit def detailedLoggingForSR: DetailedLogging[ServiceResponse]
 
   def objectify[Req: ClassTag : DetailedLogging, Res: ClassTag](http: ServiceRequest => M[ServiceResponse])

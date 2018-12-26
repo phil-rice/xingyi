@@ -40,7 +40,7 @@ case class ServerPayload[T](status: Status, domainObject: T, domain: DomainDetai
 object ServerPayload extends JsonWriterLanguage {
   implicit def toServerResponse[J, Req, Server, Domain](implicit jsonWriter: JsonWriter[J], projection: Projection[Server, Domain]): ToServiceResponse[Req, ServerPayload[Domain]] =
     req => payload =>
-      ServiceResponse(payload.status, Body("/code/"+payload.domain.codeHeader + "\n" + jsonWriter(projection.toJson(payload.domainObject) |+| ("_links" ->
+      ServiceResponse(payload.status, Body("http://localhost:9001/code/"+payload.domain.codeHeader + "\n" + jsonWriter(projection.toJson(payload.domainObject) |+| ("_links" ->
         JsonObject(payload.links(payload.domainObject).map { case LinkDetail(verb, pattern) => verb -> JsonString(pattern) }: _*)))),
         List(Header("content-type", "application/xingyi"), Header("xingyi", payload.domain.codeHeader)))
 

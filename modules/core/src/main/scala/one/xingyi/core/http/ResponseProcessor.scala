@@ -19,22 +19,6 @@ object ResponseParser {
 
   }
 
-  // so this will chance across time. Let's just 'prove it works' and then migrate to other stuff
-  implicit def responseParserForXingyi[Req, Res](implicit xingYi: IXingYi, fromXingYi: FromXingYi[Req, Res]): ResponseParser[Req, Res] = new ResponseParser[Req, Res] {
-    override def parse[Fail](requestAndServiceResponse: RequestAndServiceResponse[Req])(implicit failer: ResponseParserFailer[Fail], reqDetails: DetailedLogging[Req], srDetails: DetailedLogging[ServiceResponse]): Either[Fail, Res] = {
-      import requestAndServiceResponse._
-      serviceResponse.status.code / 100 match {
-        case 2 =>
-          val body = serviceResponse.body.s
-          val index = body.indexOf("=")
-          if (index == -1) throw new RuntimeException("The response from server is not a XingYi payload ")
-          val code = body.substring(0, index + 1)
-          val json = body.substring(index + 1)
-          Right(fromXingYi(xingYi)(req)(json))
-        case _ => Left(failer.responseParserfailer(requestAndServiceResponse, "Unexpected status code "))
-      }
-    }
-  }
 
 }
 
