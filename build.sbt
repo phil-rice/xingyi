@@ -222,7 +222,7 @@ lazy val scriptBackendShared = (project in file("modules/scriptBackendShared")).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
 
-lazy val scriptBackend1 = (project in file("modules/scriptBackendShared1")).
+lazy val scriptBackend1 = (project in file("modules/scriptBackend1")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(scriptBackendShared % "test->test;compile->compile").aggregate(scriptBackendShared).
   dependsOn(scriptModel1 % "test->test;compile->compile").aggregate(scriptModel1).
@@ -231,7 +231,7 @@ lazy val scriptBackend1 = (project in file("modules/scriptBackendShared1")).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
 
-lazy val scriptBackend2 = (project in file("modules/scriptBackendShared2")).
+lazy val scriptBackend2 = (project in file("modules/scriptBackend2")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(scriptBackendShared % "test->test;compile->compile").aggregate(scriptBackendShared).
   dependsOn(scriptModel2 % "test->test;compile->compile").aggregate(scriptModel2).
@@ -240,7 +240,7 @@ lazy val scriptBackend2 = (project in file("modules/scriptBackendShared2")).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
 
-lazy val scriptBackend3 = (project in file("modules/scriptBackendShared3")).
+lazy val scriptBackend3 = (project in file("modules/scriptBackend3")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(scriptBackendShared % "test->test;compile->compile").aggregate(scriptBackendShared).
   dependsOn(scriptModel3 % "test->test;compile->compile").aggregate(scriptModel3).
