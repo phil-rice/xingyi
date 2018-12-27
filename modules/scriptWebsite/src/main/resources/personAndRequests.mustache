@@ -18,13 +18,21 @@
     </table>
 {{/original}}
 
-<h2>Recorded Calls</h2>
-{{#recorded}}
-    {{>request}}
-    {{>response}}
-    <br />
-    <br />
-{{/recorded}}
 
+<div class="recordedCalls"><h1>Recorded Calls</h1>
+    <table class="calls recordedCalls">
+        {{#recorded}}
+            <tr>
+                <td>Request</td>
+                <td>{{>request}}</td>
+            </tr>
+            <tr>
+                <td>Response</td>
+                <td>{{>response}}</td>
+            </tr>
+            <!--<tr><td colspan="2">&nbsp;</td></tr>-->
+        {{/recorded}}
+    </table>
+</div>
 <h2>Debug</h2>
 {{{.}}}

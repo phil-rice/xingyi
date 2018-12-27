@@ -1,9 +1,10 @@
 {{#response}}
-    Status Code = {{status}} ContentType = [{{contentType}}] {{#body}}Body is:  <pre class="json">{{.}}</pre> {{/body}}   <br/>
+    Status Code = {{status}}<br />
+    {{>headers}}
+    {{#body}}Body is:  <pre class="json">{{.}}</pre>  <br/> {{/body}}
     {{#xingyi}}
-        XingYi  Code: {{code}}<br />
+        Code: {{code}}<br />
         Body:  <pre class="json">{{body}}</pre><br />
     {{/xingyi}}
-    {{>headers}}
 
 {{/response}}
