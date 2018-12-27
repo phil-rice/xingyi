@@ -1,32 +1,19 @@
 /** Copyright (c) 2018, Phil Rice. Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS AS IS AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 package one.xingyi.scriptWebsite
 
-import java.util.ResourceBundle
-import java.util.concurrent.Executors
-
 import javax.net.ssl.SSLContext
 import one.xingyi.cddmustache.{Mustache, NameToMustacheTemplate}
-import one.xingyi.core.aggregate.{EnrichLanguage, MergeLanguage}
-import one.xingyi.core.cache.{CacheFactory, CachingServiceFactory, DurationStaleCacheStategy}
 import one.xingyi.core.client.HttpClient
 import one.xingyi.core.endpoint.{DisplayRecordedKleisli, MatchesServiceRequest}
 import one.xingyi.core.http._
 import one.xingyi.core.json._
-import one.xingyi.core.language._
 import one.xingyi.core.logging._
-import one.xingyi.core.map.NoMapSizeStrategy
-import one.xingyi.core.metrics.{PrintlnPutMetrics, PutMetrics}
 import one.xingyi.core.monad._
 import one.xingyi.core.objectify._
-import one.xingyi.core.script.IXingYiLoader
 import one.xingyi.core.service.html.ToHtml
-import one.xingyi.core.simpleServer.{CheapServer, EndpointHandler, SimpleHttpServer}
-import one.xingyi.core.strings.Strings
-import one.xingyi.core.time.NanoTimeService
-import one.xingyi.scriptExample.createdCode.{Person, PersonLine12Ops}
+import one.xingyi.core.simpleServer.CheapServer
 import org.json4s.JValue
 
-import scala.io.Source
 import scala.language.higherKinds
 
 case class MustacheToHtml[J: JsonWriter, T](templateName: String, title: String)(implicit toJsonLib: ToJsonLib[T], nameToMustacheTemplate: NameToMustacheTemplate) extends ToHtml[T] {

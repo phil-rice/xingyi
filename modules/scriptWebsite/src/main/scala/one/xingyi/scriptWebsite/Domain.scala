@@ -2,12 +2,12 @@ package one.xingyi.scriptWebsite
 
 import one.xingyi.core.http._
 import one.xingyi.core.json._
-import one.xingyi.core.strings.Strings
-import one.xingyi.scriptExample.createdCode.{Person, PersonLine12Ops}
 import one.xingyi.core.language.AnyLanguage._
 import one.xingyi.core.monad.Monad
 import one.xingyi.core.objectify.{EntityDetailsUrl, FromEntityDetailsResponse}
 import one.xingyi.core.service.html.ToHtml
+import one.xingyi.core.strings.Strings
+import one.xingyi.scriptExample.createdCode1.{Person, PersonLine12Ops}
 
 import scala.language.higherKinds
 

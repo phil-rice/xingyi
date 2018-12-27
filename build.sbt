@@ -193,16 +193,57 @@ lazy val sample = (project in file("modules/sample")).
   settings(pactSettings: _*)
 
 
-lazy val scriptShared = (project in file("modules/scriptShared")).
+lazy val scriptModel1 = (project in file("modules/scriptModel1")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(json4s % "test->test;compile->compile").
   //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
 
-lazy val scriptBackend = (project in file("modules/scriptBackend")).
+lazy val scriptModel2 = (project in file("modules/scriptModel2")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
-  dependsOn(scriptShared % "test->test;compile->compile").aggregate(scriptShared).
+  dependsOn(json4s % "test->test;compile->compile").
+  //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
+  settings(publishArtifact := false).
+  settings(pactSettings: _*)
+
+lazy val scriptModel3 = (project in file("modules/scriptModel3")).
+  dependsOn(core % "test->test;compile->compile").aggregate(core).
+  dependsOn(json4s % "test->test;compile->compile").
+  //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
+  settings(publishArtifact := false).
+  settings(pactSettings: _*)
+
+lazy val scriptBackendShared = (project in file("modules/scriptBackendShared")).
+  dependsOn(core % "test->test;compile->compile").aggregate(core).
+  dependsOn(scriptModel1 % "test->test;compile->compile").aggregate(scriptModel1).
+  dependsOn(json4s % "test->test;compile->compile").
+  //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
+  settings(publishArtifact := false).
+  settings(pactSettings: _*)
+
+lazy val scriptBackend1 = (project in file("modules/scriptBackendShared1")).
+  dependsOn(core % "test->test;compile->compile").aggregate(core).
+  dependsOn(scriptBackendShared % "test->test;compile->compile").aggregate(scriptBackendShared).
+  dependsOn(scriptModel1 % "test->test;compile->compile").aggregate(scriptModel1).
+  dependsOn(json4s % "test->test;compile->compile").
+  //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
+  settings(publishArtifact := false).
+  settings(pactSettings: _*)
+
+lazy val scriptBackend2 = (project in file("modules/scriptBackendShared2")).
+  dependsOn(core % "test->test;compile->compile").aggregate(core).
+  dependsOn(scriptBackendShared % "test->test;compile->compile").aggregate(scriptBackendShared).
+  dependsOn(scriptModel2 % "test->test;compile->compile").aggregate(scriptModel2).
+  dependsOn(json4s % "test->test;compile->compile").
+  //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
+  settings(publishArtifact := false).
+  settings(pactSettings: _*)
+
+lazy val scriptBackend3 = (project in file("modules/scriptBackendShared3")).
+  dependsOn(core % "test->test;compile->compile").aggregate(core).
+  dependsOn(scriptBackendShared % "test->test;compile->compile").aggregate(scriptBackendShared).
+  dependsOn(scriptModel3 % "test->test;compile->compile").aggregate(scriptModel3).
   dependsOn(json4s % "test->test;compile->compile").
   //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   settings(publishArtifact := false).
@@ -212,8 +253,7 @@ lazy val scriptWebsite = (project in file("modules/scriptWebsite")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(json4s % "test->test;compile->compile").
   dependsOn(cddmustache % "test->test;compile->compile").
-  dependsOn(scriptShared % "test->test;compile->compile").aggregate(scriptShared).
-  aggregate(scriptBackend).
+  dependsOn(scriptModel1 % "test->test;compile->compile").aggregate(scriptModel1).
   //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
@@ -246,7 +286,9 @@ val xingYi = (project in file(".")).
     cddexamples, //
     finatra, //
     finatraSample,
-    scriptBackend,
+    scriptBackend1,
+    scriptBackend2,
+    scriptBackend3,
     scriptWebsite,
     sample,
     sampleServer,
