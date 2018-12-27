@@ -11,16 +11,21 @@ import scala.language.higherKinds
 import scala.reflect.ClassTag
 
 object ScalaCode extends ScalaCode
+
 trait ScalaCode extends CodeFragment
 
 trait ToScalaCode[T] extends (T => String)
 
 trait InterfaceToImplName {
   def opsInterface[L[_, _]](ops: IXingYiSharedOps[L, _]): String
+
   def opsServerSideImpl[L[_, _]](ops: IXingYiSharedOps[L, _]): String
+
   def impl(projection: Class[_]): String
 }
+
 object InterfaceToImplName {
+
   implicit object default extends InterfaceToImplName {
     override def opsServerSideImpl[L[_, _]](v1: IXingYiSharedOps[L, _]): String =
       impl(Reflect.findParentClassWith(v1.getClass, classOf[IXingYiSharedOps[L, _]]))
@@ -32,10 +37,12 @@ object InterfaceToImplName {
         case s => s + "Impl"
       }
     }
+
     override def opsInterface[L[_, _]](ops: IXingYiSharedOps[L, _]): String = {
       Reflect.findParentClassWith(ops.getClass, classOf[IXingYiSharedOps[L, _]]).getSimpleName
     }
   }
+
 }
 
 
@@ -46,17 +53,21 @@ object ToScalaCode {
       case l if l.b.equalsIgnoreCase("string") => s"stringLens[${interfaceToImplName.impl(lensAndDefn.lensDefn.classA.runtimeClass)}]"
       case l => s"objectLens[${interfaceToImplName.impl(lensAndDefn.lensDefn.classA.runtimeClass)},${interfaceToImplName.impl(lensAndDefn.lensDefn.classB.runtimeClass)}]"
     }
+
   implicit def makeScalaForIXingYiLensAndLensDefn(implicit interfaceToImplName: InterfaceToImplName): ToScalaCode[IXingYiLensAndLensDefn] = {
     case l@IXingYiLensAndLensDefn(name, interface, lens, lensDefn: SimpleLensDefn[_, _]) =>
       s"""   def $name = xingYi.${lensDefnToXingYiMethod(l)}("${lensDefn.name}")"""
   }
+
   def findXingYiInterfaceAnnotationClasses(clazz: Class[_]) = {
     clazz.getInterfaces.flatMap(_.getAnnotations.collect { case x: XingYiInterface => x }).headOption.getOrElse(throw new RuntimeException(s"could not find XingyiInterface for $clazz")).clazzes()
   }
 
   implicit def makeScaleForInterface[Shared, SharedTarget](implicit interfaceToImplName: InterfaceToImplName, lensAndLensDefnToScala: ToScalaCode[IXingYiLensAndLensDefn]): ToScalaCode[InterfaceAndLens] = {
     case i@InterfaceAndLens(name, interface, list) =>
-      val s = findXingYiInterfaceAnnotationClasses(interface.getClass).map { interfaceToImplName.impl }.mkString(",")
+      val s = findXingYiInterfaceAnnotationClasses(interface.getClass).map {
+        interfaceToImplName.impl
+      }.mkString(",")
 
       val classStart =
         s"""class ${interfaceToImplName.opsServerSideImpl(interface)}(implicit val xingYi: IXingYi) extends ${interfaceToImplName.opsInterface(interface)}[Lens, $s]{""".stripMargin
@@ -119,11 +130,17 @@ object ToScalaCode {
         List(header, middle, "}").mkString("\n")
       }.mkString("\n")
 
-      List(packageSring, imports, domainClasses, opsFromObjectProjections, opsFromLegacy).mkString("\n\n\n")
+      val domainCode = List(s"object ${domainDefn.domainName}{",
+        s"   val lens=List(" + domainDefn.lens.map(_.name).mkString("\"", "\", \"", "\")"),
+        s"""   val lensString=lens.mkString(",")""",
+        """   val contentType=s"application/xingyi.$lens" """,
+        "}").mkString("\n")
+      List(packageSring, imports, domainClasses, opsFromObjectProjections, opsFromLegacy, domainCode).mkString("\n\n\n")
   }
 
 
 }
 
 case class IXingYiLensAndLensDefn(name: String, interface: IXingYiSharedOps[IXingYiLens, _], lens: IXingYiLens[_, _], lensDefn: LensDefn[_, _])
+
 case class InterfaceAndLens(nameOfImpl: String, interface: IXingYiSharedOps[IXingYiLens, _], list: List[IXingYiLensAndLensDefn])
