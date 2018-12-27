@@ -1,0 +1,27 @@
+<h1>Welcome to Scrooge</h1>
+
+<p>This is a demo application that shows you how to produce Restfull decoupled APIs.</p>
+
+<p> The most important feature of this approach is that the clients are totally decoupled from the
+    data representation of the server. In this demonstration the data model on the server has moved through
+    three states</p>
+<img src="https://imageshack.com/a/img922/3869/QWINPW.png "/>
+
+<p>Despite this the client carries on working without having to change. It does not need to be redeployed it just keeps
+    on working. </p>
+<p>The server does not need to maintain backwards compatable json, it is free to change names, insert objects in the
+    way.
+    It just needs to satisfy the contract between itself and the client</p>
+
+<p> The contract between the server and the client in this case is</p>
+<ol>
+    <li>'there are things called Person'</li>
+    <li> 'it is possible to extract line 1 of the person's address'</li>
+    <li> 'it is possible to extract line 2 of the person's address'</li>
+</ol>
+
+
+<p>When you see a sequence diagram on a page, that is the sequence of calls that have just been made. Usually under it
+    will be a table allowing you to see those calls</p>
+
+<p><a href="/person/someName" id="start">Click here to demonstrate</a></p>

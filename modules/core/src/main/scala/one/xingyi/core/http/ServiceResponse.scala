@@ -15,6 +15,7 @@ import scala.util.{Failure, Success, Try}
 
 case class ServiceResponse(status: Status, body: Body, headers: List[Header]) {
   private def getHeader[H: ClassTag]: Option[H] = ClassTags.collectAll[H](headers).headOption
+   def findHeader(name: String): Option[String] = headers.find(h=>name.equalsIgnoreCase(h.name)).map(_.value)
 
   def contentType: Option[ContentType] = getHeader[ContentType]
 }
@@ -27,8 +28,25 @@ object ServiceResponse extends JsonWriterLanguage {
 
   def removeHeader(name: String)(serviceResponse: ServiceResponse) = serviceResponse.copy(headers = serviceResponse.headers.filterNot(_.name == name))
 
+  def serviceResponseToXingYiCodeAndBody(sr: ServiceResponse): (String, String) = {
+    val body = sr.body.s
+    val index = body.indexOf("=")
+    if (index == -1) throw new RuntimeException("The response from server is not a XingYi payload ")
+    val code = body.substring(0, index + 1)
+    (code, body.substring(index + 1))
+  }
+
+  def bodyToJson(serviceResponse: ServiceResponse): (String,JsonValue) = {
+    serviceResponse.findHeader("content-type") match {
+      case Some(ct) if ct.startsWith("application/xingyi") =>
+        val (code, body) = serviceResponseToXingYiCodeAndBody(serviceResponse)
+        "xingyi"-> JsonObject("code" -> code, "body" -> body)
+      case _ => "body"-> serviceResponse.body.s
+    }
+  }
+
   implicit def toJsonLib(implicit headerToJson: ToJsonLib[Seq[Header]]): ToJsonLib[ServiceResponse] =
-    sr => JsonObject("status" -> sr.status.code, "body" -> sr.body.s, "headers" -> headerToJson(sr.headers))
+    sr => JsonObject("status" -> sr.status.code, bodyToJson(sr), "headers" -> headerToJson(sr.headers))
 
 }
 

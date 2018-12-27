@@ -6,6 +6,7 @@ import one.xingyi.core.json.{JsonWriter, ToJsonLib}
 import one.xingyi.core.language.Language._
 import one.xingyi.core.monad.{LocalVariable, Monad, MonadCanFail, MonadWithState}
 import one.xingyi.core.objectify.{RecordedCall, ResultWithRecordedCalls}
+import one.xingyi.core.service.html.ToHtml
 import one.xingyi.core.strings.Strings
 
 import scala.language.higherKinds
@@ -31,15 +32,11 @@ trait DisplayRecordedKleisli[M[_]] {
 
   def andDisplayRecorded[J](raw: ServiceRequest => M[Option[ServiceResponse]])(implicit jsonWriter: JsonWriter[J],
                                                                                recordedCalls: InheritableThreadLocal[Seq[RecordedCall]],
-                                                                               toJson: ToJsonLib[ResultWithRecordedCalls[ServiceResponse]]): ServiceRequest => M[Option[ServiceResponse]] = {
+                                                                               toHtml: ToHtml[ResultWithRecordedCalls[ServiceResponse]]): ServiceRequest => M[Option[ServiceResponse]] = {
     req =>
       raw(req).map {
         case Some(sr) =>
-          println("calls" + recordedCalls.get)
-          println("toJson" +toJson)
-          println("toJsonof ResultWithRecordedCalls" +toJson(ResultWithRecordedCalls(sr, recordedCalls.get)))
-
-          Some(ServiceResponse(sr.status, Body(jsonWriter(toJson(ResultWithRecordedCalls(sr, recordedCalls.get)))), ContentType("application/json")))
+          Some(ServiceResponse(sr.status, Body(toHtml(ResultWithRecordedCalls(sr, recordedCalls.get))), ContentType("text/html")))
         case None => None
       }
   }

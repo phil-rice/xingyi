@@ -39,13 +39,6 @@ trait XingyiKleisli[M[_], Fail] {
 
   protected implicit def detailedLoggingForSR: DetailedLogging[ServiceResponse]
 
-  def serviceResponseToCodeAndBody(sr: ServiceResponse): (String, String) = {
-    val body = sr.body.s
-    val index = body.indexOf("=")
-    if (index == -1) throw new RuntimeException("The response from server is not a XingYi payload ")
-    val code = body.substring(0, index + 1)
-    (code, body.substring(index + 1))
-  }
 
 
   def xingyify[Req: ClassTag : DetailedLogging, Res: ClassTag](http: ServiceRequest => M[ServiceResponse])
@@ -59,7 +52,7 @@ trait XingyiKleisli[M[_], Fail] {
       for {
         _ <- monad.clear
         serviceDiscoveryProducedServiceRequest <- http(ServiceRequest(Method("get"), entityDetailsUrl.url)).map(fromServiceResponseForEntityDetails andThen fromEntityDetailsResponse(req))
-        codeBody <- http(serviceDiscoveryProducedServiceRequest).map(serviceResponseToCodeAndBody)
+        codeBody <- http(serviceDiscoveryProducedServiceRequest).map(ServiceResponse.serviceResponseToXingYiCodeAndBody)
         (code, body) = codeBody
         xingyi <- http(ServiceRequest(Method("get"), Uri(code))).map(sr => xingYiLoader(sr.body.s))
       } yield {

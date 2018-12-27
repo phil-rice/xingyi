@@ -36,6 +36,7 @@ case class Status(code: Int) extends AnyVal
 
 case class Body(s: String) extends AnyVal
 
+
 trait Header {
   def name: String
 
@@ -46,7 +47,7 @@ object Header extends JsonWriterLanguage {
   def apply(name: String, value: String): Header = SimpleHeader(name, value)
 
   implicit val toJsonLib: ToJsonLib[Header] = header => JsonObject(Option(header.name).getOrElse("--") -> header.value)
-  implicit val seqJsonLib: ToJsonLib[Seq[Header]] = headers => JsonObject(headers.map(header => Option(header.name).getOrElse("--") -> JsonString(header.value)): _*)
+  implicit val seqJsonLib: ToJsonLib[Seq[Header]] = headers => JsonList(headers.map(header => JsonObject("name"->Option(header.name).getOrElse[String]("--"), "value" -> JsonString(header.value))))
 }
 
 abstract class SpecificHeader(val name: String) extends Header

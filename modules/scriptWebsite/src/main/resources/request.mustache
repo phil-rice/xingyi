@@ -1,0 +1,5 @@
+{{#request}}
+    {{method}} {{uri}} <br/>
+    {{#body}} <pre class="json">{{.}}</pre>{{/body}}
+    {{>headers}}
+{{/request}}

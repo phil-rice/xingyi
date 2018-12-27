@@ -1,0 +1,140 @@
+<html>
+
+<head>
+    <title>{{title}}</title>
+    <style>
+        td {
+            vertical-align: top;
+        }
+
+        img {
+            vertical-align: top;
+        }
+
+        .string {
+            color: green;
+        }
+
+        .number {
+            color: darkorange;
+        }
+
+        .boolean {
+            color: blue;
+        }
+
+        .null {
+            color: magenta;
+        }
+
+        .key {
+            color: red;
+        }
+
+        .recordedCalls{
+            color: gray;
+        }
+
+        .pact {
+            font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .pact td, .pact th {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        .pact tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .pact tr:hover {
+            background-color: #ddd;
+        }
+
+        .pact th {
+            text-align: left;
+            background-color: LightGray;
+        }
+
+        .balance {
+            font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .balance td, .balance th {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        .balance tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .balance tr:hover {
+            background-color: #ddd;
+        }
+
+        .balance th {
+            text-align: left;
+            background-color: LightGray;
+        }
+    </style>
+    <script>
+        function syntaxHighlight(json) {
+            if (typeof json != 'string') {
+                json = JSON.stringify(json, undefined, 2);
+            }
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                var cls = 'number';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) {
+                        cls = 'key';
+                    } else {
+                        cls = 'string';
+                    }
+                } else if (/true|false/.test(match)) {
+                    cls = 'boolean';
+                } else if (/null/.test(match)) {
+                    cls = 'null';
+                }
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+
+        function syntaxHighlightElem(elem) {
+            var original = elem.textContent
+            var prettyJson = original
+            try {
+                prettyJson = JSON.stringify(JSON.parse(original), null, 2)
+                console.log("Original Json", original)
+                console.log("PrettyJson", prettyJson)
+            } catch (e) {
+                console.log("Pretty json exception", e)
+            }
+            var json = syntaxHighlight(prettyJson)
+            elem.innerHTML = json
+        }
+    </script>
+</head>
+<body>
+<a href="/"><img src="https://imagizer.imageshack.com/v2/150x100q90/922/uZTWv6.png"/></a>
+{{{body}}}
+<script>
+    var oldOnLoad = window.onload
+    window.onload = function (event) {
+        var jsons = document.getElementsByClassName('json');
+        var arrayLength = jsons.length;
+        for (var i = 0; i < arrayLength; i++) {
+            console.log("  i", i, jsons[i])
+            syntaxHighlightElem(jsons[i])
+        }
+        oldOnLoad(event)
+    };
+</script>
+</body>
+</html>

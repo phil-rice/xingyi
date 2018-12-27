@@ -1,0 +1,30 @@
+<h1>Person</h1>
+<h2>Actual result</h2>
+
+{{#original}}
+    <table>
+        <tr>
+            <td>Status</td>
+            <td>{{status}}</td>
+        </tr>
+        <tr>
+            <td>Body</td>
+            <td>{{body}}</td>
+        </tr>
+        <tr>
+            <td>Headers</td>
+            <td>{{>headers}}</td>
+        </tr>
+    </table>
+{{/original}}
+
+<h2>Recorded Calls</h2>
+{{#recorded}}
+    {{>request}}
+    {{>response}}
+    <br />
+    <br />
+{{/recorded}}
+
+<h2>Debug</h2>
+{{{.}}}
