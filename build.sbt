@@ -211,6 +211,7 @@ lazy val scriptBackend = (project in file("modules/scriptBackend")).
 lazy val scriptWebsite = (project in file("modules/scriptWebsite")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(json4s % "test->test;compile->compile").
+  dependsOn(cddmustache % "test->test;compile->compile").
   dependsOn(scriptShared % "test->test;compile->compile").aggregate(scriptShared).
   aggregate(scriptBackend).
   //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).

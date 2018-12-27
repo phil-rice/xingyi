@@ -2,9 +2,10 @@
 package one.xingyi.core.endpoint
 
 import one.xingyi.core.http._
+import one.xingyi.core.json.{JsonWriter, ToJsonLib}
 import one.xingyi.core.language.Language._
 import one.xingyi.core.monad.{LocalVariable, Monad, MonadCanFail, MonadWithState}
-import one.xingyi.core.objectify.RecordedCall
+import one.xingyi.core.objectify.{RecordedCall, ResultWithRecordedCalls}
 import one.xingyi.core.strings.Strings
 
 import scala.language.higherKinds
@@ -28,10 +29,17 @@ trait DisplayRecordedKleisli[M[_]] {
        |${recordedCall.res.headers.mkString(",")}
      """.stripMargin
 
-  def andDisplayRecorded(raw: ServiceRequest => M[Option[ServiceResponse]])(implicit recordedCalls: InheritableThreadLocal[Seq[RecordedCall]]): ServiceRequest => M[Option[ServiceResponse]] = {
+  def andDisplayRecorded[J](raw: ServiceRequest => M[Option[ServiceResponse]])(implicit jsonWriter: JsonWriter[J],
+                                                                               recordedCalls: InheritableThreadLocal[Seq[RecordedCall]],
+                                                                               toJson: ToJsonLib[ResultWithRecordedCalls[ServiceResponse]]): ServiceRequest => M[Option[ServiceResponse]] = {
     req =>
       raw(req).map {
-        case Some(sr) => Some(ServiceResponse(sr.status, Body(sr.body.s + "\n\n" + recordedCalls.get.map(recordedCallToString).mkString("\n\n")), sr.headers))
+        case Some(sr) =>
+          println("calls" + recordedCalls.get)
+          println("toJson" +toJson)
+          println("toJsonof ResultWithRecordedCalls" +toJson(ResultWithRecordedCalls(sr, recordedCalls.get)))
+
+          Some(ServiceResponse(sr.status, Body(jsonWriter(toJson(ResultWithRecordedCalls(sr, recordedCalls.get)))), ContentType("application/json")))
         case None => None
       }
   }

@@ -5,6 +5,7 @@ import java.util.ResourceBundle
 import java.util.concurrent.Executors
 
 import javax.net.ssl.SSLContext
+import one.xingyi.cddmustache.{Mustache, NameToMustacheTemplate}
 import one.xingyi.core.aggregate.{EnrichLanguage, MergeLanguage}
 import one.xingyi.core.cache.{CacheFactory, CachingServiceFactory, DurationStaleCacheStategy}
 import one.xingyi.core.client.HttpClient
@@ -18,6 +19,7 @@ import one.xingyi.core.metrics.{PrintlnPutMetrics, PutMetrics}
 import one.xingyi.core.monad._
 import one.xingyi.core.objectify._
 import one.xingyi.core.script.IXingYiLoader
+import one.xingyi.core.service.html.ToHtml
 import one.xingyi.core.simpleServer.{CheapServer, EndpointHandler, SimpleHttpServer}
 import one.xingyi.core.strings.Strings
 import one.xingyi.core.time.NanoTimeService
@@ -27,6 +29,11 @@ import org.json4s.JValue
 import scala.io.Source
 import scala.language.higherKinds
 
+case class MustacheToHtml[J: JsonWriter, T](templateName: String, title: String)(implicit toJsonLib: ToJsonLib[T], nameToMustacheTemplate: NameToMustacheTemplate) extends ToHtml[T] {
+  val mf = Mustache(title, templateName, "main.template.mustache")
+
+  override def apply(t: T): String = mf.apply(JsonMaps(toJsonLib(t)))
+}
 
 class Website[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : JsonWriter]
 (implicit val monad: MonadCanFailWithException[M, Fail] with MonadWithState[M], val logReqAndResult: LogRequestAndResult[Fail], loggingAdapter: LoggingAdapter)
@@ -38,11 +45,16 @@ class Website[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : 
     override def apply(v1: ServiceName) = HttpClient.apply[M](domain)
   }
 
+  implicit val template = Mustache("Demo", "personAndRequests.mustache", "main.template.mustache")
+
+  implicit val ToHtmlForIndex = MustacheToHtml[J, ResultWithRecordedCalls[ServiceResponse]]("personAndRequests.mustache", "Xing Yi demo")
+
+
   val keepalive: ServiceRequest => M[Option[ServiceResponse]] = sr => Option(ServiceResponse("Alive")).liftM
 
   implicit val recordedCalls = LocalVariable[RecordedCall]
   //  val person = http(ServiceName("Backend")) |+| objectify[PersonAddressRequest, PersonAddressResponse] |+| endpoint[PersonAddressRequest, PersonAddressResponse]("/personold", MatchesServiceRequest.idAtEnd(Method("get")))
-  val person2 = http(ServiceName("Backend")) |+| recordCalls |+| xingyify[PersonAddressRequest, PersonAddressResponse] |+| endpoint[PersonAddressRequest, PersonAddressResponse]("/person", MatchesServiceRequest.idAtEnd(Method("get"))) |+| andDisplayRecorded
+  val person2 = http(ServiceName("Backend")) |+| recordCalls |+| xingyify[PersonAddressRequest, PersonAddressResponse] |+| endpoint[PersonAddressRequest, PersonAddressResponse]("/person", MatchesServiceRequest.idAtEnd(Method("get"))) |+| andDisplayRecorded[J]
 
   val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(person2, keepalive)
 

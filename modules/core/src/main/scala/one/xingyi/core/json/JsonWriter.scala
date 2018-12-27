@@ -21,6 +21,7 @@ object JsonObject {
 }
 case class JsonObject(nameAndValues: (String, JsonValue)*) extends JsonValue {
   def |+|(other: (String, JsonValue)*) = add(other)
+  def optionalAdd(name: String, value: Option[JsonValue]) =value.fold(this)(v => JsonObject((nameAndValues :+ (name ->v)):_*))
   def add(other: Seq[(String, JsonValue)]) = JsonObject((nameAndValues ++ other): _*)
   def add(other: JsonObject) = JsonObject((nameAndValues ++ other.nameAndValues): _*)
   override def toString: String = s"JsonObject(${nameAndValues.mkString(",")})"

@@ -2,7 +2,7 @@
 package one.xingyi.core.objectify
 
 import one.xingyi.core.http._
-import one.xingyi.core.json.{FromJsonLib, JsonParser, JsonParserLanguage}
+import one.xingyi.core.json._
 import one.xingyi.core.language.Language._
 import one.xingyi.core.logging.DetailedLogging
 import one.xingyi.core.monad._
@@ -69,12 +69,24 @@ trait XingyiKleisli[M[_], Fail] {
   }
 }
 
-case class RecordedCall(req: ServiceRequest, res: ServiceResponse)
 
-object RecordedCall {
+case class ResultWithRecordedCalls[T](t: T, calls: Seq[RecordedCall])
+
+object ResultWithRecordedCalls {
+  implicit def toJsonLib[T](implicit tToJson: ToJsonLib[T], recordedCallsToJson: ToJsonLib[RecordedCall]): ToJsonLib[ResultWithRecordedCalls[T]] =
+    rc => JsonObject("original" -> tToJson(rc.t), "recorded" -> JsonList(rc.calls.map(recordedCallsToJson)))
+
+}
+
+case class RecordedCall(req: ServiceRequest, res: ServiceResponse)
+object RecordedCall extends JsonWriterLanguage {
   implicit val default: InheritableThreadLocal[Seq[RecordedCall]] = new InheritableThreadLocal[Seq[RecordedCall]] {
     override def initialValue(): Seq[RecordedCall] = Seq()
   }
+
+  implicit def toJsonLib(implicit serviceRequestToJson: ToJsonLib[ServiceRequest], serviceResponseToJson: ToJsonLib[ServiceResponse]): ToJsonLib[RecordedCall] =
+    rc => JsonObject("request" -> serviceRequestToJson(rc.req), "response" -> serviceResponseToJson(rc.res))
+
 }
 
 trait RecordCallsKleisli[M[_], Fail] {

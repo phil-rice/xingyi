@@ -3,7 +3,7 @@ package one.xingyi.core.json
 
 object JsonMaps {
 
-  def apply[J: JsonWriter](jsonObject: JsonObject) = new JsonMaps[J](jsonObject)
+  def apply[J: JsonWriter](json: JsonValue) = new JsonMaps[J](json)
 
   def toMap(j: JsonValue): Any = j match {
     case JsonString(s) => s

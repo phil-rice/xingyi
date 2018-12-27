@@ -3,7 +3,7 @@ package one.xingyi.core.http
 
 import one.xingyi.core.exceptions.UnexpectedStatusCodeException
 import one.xingyi.core.functions.Functions
-import one.xingyi.core.json.ToJson
+import one.xingyi.core.json._
 import one.xingyi.core.profiling.{DontProfile, ProfileAs, ProfileAsFail, ProfileAsSuccess}
 import one.xingyi.core.reflection.ClassTags
 import one.xingyi.core.script.{IXingYi, IXingYiLoader}
@@ -15,14 +15,21 @@ import scala.util.{Failure, Success, Try}
 
 case class ServiceResponse(status: Status, body: Body, headers: List[Header]) {
   private def getHeader[H: ClassTag]: Option[H] = ClassTags.collectAll[H](headers).headOption
+
   def contentType: Option[ContentType] = getHeader[ContentType]
 }
 
 
-object ServiceResponse {
+object ServiceResponse extends JsonWriterLanguage {
   def apply(html: String): ServiceResponse = ServiceResponse(Status(200), Body(html), ContentType("text/html"))
+
   def apply(status: Status, body: Body, contentType: ContentType): ServiceResponse = new ServiceResponse(status, body, List(contentType))
+
   def removeHeader(name: String)(serviceResponse: ServiceResponse) = serviceResponse.copy(headers = serviceResponse.headers.filterNot(_.name == name))
+
+  implicit def toJsonLib(implicit headerToJson: ToJsonLib[Seq[Header]]): ToJsonLib[ServiceResponse] =
+    sr => JsonObject("status" -> sr.status.code, "body" -> sr.body.s, "headers" -> headerToJson(sr.headers))
+
 }
 
 @implicitNotFound(
@@ -47,14 +54,21 @@ object ToServiceResponse {
 @implicitNotFound("Missing FromServiceResponse[${T}] This creates a(${T}) from a service response returned by a client call. The simplest way to implement this is to have the domain object companion extend DomainCompanionObject and have a 'FromJson[${T}]' in the scope. This allows all decisions about which JSON library  we are using to be dealt with outside the main business logic")
 trait FromServiceResponse[T] extends (ServiceResponse => T)
 
-object FromServiceResponse {
+object FromServiceResponse extends JsonWriterLanguage {
+
   implicit object FromServiceResponseForServiceResponse extends FromServiceResponse[ServiceResponse] {
     override def apply(v1: ServiceResponse): ServiceResponse = v1
   }
 
+  implicit def toJsonLib(implicit headerToJson: ToJsonLib[Seq[Header]]): ToJsonLib[ServiceResponse] =
+    sr => JsonObject("status" -> sr.status.code,
+      "body" -> sr.body.s,
+      "headers" -> headerToJson(sr.headers))
+
 }
 
 
-trait FromXingYi[Req,  Res] extends (IXingYi =>  Req =>String => Res)
+trait FromXingYi[Req, Res] extends (IXingYi => Req => String => Res)
+
 trait EndpointPath[T] extends (ServiceResponse => Option[T])
 

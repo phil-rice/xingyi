@@ -3,6 +3,8 @@ package one.xingyi.core.http
 
 import java.net.{URL, URLEncoder}
 
+import one.xingyi.core.json._
+
 object Method {
   def apply(s: String) = s.toLowerCase match {
     case "get" => Get
@@ -11,13 +13,18 @@ object Method {
     case "delete" => Delete
   }
 }
+
 sealed trait Method {
   override def toString: String = getClass.getSimpleName.dropRight(1)
 
 }
+
 case object Get extends Method
+
 case object Post extends Method
+
 case object Put extends Method
+
 case object Delete extends Method
 
 object Status {
@@ -26,16 +33,26 @@ object Status {
 }
 
 case class Status(code: Int) extends AnyVal
+
 case class Body(s: String) extends AnyVal
-trait Header{
+
+trait Header {
   def name: String
+
   def value: String
 }
-object Header{
+
+object Header extends JsonWriterLanguage {
   def apply(name: String, value: String): Header = SimpleHeader(name, value)
+
+  implicit val toJsonLib: ToJsonLib[Header] = header => JsonObject(Option(header.name).getOrElse("--") -> header.value)
+  implicit val seqJsonLib: ToJsonLib[Seq[Header]] = headers => JsonObject(headers.map(header => Option(header.name).getOrElse("--") -> JsonString(header.value)): _*)
 }
+
 abstract class SpecificHeader(val name: String) extends Header
+
 case class ContentType(value: String) extends SpecificHeader(Headers.contentType)
+
 case class AcceptHeader(value: String) extends SpecificHeader(Headers.accept)
 
 case class SimpleHeader(name: String, value: String) extends Header
@@ -43,6 +60,7 @@ case class SimpleHeader(name: String, value: String) extends Header
 
 trait UriFragment {
   protected def encode(s: String) = URLEncoder.encode(s, "UTF-8")
+
   def asUriString: String
 }
 
