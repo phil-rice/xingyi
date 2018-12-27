@@ -41,6 +41,7 @@ object ServiceResponse extends JsonWriterLanguage {
       case Some(ct) if ct.startsWith("application/xingyi") =>
         val (code, body) = serviceResponseToXingYiCodeAndBody(serviceResponse)
         "xingyi"-> JsonObject("code" -> code, "body" -> body)
+      case Some(ct) if ct.startsWith("application/json") => "jsonBody" -> serviceResponse.body.s
       case _ => "body"-> serviceResponse.body.s
     }
   }

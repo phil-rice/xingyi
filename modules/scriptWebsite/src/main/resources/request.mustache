@@ -1,5 +1,5 @@
 {{#request}}
-    {{method}} {{uri}} <br/>
+    {{method}} <a href="{{uri}}">{{uri}}</a> <br/>
     {{#body}} <pre class="json">{{.}}</pre>{{/body}}
     {{>headers}}
 {{/request}}

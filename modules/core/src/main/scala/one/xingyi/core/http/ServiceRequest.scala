@@ -34,7 +34,7 @@ object ServiceRequest {
   def removeHeader(name: String)(serviceRequest: ServiceRequest) = serviceRequest.copy(headers = serviceRequest.headers.filterNot(_.name == name))
 
   implicit def toJsonLib(implicit headerToJson: ToJsonLib[Seq[Header]]): ToJsonLib[ServiceRequest] =
-    sr => JsonObject("method" -> sr.method.toString, "uri" -> sr.path.path, "headers" -> headerToJson(sr.headers)) optionalAdd("body", sr.body.map(_.s))
+    sr => JsonObject("method" -> sr.method.toString, "uri" -> sr.uri.asUriString, "headers" -> headerToJson(sr.headers)) optionalAdd("body", sr.body.map(_.s))
 
 }
 

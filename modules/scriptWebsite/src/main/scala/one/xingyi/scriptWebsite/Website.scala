@@ -47,16 +47,17 @@ class Website[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : 
 
   implicit val template = Mustache("Demo", "personAndRequests.mustache", "main.template.mustache")
 
-  implicit val ToHtmlForIndex = MustacheToHtml[J, ResultWithRecordedCalls[ServiceResponse]]("personAndRequests.mustache", "Xing Yi demo")
+  implicit val ToHtmlForIndex = MustacheToHtml[J, IndexPageResponse]("index.mustache", "Xing Yi demo")
+  implicit val ToHtmlForRecordedCalls = MustacheToHtml[J, ResultWithRecordedCalls[ServiceResponse]]("personAndRequests.mustache", "Xing Yi demo")
 
 
   val keepalive: ServiceRequest => M[Option[ServiceResponse]] = sr => Option(ServiceResponse("Alive")).liftM
 
   implicit val recordedCalls = LocalVariable[RecordedCall]
-  //  val person = http(ServiceName("Backend")) |+| objectify[PersonAddressRequest, PersonAddressResponse] |+| endpoint[PersonAddressRequest, PersonAddressResponse]("/personold", MatchesServiceRequest.idAtEnd(Method("get")))
-  val person2 = http(ServiceName("Backend")) |+| recordCalls |+| xingyify[PersonAddressRequest, PersonAddressResponse] |+| endpoint[PersonAddressRequest, PersonAddressResponse]("/person", MatchesServiceRequest.idAtEnd(Method("get"))) |+| andDisplayRecorded[J]
+  val index = function[IndexPageRequest, IndexPageResponse]("index")(_ => IndexPageResponse()) |+|endpoint[IndexPageRequest, IndexPageResponse]("/", MatchesServiceRequest.fixedPath(Method("get")))
+  val person = http(ServiceName("Backend")) |+| recordCalls |+| xingyify[PersonAddressRequest, PersonAddressResponse] |+| endpoint[PersonAddressRequest, PersonAddressResponse]("/person", MatchesServiceRequest.idAtEnd(Method("get"))) |+| andDisplayRecorded[J]
 
-  val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(person2, keepalive)
+  val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(index,person, keepalive)
 
   val client: ServiceRequest => M[ServiceResponse] = httpFactory(ServiceName("Backend"))
   println("found: " + implicitly[Async[M]].await(client(ServiceRequest(Method("get"), Uri("http://localhost:9001/person/someName")))))
