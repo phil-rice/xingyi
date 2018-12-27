@@ -7,7 +7,7 @@ import one.xingyi.core.endpoint.{ChainKleisli, EndPoint, EndpointKleisli}
 import one.xingyi.core.http._
 import one.xingyi.core.logging.{DetailedLogging, LogRequestAndResult, LoggingKleisli}
 import one.xingyi.core.metrics.{MetricsKleisli, PutMetrics}
-import one.xingyi.core.monad.{Async, LiftFunctionKleisli, Monad, MonadCanFailWithException}
+import one.xingyi.core.monad._
 import one.xingyi.core.objectify.{ObjectifyKleisli, XingyiKleisli}
 import one.xingyi.core.profiling.ProfileKleisli
 import one.xingyi.core.retry.RetryKleisli
@@ -39,7 +39,7 @@ trait AndAfterKleisli[M[_]] {
 
 }
 
-trait MicroserviceBuilder[M[_], Fail] extends ObjectifyKleisli[M, Fail] with  XingyiKleisli[M, Fail] with HttpKlesili[M] with MetricsKleisli[M, Fail] with LoggingKleisli[M, Fail]
+trait MicroserviceBuilder[M[_], Fail] extends ObjectifyKleisli[M, Fail] with  HttpKlesili[M] with MetricsKleisli[M, Fail] with LoggingKleisli[M, Fail]
   with ChainKleisli[M, Fail] with EndpointKleisli[M] with RetryKleisli[M, Fail] with ProfileKleisli[M, Fail] with CacheKleisli[M] with LiftFunctionKleisli[M]
   with MergeKleisli[M] with EnrichKleisli[M] with AndAfterKleisli[M] {
 
@@ -52,9 +52,8 @@ trait MicroserviceBuilder[M[_], Fail] extends ObjectifyKleisli[M, Fail] with  Xi
   protected def putMetrics: PutMetrics
 
   def debugEndpoints(endpoints: Map[String, String])(original: ServiceRequest => M[Option[ServiceResponse]]) = original
-
-
 }
+
 
 //class KleisliMicroserviceBuilder[M[_], Fail] {
 //  type Klesli[Req, Res] = Req => M[Res]

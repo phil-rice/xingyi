@@ -8,15 +8,15 @@ import javax.net.ssl.SSLContext
 import one.xingyi.core.aggregate.{EnrichLanguage, MergeLanguage}
 import one.xingyi.core.cache.{CacheFactory, CachingServiceFactory, DurationStaleCacheStategy}
 import one.xingyi.core.client.HttpClient
-import one.xingyi.core.endpoint.MatchesServiceRequest
+import one.xingyi.core.endpoint.{DisplayRecordedKleisli, MatchesServiceRequest}
 import one.xingyi.core.http._
 import one.xingyi.core.json._
 import one.xingyi.core.language._
 import one.xingyi.core.logging._
 import one.xingyi.core.map.NoMapSizeStrategy
 import one.xingyi.core.metrics.{PrintlnPutMetrics, PutMetrics}
-import one.xingyi.core.monad.{Async, IdentityMonad, MonadCanFailWithException}
-import one.xingyi.core.objectify.{EntityDetailsRequest, EntityDetailsResponse}
+import one.xingyi.core.monad._
+import one.xingyi.core.objectify._
 import one.xingyi.core.script.IXingYiLoader
 import one.xingyi.core.simpleServer.{CheapServer, EndpointHandler, SimpleHttpServer}
 import one.xingyi.core.strings.Strings
@@ -29,8 +29,8 @@ import scala.language.higherKinds
 
 
 class Website[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : JsonWriter]
-(implicit val monad: MonadCanFailWithException[M, Fail], val logReqAndResult: LogRequestAndResult[Fail], loggingAdapter: LoggingAdapter)
-  extends CheapServer[M, Fail](9000) {
+(implicit val monad: MonadCanFailWithException[M, Fail] with MonadWithState[M], val logReqAndResult: LogRequestAndResult[Fail], loggingAdapter: LoggingAdapter)
+  extends CheapServer[M, Fail](9000) with XingyiKleisli[M, Fail] with RecordCallsKleisli[M, Fail] with DisplayRecordedKleisli[M] {
 
   implicit val ssl: Option[SSLContext] = None
   private val domain: Domain = Domain(Protocol("http"), HostName("localhost"), Port(9001))
@@ -38,16 +38,13 @@ class Website[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : 
     override def apply(v1: ServiceName) = HttpClient.apply[M](domain)
   }
 
-  val javascript = Source.fromInputStream(getClass.getClassLoader.getResourceAsStream("example.js")).mkString
-  implicit val xingyi = implicitly[IXingYiLoader].apply(javascript)
-
   val keepalive: ServiceRequest => M[Option[ServiceResponse]] = sr => Option(ServiceResponse("Alive")).liftM
 
+  implicit val recordedCalls = LocalVariable[RecordedCall]
+  //  val person = http(ServiceName("Backend")) |+| objectify[PersonAddressRequest, PersonAddressResponse] |+| endpoint[PersonAddressRequest, PersonAddressResponse]("/personold", MatchesServiceRequest.idAtEnd(Method("get")))
+  val person2 = http(ServiceName("Backend")) |+| recordCalls |+| xingyify[PersonAddressRequest, PersonAddressResponse] |+| endpoint[PersonAddressRequest, PersonAddressResponse]("/person", MatchesServiceRequest.idAtEnd(Method("get"))) |+| andDisplayRecorded
 
-  val person = http(ServiceName("Backend")) |+| objectify[PersonAddressRequest, PersonAddressResponse] |+| endpoint[PersonAddressRequest, PersonAddressResponse]("/personold", MatchesServiceRequest.idAtEnd(Method("get")))
-  val person2 = http(ServiceName("Backend")) |+| xingyi[PersonAddressRequest, PersonAddressResponse] |+| endpoint[PersonAddressRequest, PersonAddressResponse]("/person", MatchesServiceRequest.idAtEnd(Method("get")))
-
-  val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain( person2, keepalive)
+  val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(person2, keepalive)
 
   val client: ServiceRequest => M[ServiceResponse] = httpFactory(ServiceName("Backend"))
   println("found: " + implicitly[Async[M]].await(client(ServiceRequest(Method("get"), Uri("http://localhost:9001/person/someName")))))
@@ -56,6 +53,7 @@ class Website[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : 
 }
 
 object Website extends App {
+
   import one.xingyi.json4s.Json4sParser._
   import one.xingyi.json4s.Json4sWriter._
 

@@ -5,7 +5,7 @@ import one.xingyi.core.http._
 import one.xingyi.core.json.{FromJsonLib, JsonParser, JsonParserLanguage}
 import one.xingyi.core.language.Language._
 import one.xingyi.core.logging.DetailedLogging
-import one.xingyi.core.monad.{MonadCanFail, MonadCanFailWithException}
+import one.xingyi.core.monad._
 import one.xingyi.core.script.{DomainMaker, IXingYi, IXingYiLoader}
 
 import scala.language.higherKinds
@@ -31,53 +31,35 @@ object EntityDetailsResponse extends JsonParserLanguage {
 
 trait FromEntityDetailsResponse[Req] extends (Req => EntityDetailsResponse => ServiceRequest)
 
+
 trait XingyiKleisli[M[_], Fail] {
-  protected implicit def monad: MonadCanFailWithException[M, Fail]
+  protected implicit def monad: MonadCanFailWithException[M, Fail] with MonadWithState[M]
 
   protected implicit def failer: Failer[Fail]
 
   protected implicit def detailedLoggingForSR: DetailedLogging[ServiceResponse]
-
-  // so this will chance across time. Let's just 'prove it works' and then migrate to other stuff
-  implicit def responseParserForXingyi[Req, Res](implicit xingYi: IXingYi, fromXingYi: FromXingYi[Req, Res]): ResponseParser[Req, Res] = new ResponseParser[Req, Res] {
-    override def parse[Fail](requestAndServiceResponse: RequestAndServiceResponse[Req])(implicit failer: ResponseParserFailer[Fail], reqDetails: DetailedLogging[Req], srDetails: DetailedLogging[ServiceResponse]): Either[Fail, Res] = {
-      import requestAndServiceResponse._
-      serviceResponse.status.code / 100 match {
-        case 2 =>
-          val body = serviceResponse.body.s
-          val index = body.indexOf("=")
-          if (index == -1) throw new RuntimeException("The response from server is not a XingYi payload ")
-          val code = body.substring(0, index + 1)
-          val json = body.substring(index + 1)
-          Right(fromXingYi(xingYi)(req)(json))
-        case _ => Left(failer.responseParserfailer(requestAndServiceResponse, "Unexpected status code "))
-      }
-    }
-  }
 
   def serviceResponseToCodeAndBody(sr: ServiceResponse): (String, String) = {
     val body = sr.body.s
     val index = body.indexOf("=")
     if (index == -1) throw new RuntimeException("The response from server is not a XingYi payload ")
     val code = body.substring(0, index + 1)
-    (code, body.substring(index+1))
+    (code, body.substring(index + 1))
   }
 
 
-  def xingyi[Req: ClassTag : DetailedLogging, Res  : ClassTag ](http: ServiceRequest => M[ServiceResponse])
-                                                                                     (implicit entityDetailsUrl: EntityDetailsUrl[Req],
-                                                                                      fromServiceResponseForEntityDetails: FromServiceResponse[EntityDetailsResponse],
-                                                                                      fromEntityDetailsResponse: FromEntityDetailsResponse[Req],
-                                                                                      categoriser: ResponseCategoriser[Req],
-                                                                                      xingYiLoader: IXingYiLoader,
-                                                                                      fromXingYi: FromXingYi[Req, Res]): Req => M[Res] = {
+  def xingyify[Req: ClassTag : DetailedLogging, Res: ClassTag](http: ServiceRequest => M[ServiceResponse])
+                                                              (implicit entityDetailsUrl: EntityDetailsUrl[Req],
+                                                               fromServiceResponseForEntityDetails: FromServiceResponse[EntityDetailsResponse],
+                                                               fromEntityDetailsResponse: FromEntityDetailsResponse[Req],
+                                                               categoriser: ResponseCategoriser[Req],
+                                                               xingYiLoader: IXingYiLoader,
+                                                               fromXingYi: FromXingYi[Req, Res]): Req => M[Res] = {
     req =>
       for {
+        _ <- monad.clear
         serviceDiscoveryProducedServiceRequest <- http(ServiceRequest(Method("get"), entityDetailsUrl.url)).map(fromServiceResponseForEntityDetails andThen fromEntityDetailsResponse(req))
         codeBody <- http(serviceDiscoveryProducedServiceRequest).map(serviceResponseToCodeAndBody)
-        _ = {
-          val x = codeBody
-        }
         (code, body) = codeBody
         xingyi <- http(ServiceRequest(Method("get"), Uri(code))).map(sr => xingYiLoader(sr.body.s))
       } yield {
@@ -87,6 +69,28 @@ trait XingyiKleisli[M[_], Fail] {
   }
 }
 
+case class RecordedCall(req: ServiceRequest, res: ServiceResponse)
+
+object RecordedCall {
+  implicit val default: InheritableThreadLocal[Seq[RecordedCall]] = new InheritableThreadLocal[Seq[RecordedCall]] {
+    override def initialValue(): Seq[RecordedCall] = Seq()
+  }
+}
+
+trait RecordCallsKleisli[M[_], Fail] {
+  def recordCalls(service: ServiceRequest => M[ServiceResponse])(implicit monad: Monad[M], recordedCalls: InheritableThreadLocal[Seq[RecordedCall]]): ServiceRequest => M[ServiceResponse] = {
+    req =>
+      service(req).map { res =>
+
+        val call = RecordedCall(req, res)
+        println("recording class: " + call)
+        recordedCalls.set(recordedCalls.get :+ call)
+        res
+      }
+  }
+}
+
+trait AddRecordedCalls[R]
 
 trait ObjectifyKleisli[M[_], Fail] {
   protected implicit def monad: MonadCanFail[M, Fail]
