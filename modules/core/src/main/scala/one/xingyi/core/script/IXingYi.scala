@@ -3,6 +3,7 @@ package one.xingyi.core.script
 
 import javax.script.{Invocable, ScriptEngine}
 import jdk.nashorn.api.scripting.{ScriptObjectMirror, ScriptUtils}
+import one.xingyi.core.builder.HasId
 import one.xingyi.core.http._
 import one.xingyi.core.json._
 import one.xingyi.core.optics.Lens
@@ -33,16 +34,35 @@ trait Domain {
   def mirror: Object
 }
 
+trait ServerDomain {
+  def lens: List[String]
+
+  val lensString = lens.mkString(",")
+
+  val contentType: String = s"application/xingyi.$lensString"
+
+}
+
 case class LinkDetail(verb: String, urlPattern: String)
+
 trait Links[T] extends (T => List[LinkDetail])
 
 case class ServerPayload[T](status: Status, domainObject: T, domain: DomainDetails[T])(implicit val links: Links[T])
+
+trait ToContentType[Req] {
+  def apply(req: Req): String
+}
+
 object ServerPayload extends JsonWriterLanguage {
-  implicit def toServerResponse[J, Req, Server, Domain](implicit jsonWriter: JsonWriter[J], projection: Projection[Server, Domain]): ToServiceResponse[Req, ServerPayload[Domain]] =
+  implicit def toServerResponse[J, Req, Server, Domain](implicit jsonWriter: JsonWriter[J], hasId: HasId[Req, String], projection: Projection[Server, Domain], toContentType: ToContentType[Req]): ToServiceResponse[Req, ServerPayload[Domain]] =
     req => payload =>
-      ServiceResponse(payload.status, Body("http://localhost:9001/code/"+payload.domain.codeHeader + "\n" + jsonWriter(projection.toJson(payload.domainObject) |+| ("_links" ->
-        JsonObject(payload.links(payload.domainObject).map { case LinkDetail(verb, pattern) => verb -> JsonString(pattern) }: _*)))),
-        List(Header("content-type", "application/xingyi"), Header("xingyi", payload.domain.codeHeader)))
+      ServiceResponse(payload.status, Body(
+        "http://localhost:9001/code/" + payload.domain.codeHeader + "\n" +
+          jsonWriter(projection.toJson(payload.domainObject) |+| ("_links" ->
+            JsonObject(payload.links(payload.domainObject).map {
+              case LinkDetail(verb, pattern) => verb -> JsonString(pattern.replace("<id>", hasId(req)))
+            }: _*)))),
+        List(Header("content-type", toContentType(req)), Header("xingyi", payload.domain.codeHeader)))
 
 }
 
@@ -56,6 +76,7 @@ trait IXingYi {
   def stringLens[T <: Domain](name: String)(implicit maker: DomainMaker[T]): Lens[T, String]
 
   def objectLens[T1 <: Domain, T2 <: Domain](name: String)(implicit maker1: DomainMaker[T1], maker2: DomainMaker[T2]): Lens[T1, T2]
+
   def listLens[T1 <: Domain, T2 <: Domain](name: String)(implicit maker1: DomainMaker[T1], maker2: DomainMaker[T2]): Lens[T1, List[T2]]
 
   def render(name: String, t: Domain): String = rawRender(name, t.mirror)
@@ -80,6 +101,7 @@ class DefaultXingYi(engine: ScriptEngine) extends IXingYi {
 
   import jdk.nashorn.api.scripting.ScriptObjectMirror
   import java.util
+
   def toList(original: Any): List[Object] = {
     if (!original.isInstanceOf[ScriptObjectMirror]) throw new IllegalStateException("This is supposed to be an object mirror and it isn't" + original.getClass + " / " + original)
     val jsOriginal = original.asInstanceOf[ScriptObjectMirror]

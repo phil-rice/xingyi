@@ -12,6 +12,7 @@ import one.xingyi.core.monad._
 import one.xingyi.core.objectify._
 import one.xingyi.core.service.html.ToHtml
 import one.xingyi.core.simpleServer.CheapServer
+import one.xingyi.scriptExample.createdCode1.Model1Domain
 import org.json4s.JValue
 
 import scala.language.higherKinds
@@ -41,10 +42,10 @@ class Website[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : 
   val keepalive: ServiceRequest => M[Option[ServiceResponse]] = sr => Option(ServiceResponse("Alive")).liftM
 
   implicit val recordedCalls = LocalVariable[RecordedCall]
-  val index = function[IndexPageRequest, IndexPageResponse]("index")(_ => IndexPageResponse()) |+|endpoint[IndexPageRequest, IndexPageResponse]("/", MatchesServiceRequest.fixedPath(Method("get")))
-  val person = http(ServiceName("Backend")) |+| recordCalls |+| xingyify[PersonAddressRequest, PersonAddressResponse] |+| endpoint[PersonAddressRequest, PersonAddressResponse]("/person", MatchesServiceRequest.idAtEnd(Method("get"))) |+| andDisplayRecorded[J]
+  val index = function[IndexPageRequest, IndexPageResponse]("index")(_ => IndexPageResponse()) |+| endpoint[IndexPageRequest, IndexPageResponse]("/", MatchesServiceRequest.fixedPath(Method("get")))
+  val person = http(ServiceName("Backend")) |+| recordCalls |+| xingyify[PersonAddressRequest, PersonAddressResponse](Model1Domain) |+| endpoint[PersonAddressRequest, PersonAddressResponse]("/person", MatchesServiceRequest.idAtEnd(Method("get"))) |+| andDisplayRecorded[J]
 
-  val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(index,person, keepalive)
+  val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(index, person, keepalive)
 
   val client: ServiceRequest => M[ServiceResponse] = httpFactory(ServiceName("Backend"))
   println("found: " + implicitly[Async[M]].await(client(ServiceRequest(Method("get"), Uri("http://localhost:9001/person/someName")))))

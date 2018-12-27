@@ -29,6 +29,7 @@ object CodeDetailsRequest {
 
 case class CodeDetailsResponse(code: String)
 object CodeDetailsResponse {
-  implicit def toServiceResponse: ToServiceResponse[CodeDetailsRequest, CodeDetailsResponse] = cdreq => cdres => ServiceResponse(Status(200), Body(cdres.code), ContentType("text/plain"))
+  implicit def toServiceResponse: ToServiceResponse[CodeDetailsRequest, CodeDetailsResponse] = cdreq => cdres =>
+    ServiceResponse(Status(200), Body(cdres.code), ContentType("text/javascript"))
 }
 

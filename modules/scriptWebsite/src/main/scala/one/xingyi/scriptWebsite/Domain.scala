@@ -19,7 +19,7 @@ object PersonAddressRequest {
 
   //TODO security flaw here. OK for now
   implicit def fromEntityDetailsRequest: FromEntityDetailsResponse[PersonAddressRequest] =
-    req => edr => ServiceRequest(Method("get"), Uri(edr.urlPattern.replace("<id>", req.name)))
+    (req, sd) => edr => ServiceRequest(Method("get"), Uri(edr.urlPattern.replace("<id>", req.name)), headers = List(Header("accept",sd.contentType)), body=None)
 
   implicit def fromServiceRequest[M[_] : Monad]: FromServiceRequest[M, PersonAddressRequest] = {
     sr => PersonAddressRequest(Strings.lastSection("/")(sr.path.path)).liftM[M]

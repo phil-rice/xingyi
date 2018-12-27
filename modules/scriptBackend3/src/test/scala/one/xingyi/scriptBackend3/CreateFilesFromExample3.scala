@@ -30,7 +30,7 @@ class CreateFilesFromExample3 extends UtilsSpec {
     Files.printToFile(javascriptFile)(pw => pw.print(javascript))
   }
 
-  it should "make the scala" ignore {
+  it should "make the scala" in {
     ToScalaCode.makeScalaCode[Person]
     val codeMaker = implicitly[ToScalaCode[DomainDefn[Person]]]
     val scala = codeMaker(new Model3Defn)

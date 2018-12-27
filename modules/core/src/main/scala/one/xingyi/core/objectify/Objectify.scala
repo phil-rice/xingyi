@@ -6,7 +6,7 @@ import one.xingyi.core.json._
 import one.xingyi.core.language.Language._
 import one.xingyi.core.logging.DetailedLogging
 import one.xingyi.core.monad._
-import one.xingyi.core.script.{DomainMaker, IXingYi, IXingYiLoader}
+import one.xingyi.core.script.{DomainMaker, IXingYi, IXingYiLoader, ServerDomain}
 
 import scala.language.higherKinds
 import scala.reflect.ClassTag
@@ -29,7 +29,7 @@ object EntityDetailsResponse extends JsonParserLanguage {
 
 }
 
-trait FromEntityDetailsResponse[Req] extends (Req => EntityDetailsResponse => ServiceRequest)
+trait FromEntityDetailsResponse[Req] extends ((Req, ServerDomain) => EntityDetailsResponse => ServiceRequest)
 
 
 trait XingyiKleisli[M[_], Fail] {
@@ -40,8 +40,7 @@ trait XingyiKleisli[M[_], Fail] {
   protected implicit def detailedLoggingForSR: DetailedLogging[ServiceResponse]
 
 
-
-  def xingyify[Req: ClassTag : DetailedLogging, Res: ClassTag](http: ServiceRequest => M[ServiceResponse])
+  def xingyify[Req: ClassTag : DetailedLogging, Res: ClassTag](serverDomain: ServerDomain)(http: ServiceRequest => M[ServiceResponse])
                                                               (implicit entityDetailsUrl: EntityDetailsUrl[Req],
                                                                fromServiceResponseForEntityDetails: FromServiceResponse[EntityDetailsResponse],
                                                                fromEntityDetailsResponse: FromEntityDetailsResponse[Req],
@@ -49,9 +48,9 @@ trait XingyiKleisli[M[_], Fail] {
                                                                xingYiLoader: IXingYiLoader,
                                                                fromXingYi: FromXingYi[Req, Res]): Req => M[Res] = {
     req =>
+      RecordedCall.default.remove()
       for {
-        _ <- monad.clear
-        serviceDiscoveryProducedServiceRequest <- http(ServiceRequest(Method("get"), entityDetailsUrl.url)).map(fromServiceResponseForEntityDetails andThen fromEntityDetailsResponse(req))
+        serviceDiscoveryProducedServiceRequest <- http(ServiceRequest(Method("get"), entityDetailsUrl.url)).map(fromServiceResponseForEntityDetails andThen fromEntityDetailsResponse(req, serverDomain))
         codeBody <- http(serviceDiscoveryProducedServiceRequest).map(ServiceResponse.serviceResponseToXingYiCodeAndBody)
         (code, body) = codeBody
         xingyi <- http(ServiceRequest(Method("get"), Uri(code))).map(sr => xingYiLoader(sr.body.s))
@@ -72,6 +71,7 @@ object ResultWithRecordedCalls {
 }
 
 case class RecordedCall(req: ServiceRequest, res: ServiceResponse)
+
 object RecordedCall extends JsonWriterLanguage {
   implicit val default: InheritableThreadLocal[Seq[RecordedCall]] = new InheritableThreadLocal[Seq[RecordedCall]] {
     override def initialValue(): Seq[RecordedCall] = Seq()

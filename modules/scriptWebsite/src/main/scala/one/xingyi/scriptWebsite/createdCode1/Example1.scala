@@ -3,7 +3,7 @@ package one.xingyi.scriptExample.createdCode1
 
 import one.xingyi.scriptModel1._
 import one.xingyi.core.optics.Lens
-import one.xingyi.core.script.{Domain,DomainMaker, IXingYi}
+import one.xingyi.core.script.{Domain,DomainMaker, IXingYi,ServerDomain}
 
 
 case class Person (mirror: Object) extends Domain with IPerson
@@ -38,8 +38,6 @@ class TelephoneNumberOps(implicit val xingYi: IXingYi) extends ITelephoneNumberO
 
 
 
-object Model1Domain{
-   val lens=List("lens_person_name_string", "lens_telephonenumber_number_string", "lens_person_telephonenumber_telephonenumber", "lens_person_line1_string", "lens_person_line2_string")
-   val lensString=lens.mkString(",")
-   val contentType=s"application/xingyi.$lens" 
+object Model1Domain extends ServerDomain{
+   def lens=List("lens_person_telephonenumber_telephonenumber", "lens_person_name_string", "lens_person_line1_string", "lens_telephonenumber_number_string", "lens_person_line2_string")
 }

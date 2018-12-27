@@ -89,7 +89,7 @@ object ToScalaCode {
   implicit def makeScalaCode[T](implicit interfaceAndLensToScala: ToScalaCode[InterfaceAndLens], interfaceToImplName: InterfaceToImplName): ToScalaCode[DomainDefn[T]] = {
     domainDefn =>
       val packageSring = s"package ${domainDefn.packageName}"
-      val imports = s"import ${domainDefn.sharedPackageName}._\nimport one.xingyi.core.optics.Lens\nimport one.xingyi.core.script.{Domain,DomainMaker, IXingYi}"
+      val imports = s"import ${domainDefn.sharedPackageName}._\nimport one.xingyi.core.optics.Lens\nimport one.xingyi.core.script.{Domain,DomainMaker, IXingYi,ServerDomain}"
       val domainClasses = domainDefn.interfacesToProjections.map(_.projection).distinct.map {
         interface =>
           val impl = interfaceToImplName.impl(interface.sharedClassTag.runtimeClass)
@@ -130,10 +130,8 @@ object ToScalaCode {
         List(header, middle, "}").mkString("\n")
       }.mkString("\n")
 
-      val domainCode = List(s"object ${domainDefn.domainName}{",
-        s"   val lens=List(" + domainDefn.lens.map(_.name).mkString("\"", "\", \"", "\")"),
-        s"""   val lensString=lens.mkString(",")""",
-        """   val contentType=s"application/xingyi.$lens" """,
+      val domainCode = List(s"object ${domainDefn.domainName} extends ServerDomain{",
+        s"   def lens=List(" + domainDefn.lens.map(_.name).mkString("\"", "\", \"", "\")"),
         "}").mkString("\n")
       List(packageSring, imports, domainClasses, opsFromObjectProjections, opsFromLegacy, domainCode).mkString("\n\n\n")
   }
