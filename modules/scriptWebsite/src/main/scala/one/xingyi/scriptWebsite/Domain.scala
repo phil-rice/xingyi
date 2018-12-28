@@ -19,7 +19,7 @@ object PersonAddressRequest {
 
   //TODO security flaw here. OK for now
   implicit def fromEntityDetailsRequest: FromEntityDetailsResponse[PersonAddressRequest] =
-    (req, sd) => edr => ServiceRequest(Method("get"), Uri(edr.urlPattern.replace("<id>", req.name)), headers = List(Header("accept",sd.contentType)), body=None)
+    (req, sd) => edr => ServiceRequest(Method("get"), Uri(edr.urlPattern.replace("<id>", req.name)), headers = List(Header("accept", sd.contentType)), body = None)
 
   implicit def fromServiceRequest[M[_] : Monad]: FromServiceRequest[M, PersonAddressRequest] = {
     sr => PersonAddressRequest(Strings.lastSection("/")(sr.path.path)).liftM[M]
@@ -59,4 +59,36 @@ object IndexPageResponse {
 
   implicit def toServiceResponse(implicit toHtml: ToHtml[IndexPageResponse]): ToServiceResponse[IndexPageRequest, IndexPageResponse] =
     req => response => ServiceResponse(Status(200), Body(toHtml(response)), ContentType("text/html"))
+}
+
+case class DisplayEditPersonFormRequest(name: String)
+
+object DisplayEditPersonFormRequest {
+  implicit def fromServiceRequest[M[_] : Monad]: FromServiceRequest[M, DisplayEditPersonFormRequest] = sr =>
+    DisplayEditPersonFormRequest(Strings.lastButOneSection("/")(sr.path.path)).liftM[M]
+
+  implicit def entityUrl(implicit personEntityUrl: EntityDetailsUrl[PersonAddressRequest]): EntityDetailsUrl[DisplayEditPersonFormRequest] = EntityDetailsUrl(personEntityUrl.url)
+
+  implicit def fromEntityDetailsResponse: FromEntityDetailsResponse[DisplayEditPersonFormRequest] = {
+    (req, sd) => edr => ServiceRequest(Method("get"), Uri(edr.urlPattern.replace("<id>", req.name)), headers = List(Header("accept", sd.contentType)), body = None)
+
+  }
+}
+
+case class DisplayEditPersonFormResponse(html: String)
+
+object DisplayEditPersonFormResponse {
+
+  implicit def toServiceResponse: ToServiceResponse[DisplayEditPersonFormRequest, DisplayEditPersonFormResponse] =
+    req => res => ServiceResponse(Status(200), Body(res.html), ContentType("text/html"))
+
+  implicit def fromXingYi: FromXingYi[DisplayEditPersonFormRequest, DisplayEditPersonFormResponse] = {
+    implicit xingYi =>
+      req =>
+        json =>
+          val person = xingYi.parse[Person](json)
+          val ops = new PersonLine12Ops()
+          DisplayEditPersonFormResponse(json)
+
+  }
 }

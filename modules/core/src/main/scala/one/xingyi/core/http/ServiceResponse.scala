@@ -31,7 +31,7 @@ object ServiceResponse extends JsonWriterLanguage {
   def serviceResponseToXingYiCodeAndBody(sr: ServiceResponse): (String, String) = {
     val body = sr.body.s
     val index = body.indexOf("=")
-    if (index == -1) throw new RuntimeException("The response from server is not a XingYi payload ")
+    if (index == -1) throw new RuntimeException("The response from server is not a XingYi payload\n" + sr)
     val code = body.substring(0, index + 1)
     (code, body.substring(index + 1))
   }

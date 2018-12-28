@@ -100,6 +100,9 @@ object MatchesServiceRequest {
   def fixedPath(method: Method) = FixedPathAndVerb(method)
 
   def idAtEnd(method: Method) = IdAtEndAndVerb(method)
+
+  def prefixIdCommand(method: Method, command: String) = PrefixThenIdThenCommand(method, command)
+
 }
 
 case class FixedPathAndVerb(method: Method) extends MatchesServiceRequest {
@@ -111,6 +114,23 @@ case class IdAtEndAndVerb(method: Method) extends MatchesServiceRequest {
   val startFn = Strings.allButlastSection("/") _
 
   override def apply(endpointName: String)(serviceRequest: ServiceRequest): Boolean = startFn(serviceRequest.uri.path.asUriString) == endpointName && serviceRequest.method == method
+}
+
+
+case class PrefixThenIdThenCommand(method: Method, command: String) extends MatchesServiceRequest {
+
+  override def apply(endpointName: String)(serviceRequest: ServiceRequest): Boolean = {
+    val path = serviceRequest.path.asUriString
+    println("path: " + path + ", endpoint name: " + endpointName)
+    Strings.startsWithAndSnips(endpointName)(path).map { rest =>
+      val id = Strings.allButlastSection("/")(rest)
+      val actualCommand = Strings.lastSection("/")(rest)
+      println("id: " + id + ",  command: " + command)
+      val result = id.indexOf("/") == -1 && actualCommand == command
+      println("result: " + result)
+      result
+    }.getOrElse(false)
+  }
 }
 
 

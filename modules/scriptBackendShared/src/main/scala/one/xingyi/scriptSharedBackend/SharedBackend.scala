@@ -88,7 +88,7 @@ object EditPersonRequest {
   implicit def hasHost[P]: HasHost[EditPersonRequest[P]] = _.host
 
   implicit def fromServiceRequest[M[_], J: JsonParser, SharedP, DomainP](implicit monad: Monad[M], projection: Projection[SharedP, DomainP]): FromServiceRequest[M, EditPersonRequest[DomainP]] = { sr =>
-    val name = Strings.lastSection("/")(sr.uri.path.path)
+    val name = Strings.lastButOneSection("/")(sr.uri.path.path)
     val newPerson: DomainP = projection.fromJsonString(sr.body.getOrElse(throw new RuntimeException("cannot create person as body of request empty")).s)
     //    if (name != newPerson.name) throw new RuntimeException("Cannot edit name")
     monad.liftM(EditPersonRequest(newPerson, sr.header("xingyi"), sr.host))
@@ -131,7 +131,7 @@ abstract class SharedBackend[M[_] : Async, Fail: Failer : LogRequestAndResult, J
 
   val newPerson = function[PersonRequest, ServerPayload[DomainP]]("newPerson") { req => edit(req.name, makeNewPerson(req.name), req.xingYiHeader) } |+| endpoint[PersonRequest, ServerPayload[DomainP]]("/person", MatchesServiceRequest.idAtEnd(Method("post")))
   val getPerson = function[PersonRequest, ServerPayload[DomainP]]("findPerson")(req => ServerPayload(Status(200), people.getOrElse(req.name, throw new RuntimeException("not found")), domainList.accept(req.xingYiHeader))) |+| endpoint[PersonRequest, ServerPayload[DomainP]]("/person", MatchesServiceRequest.idAtEnd(Method("get")))
-  val editPerson = function[EditPersonRequest[DomainP], ServerPayload[DomainP]]("editPerson") { req => edit(hasId(req.person), req.person, req.xingYiHeader) } |+| endpoint[EditPersonRequest[DomainP], ServerPayload[DomainP]]("/person", MatchesServiceRequest.idAtEnd(Method("put")))
+  val editPerson = function[EditPersonRequest[DomainP], ServerPayload[DomainP]]("editPerson") { req => edit(hasId(req.person), req.person, req.xingYiHeader) } |+| endpoint[EditPersonRequest[DomainP], ServerPayload[DomainP]]("/person/", MatchesServiceRequest.idAtEnd(Method("put")))
 
   val keepalive: ServiceRequest => M[Option[ServiceResponse]] = function[ServiceRequest, ServiceResponse]("keepalive")(sr => ServiceResponse("Alive")) |+| endpoint[ServiceRequest, ServiceResponse]("/ping", MatchesServiceRequest.fixedPath(Method("get")))
 

@@ -37,6 +37,7 @@ class Website[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : 
     }
   }
 
+  private val backend: ServiceRequest => M[ServiceResponse] = http(ServiceName("Backend"))
   implicit val template = Mustache("Demo", "personAndRequests.mustache", "main.template.mustache")
 
   implicit val ToHtmlForIndex = MustacheToHtml[J, IndexPageResponse]("index.mustache", "Xing Yi demo")
@@ -47,9 +48,9 @@ class Website[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : 
 
   implicit val recordedCalls = LocalVariable[RecordedCall]
   val index = function[IndexPageRequest, IndexPageResponse]("index")(_ => IndexPageResponse()) |+| endpoint[IndexPageRequest, IndexPageResponse]("/", MatchesServiceRequest.fixedPath(Method("get")))
-  val person = http(ServiceName("Backend")) |+| recordCalls |+| xingyify[PersonAddressRequest, PersonAddressResponse](Model1Domain) |+| endpoint[PersonAddressRequest, PersonAddressResponse]("/person", MatchesServiceRequest.idAtEnd(Method("get"))) |+| andDisplayRecorded[J]
-
-  val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(index, person, keepalive)
+  val person = backend |+| recordCalls |+| xingyify[PersonAddressRequest, PersonAddressResponse](Model1Domain) |+| endpoint[PersonAddressRequest, PersonAddressResponse]("/person", MatchesServiceRequest.idAtEnd(Method("get"))) |+| andDisplayRecorded[J]
+  val editPersonFormRequest = backend |+| recordCalls |+| xingyify[DisplayEditPersonFormRequest, DisplayEditPersonFormResponse](Model1Domain) |+| endpoint[DisplayEditPersonFormRequest, DisplayEditPersonFormResponse]("/person", MatchesServiceRequest.prefixIdCommand(Method("get"), "edit")) |+| andDisplayRecorded[J]
+  val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(index, person,editPersonFormRequest, keepalive)
 
 }
 
