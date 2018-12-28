@@ -24,14 +24,14 @@ trait PersonStore[P] {
 
 }
 
-case class EntityRequest(id: String)
+case class EntityRequest(id: String, hostAndPost: String)
 
 object EntityRequest {
 
   import one.xingyi.core.language.AnyLanguage._
 
   implicit def fromServiceRequest[M[_] : Monad]: FromServiceRequest[M, EntityRequest] = {
-    sr => EntityRequest(Strings.lastSection("/")(sr.path.path)).liftM[M]
+    sr => EntityRequest(Strings.lastSection("/")(sr.path.path), sr.host).liftM[M]
   }
 
 }
@@ -40,65 +40,70 @@ case class EntityResponse[T](id: String, entity: T) {
 }
 
 object EntityResponse {
-
   implicit def toServiceResponse[J, Shared, Domain](implicit jsonWriter: JsonWriter[J], projection: ObjectProjection[Shared, Domain]): ToServiceResponse[EntityRequest, ServerPayload[Domain]] =
     cdreq => cdres =>
       ServiceResponse(Status(200), Body(jsonWriter(projection.toJson(cdres.domainObject))), ContentType("text/html"))
-
-
 }
 
 
 import one.xingyi.core.language.AnyLanguage._
 
-case class PersonServiceFinderRequest()
+case class PersonServiceFinderRequest(host: String)
 
 object PersonServiceFinderRequest {
-  implicit def fromServiceRequest[M[_] : Monad]: FromServiceRequest[M, PersonServiceFinderRequest] = sr => PersonServiceFinderRequest().liftM[M]
+  implicit def fromServiceRequest[M[_] : Monad]: FromServiceRequest[M, PersonServiceFinderRequest] = sr => PersonServiceFinderRequest(sr.host).liftM[M]
 }
 
-case class PersonServiceFinderResponse(javascriptUrl: String, scalaUrl: String, urlPattern: String, supportedVerbs: List[String])
+case class PersonServiceFinderResponse(hostAndPort: String, codePattern: String, javascriptHash: String, scalaHash: String, urlPattern: String, supportedVerbs: List[String])
 
-case class PersonRequest(name: String, xingYiHeader: Option[String])
+object PersonServiceFinderResponse extends JsonWriterLanguage {
+  implicit def toJson[J: JsonWriter]: ToJsonLib[PersonServiceFinderResponse] = { res =>
+    import res._
+    def toPath(hash: String) = codePattern.replace("<host>", hostAndPort).replace("<hash>", hash)
+
+    JsonObject(
+      "url" -> urlPattern.replace("<host>", hostAndPort), "verbs" -> JsonList(supportedVerbs.map(JsonString.apply)),
+      "code" -> JsonObject("javascript" -> toPath(javascriptHash), "scala" -> toPath(javascriptHash)))
+  }
+}
+
+case class PersonRequest(name: String, host: String, xingYiHeader: Option[String])
 
 object PersonRequest {
   implicit def hasId: HasId[PersonRequest, String] = _.name
 
+  implicit def hasHost: HasHost[PersonRequest] = _.host
+
   implicit def fromServiceRequest[M[_]](implicit monad: Monad[M]): FromServiceRequest[M, PersonRequest] = { sr =>
-    monad.liftM(PersonRequest(Strings.lastSection("/")(sr.uri.path.path), sr.header("accept")))
+    monad.liftM(PersonRequest(Strings.lastSection("/")(sr.uri.path.path), sr.host, sr.header("accept")))
   }
 
   implicit def toContentType: ToContentType[PersonRequest] = req => req.xingYiHeader.getOrElse(DomainDefn.xingyiHeaderPrefix)
 }
 
-case class EditPersonRequest[P](person: P, xingYiHeader: Option[String]) // aha need to be able to make from projection
+case class EditPersonRequest[P](person: P, xingYiHeader: Option[String], host: String) // aha need to be able to make from projection
 object EditPersonRequest {
   implicit def hasId[P](implicit hasId: HasId[P, String]): HasId[EditPersonRequest[P], String] = req => hasId(req.person)
+
+  implicit def hasHost[P]: HasHost[EditPersonRequest[P]] = _.host
 
   implicit def fromServiceRequest[M[_], J: JsonParser, SharedP, DomainP](implicit monad: Monad[M], projection: Projection[SharedP, DomainP]): FromServiceRequest[M, EditPersonRequest[DomainP]] = { sr =>
     val name = Strings.lastSection("/")(sr.uri.path.path)
     val newPerson: DomainP = projection.fromJsonString(sr.body.getOrElse(throw new RuntimeException("cannot create person as body of request empty")).s)
     //    if (name != newPerson.name) throw new RuntimeException("Cannot edit name")
-    monad.liftM(EditPersonRequest(newPerson, sr.header("xingyi")))
+    monad.liftM(EditPersonRequest(newPerson, sr.header("xingyi"), sr.host))
   }
 
   implicit def toContentType[P]: ToContentType[EditPersonRequest[P]] = req => req.xingYiHeader.getOrElse(DomainDefn.xingyiHeaderPrefix)
 
 }
 
-object PersonServiceFinderResponse extends JsonWriterLanguage {
-  implicit def toJson[J: JsonWriter]: ToJsonLib[PersonServiceFinderResponse] = { res =>
-    import res._
-    JsonObject(
-      "url" -> urlPattern, "verbs" -> JsonList(supportedVerbs.map(JsonString.apply)),
-      "code" -> JsonObject("javascript" -> javascriptUrl, "scala" -> scalaUrl))
-  }
-}
 
 abstract class SharedBackend[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : JsonWriter, SharedP, DomainP: Links]
 (domainDefn: DomainDefn[DomainP])
 (implicit val monad: MonadCanFailWithException[M, Fail], val logReqAndResult: LogRequestAndResult[Fail], hasId: HasId[DomainP, String], loggingAdapter: LoggingAdapter, projection: ObjectProjection[SharedP, DomainP])
   extends CheapServer[M, Fail](9001) with PersonStore[DomainP] {
+
   def edit(name: String, person: DomainP, xingYiHeader: Option[String])(implicit domainList: DomainList[DomainP]) = {
     people = people + (name -> person)
     println(s"changing $name people now $people header was $xingYiHeader")
@@ -117,12 +122,8 @@ abstract class SharedBackend[M[_] : Async, Fail: Failer : LogRequestAndResult, J
     codeRequest => CodeDetailsResponse(codeMap.getOrElse(codeRequest.hash, throw new RuntimeException("Cannot find hash. values are" + codeMap.keys)))
   } |+| endpoint[CodeDetailsRequest, CodeDetailsResponse]("/code", MatchesServiceRequest.idAtEnd(Method("get")))
 
-  //  ServerPayload.toServerResponse[J, PersonRequest, IPerson, Person]
-  //  val x = implicitly[ToJson[one.xingyi.core.script.ServerPayload[one.xingyi.scriptBackend.Person]]]
-  //  val y = implicitly[ToServiceResponse[Person]]
-
   val personDetails = function[PersonServiceFinderRequest, PersonServiceFinderResponse]("persondetails")(
-    _ => PersonServiceFinderResponse(s"http://localhost:9001/code/${javascript.hash}", s"http://localhost:9001/code/${scala.hash}", "http://localhost:9001/person/<id>", List("put", "post", "get"))
+    req => PersonServiceFinderResponse(req.host, "http://<host>/code/<hash>", javascript.hash, scala.hash, "http://<host>/person/<id>", List("put", "post", "get"))
   ) |+| endpoint[PersonServiceFinderRequest, PersonServiceFinderResponse]("/person", MatchesServiceRequest.fixedPath(Method("get")))
 
   def makeNewPerson(name: String): DomainP
@@ -132,10 +133,7 @@ abstract class SharedBackend[M[_] : Async, Fail: Failer : LogRequestAndResult, J
   val getPerson = function[PersonRequest, ServerPayload[DomainP]]("findPerson")(req => ServerPayload(Status(200), people.getOrElse(req.name, throw new RuntimeException("not found")), domainList.accept(req.xingYiHeader))) |+| endpoint[PersonRequest, ServerPayload[DomainP]]("/person", MatchesServiceRequest.idAtEnd(Method("get")))
   val editPerson = function[EditPersonRequest[DomainP], ServerPayload[DomainP]]("editPerson") { req => edit(hasId(req.person), req.person, req.xingYiHeader) } |+| endpoint[EditPersonRequest[DomainP], ServerPayload[DomainP]]("/person", MatchesServiceRequest.idAtEnd(Method("put")))
 
-  //  val getPerson = function[PersonRequest, Person]("findPerson")(req => people.find(_ == req.name).getOrElse(throw new RuntimeException("not found"))) |+| endpoint[PersonRequest, Person]("/person", MatchesServiceRequest.idAtEnd(Method("get")))
-  //  ;
   val keepalive: ServiceRequest => M[Option[ServiceResponse]] = function[ServiceRequest, ServiceResponse]("keepalive")(sr => ServiceResponse("Alive")) |+| endpoint[ServiceRequest, ServiceResponse]("/ping", MatchesServiceRequest.fixedPath(Method("get")))
-
 
   val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(personDetails, newPerson, getPerson, editPerson, allCode, codeDetails, keepalive)
 

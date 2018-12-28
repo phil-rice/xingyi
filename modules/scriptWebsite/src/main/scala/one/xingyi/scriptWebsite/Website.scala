@@ -28,9 +28,13 @@ class Website[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : 
   extends CheapServer[M, Fail](9000) with XingyiKleisli[M, Fail] with RecordCallsKleisli[M, Fail] with DisplayRecordedKleisli[M] {
 
   implicit val ssl: Option[SSLContext] = None
-  private val domain: Domain = Domain(Protocol("http"), HostName("localhost"), Port(9001))
+  private val domain: Domain = Domain(Protocol("http"), HostName("127.0.0.1"), Port(9001))
   override implicit lazy val httpFactory = new HttpFactory[M, ServiceRequest, ServiceResponse] {
-    override def apply(v1: ServiceName) = HttpClient.apply[M](domain)
+    override def apply(v1: ServiceName) = {
+      val service = HttpClient.apply[M](domain)
+
+      { req => service(req.addHeader("host", domain.host + ":" + domain.port)) }
+    }
   }
 
   implicit val template = Mustache("Demo", "personAndRequests.mustache", "main.template.mustache")

@@ -53,17 +53,22 @@ trait ToContentType[Req] {
   def apply(req: Req): String
 }
 
+trait HasHost[T] {
+  def apply(t: T): String
+}
+
 object ServerPayload extends JsonWriterLanguage {
-  implicit def toServerResponse[J, Req, Server, Domain](implicit jsonWriter: JsonWriter[J], hasId: HasId[Req, String], projection: Projection[Server, Domain], toContentType: ToContentType[Req]): ToServiceResponse[Req, ServerPayload[Domain]] =
-    req => payload =>
+  implicit def toServerResponse[J, Req, Server, Domain](implicit jsonWriter: JsonWriter[J], hasId: HasId[Req, String], hasHost: HasHost[Req], projection: Projection[Server, Domain], toContentType: ToContentType[Req]): ToServiceResponse[Req, ServerPayload[Domain]] = { req =>
+    payload =>
+      val host = hasHost(req)
       ServiceResponse(payload.status, Body(
-        "http://localhost:9001/code/" + payload.domain.codeHeader + "\n" +
+        s"http://$host/code/" + payload.domain.codeHeader + "\n" +
           jsonWriter(projection.toJson(payload.domainObject) |+| ("_links" ->
             JsonObject(payload.links(payload.domainObject).map {
-              case LinkDetail(verb, pattern) => verb -> JsonString(pattern.replace("<id>", hasId(req)))
+              case LinkDetail(verb, pattern) => verb -> JsonString(pattern.replace("<id>", hasId(req)).replace("<host>", host))
             }: _*)))),
         List(Header("content-type", toContentType(req)), Header("xingyi", payload.domain.codeHeader)))
-
+  }
 }
 
 

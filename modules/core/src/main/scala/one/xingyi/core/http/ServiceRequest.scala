@@ -15,6 +15,8 @@ import scala.language.higherKinds
 import scala.reflect.ClassTag
 
 case class ServiceRequest(method: Method, domain: Option[Domain], path: Path, params: Seq[QueryParam], headers: Seq[Header], body: Option[Body]) {
+  def addHeader(name: String, value: String): ServiceRequest = copy(headers = headers :+ Header(name, value))
+
   private def getHeader[H: ClassTag]: Option[H] = ClassTags.collectAll[H](headers).headOption
 
   lazy val contentType: Option[ContentType] = getHeader[ContentType]
@@ -22,6 +24,8 @@ case class ServiceRequest(method: Method, domain: Option[Domain], path: Path, pa
   lazy val uri = Uri(domain, path, params: _*)
 
   def header(name: String) = headers.find(_.name.equalsIgnoreCase(name)).map(_.value)
+
+  def host = header("host").getOrElse(throw new RuntimeException(s"No host in $this"))
 }
 
 object ServiceRequest {

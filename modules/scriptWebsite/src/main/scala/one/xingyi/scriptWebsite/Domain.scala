@@ -15,7 +15,7 @@ import scala.language.higherKinds
 case class PersonAddressRequest(name: String)
 
 object PersonAddressRequest {
-  implicit val entityDetails = EntityDetailsUrl[PersonAddressRequest](Uri("http://localhost:9001/person"))
+  implicit val entityDetails = EntityDetailsUrl[PersonAddressRequest](Uri("http://127.0.0.1:9001/person"))
 
   //TODO security flaw here. OK for now
   implicit def fromEntityDetailsRequest: FromEntityDetailsResponse[PersonAddressRequest] =
