@@ -47,10 +47,6 @@ class Website[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : 
 
   val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(index, person, keepalive)
 
-  val client: ServiceRequest => M[ServiceResponse] = httpFactory(ServiceName("Backend"))
-  println("found: " + implicitly[Async[M]].await(client(ServiceRequest(Method("get"), Uri("http://localhost:9001/person/someName")))))
-
-
 }
 
 object Website extends App {

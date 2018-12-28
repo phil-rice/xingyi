@@ -98,7 +98,7 @@ class Model2Defn extends DomainDefn[Person]("one.xingyi.scriptModel2", List("jso
     Telephone.telephoneOps -> Telephone.projection),
   List(
     new IPersonLine12Ops[XingYiManualPath, IPerson] {
-      override val line1Lens = XingYiManualPath[IPerson, String]("ens_person_line1_string", "stringLens",
+      override val line1Lens = XingYiManualPath[IPerson, String]("lens_person_line1_string", "stringLens",
         """function lens_person_line1_string() { return compose(lens_person_address_address(), lens("line1"))}""")
 
       override def line2Lens = XingYiManualPath[IPerson, String]("lens_person_line2_string", "stringLens",

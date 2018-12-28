@@ -83,16 +83,9 @@ object RecordedCall extends JsonWriterLanguage {
 }
 
 trait RecordCallsKleisli[M[_], Fail] {
-  def recordCalls(service: ServiceRequest => M[ServiceResponse])(implicit monad: Monad[M], recordedCalls: InheritableThreadLocal[Seq[RecordedCall]]): ServiceRequest => M[ServiceResponse] = {
-    req =>
-      service(req).map { res =>
+  def recordCalls(service: ServiceRequest => M[ServiceResponse])(implicit monad: Monad[M], recordedCalls: InheritableThreadLocal[Seq[RecordedCall]]): ServiceRequest => M[ServiceResponse] =
+    req => service(req).map { res => recordedCalls.set(recordedCalls.get :+ RecordedCall(req, res)); res }
 
-        val call = RecordedCall(req, res)
-        println("recording class: " + call)
-        recordedCalls.set(recordedCalls.get :+ call)
-        res
-      }
-  }
 }
 
 trait AddRecordedCalls[R]

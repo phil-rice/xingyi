@@ -102,23 +102,14 @@ case class DomainList[T](firstDomain: DomainDetails[T], restDomains: DomainDetai
     xingyiHeader match {
       case None => firstDomain
       case Some(header) =>
-        if (!header.startsWith(DomainDefn.xingyiHeaderPrefix)) throw new RuntimeException(s"Must start with ${DomainDefn.xingyiHeaderPrefix} actually is header")
+        if (!header.startsWith(DomainDefn.xingyiHeaderPrefix)) throw new RuntimeException(s"Must start with ${DomainDefn.xingyiHeaderPrefix} actually is $header")
         val withoutPrefix = header.substring(DomainDefn.xingyiHeaderPrefix.length)
-        println(s"in Domain list header $withoutPrefix")
-        println(s"in Domain list split ${withoutPrefix.split("\\,").toList}")
         val set = DomainList.stringToSet(withoutPrefix)
-        println(s"in Domain list set $set")
-        println(s"the allowed set is " + domains.map(_.lensNames.mkString(":")))
-        println(s"     normalised to " + domains.map(_.normalisedLens))
         domains.find(_.isDefinedAt(set)) match {
-          case Some(foundDomain) =>
-            println(s"in Domain list  found$xingyiHeader")
-            foundDomain
+          case Some(foundDomain) => foundDomain
           case None =>
             val diff = set -- domains(0).lensNames
             val failures: List[(String, Set[String], Set[String])] = domains.map(d => (d.name, d.lensNames, set -- d.lensNames))
-
-            println("throwing exception");
             throw new CannotRespondToQuery(header, set, DomainDetails.stringsToString(set), failures)
         }
     }

@@ -75,7 +75,7 @@ class TransformingTreeRending[J, J1, P, R](val rendering: DecisionTreeRendering[
   override def traceDataWithIndex: TraceDataWithIndex[P, R] => J1 = rendering.traceDataWithIndex andThen transform
   override def traceData: NewTreeAndTraceData[P, R] => J1 = rendering.traceData andThen transform
   override def engine: Engine[P, R] => J1 = rendering.engine andThen transform
-  override def tree: DecisionTree[P, R] => J1 = rendering.tree andThen { p => println("in println" + p); p } andThen transform
+  override def tree: DecisionTree[P, R] => J1 = rendering.tree andThen transform
   override def useCase(): UseCase[P, R] => J1 = rendering.useCase andThen transform
   override def scenario: Scenario[P, R] => J1 = rendering.scenario andThen transform
   override def decisionNode: DecisionNode[P, R] => J1 = rendering.decisionNode andThen transform
