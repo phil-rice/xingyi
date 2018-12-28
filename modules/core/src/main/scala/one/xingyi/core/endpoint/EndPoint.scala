@@ -126,7 +126,7 @@ case class PrefixThenIdThenCommand(method: Method, command: String) extends Matc
       val id = Strings.allButlastSection("/")(rest)
       val actualCommand = Strings.lastSection("/")(rest)
       println("id: " + id + ",  command: " + command)
-      val result = id.indexOf("/") == -1 && actualCommand == command
+      val result = id.indexOf("/") == -1 && actualCommand == command && serviceRequest.method == method
       println("result: " + result)
       result
     }.getOrElse(false)

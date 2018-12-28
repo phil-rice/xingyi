@@ -87,8 +87,45 @@ object DisplayEditPersonFormResponse {
       req =>
         json =>
           val person = xingYi.parse[Person](json)
-          val ops = new PersonLine12Ops()
-          DisplayEditPersonFormResponse(json)
+          val html = xingYi.render("form", person)
+          DisplayEditPersonFormResponse(html)
 
   }
+}
+
+case class EditPersonRequest(name: String, newLine1: String, newLine2: String)
+
+object EditPersonRequest {
+  implicit def fromServiceRequest[M[_] : Monad]: FromServiceRequest[M, EditPersonRequest] = { sr =>
+    val params = Strings.paramsToMap(sr.body.map(_.s).getOrElse(""))
+
+    EditPersonRequest(Strings.lastButOneSection("/")(sr.path.path), params("line1"), params("line2")).liftM[M]
+  }
+
+  implicit def entityUrl(implicit personEntityUrl: EntityDetailsUrl[PersonAddressRequest]): EntityDetailsUrl[EditPersonRequest] = EntityDetailsUrl(personEntityUrl.url)
+
+  implicit def fromEntityDetailsResponse: FromEntityDetailsResponse[EditPersonRequest] = {
+    (req, sd) => edr => ServiceRequest(Method("get"), Uri(edr.urlPattern.replace("<id>", req.name)), headers = List(Header("accept", sd.contentType)), body = None)
+
+  }
+}
+
+case class EditPersonResponse(json: String)
+
+object EditPersonResponse {
+  implicit def toServiceResponse: ToServiceResponse[EditPersonRequest, EditPersonResponse] = { req => res => ServiceResponse(Status(200), Body(res.json + "some content"), ContentType("application/json")) }
+
+  implicit def fromXingYi: FromXingYi[EditPersonRequest, EditPersonResponse] = {
+    implicit xingYi =>
+      req =>
+        json =>
+          val person = xingYi.parse[Person](json)
+          val ops = new PersonLine12Ops()
+          val person2 = ops.line1Lens.set(person, req.newLine1)
+          val person3 = ops.line2Lens.set(person2, req.newLine2)
+          val pretty = xingYi.render("pretty", person3)
+          EditPersonResponse(pretty)
+
+  }
+
 }

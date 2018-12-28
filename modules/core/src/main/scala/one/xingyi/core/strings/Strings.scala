@@ -8,10 +8,12 @@ import one.xingyi.core.metrics.PrintlnPutMetrics
 object Strings {
   def toOption(s: String) = if (s == null || s == "") None else Some(s)
 
-  def startsWithAndSnips(start: String)(s: String): Option[String] = if (s.startsWith(start)) Some(s.substring(start.length+1)) else None
+  def startsWithAndSnips(start: String)(s: String): Option[String] = if (s.startsWith(start)) Some(s.substring(start.length + 1)) else None
 
-  def removeOptional$(s: String) = s.reverse.dropWhile(_ == '$' ).reverse
+  def removeOptional$(s: String) = s.reverse.dropWhile(_ == '$').reverse
+
   def uppercaseFirst(s: String) = s.take(1).map(_.toUpper) ++ s.drop(1)
+
   def lowercaseFirst(s: String) = s.take(1).map(_.toLower) ++ s.drop(1)
 
   def useStringWriter(fn: StringWriter => Unit) = {
@@ -45,6 +47,14 @@ object Strings {
     escaped
   }
 
+  def paramsToMap(s: String): Map[String, String] = {
+    s.split("&").map {
+      _.split("=") match {
+        case Array(name, value) => (name, value)
+        case x => throw new RuntimeException(s"Do not understand [$x] as part of $s")
+      }
+    }.toMap
+  }
 
   def removeWhiteSpace(s: String): String = s.replaceAll("\\s+", "")
 

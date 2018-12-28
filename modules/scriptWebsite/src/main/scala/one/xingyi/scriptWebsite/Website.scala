@@ -49,8 +49,9 @@ class Website[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : 
   implicit val recordedCalls = LocalVariable[RecordedCall]
   val index = function[IndexPageRequest, IndexPageResponse]("index")(_ => IndexPageResponse()) |+| endpoint[IndexPageRequest, IndexPageResponse]("/", MatchesServiceRequest.fixedPath(Method("get")))
   val person = backend |+| recordCalls |+| xingyify[PersonAddressRequest, PersonAddressResponse](Model1Domain) |+| endpoint[PersonAddressRequest, PersonAddressResponse]("/person", MatchesServiceRequest.idAtEnd(Method("get"))) |+| andDisplayRecorded[J]
-  val editPersonFormRequest = backend |+| recordCalls |+| xingyify[DisplayEditPersonFormRequest, DisplayEditPersonFormResponse](Model1Domain) |+| endpoint[DisplayEditPersonFormRequest, DisplayEditPersonFormResponse]("/person", MatchesServiceRequest.prefixIdCommand(Method("get"), "edit")) |+| andDisplayRecorded[J]
-  val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(index, person,editPersonFormRequest, keepalive)
+  val editPersonForm = backend |+| recordCalls |+| xingyify[DisplayEditPersonFormRequest, DisplayEditPersonFormResponse](Model1Domain) |+| endpoint[DisplayEditPersonFormRequest, DisplayEditPersonFormResponse]("/person", MatchesServiceRequest.prefixIdCommand(Method("get"), "edit")) |+| andDisplayRecorded[J]
+  val editPersonPost = backend |+| recordCalls |+| xingyify[EditPersonRequest, EditPersonResponse](Model1Domain) |+| endpoint[EditPersonRequest, EditPersonResponse]("/person", MatchesServiceRequest.prefixIdCommand(Method("post"), "edit")) |+| andDisplayRecorded[J]
+  val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(index, person,editPersonPost,editPersonForm, keepalive)
 
 }
 
