@@ -20,8 +20,6 @@ class Backend2[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser :
   extends SharedBackend[M, Fail, J, IPerson, Person](new Model2Defn) {
   override def makeNewPerson(name: String): Person = Person("someName", Address("someLine1", "someLine2", "somePostCode"), Telephone("someTelephoneNumber"))
 
-  override def findName(p: Person): String = p.name
-
   override def person: Person = makeNewPerson("somePerson")
 }
 

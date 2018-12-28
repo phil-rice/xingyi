@@ -127,11 +127,10 @@ abstract class SharedBackend[M[_] : Async, Fail: Failer : LogRequestAndResult, J
 
   def makeNewPerson(name: String): DomainP
 
-  def findName(p: DomainP): String
 
   val newPerson = function[PersonRequest, ServerPayload[DomainP]]("newPerson") { req => edit(req.name, makeNewPerson(req.name), req.xingYiHeader) } |+| endpoint[PersonRequest, ServerPayload[DomainP]]("/person", MatchesServiceRequest.idAtEnd(Method("post")))
   val getPerson = function[PersonRequest, ServerPayload[DomainP]]("findPerson")(req => ServerPayload(Status(200), people.getOrElse(req.name, throw new RuntimeException("not found")), domainList.accept(req.xingYiHeader))) |+| endpoint[PersonRequest, ServerPayload[DomainP]]("/person", MatchesServiceRequest.idAtEnd(Method("get")))
-  val editPerson = function[EditPersonRequest[DomainP], ServerPayload[DomainP]]("editPerson") { req => edit(findName(req.person), req.person, req.xingYiHeader) } |+| endpoint[EditPersonRequest[DomainP], ServerPayload[DomainP]]("/person", MatchesServiceRequest.idAtEnd(Method("put")))
+  val editPerson = function[EditPersonRequest[DomainP], ServerPayload[DomainP]]("editPerson") { req => edit(hasId(req.person), req.person, req.xingYiHeader) } |+| endpoint[EditPersonRequest[DomainP], ServerPayload[DomainP]]("/person", MatchesServiceRequest.idAtEnd(Method("put")))
 
   //  val getPerson = function[PersonRequest, Person]("findPerson")(req => people.find(_ == req.name).getOrElse(throw new RuntimeException("not found"))) |+| endpoint[PersonRequest, Person]("/person", MatchesServiceRequest.idAtEnd(Method("get")))
   //  ;
