@@ -16,13 +16,7 @@ import org.json4s.JValue
 
 import scala.language.higherKinds
 
-class Backend2[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : JsonWriter]
-(implicit monadCanFailWithException: MonadCanFailWithException[M, Fail], loggingAdapter: LoggingAdapter, hasId: HasId[Person, String], domainList: DomainList[Person])
-  extends SharedBackend[M, Fail, J, IPerson, Person] {
-  override def makeNewPerson(name: String): Person = Person("someName", Address("someLine1", "someLine2", "somePostCode"), Telephone("someTelephoneNumber"))
 
-  override def person: Person = makeNewPerson("somePerson")
-}
 
 object Backend2 extends App {
   implicit val logger: LoggingAdapter = PrintlnLoggingAdapter
@@ -31,7 +25,7 @@ object Backend2 extends App {
   val domainDetails: DomainDetails[Person] = implicitly[DomainDefnToDetails[Person]].apply(new Model2Defn)
   implicit val domainList = DomainList(domainDetails)
 
-  val backend = new Backend2[IdentityMonad, Throwable, JValue]
+  val backend = new SharedBackend[IdentityMonad, Throwable, JValue, IPerson, Person]
 
   println("running")
   backend.start

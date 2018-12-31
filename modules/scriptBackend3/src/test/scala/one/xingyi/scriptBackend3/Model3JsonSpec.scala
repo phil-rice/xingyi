@@ -2,11 +2,11 @@
 package one.xingyi.scriptBackend3
 
 import one.xingyi.core.UtilsSpec
+import one.xingyi.core.builder.CopyWithNewId
 import one.xingyi.core.json.{JsonParser, JsonWriter, ObjectProjection}
 import one.xingyi.scriptModel3.IPerson
-import one.xingyi.scriptSharedBackend.PersonStore
 
-abstract class Model3JsonSpec[J: JsonParser](implicit writer: JsonWriter[J]) extends UtilsSpec with PersonStore[Person] {
+abstract class Model3JsonSpec[J: JsonParser](implicit writer: JsonWriter[J], objectProjection: ObjectProjection[IPerson, Person], copyWithNewId: CopyWithNewId[Person, String]) extends UtilsSpec {
 
   behavior of "Example Domain ToJson using projections"
 
@@ -26,6 +26,9 @@ abstract class Model3JsonSpec[J: JsonParser](implicit writer: JsonWriter[J]) ext
     "postcode":"pc2"
   }]
 }"""
+  val person: Person = Person("someName", List(Address("someLine1", "someLine2", "somePostcode")), Telephone("someTelephoneNo"))
+
+
   it should "use the projection to turn a person into json" in {
     writer(implicitly[ObjectProjection[IPerson, Person]].toJson(person)).noWhiteSpace shouldBe
       json.stripMargin.noWhiteSpace

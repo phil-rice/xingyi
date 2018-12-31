@@ -5,5 +5,4 @@ import one.xingyi.json4s.Json4sParser._
 import one.xingyi.json4s.Json4sWriter._
 import org.json4s.JValue
 class Json4sModel3DomainJsonSpec extends Model3JsonSpec[JValue]{
-  override def person: Person = Person("someName", List(Address("someLine1", "someLine2", "somePostcode")), Telephone("someTelephoneNo"))
-}
+ }

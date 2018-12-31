@@ -18,6 +18,7 @@ object Aggregator {
   }
 }
 trait HasId[T, ID] extends (T => ID)
+trait CopyWithNewId[T, ID] extends ((ID,T) => T)
 
 class RememberingAggregator2[T, ID](implicit hasId: HasId[T, ID]) extends Aggregator[T] {
   private val list = new AtomicReference[List[T]](List())

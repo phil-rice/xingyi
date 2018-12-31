@@ -61,7 +61,10 @@ trait HasHost[T] {
 }
 
 object ServerPayload extends JsonWriterLanguage {
-  implicit def toServerResponse[J, Req, Server, Domain](implicit jsonWriter: JsonWriter[J], entityPrefix: EntityPrefix[Domain], hasId: HasId[Req, String], hasHost: HasHost[Req], projection: Projection[Server, Domain], toContentType: ToContentType[Req]): ToServiceResponse[Req, ServerPayload[Domain]] = { req =>
+  implicit def toServerResponse[J, Req, Server, Domain]
+  (implicit jsonWriter: JsonWriter[J], entityPrefix: EntityPrefix[Domain],
+   hasId: HasId[Req, String], hasHost: HasHost[Req],
+   projection: Projection[Server, Domain], toContentType: ToContentType[Req]): ToServiceResponse[Req, ServerPayload[Domain]] = { req =>
     payload =>
       val host = hasHost(req)
       ServiceResponse(payload.status, Body(
