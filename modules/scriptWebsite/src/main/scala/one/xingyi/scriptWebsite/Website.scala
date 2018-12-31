@@ -10,9 +10,11 @@ import one.xingyi.core.json._
 import one.xingyi.core.logging._
 import one.xingyi.core.monad._
 import one.xingyi.core.objectify._
+import one.xingyi.core.optics.Lens
 import one.xingyi.core.service.html.ToHtml
 import one.xingyi.core.simpleServer.CheapServer
-import one.xingyi.scriptExample.createdCode1.Model1Domain
+import one.xingyi.scriptExample.createdCode1.{Model1Domain, Person, PersonLine12Ops, PersonNameOps}
+import one.xingyi.scriptWebsite
 import org.json4s.JValue
 
 import scala.language.higherKinds
@@ -46,12 +48,20 @@ class Website[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : 
 
   val keepalive: ServiceRequest => M[Option[ServiceResponse]] = sr => Option(ServiceResponse("Alive")).liftM
 
+  implicit val personDetailsUrl: EntityDetailsUrl[Person] = EntityDetailsUrl(PersonAddressRequest.entityDetails.url)
   implicit val recordedCalls = LocalVariable[RecordedCall]
   val index = function[IndexPageRequest, IndexPageResponse]("index")(_ => IndexPageResponse()) |+| endpoint[IndexPageRequest, IndexPageResponse]("/", MatchesServiceRequest.fixedPath(Method("get")))
   val person = backend |+| recordCalls |+| xingyify[PersonAddressRequest, PersonAddressResponse](Model1Domain) |+| endpoint[PersonAddressRequest, PersonAddressResponse]("/person", MatchesServiceRequest.idAtEnd(Method("get"))) |+| andDisplayRecorded[J]
+  val editPersonPost2 = backend |+| recordCalls |+| editXingYi[EditPersonRequest, Person, PersonLine12Ops, EditPersonResponse](Model1Domain, { (par, p, line12Ops) =>
+    import line12Ops._
+    (line1Lens.setFn(par.newLine1) andThen line2Lens.setFn(par.newLine2)) (p)
+  }) {
+    (req, dom, sr) =>
+      scriptWebsite.EditPersonResponse(sr.body.s.dropWhile(_ != '=').drop(1))
+  } |+| endpoint[EditPersonRequest, EditPersonResponse]("/person", MatchesServiceRequest.prefixIdCommand(Method("post"), "edit")) |+| andDisplayRecorded[J]
   val editPersonForm = backend |+| recordCalls |+| xingyify[DisplayEditPersonFormRequest, DisplayEditPersonFormResponse](Model1Domain) |+| endpoint[DisplayEditPersonFormRequest, DisplayEditPersonFormResponse]("/person", MatchesServiceRequest.prefixIdCommand(Method("get"), "edit")) |+| andDisplayRecorded[J]
   val editPersonPost = backend |+| recordCalls |+| xingyify[EditPersonRequest, EditPersonResponse](Model1Domain) |+| endpoint[EditPersonRequest, EditPersonResponse]("/person", MatchesServiceRequest.prefixIdCommand(Method("post"), "edit")) |+| andDisplayRecorded[J]
-  val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(index, person,editPersonPost,editPersonForm, keepalive)
+  val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(index, person, editPersonPost2, editPersonForm, keepalive)
 
 }
 

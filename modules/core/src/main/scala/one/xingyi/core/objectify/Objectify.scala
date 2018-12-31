@@ -11,6 +11,7 @@ import one.xingyi.core.script.{DomainMaker, IXingYi, IXingYiLoader, ServerDomain
 import scala.language.higherKinds
 import scala.reflect.ClassTag
 import one.xingyi.core.language.AnyLanguage._
+import one.xingyi.core.optics.Lens
 
 case class EntityDetailsUrl[Req](url: Uri)
 
@@ -39,6 +40,55 @@ trait XingyiKleisli[M[_], Fail] {
 
   protected implicit def detailedLoggingForSR: DetailedLogging[ServiceResponse]
 
+
+  def withXingyi[Req: ClassTag : DetailedLogging,
+  Dom <: one.xingyi.core.script.Domain : ClassTag : DetailedLogging : DomainMaker,
+  Ops <: IXingYiSharedOps[Lens, Dom] : ClassTag,
+  Res](serverDomain: ServerDomain, fn: (Req, Dom, Ops) => Res)(http: ServiceRequest => M[ServiceResponse])
+      (implicit entityDetailsUrl: EntityDetailsUrl[Dom],
+       fromServiceResponseForEntityDetails: FromServiceResponse[EntityDetailsResponse],
+       fromEntityDetailsResponse: FromEntityDetailsResponse[Req],
+       xingYiLoader: IXingYiLoader): Req => M[Res] = {
+
+    req =>
+      RecordedCall.default.remove()
+      for {
+        serviceDiscoveryProducedServiceRequest <- http(ServiceRequest(Method("get"), entityDetailsUrl.url)).
+          map(fromServiceResponseForEntityDetails andThen fromEntityDetailsResponse(req, serverDomain))
+        codeBody <- http(serviceDiscoveryProducedServiceRequest).map(ServiceResponse.serviceResponseToXingYiCodeAndBody)
+        (code, body) = codeBody
+        xingyi <- http(ServiceRequest(Method("get"), Uri(code))).map(sr => xingYiLoader(sr.body.s))
+      } yield {
+        val dom = xingyi.parse[Dom](body)
+        val ops = implicitly[ClassTag[Ops]].runtimeClass.getConstructor(classOf[IXingYi]).newInstance(xingyi).asInstanceOf[Ops]
+        fn(req, dom, ops)
+      }
+  }
+
+  def editXingYi[Req: ClassTag : DetailedLogging,
+  Dom <: one.xingyi.core.script.Domain : ClassTag : DetailedLogging : DomainMaker,
+  Ops <: IXingYiSharedOps[Lens, Dom] : ClassTag,
+  Res](serverDomain: ServerDomain, fn: (Req, Dom, Ops) => Dom)( resultFn: (Req, Dom, ServiceResponse) => Res)(http: ServiceRequest => M[ServiceResponse])
+      (implicit entityDetailsUrl: EntityDetailsUrl[Dom],
+       fromServiceResponseForEntityDetails: FromServiceResponse[EntityDetailsResponse],
+       fromEntityDetailsResponse: FromEntityDetailsResponse[Req],
+       xingYiLoader: IXingYiLoader): Req => M[Res] = {
+    req =>
+      RecordedCall.default.remove()
+      for {
+        serviceDiscoveryProducedServiceRequest <- http(ServiceRequest(Method("get"), entityDetailsUrl.url)).map(fromServiceResponseForEntityDetails andThen fromEntityDetailsResponse(req, serverDomain))
+        codeBody <- http(serviceDiscoveryProducedServiceRequest).map(ServiceResponse.serviceResponseToXingYiCodeAndBody)
+        (code, body) = codeBody
+        xingyi <- http(ServiceRequest(Method("get"), Uri(code))).map(sr => xingYiLoader(sr.body.s))
+        dom = xingyi.parse[Dom](body)
+        ops = implicitly[ClassTag[Ops]].runtimeClass.getConstructor(classOf[IXingYi]).newInstance(xingyi).asInstanceOf[Ops]
+        modifiedDom = fn(req, dom, ops)
+        modifyServiceRequest = serviceDiscoveryProducedServiceRequest.copy(method = Method("put"), body=Some(Body(xingyi.render("pretty",modifiedDom))))
+        modifyResponse <- http(modifyServiceRequest)
+      } yield {
+        resultFn(req, modifiedDom, modifyResponse)
+      }
+  }
 
   def xingyify[Req: ClassTag : DetailedLogging, Res: ClassTag](serverDomain: ServerDomain)(http: ServiceRequest => M[ServiceResponse])
                                                               (implicit entityDetailsUrl: EntityDetailsUrl[Req],

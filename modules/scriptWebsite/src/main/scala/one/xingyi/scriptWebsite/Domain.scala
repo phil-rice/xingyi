@@ -98,14 +98,16 @@ case class EditPersonRequest(name: String, newLine1: String, newLine2: String)
 object EditPersonRequest {
   implicit def fromServiceRequest[M[_] : Monad]: FromServiceRequest[M, EditPersonRequest] = { sr =>
     val params = Strings.paramsToMap(sr.body.map(_.s).getOrElse(""))
-
     EditPersonRequest(Strings.lastButOneSection("/")(sr.path.path), params("line1"), params("line2")).liftM[M]
   }
 
   implicit def entityUrl(implicit personEntityUrl: EntityDetailsUrl[PersonAddressRequest]): EntityDetailsUrl[EditPersonRequest] = EntityDetailsUrl(personEntityUrl.url)
 
   implicit def fromEntityDetailsResponse: FromEntityDetailsResponse[EditPersonRequest] = {
-    (req, sd) => edr => ServiceRequest(Method("get"), Uri(edr.urlPattern.replace("<id>", req.name)), headers = List(Header("accept", sd.contentType)), body = None)
+    (req, sd) => edr =>
+      println(s"in fromEntityDetailsResponse. Req is $req sd is $sd and edr is $edr" )
+      println(s"in fromEntityDetailsResponse. name is ${req.name}" )
+      ServiceRequest(Method("get"), Uri(edr.urlPattern.replace("<id>", req.name)), headers = List(Header("accept", sd.contentType)), body = None)
 
   }
 }

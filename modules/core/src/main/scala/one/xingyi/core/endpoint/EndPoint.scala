@@ -15,9 +15,9 @@ import scala.reflect.ClassTag
 trait EndpointKleisli[M[_]] {
   protected implicit def monad: Monad[M]
 
-  def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(raw: Req => M[Res])
+  def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest, debug: Boolean = false)(raw: Req => M[Res])
                                             (implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Req, Res]): ServiceRequest => M[Option[ServiceResponse]] =
-    EndPoint(normalisedPath, matchesServiceRequest)(raw)
+    EndPoint(normalisedPath, matchesServiceRequest, debug)(raw)
 }
 
 trait DisplayRecordedKleisli[M[_]] {
@@ -69,13 +69,14 @@ trait ChainKleisli[M[_], Fail] {
   }
 }
 
-case class EndPoint[M[_] : Monad, Req, Res](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest)(kleisli: Req => M[Res])
+case class EndPoint[M[_] : Monad, Req, Res](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest, debug: Boolean)(kleisli: Req => M[Res])
                                            (implicit fromServiceRequest: FromServiceRequest[M, Req],
                                             toServiceResponse: ToServiceResponse[Req, Res],
                                            ) extends PartialFunction[ServiceRequest, M[Option[ServiceResponse]]] {
   def debugInfo(req: ServiceRequest) = s"Endpoint($normalisedPath, $matchesServiceRequest) called with $req results in ${isDefinedAt(req)}"
 
   override def apply(serviceRequest: ServiceRequest): M[Option[ServiceResponse]] = {
+    if (debug) {      println(s"In endpoint $this ServiceRequest is $serviceRequest")}
     if (isDefinedAt(serviceRequest))
       (fromServiceRequest |==> (kleisli |=+> toServiceResponse) |=> toSome) (serviceRequest)
     else
@@ -83,7 +84,9 @@ case class EndPoint[M[_] : Monad, Req, Res](normalisedPath: String, matchesServi
   }
 
   def isDefinedAt(serviceRequest: ServiceRequest): Boolean = {
-    matchesServiceRequest(normalisedPath)(serviceRequest)
+    val result = matchesServiceRequest(normalisedPath)(serviceRequest)
+    if (debug) {      println(s"In endpoint evaluation 'isDefinedAt''  $result $this Normalised Path is $normalisedPath ServiceRequest is $serviceRequest")}
+    result
   }
 
   override def toString() = s"Endpoint($normalisedPath, $matchesServiceRequest)"
@@ -113,7 +116,12 @@ case class FixedPathAndVerb(method: Method) extends MatchesServiceRequest {
 case class IdAtEndAndVerb(method: Method) extends MatchesServiceRequest {
   val startFn = Strings.allButlastSection("/") _
 
-  override def apply(endpointName: String)(serviceRequest: ServiceRequest): Boolean = startFn(serviceRequest.uri.path.asUriString) == endpointName && serviceRequest.method == method
+  override def apply(endpointName: String)(serviceRequest: ServiceRequest): Boolean = {
+    val methodMatch = serviceRequest.method == method
+    val startString = startFn(serviceRequest.uri.path.asUriString)
+    val start =startString == endpointName
+    methodMatch && start
+  }
 }
 
 
@@ -121,13 +129,13 @@ case class PrefixThenIdThenCommand(method: Method, command: String) extends Matc
 
   override def apply(endpointName: String)(serviceRequest: ServiceRequest): Boolean = {
     val path = serviceRequest.path.asUriString
-    println("path: " + path + ", endpoint name: " + endpointName)
+//    println("path: " + path + ", endpoint name: " + endpointName)
     Strings.startsWithAndSnips(endpointName)(path).map { rest =>
       val id = Strings.allButlastSection("/")(rest)
       val actualCommand = Strings.lastSection("/")(rest)
-      println("id: " + id + ",  command: " + command)
+//      println("id: " + id + ",  command: " + command)
       val result = id.indexOf("/") == -1 && actualCommand == command && serviceRequest.method == method
-      println("result: " + result)
+//      println("result: " + result)
       result
     }.getOrElse(false)
   }

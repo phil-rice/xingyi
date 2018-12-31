@@ -7,6 +7,7 @@ import one.xingyi.core.http._
 import one.xingyi.core.json._
 import one.xingyi.core.logging._
 import one.xingyi.core.monad.{Async, IdentityMonad, Monad, MonadCanFailWithException}
+import one.xingyi.core.optics.Lens
 import one.xingyi.core.script._
 import one.xingyi.core.simpleServer.CheapServer
 import one.xingyi.core.strings.Strings
@@ -104,6 +105,7 @@ abstract class SharedBackend[M[_] : Async, Fail: Failer : LogRequestAndResult, J
 (implicit val monad: MonadCanFailWithException[M, Fail], val logReqAndResult: LogRequestAndResult[Fail], hasId: HasId[DomainP, String], loggingAdapter: LoggingAdapter, projection: ObjectProjection[SharedP, DomainP])
   extends CheapServer[M, Fail](9001) with PersonStore[DomainP] {
 
+
   def edit(name: String, person: DomainP, xingYiHeader: Option[String])(implicit domainList: DomainList[DomainP]) = {
     people = people + (name -> person)
     println(s"changing $name people now $people header was $xingYiHeader")
@@ -130,8 +132,8 @@ abstract class SharedBackend[M[_] : Async, Fail: Failer : LogRequestAndResult, J
 
 
   val newPerson = function[PersonRequest, ServerPayload[DomainP]]("newPerson") { req => edit(req.name, makeNewPerson(req.name), req.xingYiHeader) } |+| endpoint[PersonRequest, ServerPayload[DomainP]]("/person", MatchesServiceRequest.idAtEnd(Method("post")))
-  val getPerson = function[PersonRequest, ServerPayload[DomainP]]("findPerson")(req => ServerPayload(Status(200), people.getOrElse(req.name, throw new RuntimeException("not found")), domainList.accept(req.xingYiHeader))) |+| endpoint[PersonRequest, ServerPayload[DomainP]]("/person", MatchesServiceRequest.idAtEnd(Method("get")))
-  val editPerson = function[EditPersonRequest[DomainP], ServerPayload[DomainP]]("editPerson") { req => edit(hasId(req.person), req.person, req.xingYiHeader) } |+| endpoint[EditPersonRequest[DomainP], ServerPayload[DomainP]]("/person/", MatchesServiceRequest.idAtEnd(Method("put")))
+  val getPerson = function[PersonRequest, ServerPayload[DomainP]]("findPerson")(req => ServerPayload(Status(200), people.getOrElse(req.name, throw new RuntimeException("could not find name: " + req.name + "\n" + req)), domainList.accept(req.xingYiHeader))) |+| endpoint[PersonRequest, ServerPayload[DomainP]]("/person", MatchesServiceRequest.idAtEnd(Method("get")))
+  val editPerson = function[EditPersonRequest[DomainP], ServerPayload[DomainP]]("editPerson") { req => edit(hasId(req.person), req.person, req.xingYiHeader) } |+| endpoint[EditPersonRequest[DomainP], ServerPayload[DomainP]]("/person", MatchesServiceRequest.idAtEnd(Method("put")))
 
   val keepalive: ServiceRequest => M[Option[ServiceResponse]] = function[ServiceRequest, ServiceResponse]("keepalive")(sr => ServiceResponse("Alive")) |+| endpoint[ServiceRequest, ServiceResponse]("/ping", MatchesServiceRequest.fixedPath(Method("get")))
 

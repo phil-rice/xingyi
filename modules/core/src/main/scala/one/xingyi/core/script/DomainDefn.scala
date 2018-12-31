@@ -101,6 +101,7 @@ case class DomainList[T](firstDomain: DomainDetails[T], restDomains: DomainDetai
     println(s"in Domain list$xingyiHeader")
     xingyiHeader match {
       case None => firstDomain
+      case Some(header) if !header.contains(DomainDefn.xingyiHeaderPrefix) => firstDomain
       case Some(header) =>
         if (!header.startsWith(DomainDefn.xingyiHeaderPrefix)) throw new RuntimeException(s"Must start with ${DomainDefn.xingyiHeaderPrefix} actually is $header")
         val withoutPrefix = header.substring(DomainDefn.xingyiHeaderPrefix.length)
