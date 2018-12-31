@@ -10,7 +10,9 @@ import scala.collection.immutable
 import scala.language.higherKinds
 import scala.reflect.ClassTag
 
-object ScalaCode extends ScalaCode
+object ScalaCode extends ScalaCode {
+  override def mediaType: MediaType = MediaType("application/scala")
+}
 
 trait ScalaCode extends CodeFragment
 

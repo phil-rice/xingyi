@@ -7,6 +7,7 @@ import one.xingyi.core.http._
 import one.xingyi.core.json._
 import one.xingyi.core.logging._
 import one.xingyi.core.monad.{Async, IdentityMonad, MonadCanFailWithException}
+import one.xingyi.core.script.{DomainDefnToDetails, DomainDetails, DomainList}
 import one.xingyi.json4s.Json4sParser._
 import one.xingyi.json4s.Json4sWriter._
 import one.xingyi.scriptModel1.IPerson
@@ -15,9 +16,9 @@ import org.json4s.JValue
 
 import scala.language.higherKinds
 
-class Backend1[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : JsonWriter, SharedP, DomainP]
-(implicit monadCanFailWithException: MonadCanFailWithException[M, Fail], loggingAdapter: LoggingAdapter, hasId: HasId[DomainP, String])
-  extends SharedBackend[M, Fail, J, IPerson, Person](new Model1Defn) {
+class Backend1[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : JsonWriter](domainList: DomainList[Person])
+                                                                                            (implicit monadCanFailWithException: MonadCanFailWithException[M, Fail], loggingAdapter: LoggingAdapter, hasId: HasId[Person, String])
+  extends SharedBackend[M, Fail, J, IPerson, Person](domainList) {
   override def makeNewPerson(name: String): Person = Person("someName", "someLine1", "someLine2", Telephone("someTelephoneNumber"))
 
   override def person: Person = makeNewPerson("somePerson")
@@ -28,7 +29,10 @@ object Backend1 extends App {
 
   import SimpleLogRequestAndResult._
 
-  val backend = new Backend1[IdentityMonad, Throwable, JValue, IPerson, Person]
+  val domainDetails: DomainDetails[Person] = implicitly[DomainDefnToDetails[Person]].apply(new Model1Defn)
+  implicit val domainList = DomainList(domainDetails)
+
+  val backend = new Backend1[IdentityMonad, Throwable, JValue](domainList)
 
   println("running")
   backend.start

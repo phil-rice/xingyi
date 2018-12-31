@@ -22,11 +22,14 @@ object ResponseParser {
 
 }
 
+trait SimpleFailer[Fail] {
+  def simpleNotFound(message: String): Fail
+}
 trait ResponseParserFailer[Fail] {
   def responseParserfailer[Req](requestAndServiceResponse: RequestAndServiceResponse[Req], info: String): Fail
 }
 
-trait Failer[Fail] extends ResponseParserFailer[Fail] {
+trait Failer[Fail] extends ResponseParserFailer[Fail] with SimpleFailer[Fail] {
   def notFound[Req](req: Req, response: ServiceResponse): Fail
   def unexpected[Req](req: Req, response: ServiceResponse): Fail
   def pathNotFound(serviceRequest: ServiceRequest): Fail
@@ -41,6 +44,8 @@ object Failer {
     override def pathNotFound(serviceRequest: ServiceRequest) = new EndpointNotFoundException(serviceRequest)
     override def responseParserfailer[Req](requestAndServiceResponse: RequestAndServiceResponse[Req], info: String): Throwable =
       new ResponseParserException(requestAndServiceResponse.req, info, requestAndServiceResponse.serviceResponse)
+
+    override def simpleNotFound(msg: String): Throwable = new RuntimeException(msg)
   }
 
 }

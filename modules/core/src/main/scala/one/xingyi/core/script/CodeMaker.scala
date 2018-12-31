@@ -2,6 +2,7 @@
 package one.xingyi.core.script
 
 import one.xingyi.core.json._
+import one.xingyi.core.strings.Strings
 
 
 trait Header[L] extends (DomainDefn[_] => String)
@@ -12,7 +13,12 @@ trait Footer[L] extends (() => String)
 
 trait LensCodeMaker[L] extends (LensDefn[_, _] => String)
 
-trait CodeFragment
+case class MediaType(s:String) extends AnyVal
+
+trait CodeFragment{
+  def mediaType:MediaType
+  override def toString: String = Strings.removeOptional$(getClass.getSimpleName)
+}
 
 
 trait HasLensCodeMaker[L <: CodeFragment] {

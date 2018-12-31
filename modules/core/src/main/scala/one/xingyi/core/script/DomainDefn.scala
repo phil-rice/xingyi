@@ -16,6 +16,7 @@ case class XingYiManualPath[A, B](prefix: String, lensType: String, javascript: 
 
 object DomainDefn {
   val xingyiHeaderPrefix = "application/xingyi."
+  val xingyiCodeSummaryMediaType = "application/json"
 }
 
 case class InterfaceAndProjection[Shared, Domain](sharedOps: IXingYiSharedOps[IXingYiLens, Shared], projection: ObjectProjection[Shared, Domain])
@@ -63,6 +64,7 @@ object DomainDefnToDetails {
 case class CodeDetails(code: String)(implicit digestor: Digestor) {
   val hash = digestor(code)
 }
+
 
 case class DomainDetails[T](name: String, packageName: String, accept: String, codeHeader: String, lensNames: Set[String], code: Map[CodeFragment, CodeDetails]) {
   def normalisedLens = DomainDetails.stringsToString(lensNames)

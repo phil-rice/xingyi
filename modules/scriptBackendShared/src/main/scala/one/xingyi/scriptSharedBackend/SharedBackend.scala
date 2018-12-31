@@ -6,11 +6,13 @@ import one.xingyi.core.endpoint.MatchesServiceRequest
 import one.xingyi.core.http._
 import one.xingyi.core.json._
 import one.xingyi.core.logging._
-import one.xingyi.core.monad.{Async, IdentityMonad, Monad, MonadCanFailWithException}
+import one.xingyi.core.monad._
 import one.xingyi.core.optics.Lens
+import one.xingyi.core.script
 import one.xingyi.core.script._
 import one.xingyi.core.simpleServer.CheapServer
 import one.xingyi.core.strings.Strings
+import one.xingyi.scriptModel1.IPerson
 import org.json4s.JValue
 
 import scala.language.higherKinds
@@ -55,7 +57,7 @@ object PersonServiceFinderRequest {
   implicit def fromServiceRequest[M[_] : Monad]: FromServiceRequest[M, PersonServiceFinderRequest] = sr => PersonServiceFinderRequest(sr.host).liftM[M]
 }
 
-case class PersonServiceFinderResponse(hostAndPort: String, codePattern: String, javascriptHash: String, scalaHash: String, urlPattern: String, supportedVerbs: List[String])
+case class PersonServiceFinderResponse(hostAndPort: String, codePattern: String, urlPattern: String, supportedVerbs: List[String])
 
 object PersonServiceFinderResponse extends JsonWriterLanguage {
   implicit def toJson[J: JsonWriter]: ToJsonLib[PersonServiceFinderResponse] = { res =>
@@ -63,8 +65,7 @@ object PersonServiceFinderResponse extends JsonWriterLanguage {
     def toPath(hash: String) = codePattern.replace("<host>", hostAndPort).replace("<hash>", hash)
 
     JsonObject(
-      "url" -> urlPattern.replace("<host>", hostAndPort), "verbs" -> JsonList(supportedVerbs.map(JsonString.apply)),
-      "code" -> JsonObject("javascript" -> toPath(javascriptHash), "scala" -> toPath(javascriptHash)))
+      "url" -> urlPattern.replace("<host>", hostAndPort), "verbs" -> JsonList(supportedVerbs.map(JsonString.apply)))
   }
 }
 
@@ -100,32 +101,50 @@ object EditPersonRequest {
 }
 
 
-abstract class SharedBackend[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : JsonWriter, SharedP, DomainP: Links]
-(domainDefn: DomainDefn[DomainP])
-(implicit val monad: MonadCanFailWithException[M, Fail], val logReqAndResult: LogRequestAndResult[Fail], hasId: HasId[DomainP, String], loggingAdapter: LoggingAdapter, projection: ObjectProjection[SharedP, DomainP])
+/**
+  * /prefix/code gives all the code for the entity prefix. Probably with data about domains
+  * /code/hash gives the code for a single hash. It is fully defined by the hash
+  **/
+
+import JsonWriterLanguage._
+
+class EntityCodeMaker[M[_], Fail, SharedE, DomainE](domainList: DomainList[DomainE])(implicit val monad: MonadCanFailWithException[M, Fail], failer: SimpleFailer[Fail],  proof: ProofOfBinding[SharedE, DomainE]) extends LiftFunctionKleisli[M] {
+  def hashMap = domainList.domains.map(_.code).
+    foldLeft(Map[String, CodeDetailsResponse]()) { (acc, map) => map.foldLeft(acc) { case (acc, (frag, details)) => acc + (details.hash -> CodeDetailsResponse(details.code, frag.mediaType)) } }
+
+  def allCode: CodeRequest => Code[DomainE] = _ => Code(domainList)
+
+  def codeDetails: CodeDetailsRequest => M[CodeDetailsResponse] = cr =>
+    hashMap.get(cr.hash).fold(monad.fail[CodeDetailsResponse](failer.simpleNotFound("Cannot find hash. values are" + hashMap.keys.toList.sorted)))(_.liftM[M])
+}
+
+abstract class SharedBackend[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : JsonWriter, SharedP, DomainP : Links]
+(domainList: DomainList[DomainP])
+(implicit val monad: MonadCanFailWithException[M, Fail],
+ val logReqAndResult: LogRequestAndResult[Fail],
+ hasId: HasId[DomainP, String],
+ loggingAdapter: LoggingAdapter,
+ projection: ObjectProjection[SharedP, DomainP],
+ )
   extends CheapServer[M, Fail](9001) with PersonStore[DomainP] {
 
+  import projection.proof
 
-  def edit(name: String, person: DomainP, xingYiHeader: Option[String])(implicit domainList: DomainList[DomainP]) = {
+  val entityCodeMaker = new EntityCodeMaker[M, Fail, SharedP, DomainP](domainList)
+
+
+  def edit(name: String, person: DomainP, xingYiHeader: Option[String]) = {
     people = people + (name -> person)
     println(s"changing $name people now $people header was $xingYiHeader")
     ServerPayload(Status(200), person, domainList.accept(xingYiHeader))
   }
 
-  val domainDetails: DomainDetails[DomainP] = implicitly[DomainDefnToDetails[DomainP]].apply(domainDefn)
 
-  implicit val domainList = DomainList(domainDetails)
-  val javascript = domainDetails.code(Javascript)
-  val scala = domainDetails.code(ScalaCode)
-  val codeMap = Map(javascript.hash -> javascript.code, scala.hash -> scala.code)
-
-  val allCode = function[CodeRequest, Code[DomainP]]("code") { codeRequest => Code(domainDetails) } |+| endpoint[CodeRequest, Code[DomainP]]("/code", MatchesServiceRequest.fixedPath(Method("get")))
-  val codeDetails = function[CodeDetailsRequest, CodeDetailsResponse]("codeDetails") {
-    codeRequest => CodeDetailsResponse(codeMap.getOrElse(codeRequest.hash, throw new RuntimeException("Cannot find hash. values are" + codeMap.keys)))
-  } |+| endpoint[CodeDetailsRequest, CodeDetailsResponse]("/code", MatchesServiceRequest.idAtEnd(Method("get")))
+  val allCode = function("allCode")(entityCodeMaker.allCode) |+| endpoint[CodeRequest, Code[DomainP]]("/code", MatchesServiceRequest.fixedPath(Method("get")))
+  val codeDetails = entityCodeMaker.codeDetails |+| endpoint[CodeDetailsRequest, CodeDetailsResponse]("/code", MatchesServiceRequest.idAtEnd(Method("get")))
 
   val personDetails = function[PersonServiceFinderRequest, PersonServiceFinderResponse]("persondetails")(
-    req => PersonServiceFinderResponse(req.host, "http://<host>/code/<hash>", javascript.hash, scala.hash, "http://<host>/person/<id>", List("put", "post", "get"))
+    req => PersonServiceFinderResponse(req.host, "http://<host>/code/<hash>", "http://<host>/person/<id>", List("put", "post", "get"))
   ) |+| endpoint[PersonServiceFinderRequest, PersonServiceFinderResponse]("/person", MatchesServiceRequest.fixedPath(Method("get")))
 
   def makeNewPerson(name: String): DomainP
