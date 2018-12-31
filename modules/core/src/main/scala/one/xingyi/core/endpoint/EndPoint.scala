@@ -76,7 +76,9 @@ case class EndPoint[M[_] : Monad, Req, Res](normalisedPath: String, matchesServi
   def debugInfo(req: ServiceRequest) = s"Endpoint($normalisedPath, $matchesServiceRequest) called with $req results in ${isDefinedAt(req)}"
 
   override def apply(serviceRequest: ServiceRequest): M[Option[ServiceResponse]] = {
-    if (debug) {      println(s"In endpoint $this ServiceRequest is $serviceRequest")}
+    if (debug) {
+      println(s"In endpoint $this ServiceRequest is $serviceRequest")
+    }
     if (isDefinedAt(serviceRequest))
       (fromServiceRequest |==> (kleisli |=+> toServiceResponse) |=> toSome) (serviceRequest)
     else
@@ -85,7 +87,9 @@ case class EndPoint[M[_] : Monad, Req, Res](normalisedPath: String, matchesServi
 
   def isDefinedAt(serviceRequest: ServiceRequest): Boolean = {
     val result = matchesServiceRequest(normalisedPath)(serviceRequest)
-    if (debug) {      println(s"In endpoint evaluation 'isDefinedAt''  $result $this Normalised Path is $normalisedPath ServiceRequest is $serviceRequest")}
+    if (debug) {
+      println(s"In endpoint evaluation 'isDefinedAt''  $result $this Normalised Path is $normalisedPath ServiceRequest is $serviceRequest")
+    }
     result
   }
 
@@ -119,7 +123,7 @@ case class IdAtEndAndVerb(method: Method) extends MatchesServiceRequest {
   override def apply(endpointName: String)(serviceRequest: ServiceRequest): Boolean = {
     val methodMatch = serviceRequest.method == method
     val startString = startFn(serviceRequest.uri.path.asUriString)
-    val start =startString == endpointName
+    val start = startString == endpointName
     methodMatch && start
   }
 }
@@ -128,19 +132,23 @@ case class IdAtEndAndVerb(method: Method) extends MatchesServiceRequest {
 case class PrefixThenIdThenCommand(method: Method, command: String) extends MatchesServiceRequest {
 
   override def apply(endpointName: String)(serviceRequest: ServiceRequest): Boolean = {
-    val path = serviceRequest.path.asUriString
-//    println("path: " + path + ", endpoint name: " + endpointName)
-    Strings.startsWithAndSnips(endpointName)(path).map { rest =>
-      val id = Strings.allButlastSection("/")(rest)
-      val actualCommand = Strings.lastSection("/")(rest)
-//      println("id: " + id + ",  command: " + command)
-      val result = id.indexOf("/") == -1 && actualCommand == command && serviceRequest.method == method
-//      println("result: " + result)
-      result
-    }.getOrElse(false)
+    try {
+      val path = serviceRequest.path.asUriString
+      //    println("path: " + path + ", endpoint name: " + endpointName)
+      Strings.startsWithAndSnips(endpointName)(path).map { rest =>
+        val id = Strings.allButlastSection("/")(rest)
+        val actualCommand = Strings.lastSection("/")(rest)
+        //      println("id: " + id + ",  command: " + command)
+        val result = id.indexOf("/") == -1 && actualCommand == command && serviceRequest.method == method
+        //      println("result: " + result)
+        result
+      }.getOrElse(false)
+    } catch {
+      case e: Exception =>
+        throw new RuntimeException(s"problem in $this", e)
+    }
   }
 }
-
 
 
 

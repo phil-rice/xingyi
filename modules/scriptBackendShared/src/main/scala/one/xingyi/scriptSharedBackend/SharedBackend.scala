@@ -52,16 +52,16 @@ object EntityResponse {
 
 import one.xingyi.core.language.AnyLanguage._
 
-case class PersonServiceFinderRequest(host: String)
+case class EntityServiceFinderRequest(host: String)
 
-object PersonServiceFinderRequest {
-  implicit def fromServiceRequest[M[_] : Monad]: FromServiceRequest[M, PersonServiceFinderRequest] = sr => PersonServiceFinderRequest(sr.host).liftM[M]
+object EntityServiceFinderRequest {
+  implicit def fromServiceRequest[M[_] : Monad]: FromServiceRequest[M, EntityServiceFinderRequest] = sr => EntityServiceFinderRequest(sr.host).liftM[M]
 }
 
-case class PersonServiceFinderResponse(hostAndPort: String, codePattern: String, urlPattern: String, supportedVerbs: List[String])
+case class EntityServiceFinderResponse(hostAndPort: String, codePattern: String, urlPattern: String, supportedVerbs: List[String])
 
-object PersonServiceFinderResponse extends JsonWriterLanguage {
-  implicit def toJson[J: JsonWriter]: ToJsonLib[PersonServiceFinderResponse] = { res =>
+object EntityServiceFinderResponse extends JsonWriterLanguage {
+  implicit def toJson[J: JsonWriter]: ToJsonLib[EntityServiceFinderResponse] = { res =>
     import res._
     def toPath(hash: String) = codePattern.replace("<host>", hostAndPort).replace("<hash>", hash)
 
@@ -111,7 +111,11 @@ import JsonWriterLanguage._
 
 class EntityCodeMaker[M[_], Fail, SharedE, DomainE](implicit val monad: MonadCanFailWithException[M, Fail], failer: SimpleFailer[Fail],
                                                     domainList: DomainList[DomainE],
+                                                    entityPrefixFinder: EntityPrefix[DomainE],
                                                     proof: ProofOfBinding[SharedE, DomainE]) extends LiftFunctionKleisli[M] with MicroserviceComposers[M] with EndpointKleisli[M] {
+
+  val entityPrefix = entityPrefixFinder()
+
   def hashMap = domainList.domains.map(_.code).
     foldLeft(Map[String, CodeDetailsResponse]()) { (acc, map) => map.foldLeft(acc) { case (acc, (frag, details)) => acc + (details.hash -> CodeDetailsResponse(details.code, frag.mediaType)) } }
 
@@ -120,21 +124,46 @@ class EntityCodeMaker[M[_], Fail, SharedE, DomainE](implicit val monad: MonadCan
   def codeDetails: CodeDetailsRequest => M[CodeDetailsResponse] = cr =>
     hashMap.get(cr.hash).fold(monad.fail[CodeDetailsResponse](failer.simpleNotFound("Cannot find hash. values are" + hashMap.keys.toList.sorted)))(_.liftM[M])
 
-  def allCodeEndpoint[J: JsonWriter] = function("allCode")(allCode) |+| endpoint[CodeRequest, Code[DomainE]]("/code", MatchesServiceRequest.fixedPath(Method("get")))
-  def codeDetailsEndpoint[J: JsonWriter] = codeDetails |+| endpoint[CodeDetailsRequest, CodeDetailsResponse]("/code", MatchesServiceRequest.idAtEnd(Method("get")))
+  def allCodeEndpoint[J: JsonWriter] = function(s"$entityPrefix.allCode")(allCode) |+| endpoint[CodeRequest, Code[DomainE]](s"/$entityPrefix/code", MatchesServiceRequest.fixedPath(Method("get")))
+  def codeDetailsEndpoint[J: JsonWriter] = codeDetails |+| endpoint[CodeDetailsRequest, CodeDetailsResponse](s"/$entityPrefix/code", MatchesServiceRequest.idAtEnd(Method("get")))
 
   def endpoints[J: JsonWriter] = List(allCodeEndpoint, codeDetailsEndpoint)
 }
 
-class EntityMaker[M[_], Fail, SharedE, DomainE]
-(implicit val monad: MonadCanFailWithException[M, Fail], failer: SimpleFailer[Fail],
- domainList: DomainList[DomainE],
- proof: ProofOfBinding[SharedE, DomainE]) {
+case class GetEntityRequest(id: String, host: String, xingYiHeader: Option[String])
+
+object GetEntityRequest {
+  implicit def hasId: HasId[EntityRequest, String] = _.id
+
+  implicit def hasHost: HasHost[EntityRequest] = _.host
+
+  implicit def fromServiceRequest[M[_]](implicit monad: Monad[M]): FromServiceRequest[M, EntityRequest] = { sr =>
+    monad.liftM(EntityRequest(Strings.lastSection("/")(sr.uri.path.path), sr.host, sr.header("accept")))
+  }
+
+  implicit def toContentType: ToContentType[PersonRequest] = req => req.xingYiHeader.getOrElse(DomainDefn.xingyiHeaderPrefix)
+}
+
+
+class EntityMaker[M[_], Fail, SharedE, DomainE](methods: List[Method])
+                                               (implicit val monad: MonadCanFailWithException[M, Fail], failer: SimpleFailer[Fail],
+                                                domainList: DomainList[DomainE],
+                                                entityPrefixFinder: EntityPrefix[DomainE],
+                                                proof: ProofOfBinding[SharedE, DomainE]) extends LiftFunctionKleisli[M] with MicroserviceComposers[M] with EndpointKleisli[M] {
+  val entityPrefix = entityPrefixFinder()
+
+  def detailsEndpoint[J: JsonWriter] = function[EntityServiceFinderRequest, EntityServiceFinderResponse](s"$entityPrefix.persondetails")(
+    req => EntityServiceFinderResponse(req.host, s"http://${req.host}/code/<hash>", s"http://${req.host}/$entityPrefix/<id>", methods.map(_.toString))
+  ) |+| endpoint[EntityServiceFinderRequest, EntityServiceFinderResponse](s"/$entityPrefix", MatchesServiceRequest.fixedPath(Method("get")))
+
+  def getEndpoint(fn: String => M[DomainE]) =
+    function[PersonRequest, ServerPayload[DomainP]]("findPerson")(req => ServerPayload(Status(200), people.getOrElse(req.name, throw new RuntimeException("could not find name: " + req.name + "\n" + req)), domainList.accept(req.xingYiHeader))) |+| endpoint[PersonRequest, ServerPayload[DomainP]]("/person", MatchesServiceRequest.idAtEnd(Method("get")))
+
 
 }
 
 
-abstract class SharedBackend[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : JsonWriter, SharedP, DomainP: Links]
+abstract class SharedBackend[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : JsonWriter, SharedP, DomainP: Links : EntityPrefix]
 (implicit val monad: MonadCanFailWithException[M, Fail],
  val logReqAndResult: LogRequestAndResult[Fail],
  domainList: DomainList[DomainP],
@@ -146,6 +175,7 @@ abstract class SharedBackend[M[_] : Async, Fail: Failer : LogRequestAndResult, J
   import projection.proof
 
   val entityCodeMaker = new EntityCodeMaker[M, Fail, SharedP, DomainP]
+  val entityMaker = new EntityMaker[M, Fail, SharedP, DomainP](List(Get, Post, Put))
 
   def edit(name: String, person: DomainP, xingYiHeader: Option[String]) = {
     people = people + (name -> person)
@@ -154,9 +184,11 @@ abstract class SharedBackend[M[_] : Async, Fail: Failer : LogRequestAndResult, J
   }
 
 
-  val personDetails = function[PersonServiceFinderRequest, PersonServiceFinderResponse]("persondetails")(
-    req => PersonServiceFinderResponse(req.host, "http://<host>/code/<hash>", "http://<host>/person/<id>", List("put", "post", "get"))
-  ) |+| endpoint[PersonServiceFinderRequest, PersonServiceFinderResponse]("/person", MatchesServiceRequest.fixedPath(Method("get")))
+  //  val personDetails = function[EntityServiceFinderRequest, EntityServiceFinderResponse]("persondetails")(
+  //    req => EntityServiceFinderResponse(req.host, "http://<host>/code/<hash>", "http://<host>/person/<id>", List("put", "post", "get"))
+  //  ) |+| endpoint[EntityServiceFinderRequest, EntityServiceFinderResponse]("/person", MatchesServiceRequest.fixedPath(Method("get")))
+  //
+
 
   def makeNewPerson(name: String): DomainP
 
@@ -167,6 +199,6 @@ abstract class SharedBackend[M[_] : Async, Fail: Failer : LogRequestAndResult, J
 
   val keepalive: ServiceRequest => M[Option[ServiceResponse]] = function[ServiceRequest, ServiceResponse]("keepalive")(sr => ServiceResponse("Alive")) |+| endpoint[ServiceRequest, ServiceResponse]("/ping", MatchesServiceRequest.fixedPath(Method("get")))
 
-  val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(personDetails, newPerson, getPerson, editPerson, keepalive, chain(entityCodeMaker.endpoints: _*))
+  val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(entityMaker.detailsEndpoint, newPerson, getPerson, editPerson, keepalive, chain(entityCodeMaker.endpoints: _*))
 
 }

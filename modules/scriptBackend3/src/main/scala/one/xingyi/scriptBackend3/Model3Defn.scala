@@ -49,6 +49,7 @@ object Address extends JsonWriterLanguage {
 case class Person(name: String, address: List[Address], telephoneNumber: Telephone)
 
 object Person extends JsonWriterLanguage {
+  implicit val entityPrefix: EntityPrefix[Person] = () => "person"
   implicit val hasId: HasId[Person,String] = _.name
   implicit val links: Links[Person] = _ => List(LinkDetail("self", "/person/<id>"))
   implicit val nameL = Lens[Person, String](_.name, (p, n) => p.copy(name = n))

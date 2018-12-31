@@ -49,7 +49,8 @@ object Address extends JsonWriterLanguage {
 case class Person(name: String, address: Address, telephoneNumber: Telephone)
 
 object Person extends JsonWriterLanguage {
-  implicit val hasId: HasId[Person,String] = _.name
+  implicit val entityPrefix: EntityPrefix[Person] = () => "person"
+  implicit val hasId: HasId[Person, String] = _.name
 
   implicit val links: Links[Person] = _ => List(LinkDetail("self", "/person/<id>"))
   implicit val nameL = Lens[Person, String](_.name, (p, n) => p.copy(name = n))
@@ -64,7 +65,7 @@ object Person extends JsonWriterLanguage {
     override def nameLens = XingYiDomainStringLens(nameL)
   }
 
-  implicit object personLine12Ops extends  IPersonLine12Ops[IXingYiLens, IPerson] {
+  implicit object personLine12Ops extends IPersonLine12Ops[IXingYiLens, IPerson] {
     override def line1Lens = XingYiDomainStringLens(personAddressL andThen Address.line1L)
 
     override def line2Lens = XingYiDomainStringLens(personAddressL andThen Address.line2L)

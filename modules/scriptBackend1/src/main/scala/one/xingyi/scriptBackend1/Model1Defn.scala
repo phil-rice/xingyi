@@ -27,6 +27,7 @@ object Telephone {
 case class Person(name: String, line1: String, line2: String, telephoneNumber: Telephone)
 
 object Person extends JsonWriterLanguage {
+  implicit val entityPrefix: EntityPrefix[Person] = () => "person"
   implicit val hasId: HasId[Person, String] = _.name
 
   implicit val links: Links[Person] = _ => List(LinkDetail("self", "/person/<id>"))

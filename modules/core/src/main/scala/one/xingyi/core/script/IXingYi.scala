@@ -43,6 +43,9 @@ trait ServerDomain {
 
 }
 
+trait EntityPrefix[T]{
+  def apply(): String
+}
 case class LinkDetail(verb: String, urlPattern: String)
 
 trait Links[T] extends (T => List[LinkDetail])
@@ -58,11 +61,11 @@ trait HasHost[T] {
 }
 
 object ServerPayload extends JsonWriterLanguage {
-  implicit def toServerResponse[J, Req, Server, Domain](implicit jsonWriter: JsonWriter[J], hasId: HasId[Req, String], hasHost: HasHost[Req], projection: Projection[Server, Domain], toContentType: ToContentType[Req]): ToServiceResponse[Req, ServerPayload[Domain]] = { req =>
+  implicit def toServerResponse[J, Req, Server, Domain](implicit jsonWriter: JsonWriter[J], entityPrefix: EntityPrefix[Domain], hasId: HasId[Req, String], hasHost: HasHost[Req], projection: Projection[Server, Domain], toContentType: ToContentType[Req]): ToServiceResponse[Req, ServerPayload[Domain]] = { req =>
     payload =>
       val host = hasHost(req)
       ServiceResponse(payload.status, Body(
-        s"http://$host/code/" + payload.domain.codeHeader + "\n" +
+        s"http://$host/${entityPrefix()}/code/" + payload.domain.codeHeader + "\n" +
           jsonWriter(projection.toJson(payload.domainObject) |+| ("_links" ->
             JsonObject(payload.links(payload.domainObject).map {
               case LinkDetail(verb, pattern) => verb -> JsonString(pattern.replace("<id>", hasId(req)).replace("<host>", host))
