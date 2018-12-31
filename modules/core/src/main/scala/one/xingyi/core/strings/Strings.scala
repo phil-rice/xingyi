@@ -6,6 +6,8 @@ import java.io.{ByteArrayOutputStream, PrintStream, StringWriter}
 import one.xingyi.core.metrics.PrintlnPutMetrics
 
 object Strings {
+  def withoutStringBefore(beforeChar:  Char)(s: String):String = s.dropWhile(_ != beforeChar).drop(1)
+
   def toOption(s: String) = if (s == null || s == "") None else Some(s)
 
   def startsWithAndSnips(start: String)(s: String): Option[String] = if (s.startsWith(start)) Some(s.substring(start.length + 1)) else None

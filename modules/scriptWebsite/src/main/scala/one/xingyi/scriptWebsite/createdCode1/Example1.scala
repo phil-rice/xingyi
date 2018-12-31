@@ -39,5 +39,5 @@ class TelephoneNumberOps(implicit val xingYi: IXingYi) extends ITelephoneNumberO
 
 
 object Model1Domain extends ServerDomain{
-   def lens=List("lens_telephonenumber_number_string", "lens_person_line2_string", "lens_person_line1_string", "lens_person_telephonenumber_telephonenumber", "lens_person_name_string")
+   def lens=List("lens_person_line1_string", "lens_telephonenumber_number_string", "lens_person_line2_string", "lens_person_telephonenumber_telephonenumber", "lens_person_name_string")
 }

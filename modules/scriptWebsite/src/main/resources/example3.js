@@ -73,18 +73,33 @@ function render_pretty(t) {
     return JSON.stringify(t, null, 2)
 };
 
+function render_form(t) {
+    var name = lens_person_name_string().get(t);
+    var line1 = lens_person_line1_string().get(t);
+    var line2 = lens_person_line2_string().get(t);
+    var html = "<form method='post' action='/person/" + name + "/edit' enctype='application/x-www-form-urlencoded'>" +
+        "   <table>" +
+        "      <tr><td>Name</td><td><input name ='name'type='text' value='" + name + "' readonly /></td></tr>" +
+        "      <tr><td>Line1</td><td><input name='line1' type='text' value='" + line1 + "' /></td></tr>" +
+        "      <tr><td>Line2</td><td><input name='line2' type='text' value='" + line2 + "' /></td></tr>" +
+        "   </table>" +
+        "   <input type='submit'/>" +
+        "</form>";
+    return html
+}
+
 function lens_root() {
     return lens("_embedded");
 }
 
 
 
-function lens_person_telephonenumber_telephonenumber(){ return lens("telephoneNumber");}; 
-function lens_address_line1_string(){ return lens("line1");}; 
-function lens_person_addresses_addresslist(){ return lens("addresses");}; 
+function lens_address_line2_string(){ return lens("line2");}; 
 function lens_telephonenumber_number_string(){ return lens("number");}; 
 function lens_person_name_string(){ return lens("name");}; 
-function lens_address_line2_string(){ return lens("line2");}; 
+function lens_person_telephonenumber_telephonenumber(){ return lens("telephoneNumber");}; 
+function lens_person_addresses_addresslist(){ return lens("addresses");}; 
+function lens_address_line1_string(){ return lens("line1");}; 
 function lens_person_address_address() { return compose(lens_person_addresses_addresslist(), lensForFirstItemInList())}
 function lens_person_line1_string() { return compose(lens_person_address_address(), lens("line1"))}
 function lens_person_line2_string() { return compose(lens_person_address_address(), lens("line2"))}

@@ -30,6 +30,7 @@ object Person extends JsonWriterLanguage {
   implicit val hasId: HasId[Person, String] = _.name
 
   implicit val links: Links[Person] = _ => List(LinkDetail("self", "/person/<id>"))
+
   implicit val nameL = Lens[Person, String](_.name, (p, n) => p.copy(name = n))
   implicit val line1L = Lens[Person, String](_.line1, (p, n) => p.copy(line1 = n))
   implicit val line2L = Lens[Person, String](_.line2, (p, n) => p.copy(line2 = n))

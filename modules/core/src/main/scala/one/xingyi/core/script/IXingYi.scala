@@ -18,12 +18,12 @@ object IXingYiLoader {
 }
 
 class DefaultXingYiLoader() extends IXingYiLoader {
-  override def apply(javaScript: String): IXingYi = {
-    import jdk.nashorn.api.scripting.NashornScriptEngineFactory
-    val engine: ScriptEngine = new NashornScriptEngineFactory().getScriptEngine("--language=es6 ")
-    engine.eval(javaScript)
-    new DefaultXingYi(engine)
-  }
+    override def apply(javaScript: String): IXingYi = {
+      import jdk.nashorn.api.scripting.NashornScriptEngineFactory
+      val engine: ScriptEngine = new NashornScriptEngineFactory().getScriptEngine("--language=es6 ")
+      engine.eval(javaScript)
+      new DefaultXingYi(engine)
+    }
 }
 
 trait DomainMaker[T <: Domain] {

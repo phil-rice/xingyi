@@ -8,6 +8,8 @@ import one.xingyi.core.objectify.{EntityDetailsUrl, FromEntityDetailsResponse}
 import one.xingyi.core.service.html.ToHtml
 import one.xingyi.core.strings.Strings
 import one.xingyi.scriptExample.createdCode1.{Person, PersonLine12Ops}
+import one.xingyi.scriptModel1.IPerson
+import one.xingyi.scriptWebsite
 
 import scala.language.higherKinds
 
@@ -104,10 +106,11 @@ object EditPersonRequest {
   implicit def entityUrl(implicit personEntityUrl: EntityDetailsUrl[PersonAddressRequest]): EntityDetailsUrl[EditPersonRequest] = EntityDetailsUrl(personEntityUrl.url)
 
   implicit def fromEntityDetailsResponse: FromEntityDetailsResponse[EditPersonRequest] = {
-    (req, sd) => edr =>
-      println(s"in fromEntityDetailsResponse. Req is $req sd is $sd and edr is $edr" )
-      println(s"in fromEntityDetailsResponse. name is ${req.name}" )
-      ServiceRequest(Method("get"), Uri(edr.urlPattern.replace("<id>", req.name)), headers = List(Header("accept", sd.contentType)), body = None)
+    (req, sd) =>
+      edr =>
+        println(s"in fromEntityDetailsResponse. Req is $req sd is $sd and edr is $edr")
+        println(s"in fromEntityDetailsResponse. name is ${req.name}")
+        ServiceRequest(Method("get"), Uri(edr.urlPattern.replace("<id>", req.name)), headers = List(Header("accept", sd.contentType)), body = None)
 
   }
 }
@@ -116,6 +119,9 @@ case class EditPersonResponse(json: String)
 
 object EditPersonResponse {
   implicit def toServiceResponse: ToServiceResponse[EditPersonRequest, EditPersonResponse] = { req => res => ServiceResponse(Status(200), Body(res.json + "some content"), ContentType("application/json")) }
+
+  implicit def fromEditXingYi: FromEditXingYi[EditPersonRequest, Person, EditPersonResponse] =
+    (req, dom, sr) => EditPersonResponse(Strings.withoutStringBefore('=')(sr.body.s))
 
   implicit def fromXingYi: FromXingYi[EditPersonRequest, EditPersonResponse] = {
     implicit xingYi =>

@@ -89,5 +89,9 @@ object FromServiceResponse extends JsonWriterLanguage {
 
 trait FromXingYi[Req, Res] extends (IXingYi => Req => String => Res)
 
+trait FromEditXingYi[Req, Dom <: one.xingyi.core.script.Domain, Res] {
+  def apply(req: Req, dom: Dom, sr: ServiceResponse): Res
+}
+
 trait EndpointPath[T] extends (ServiceResponse => Option[T])
 
