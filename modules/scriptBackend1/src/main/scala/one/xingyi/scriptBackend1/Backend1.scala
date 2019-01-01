@@ -22,8 +22,7 @@ object Backend1 extends App {
 
   import SimpleLogRequestAndResult._
 
-  val domainDetails: DomainDetails[Person] = implicitly[DomainDefnToDetails[Person]].apply(new Model1Defn)
-  implicit val domainList = DomainList(domainDetails)
+  implicit val domainList = DomainList(DomainDefnToDetails(new Model1Defn))
 
   val backend = new SharedBackend[IdentityMonad, Throwable, JValue, IPerson, Person]
 

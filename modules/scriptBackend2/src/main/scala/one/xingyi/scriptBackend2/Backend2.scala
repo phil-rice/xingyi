@@ -17,13 +17,12 @@ import org.json4s.JValue
 import scala.language.higherKinds
 
 
-
 object Backend2 extends App {
   implicit val logger: LoggingAdapter = PrintlnLoggingAdapter
 
   import SimpleLogRequestAndResult._
-  val domainDetails: DomainDetails[Person] = implicitly[DomainDefnToDetails[Person]].apply(new Model2Defn)
-  implicit val domainList = DomainList(domainDetails)
+
+  implicit val domainList = DomainList(DomainDefnToDetails(new Model2Defn))
 
   val backend = new SharedBackend[IdentityMonad, Throwable, JValue, IPerson, Person]
 

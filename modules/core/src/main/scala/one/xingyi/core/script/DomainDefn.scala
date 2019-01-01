@@ -53,6 +53,7 @@ abstract class DomainDefn[T: ClassTag](val sharedPackageName: String, val render
 trait DomainDefnToDetails[T] extends (DomainDefn[T] => DomainDetails[T])
 
 object DomainDefnToDetails {
+  def apply[T:ClassTag](domainDefn: DomainDefn[T])(implicit domainDefnToDetails: DomainDefnToDetails[T]) = domainDefnToDetails(domainDefn)
   implicit def default[T](implicit javascript: HasLensCodeMaker[Javascript], scala: ToScalaCode[DomainDefn[T]]): DomainDefnToDetails[T] = { defn =>
     val scalaDetails = CodeDetails(scala(defn))
     val javascriptDetails = script.CodeDetails(javascript(defn))
