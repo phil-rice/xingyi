@@ -6,6 +6,7 @@ import one.xingyi.core.json._
 import one.xingyi.core.reflection.{ClassTags, Reflect}
 import one.xingyi.core.script
 
+import scala.collection.Set
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
@@ -13,17 +14,17 @@ case class XingYiManualPath[A, B](prefix: String, lensType: String, javascript: 
   def makeManualLens(name: String) = ManualLensDefn[A, B](prefix, isList, javascript)
 }
 
+case class InterfaceAndProjection[Shared, Domain](sharedOps: IXingYiSharedOps[IXingYiLens, Shared], projection: ObjectProjection[Shared, Domain])
+object InterfaceAndProjection {
+  implicit def tupleTo[Shared, Domain](tuple: (IXingYiSharedOps[IXingYiLens, Shared], ObjectProjection[Shared, Domain])) =
+    InterfaceAndProjection(tuple._1, tuple._2)
+}
+
+
 object DomainDefn {
   val xingyiHeaderPrefix = "application/xingyi."
   val xingyiCodeSummaryMediaType = "application/json"
   def accepts(lensNames: List[String]) = DomainDefn.xingyiHeaderPrefix + DomainDetails.stringsToString(lensNames)
-}
-
-case class InterfaceAndProjection[Shared, Domain](sharedOps: IXingYiSharedOps[IXingYiLens, Shared], projection: ObjectProjection[Shared, Domain])
-
-object InterfaceAndProjection {
-  implicit def tupleTo[Shared, Domain](tuple: (IXingYiSharedOps[IXingYiLens, Shared], ObjectProjection[Shared, Domain])) =
-    InterfaceAndProjection(tuple._1, tuple._2)
 }
 
 
@@ -85,7 +86,7 @@ object DomainDetails {
 }
 
 
-class CannotRespondToQuery(header: String, set: Set[String], normalisedHeader: String, failures: List[(String, Set[String], Set[String])]) extends
+class CannotRespondToQuery(header: Option[String], set: Set[String], normalisedHeader: String, failures: List[(String, Set[String], Set[String])]) extends
   RuntimeException(
     s"""Header[$header]
        | normalised[$normalisedHeader],
@@ -103,24 +104,29 @@ class CannotRespondToQuery(header: String, set: Set[String], normalisedHeader: S
 object DomainList {
   def stringToSet(s: String) = s.split(",").filterNot(_.isEmpty).toSet
 }
-
-case class DomainList[SharedE, DomainE](firstDomain: DomainDetails[SharedE, DomainE], restDomains: DomainDetails[SharedE, DomainE]*) {
-  val domains = firstDomain :: restDomains.toList
-
-  def accept(xingyiHeader: Option[String]) =
-    xingyiHeader match {
-      case None => firstDomain
-      case Some(header) if !header.contains(DomainDefn.xingyiHeaderPrefix) => firstDomain
+trait IXingYiHeaderToLensNames {
+  def apply(xingyiHeader: Option[String]): Set[String]
+}
+object IXingYiHeaderToLensNames {
+  implicit object headerToLensNames extends IXingYiHeaderToLensNames {
+    override def apply(xingyiHeader: Option[String]): Set[String] = xingyiHeader match {
+      case None => Set()
+      case Some(header) if !header.contains(DomainDefn.xingyiHeaderPrefix) => Set()
       case Some(header) =>
         if (!header.startsWith(DomainDefn.xingyiHeaderPrefix)) throw new RuntimeException(s"Must start with ${DomainDefn.xingyiHeaderPrefix} actually is $header")
         val withoutPrefix = header.substring(DomainDefn.xingyiHeaderPrefix.length)
-        val set = DomainList.stringToSet(withoutPrefix)
-        domains.find(_.isDefinedAt(set)) match {
-          case Some(foundDomain) => foundDomain
-          case None =>
-            val diff = set -- domains(0).lensNames
-            val failures: List[(String, Set[String], Set[String])] = domains.map(d => (d.name, d.lensNames, set -- d.lensNames))
-            throw new CannotRespondToQuery(header, set, DomainDetails.stringsToString(set), failures)
-        }
+        DomainList.stringToSet(withoutPrefix)
     }
+  }
+}
+case class DomainList[SharedE, DomainE](firstDomain: DomainDetails[SharedE, DomainE], restDomains: DomainDetails[SharedE, DomainE]*) {
+  val domains = firstDomain :: restDomains.toList
+
+  def accept(xingyiHeader: Option[String])(implicit xingYiHeaderToLensNames: IXingYiHeaderToLensNames) = xingYiHeaderToLensNames(xingyiHeader) match {
+    case empty if empty.size == 0 => firstDomain
+    case set => domains.find(_.isDefinedAt(set)) match {
+      case Some(foundDomain) => foundDomain
+      case None => throw new CannotRespondToQuery(xingyiHeader, set, DomainDetails.stringsToString(set), domains.map(d => (d.name, d.lensNames, set -- d.lensNames)))
+    }
+  }
 }

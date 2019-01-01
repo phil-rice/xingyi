@@ -5,7 +5,7 @@ import one.xingyi.core.json._
 import one.xingyi.core.strings.Strings
 
 
-trait Header[L] extends (DomainDefn[_,_] => String)
+trait Header[L] extends (DomainDefn[_, _] => String)
 
 trait Renderer[L] extends (String => String)
 
@@ -13,22 +13,21 @@ trait Footer[L] extends (() => String)
 
 trait LensCodeMaker[L] extends (LensDefn[_, _] => String)
 
-case class MediaType(s:String) extends AnyVal
+case class MediaType(s: String) extends AnyVal
 
-trait CodeFragment{
-  def mediaType:MediaType
+trait CodeFragment {
+  def mediaType: MediaType
   override def toString: String = Strings.removeOptional$(getClass.getSimpleName)
 }
 
 
 trait HasLensCodeMaker[L <: CodeFragment] {
-  def defns[SharedE, DomainE](anyRef: DomainDefn[SharedE, DomainE]): List[LensDefn[_, _]] = anyRef.lens
   def apply[SharedE, DomainE](anyRef: DomainDefn[SharedE, DomainE]): String
 }
 
 class SimpleHasLensCodeMaker[L <: CodeFragment](implicit lensCodeMaker: LensCodeMaker[L], header: Header[L], render: Renderer[L], footer: Footer[L]) extends HasLensCodeMaker[L] {
   def apply[SharedE, DomainE](defn: DomainDefn[SharedE, DomainE]): String =
-    (header(defn) :: defn.renderers.map(render) ::: defns(defn).map(lensCodeMaker) ::: List(footer())).mkString("\n")
+    (header(defn) :: defn.renderers.map(render) ::: defn.lens.map(lensCodeMaker) ::: List(footer())).mkString("\n")
 }
 
 object HasLensCodeMaker {

@@ -37,6 +37,10 @@ trait IParentHouseOps[L[_, _], P <: IParent, H <: IHouse] extends IXingYiSharedO
 trait IParentChildrenOps[L[_, _], P <: IParent, C <: IChild] extends IXingYiSharedOps[L, P] {
   def childrenLens: L[P, List[C]]
 }
+@XingYiInterface(clazzes = Array(classOf[IParent]))
+trait IParentHousePostCodeOps[L[_, _], P <: IParent] extends IXingYiSharedOps[L, P] {
+  def housePostcodeLens: L[P, String]
+}
 
 case class ParentForTest(name: String, age: Int, house: HouseForTest, children: List[ChildForTest])
 object ParentForTest {
@@ -75,11 +79,19 @@ class ParentDomainForTest2 extends DomainDefn[IParent, ParentForTest](
   List(ParentForTest.parentNameOps -> ParentForTest.parentProjection,
     //    ParentForTest.parentHouseOps -> ParentForTest.parentProjection,
     ParentForTest.parentChildrenOps -> ParentForTest.parentProjection
-  ), List())
+  ), List(
+    new IParentHousePostCodeOps[XingYiManualPath, IParent] {
+      override def housePostcodeLens: XingYiManualPath[IParent, String] =
+        XingYiManualPath("lens_person_postcode_string", "stringLens",
+          """function lens_person_postcode_string() { return compose(xxx(), xx())}""")
+    }
+  ))
 
 
 trait ScriptFixture {
-  val domainList = DomainList[IParent, ParentForTest](DomainDefnToDetails(new ParentDomainForTest1), DomainDefnToDetails(new ParentDomainForTest2))
+  val details1 = DomainDefnToDetails(new ParentDomainForTest1)
+  val details2 = DomainDefnToDetails(new ParentDomainForTest2)
+  val domainList = DomainList[IParent, ParentForTest](details1, details2)
   val code0 = domainList.domains(0).code
   val js0Hash = code0(Javascript).hash
   val scala0Hash = code0(ScalaCode).hash
