@@ -10,6 +10,7 @@ import scala.collection.immutable
 import scala.language.higherKinds
 import scala.reflect.ClassTag
 
+//TODO This file is a mess. Needs sorting out
 object ScalaCode extends ScalaCode {
   override def mediaType: MediaType = MediaType("application/scala")
 }
@@ -72,26 +73,18 @@ object ToScalaCode {
       }.mkString(",")
 
       val classStart =
-        s"""class ${interfaceToImplName.opsServerSideImpl(interface)}(implicit val xingYi: IXingYi) extends ${interfaceToImplName.opsInterface(interface)}[Lens, $s]{""".stripMargin
+        s"""class ${interfaceToImplName.opsServerSideImpl(interface)}(implicit val xingYi: IXingYi) extends ${interfaceToImplName.opsInterface(interface)}[Lens, $s] with IXingYiGeneratedSharedOps{""".stripMargin
+      val headerField = s"""   def header=List(${list.map(x => "\"" + x.lensDefn.name + "\"").mkString(",")})"""
+
       val middle = list.map(lensAndLensDefnToScala)
       val end = "}"
-      (classStart :: middle ::: List(end)).mkString("\n")
+      (classStart :: headerField :: middle ::: List(end)).mkString("\n")
   }
-
-
-  //  case class Person(mirror: Object) extends Domain with IPerson
-  //  object Person {
-  //    implicit def PersonMaker: DomainMaker[Person] = Person.apply
-  //    implicit def personOps(implicit xingYi: IXingYi) = new IPersonNameOps[Lens, Person] {
-  //      override def name: Lens[Person, String] = xingYi.stringLens("iperson_name")
-  //    }
-  //  }
-
 
   implicit def makeScalaCode[SharedE, DomainE](implicit interfaceAndLensToScala: ToScalaCode[InterfaceAndLens], interfaceToImplName: InterfaceToImplName): ToScalaCode[DomainDefn[SharedE, DomainE]] = {
     domainDefn =>
       val packageSring = s"package ${domainDefn.packageName}"
-      val imports = s"import ${domainDefn.sharedPackageName}._\nimport one.xingyi.core.optics.Lens\nimport one.xingyi.core.script.{Domain,DomainMaker, IXingYi,ServerDomain}"
+      val imports = s"import ${domainDefn.sharedPackageName}._\nimport one.xingyi.core.json.IXingYiGeneratedSharedOps\nimport one.xingyi.core.optics.Lens\nimport one.xingyi.core.script.{Domain,DomainMaker, IXingYi,ServerDomain}"
       val domainClasses = domainDefn.interfacesToProjections.map(_.projection).distinct.map {
         interface =>
           val impl = interfaceToImplName.impl(interface.sharedClassTag.runtimeClass)
@@ -117,19 +110,23 @@ object ToScalaCode {
                 }")))
             })
       }.map(interfaceAndLensToScala).mkString("\n")
+
       val opsFromLegacy = domainDefn.manual.map { ops =>
         val opClass = Reflect.findParentClassWith(ops.getClass, classOf[IXingYiSharedOps[XingYiManualPath, _]])
         val classes = opClass.getAnnotation(classOf[XingYiInterface]).clazzes().map(interfaceToImplName.impl).mkString(",")
-        val header = "class " + interfaceToImplName.opsServerSideImpl(ops) + s"(implicit val xingYi: IXingYi) extends ${interfaceToImplName.opsInterface(ops)}[Lens, $classes] {//" + ops.getClass
+        val header = "class " + interfaceToImplName.opsServerSideImpl(ops) + s"(implicit val xingYi: IXingYi) extends ${interfaceToImplName.opsInterface(ops)}[Lens, $classes] with IXingYiGeneratedSharedOps {//" + ops.getClass
+        val methodNamesAndXingYiLines: immutable.Seq[(String, XingYiManualPath[_, _])] = Reflect(ops).zeroParamMethodsNameAndValue[XingYiManualPath[_, _]]()
+        val headerField = s"""   def header=List(${methodNamesAndXingYiLines.map(x => "\"" + x._2.prefix + "\"").mkString(",")})"""
 
-        val middle = Reflect(ops).zeroParamMethodsNameAndValue[XingYiManualPath[_, _]]().map { case (name, value) =>
+//        val headerField = "  def header=" + methodNamesAndXingYiLines.map(_._2.prefix)
+        val middle = methodNamesAndXingYiLines.map { case (name, value) =>
           val lensString = value.lensType match {
             case "stringLens" => s"${value.lensType}[${interfaceToImplName.impl(value.classTag.runtimeClass)}]"
             case _ => s"${value.lensType}[${interfaceToImplName.impl(value.classTag.runtimeClass)},${interfaceToImplName.impl(value.childClassTag.runtimeClass)}]"
           }
-          s""" def $name = xingYi.$lensString("${value.prefix}") """
+          s"""   def $name = xingYi.$lensString("${value.prefix}") """
         }.mkString("\n")
-        List(header, middle, "}").mkString("\n")
+        List(header, headerField, middle, "}").mkString("\n")
       }.mkString("\n")
 
       val domainCode = List(s"object ${domainDefn.domainName} extends ServerDomain{",

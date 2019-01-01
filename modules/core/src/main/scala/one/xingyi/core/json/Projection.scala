@@ -9,6 +9,9 @@ import one.xingyi.core.reflection.ClassTags
 import scala.language.{higherKinds, implicitConversions}
 trait IXingYiShared
 trait IXingYiSharedOps[Lens[_, _], T]
+trait IXingYiGeneratedSharedOps {
+  def header: List[String]
+}
 trait IXingYiLens[A, B]
 
 case class JsonParsingException(msgs: List[String], cause: Exception) extends Exception(msgs.mkString("\n"))

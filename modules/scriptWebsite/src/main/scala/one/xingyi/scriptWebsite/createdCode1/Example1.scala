@@ -2,6 +2,7 @@ package one.xingyi.scriptExample.createdCode1
 
 
 import one.xingyi.scriptModel1._
+import one.xingyi.core.json.IXingYiGeneratedSharedOps
 import one.xingyi.core.optics.Lens
 import one.xingyi.core.script.{Domain,DomainMaker, IXingYi,ServerDomain}
 
@@ -20,17 +21,21 @@ object TelephoneNumber {
 }
 
 
-class PersonNameOps(implicit val xingYi: IXingYi) extends IPersonNameOps[Lens, Person]{
+class PersonNameOps(implicit val xingYi: IXingYi) extends IPersonNameOps[Lens, Person] with IXingYiGeneratedSharedOps{
+   def header=List("lens_person_name_string")
    def nameLens = xingYi.stringLens[Person]("lens_person_name_string")
 }
-class PersonTelephoneOps(implicit val xingYi: IXingYi) extends IPersonTelephoneOps[Lens, Person,TelephoneNumber]{
+class PersonTelephoneOps(implicit val xingYi: IXingYi) extends IPersonTelephoneOps[Lens, Person,TelephoneNumber] with IXingYiGeneratedSharedOps{
+   def header=List("lens_person_telephonenumber_telephonenumber")
    def telephoneNumberLens = xingYi.objectLens[Person,TelephoneNumber]("lens_person_telephonenumber_telephonenumber")
 }
-class PersonLine12Ops(implicit val xingYi: IXingYi) extends IPersonLine12Ops[Lens, Person]{
+class PersonLine12Ops(implicit val xingYi: IXingYi) extends IPersonLine12Ops[Lens, Person] with IXingYiGeneratedSharedOps{
+   def header=List("lens_person_line1_string","lens_person_line2_string")
    def line1Lens = xingYi.stringLens[Person]("lens_person_line1_string")
    def line2Lens = xingYi.stringLens[Person]("lens_person_line2_string")
 }
-class TelephoneNumberOps(implicit val xingYi: IXingYi) extends ITelephoneNumberOps[Lens, TelephoneNumber]{
+class TelephoneNumberOps(implicit val xingYi: IXingYi) extends ITelephoneNumberOps[Lens, TelephoneNumber] with IXingYiGeneratedSharedOps{
+   def header=List("lens_telephonenumber_number_string")
    def numberLens = xingYi.stringLens[TelephoneNumber]("lens_telephonenumber_number_string")
 }
 
@@ -39,5 +44,5 @@ class TelephoneNumberOps(implicit val xingYi: IXingYi) extends ITelephoneNumberO
 
 
 object Model1Domain extends ServerDomain{
-   def lens=List("lens_person_name_string", "lens_person_line1_string", "lens_person_line2_string", "lens_person_telephonenumber_telephonenumber", "lens_telephonenumber_number_string")
+   def lens=List("lens_person_name_string", "lens_person_line2_string", "lens_person_telephonenumber_telephonenumber", "lens_person_line1_string", "lens_telephonenumber_number_string")
 }
