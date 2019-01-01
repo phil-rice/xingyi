@@ -2,15 +2,14 @@
 package one.xingyi.scriptBackend3
 
 import one.xingyi.core.http.Failer.failerForThrowable
-import one.xingyi.core.http._
-import one.xingyi.core.json._
 import one.xingyi.core.logging._
-import one.xingyi.core.monad.{Async, IdentityMonad, MonadCanFailWithException}
-import one.xingyi.core.script.{DomainDefnToDetails, DomainDetails, DomainList}
+import one.xingyi.core.monad.IdentityMonad
+import one.xingyi.core.script.{DomainDefnToDetails, DomainList}
+import one.xingyi.core.simpleServer.CheapServer
 import one.xingyi.json4s.Json4sParser._
 import one.xingyi.json4s.Json4sWriter._
 import one.xingyi.scriptModel3.IPerson
-import one.xingyi.scriptSharedBackend.SharedBackend
+import one.xingyi.scriptSharedBackend.EntityEndpoints
 import org.json4s.JValue
 
 import scala.language.higherKinds
@@ -22,7 +21,8 @@ object Backend3 extends App {
 
   implicit val domainList = DomainList(DomainDefnToDetails(new Model3Defn))
 
-  val backend = new SharedBackend[IdentityMonad, Throwable, JValue, IPerson, Person]
+  val website = new EntityEndpoints[IdentityMonad, Throwable, JValue, IPerson, Person]
+  val backend = new CheapServer[IdentityMonad, Throwable](9001, website.endpoints)
 
   println("running")
   backend.start

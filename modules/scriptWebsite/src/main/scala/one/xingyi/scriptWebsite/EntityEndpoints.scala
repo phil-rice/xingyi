@@ -4,9 +4,10 @@ package one.xingyi.scriptWebsite
 import javax.net.ssl.SSLContext
 import one.xingyi.cddmustache.{Mustache, NameToMustacheTemplate}
 import one.xingyi.core.client.HttpClient
-import one.xingyi.core.endpoint.{DisplayRecordedKleisli, MatchesServiceRequest}
+import one.xingyi.core.endpoint.{ChainKleisli, DisplayRecordedKleisli, EndpointKleisli, MatchesServiceRequest}
 import one.xingyi.core.http._
 import one.xingyi.core.json._
+import one.xingyi.core.language.MicroserviceComposers
 import one.xingyi.core.logging._
 import one.xingyi.core.monad._
 import one.xingyi.core.objectify._
@@ -16,7 +17,7 @@ import one.xingyi.core.simpleServer.CheapServer
 import one.xingyi.scriptExample.createdCode1.{Model1Domain, Person, PersonLine12Ops, PersonNameOps}
 import one.xingyi.scriptWebsite
 import org.json4s.JValue
-
+import one.xingyi.core.language.AnyLanguage._
 import scala.language.higherKinds
 
 case class MustacheToHtml[J: JsonWriter, T](templateName: String, title: String)(implicit toJsonLib: ToJsonLib[T], nameToMustacheTemplate: NameToMustacheTemplate) extends ToHtml[T] {
@@ -26,8 +27,13 @@ case class MustacheToHtml[J: JsonWriter, T](templateName: String, title: String)
 }
 
 class Website[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : JsonWriter]
-(implicit val monad: MonadCanFailWithException[M, Fail] with MonadWithState[M], val logReqAndResult: LogRequestAndResult[Fail], loggingAdapter: LoggingAdapter)
-  extends CheapServer[M, Fail](9000) with XingyiKleisli[M, Fail] with RecordCallsKleisli[M, Fail] with DisplayRecordedKleisli[M] {
+(implicit val monad: MonadCanFailWithException[M, Fail] with MonadWithState[M],
+ val failer: Failer[Fail],
+ val detailedLoggingForSR: DetailedLogging[ServiceResponse],
+ val logReqAndResult: LogRequestAndResult[Fail],
+ loggingAdapter: LoggingAdapter)
+  extends LiftFunctionKleisli[M] with MicroserviceComposers[M] with EndpointKleisli[M] with HttpKlesili[M]
+    with XingyiKleisli[M, Fail] with RecordCallsKleisli[M, Fail] with DisplayRecordedKleisli[M] with ChainKleisli[M, Fail] {
 
   implicit val ssl: Option[SSLContext] = None
   private val domain: Domain = Domain(Protocol("http"), HostName("127.0.0.1"), Port(9001))
@@ -74,7 +80,7 @@ object Website extends App {
 
 
   val website = new Website[IdentityMonad, Throwable, JValue]
-
+  val server = new CheapServer[IdentityMonad, Throwable](9000, website.endpoints)
   println("running")
-  website.start
+  server.start
 }

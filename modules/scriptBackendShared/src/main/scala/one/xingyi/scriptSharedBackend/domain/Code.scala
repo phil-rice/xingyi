@@ -1,9 +1,9 @@
-package one.xingyi.scriptSharedBackend
+package one.xingyi.scriptSharedBackend.domain
 
 import one.xingyi.core.http._
 import one.xingyi.core.json._
-import one.xingyi.core.monad.Monad
 import one.xingyi.core.language.Language._
+import one.xingyi.core.monad.Monad
 import one.xingyi.core.script._
 import one.xingyi.core.strings.Strings
 

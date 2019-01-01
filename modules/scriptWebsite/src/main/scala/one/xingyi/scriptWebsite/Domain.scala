@@ -8,8 +8,6 @@ import one.xingyi.core.objectify.{EntityDetailsUrl, FromEntityDetailsResponse}
 import one.xingyi.core.service.html.ToHtml
 import one.xingyi.core.strings.Strings
 import one.xingyi.scriptExample.createdCode1.{Person, PersonLine12Ops}
-import one.xingyi.scriptModel1.IPerson
-import one.xingyi.scriptWebsite
 
 import scala.language.higherKinds
 

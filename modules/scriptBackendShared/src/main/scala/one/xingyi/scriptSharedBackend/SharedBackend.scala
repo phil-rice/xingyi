@@ -2,7 +2,7 @@
 package one.xingyi.scriptSharedBackend
 
 import one.xingyi.core.builder.{CopyWithNewId, HasId}
-import one.xingyi.core.endpoint.{EndpointKleisli, MatchesServiceRequest}
+import one.xingyi.core.endpoint.{ChainKleisli, EndpointKleisli, MatchesServiceRequest}
 import one.xingyi.core.http._
 import one.xingyi.core.json._
 import one.xingyi.core.language.AnyLanguage._
@@ -10,7 +10,6 @@ import one.xingyi.core.language.MicroserviceComposers
 import one.xingyi.core.logging._
 import one.xingyi.core.monad._
 import one.xingyi.core.script._
-import one.xingyi.core.simpleServer.CheapServer
 import one.xingyi.scriptSharedBackend.domain._
 
 import scala.language.higherKinds
@@ -24,7 +23,7 @@ class EntityCodeMaker[M[_], Fail, SharedE, DomainE](implicit val monad: MonadCan
   val entityPrefix = entityPrefixFinder()
 
   def hashMap = domainList.domains.map(_.code).
-    foldLeft(Map[String, CodeDetailsResponse]()) { (acc, map) => map.foldLeft(acc) { case (acc, (frag, details)) => acc + (details.hash -> CodeDetailsResponse(details.code, frag.mediaType)) } }
+    foldLeft(Map[String, CodeDetailsResponse]()) { (acc, map) => map.foldLeft(acc) { case (m, (frag, details)) => m + (details.hash -> CodeDetailsResponse(details.code, frag.mediaType)) } }
 
   def allCode: CodeRequest => Code[DomainE] = _ => Code(domainList)
 
@@ -71,12 +70,11 @@ class EntityMaker[M[_], Fail, SharedE, DomainE: Links](methods: List[Method])
 
 }
 
-class SharedBackend[M[_] : Async, Fail: Failer, J: JsonParser : JsonWriter, SharedP, DomainP: Links : EntityPrefix : DomainList]
-(implicit val monad: MonadCanFailWithException[M, Fail],
- val logReqAndResult: LogRequestAndResult[Fail],
- hasId: HasId[DomainP, String],
- copyWithId: CopyWithNewId[DomainP, String],
- loggingAdapter: LoggingAdapter, projection: ObjectProjection[SharedP, DomainP]) extends CheapServer[M, Fail](9001) {
+class EntityEndpoints[M[_] : Async, Fail, J: JsonParser : JsonWriter, SharedP, DomainP: Links : EntityPrefix : DomainList]
+(implicit val monad: MonadCanFailWithException[M, Fail], val logReqAndResult: LogRequestAndResult[Fail],
+ val failer: Failer[Fail], hasId: HasId[DomainP, String], copyWithId: CopyWithNewId[DomainP, String], loggingAdapter: LoggingAdapter,
+ projection: ObjectProjection[SharedP, DomainP]) extends LiftFunctionKleisli[M] with ChainKleisli[M, Fail] with EndpointKleisli[M] with MicroserviceComposers[M] {
+
   import projection.proof
 
   val personStore = new EntityStore[M, SharedP, DomainP]
@@ -84,7 +82,7 @@ class SharedBackend[M[_] : Async, Fail: Failer, J: JsonParser : JsonWriter, Shar
   val entityCodeMaker = new EntityCodeMaker[M, Fail, SharedP, DomainP]
   val entityMaker = new EntityMaker[M, Fail, SharedP, DomainP](List(Get, Post, Put))
 
-  val keepalive: ServiceRequest => M[Option[ServiceResponse]] = function[ServiceRequest, ServiceResponse]("keepalive")(sr => ServiceResponse("Alive")) |+| endpoint[ServiceRequest, ServiceResponse]("/ping", MatchesServiceRequest.fixedPath(Method("get")))
+  val keepAlive: ServiceRequest => M[Option[ServiceResponse]] = function[ServiceRequest, ServiceResponse]("keepalive")(sr => ServiceResponse("Alive")) |+| endpoint[ServiceRequest, ServiceResponse]("/ping", MatchesServiceRequest.fixedPath(Method("get")))
 
   val endpoints: ServiceRequest => M[Option[ServiceResponse]] = chain(
     entityMaker.detailsEndpoint,
@@ -92,5 +90,6 @@ class SharedBackend[M[_] : Async, Fail: Failer, J: JsonParser : JsonWriter, Shar
     entityMaker.newEntity(id => copyWithId(id, projection.prototype).liftM),
     entityMaker.getEndpoint(personStore.getEntity),
     entityMaker.editEndpoint(personStore.putEntity),
-    keepalive)
+    keepAlive)
 }
+
