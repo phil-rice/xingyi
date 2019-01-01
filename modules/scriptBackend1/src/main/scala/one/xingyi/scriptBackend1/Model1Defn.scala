@@ -64,7 +64,7 @@ object Person extends JsonWriterLanguage {
 }
 
 
-class Model1Defn extends DomainDefn[IPerson,Person]("one.xingyi.scriptModel1", List("json", "pretty"),
+class Model1Defn extends DomainDefn[IPerson,Person]("one.xingyi.scriptModel1", List("json", "pretty", "form"),
   List(
     Person.personNameOps -> Person.projection,
     Person.personTelephoneOps -> Person.projection,

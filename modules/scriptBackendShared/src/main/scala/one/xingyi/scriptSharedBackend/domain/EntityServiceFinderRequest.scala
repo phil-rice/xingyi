@@ -25,8 +25,8 @@ object EntityServiceFinderResponse extends JsonWriterLanguage {
         domainList.domains.map { d =>
           JsonObject(
             "domain" -> d.name,
-            "render" -> JsonList(d.renderers.map(JsonString.apply)),
-            "lens" -> JsonList(d.lensNames.toSeq.map(JsonString.apply))
+            "render" -> JsonList(d.renderers.sorted.map(JsonString.apply)),
+            "lens" -> JsonList(d.lensNames.toList.sorted.map(JsonString.apply))
           )
 
         }
