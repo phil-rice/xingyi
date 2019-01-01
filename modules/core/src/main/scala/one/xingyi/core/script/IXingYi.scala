@@ -18,12 +18,12 @@ object IXingYiLoader {
 }
 
 class DefaultXingYiLoader() extends IXingYiLoader {
-    override def apply(javaScript: String): IXingYi = {
-      import jdk.nashorn.api.scripting.NashornScriptEngineFactory
-      val engine: ScriptEngine = new NashornScriptEngineFactory().getScriptEngine("--language=es6 ")
-      engine.eval(javaScript)
-      new DefaultXingYi(engine)
-    }
+  override def apply(javaScript: String): IXingYi = {
+    import jdk.nashorn.api.scripting.NashornScriptEngineFactory
+    val engine: ScriptEngine = new NashornScriptEngineFactory().getScriptEngine("--language=es6 ")
+    engine.eval(javaScript)
+    new DefaultXingYi(engine)
+  }
 }
 
 trait DomainMaker[T <: Domain] {
@@ -43,7 +43,7 @@ trait ServerDomain {
 
 }
 
-trait EntityPrefix[T]{
+trait EntityPrefix[T] {
   def apply(): String
 }
 case class LinkDetail(verb: String, urlPattern: String)
@@ -93,21 +93,28 @@ trait IXingYi {
   def render(name: String, t: Domain): String = rawRender(name, t.mirror)
 }
 
+class XingYiExecutionException(msg: String, cause: Throwable) extends RuntimeException(msg, cause)
 
 class DefaultXingYi(engine: ScriptEngine) extends IXingYi {
   val inv = engine.asInstanceOf[Invocable]
 
-  override def rawRender(name: String, t: Object): String = inv.invokeFunction(s"render_$name", t).asInstanceOf[String]
+  def wrap[X](name: => String, fn: => X): X = try {
+    fn
+  } catch {
+    case e: Exception => throw new XingYiExecutionException(s"Error executing $name", e)
+  }
+
+  override def rawRender(name: String, t: Object): String = wrap("render",inv.invokeFunction(s"render_$name", t).asInstanceOf[String])
 
   override def objectLens[T1 <: Domain, T2 <: Domain](name: String)(implicit maker1: DomainMaker[T1], maker2: DomainMaker[T2]): Lens[T1, T2] = Lens[T1, T2](
-    { t => maker2.create(inv.invokeFunction("getL", name, t.mirror)) },
-    { (t, v) => maker1.create(inv.invokeFunction("setL", name, t.mirror, v.mirror)) })
+    { t => wrap(s"objectLens.get($name)", maker2.create(inv.invokeFunction("getL", name, t.mirror))) },
+    { (t, v) => wrap(s"objectLens.set($name)", maker1.create(inv.invokeFunction("setL", name, t.mirror, v.mirror))) })
 
   override def stringLens[T <: Domain](name: String)(implicit maker: DomainMaker[T]): Lens[T, String] = Lens[T, String](
-    { t => inv.invokeFunction("getL", name, t.mirror).asInstanceOf[String] },
-    { (t, v) => maker.create(inv.invokeFunction("setL", name, t.mirror, v)) })
+    { t => wrap(s"stringLens.get($name)", inv.invokeFunction("getL", name, t.mirror).asInstanceOf[String]) },
+    { (t, v) => wrap(s"objectstringLensLens.set($name)", maker.create(inv.invokeFunction("setL", name, t.mirror, v))) })
 
-  def parse[T <: Domain](s: String)(implicit domainMaker: DomainMaker[T]) = domainMaker.create(inv.invokeFunction("parse", s))
+  def parse[T <: Domain](s: String)(implicit domainMaker: DomainMaker[T]) = wrap("parse", domainMaker.create(inv.invokeFunction("parse", s)))
 
 
   import jdk.nashorn.api.scripting.ScriptObjectMirror

@@ -16,9 +16,9 @@ object EditEntityRequest {
   implicit def hasHost[P]: HasHost[EditEntityRequest[P]] = _.host
 
   implicit def fromServiceRequest[M[_], J: JsonParser, SharedP, DomainP](implicit monad: Monad[M], hasId: HasId[DomainP, String], projection: Projection[SharedP, DomainP]): FromServiceRequest[M, EditEntityRequest[DomainP]] = { sr =>
-    val name = Strings.lastButOneSection("/")(sr.uri.path.path)
+    val name = Strings.lastSection("/")(sr.uri.path.path)
     val newEntity: DomainP = projection.fromJsonString(sr.body.getOrElse(throw new RuntimeException("cannot create as body of request empty")).s)
-    if (name != hasId(newEntity)) throw new RuntimeException(s"Cannot edit name. Name is request is $name. Object is $newEntity")
+    if (name != hasId(newEntity)) throw new RuntimeException(s"Cannot edit name. Name in request is $name. Request is $sr Object is $newEntity")
     monad.liftM(EditEntityRequest(newEntity, sr.header("xingyi"), sr.host))
   }
 

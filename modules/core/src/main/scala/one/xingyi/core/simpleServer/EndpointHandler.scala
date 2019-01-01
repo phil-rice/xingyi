@@ -14,7 +14,11 @@ class EndpointHandler[M[_] : Async, Fail](fn: ServiceRequest => M[Option[Service
     HttpUtils.process(httpExchange) {
       try {
         val serviceRequest = toServiceRequest(httpExchange)
-        fn(serviceRequest).await()} catch {case e: Exception => e.printStackTrace; throw e}
+        fn(serviceRequest).await()
+      }
+      catch {
+        case e: Throwable => e.printStackTrace; throw e
+      }
     }
   }
 }

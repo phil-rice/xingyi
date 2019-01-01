@@ -71,7 +71,7 @@ object Person extends JsonWriterLanguage {
     override def addressListLens = XingYiDomainObjectLens(personAddressListL)
   }
 
-  val prototype = Person("", List(), Telephone.prototype)
+  val prototype = Person("", List(Address("someLine1", "someLine2", "somePostCode")), Telephone.prototype)
   implicit val projection = ObjectProjection[IPerson, Person](prototype,
     "name" -> StringFieldProjection(personNameOps.nameLens),
     "telephoneNumber" -> ObjectFieldProjection[IPerson, ITelephoneNumber, Person, Telephone](personTelephoneOps.telephoneNumberLens),

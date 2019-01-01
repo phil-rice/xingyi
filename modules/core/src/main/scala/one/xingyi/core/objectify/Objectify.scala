@@ -57,8 +57,10 @@ trait XingyiKleisli[M[_], Fail] {
           map(fromServiceResponseForEntityDetails andThen fromEntityDetailsResponse(req, serverDomain))
         codeBody <- http(serviceDiscoveryProducedServiceRequest).map(ServiceResponse.serviceResponseToXingYiCodeAndBody)
         (code, body) = codeBody
+        _ = println(s"code is $code")
         xingyi <- http(ServiceRequest(Method("get"), Uri(code))).map(sr => xingYiLoader(sr.body.s))
       } yield {
+        println("About to parse")
         val dom = xingyi.parse[Dom](body)
         val ops = implicitly[ClassTag[Ops]].runtimeClass.getConstructor(classOf[IXingYi]).newInstance(xingyi).asInstanceOf[Ops]
         fn(req, dom, ops)
