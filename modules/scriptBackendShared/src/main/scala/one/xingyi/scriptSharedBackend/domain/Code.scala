@@ -15,13 +15,13 @@ object CodeRequest {
   implicit def fromServiceRequest[M[_] : Monad]: FromServiceRequest[M, CodeRequest] = { sr => CodeRequest().liftM[M] }
 }
 
-case class Code[T](domainList: DomainList[T])
+case class Code[SharedE, DomainE](domainList: DomainList[SharedE, DomainE])
 
 object Code extends JsonWriterLanguage {
-  implicit def toServiceResponse[J, T](implicit jsonWriter: JsonWriter[J]): ToServiceResponse[CodeRequest, Code[T]] = {
+  implicit def toServiceResponse[J, SharedE, DomainE](implicit jsonWriter: JsonWriter[J]): ToServiceResponse[CodeRequest, Code[SharedE, DomainE]] = {
     codeRequest =>
-      code: Code[T] =>
-        val summary: JsonValue = JsonList(code.domainList.domains.map { details: DomainDetails[T] =>
+      code: Code[SharedE, DomainE] =>
+        val summary: JsonValue = JsonList(code.domainList.domains.map { details: DomainDetails[SharedE, DomainE] =>
           JsonObject(
             "name" -> details.name,
             "code" -> JsonObject(details.code.toList.map { d => d._1.toString -> JsonString(d._2.hash) }: _*))

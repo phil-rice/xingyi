@@ -17,7 +17,7 @@ object EntityRequest {
 
 case class EntityResponse[T](id: String, entity: T)
 object EntityResponse {
-  implicit def toServiceResponse[J, Shared, Domain](implicit jsonWriter: JsonWriter[J], projection: ObjectProjection[Shared, Domain]): ToServiceResponse[EntityRequest, ServerPayload[Domain]] =
+  implicit def toServiceResponse[J, SharedE, DomainE](implicit jsonWriter: JsonWriter[J], projection: ObjectProjection[SharedE, DomainE]): ToServiceResponse[EntityRequest, ServerPayload[SharedE, DomainE]] =
     cdreq => cdres =>
       ServiceResponse(Status(200), Body(jsonWriter(projection.toJson(cdres.domainObject))), ContentType("text/html"))
 }

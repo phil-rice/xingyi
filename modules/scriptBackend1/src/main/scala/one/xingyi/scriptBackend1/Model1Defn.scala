@@ -64,7 +64,7 @@ object Person extends JsonWriterLanguage {
 }
 
 
-class Model1Defn extends DomainDefn[Person]("one.xingyi.scriptModel1", List("json", "pretty"),
+class Model1Defn extends DomainDefn[IPerson,Person]("one.xingyi.scriptModel1", List("json", "pretty"),
   List(
     Person.personNameOps -> Person.projection,
     Person.personTelephoneOps -> Person.projection,
@@ -81,6 +81,6 @@ object TestItQuick extends App {
   //  val x: ToScalaCode[IXingYiLensAndLensDefn] => ToScalaCode[InterfaceAndLens[Any, Any]] = ToScalaCode.makeScaleForInterface[Any, Any]
   //  ToScalaCode.makeScaleForInterface[Any, Any]
   //  val x = ToScalaCode.makeScalaCode[DomainDefn[Person]]
-  val makeScala = implicitly[ToScalaCode[DomainDefn[Person]]]
+  val makeScala = implicitly[ToScalaCode[DomainDefn[IPerson,Person]]]
   println(makeScala(new Model1Defn))
 }

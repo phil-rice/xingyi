@@ -50,7 +50,7 @@ case class LinkDetail(verb: String, urlPattern: String)
 
 trait Links[T] extends (T => List[LinkDetail])
 
-case class ServerPayload[T](status: Status, domainObject: T, domain: DomainDetails[T])(implicit val links: Links[T])
+case class ServerPayload[SharedE, DomainE](status: Status, domainObject: DomainE, domain: DomainDetails[SharedE, DomainE])(implicit val links: Links[DomainE])
 
 trait ToContentType[Req] {
   def apply(req: Req): String
@@ -61,10 +61,10 @@ trait HasHost[T] {
 }
 
 object ServerPayload extends JsonWriterLanguage {
-  implicit def toServerResponse[J, Req, Server, Domain]
-  (implicit jsonWriter: JsonWriter[J], entityPrefix: EntityPrefix[Domain],
+  implicit def toServerResponse[J, Req, SharedE, DomainE]
+  (implicit jsonWriter: JsonWriter[J], entityPrefix: EntityPrefix[DomainE],
    hasId: HasId[Req, String], hasHost: HasHost[Req],
-   projection: Projection[Server, Domain], toContentType: ToContentType[Req]): ToServiceResponse[Req, ServerPayload[Domain]] = { req =>
+   projection: Projection[SharedE, DomainE], toContentType: ToContentType[Req]): ToServiceResponse[Req, ServerPayload[SharedE, DomainE]] = { req =>
     payload =>
       val host = hasHost(req)
       ServiceResponse(payload.status, Body(
@@ -104,7 +104,7 @@ class DefaultXingYi(engine: ScriptEngine) extends IXingYi {
     case e: Exception => throw new XingYiExecutionException(s"Error executing $name", e)
   }
 
-  override def rawRender(name: String, t: Object): String = wrap("render",inv.invokeFunction(s"render_$name", t).asInstanceOf[String])
+  override def rawRender(name: String, t: Object): String = wrap("render", inv.invokeFunction(s"render_$name", t).asInstanceOf[String])
 
   override def objectLens[T1 <: Domain, T2 <: Domain](name: String)(implicit maker1: DomainMaker[T1], maker2: DomainMaker[T2]): Lens[T1, T2] = Lens[T1, T2](
     { t => wrap(s"objectLens.get($name)", maker2.create(inv.invokeFunction("getL", name, t.mirror))) },

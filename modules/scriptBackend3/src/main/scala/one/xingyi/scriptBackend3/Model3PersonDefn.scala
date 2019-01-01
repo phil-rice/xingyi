@@ -1,7 +1,7 @@
 /** Copyright (c) 2018, Phil Rice. Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS AS IS AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 package one.xingyi.scriptBackend3
 
-import one.xingyi.core.builder.{CopyWithNewId, HasId}
+import one.xingyi.core.builder.{CopyWithNewId, HasId, IdLens}
 import one.xingyi.core.json.{IXingYiLens, StringFieldProjection, _}
 import one.xingyi.core.optics.Lens
 import one.xingyi.core.script._
@@ -54,25 +54,22 @@ case class Person(name: String, address: List[Address], telephoneNumber: Telepho
 
 object Person extends JsonWriterLanguage {
   implicit val entityPrefix: EntityPrefix[Person] = () => "person"
-  implicit val hasId: HasId[Person, String] = _.name
-  implicit val copyWithId: CopyWithNewId[Person, String] = (id, p) => p.copy(name = id)
   implicit val links: Links[Person] = _ => List(LinkDetail("self", "/person/<id>"))
-  implicit val nameL = Lens[Person, String](_.name, (p, n) => p.copy(name = n))
-  implicit val personAddressListL = Lens[Person, List[Address]](_.address, (p, a) => p.copy(address = a))
-  implicit val telephoneL = Lens[Person, Telephone](_.telephoneNumber, (p, t) => p.copy(telephoneNumber = t))
+
+  implicit val idLens = IdLens[Person, String](_.name, (p, id) => p.copy(name = id))
 
   implicit object personProof extends ProofOfBinding[IPerson, Person]
 
   implicit object personNameOps extends IPersonNameOps[IXingYiLens, IPerson] {
-    override def nameLens = XingYiDomainStringLens(nameL)
+    override def nameLens = XingYiDomainStringLens(Lens[Person, String](_.name, (p, n) => p.copy(name = n)))
   }
 
   implicit object personTelephoneOps extends IPersonTelephoneOps[IXingYiLens, IPerson, ITelephoneNumber] {
-    override def telephoneNumberLens = XingYiDomainObjectLens(telephoneL)
+    override def telephoneNumberLens = XingYiDomainObjectLens(Lens[Person, Telephone](_.telephoneNumber, (p, t) => p.copy(telephoneNumber = t)))
   }
 
   implicit object personAddressListOps extends IPersonAddressListOps[IXingYiLens, IPerson, IAddress] {
-    override def addressListLens = XingYiDomainObjectLens(personAddressListL)
+    override def addressListLens = XingYiDomainObjectLens(Lens[Person, List[Address]](_.address, (p, a) => p.copy(address = a)))
   }
 
   val prototype = Person("", List(Address("someLine1", "someLine2", "somePostCode")), Telephone.prototype)
@@ -85,7 +82,7 @@ object Person extends JsonWriterLanguage {
 
 }
 
-class Model3PersonDefn extends DomainDefn[Person]("one.xingyi.scriptModel3", List("json", "pretty"),
+class Model3PersonDefn extends DomainDefn[IPerson, Person]("one.xingyi.scriptModel3", List("json", "pretty"),
   List(
     Person.personNameOps -> Person.projection,
     Person.personTelephoneOps -> Person.projection,
@@ -109,7 +106,7 @@ class Model3PersonDefn extends DomainDefn[Person]("one.xingyi.scriptModel3", Lis
   override def domainName: String = "ExampleDomain"
 }
 
-class Model3AddressDefn extends DomainDefn[Address]("one.xingyi.scriptModel3", List("json", "pretty"),
+class Model3AddressDefn extends DomainDefn[IAddress, Address]("one.xingyi.scriptModel3", List("json", "pretty"),
   List(Address.addressOps -> Address.projection),
   List()) {
   override def packageName: String = "one.xingyi.scriptExample.createdCode"
@@ -122,6 +119,6 @@ object TestItQuick2 extends App {
   //  val x: ToScalaCode[IXingYiLensAndLensDefn] => ToScalaCode[InterfaceAndLens[Any, Any]] = ToScalaCode.makeScaleForInterface[Any, Any]
   //  ToScalaCode.makeScaleForInterface[Any, Any]
   //  val x = ToScalaCode.makeScalaCode[DomainDefn[Person]]
-  val makeScala = implicitly[ToScalaCode[DomainDefn[Person]]]
+  val makeScala = implicitly[ToScalaCode[DomainDefn[IPerson, Person]]]
   println(makeScala(new Model3PersonDefn))
 }

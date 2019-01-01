@@ -5,7 +5,7 @@ import one.xingyi.core.json._
 import one.xingyi.core.strings.Strings
 
 
-trait Header[L] extends (DomainDefn[_] => String)
+trait Header[L] extends (DomainDefn[_,_] => String)
 
 trait Renderer[L] extends (String => String)
 
@@ -22,18 +22,18 @@ trait CodeFragment{
 
 
 trait HasLensCodeMaker[L <: CodeFragment] {
-  def defns[T](anyRef: DomainDefn[T]): List[LensDefn[_, _]] = anyRef.lens
+  def defns[SharedE, DomainE](anyRef: DomainDefn[SharedE, DomainE]): List[LensDefn[_, _]] = anyRef.lens
 //  {
 //    val methods = anyRef.getClass.getMethods.filter(field => classOf[LensDefn[_, _]].isAssignableFrom(field.getReturnType)).toList
 //    methods.map(m => m.invoke(anyRef)).collect { case lens: LensDefn[_, _] => lens }
 //  }
 
-  def apply[T](anyRef: DomainDefn[T]): String
+  def apply[SharedE, DomainE](anyRef: DomainDefn[SharedE, DomainE]): String
 }
 
 class SimpleHasLensCodeMaker[L <: CodeFragment](implicit lensCodeMaker: LensCodeMaker[L], header: Header[L], render: Renderer[L], footer: Footer[L]) extends HasLensCodeMaker[L] {
 
-  def apply[T](defn: DomainDefn[T]): String =
+  def apply[SharedE, DomainE](defn: DomainDefn[SharedE, DomainE]): String =
     (header(defn) :: defn.renderers.map(render) ::: defns(defn).map(lensCodeMaker) ::: List(footer())).mkString("\n")
 
 }

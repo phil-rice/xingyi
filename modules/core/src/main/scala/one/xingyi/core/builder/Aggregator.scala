@@ -3,6 +3,8 @@ package one.xingyi.core.builder
 
 import java.util.concurrent.atomic.AtomicReference
 
+import one.xingyi.core.optics.Lens
+
 import scala.language.higherKinds
 sealed trait YesNo
 trait Yes extends YesNo
@@ -18,7 +20,14 @@ object Aggregator {
   }
 }
 trait HasId[T, ID] extends (T => ID)
-trait CopyWithNewId[T, ID] extends ((ID,T) => T)
+object HasId {
+  implicit def fromLens[T, Id](implicit lens: IdLens[T, Id]): HasId[T, Id] = { t => lens.get(t) }
+}
+trait CopyWithNewId[T, ID] extends ((ID, T) => T)
+object CopyWithNewId {
+  implicit def fromLens[T, Id](implicit lens: IdLens[T, Id]): CopyWithNewId[T, Id] = { (id, t) => lens.set(t, id) }
+}
+case class IdLens[T, ID](get:T => ID, set: (T, ID) => T) extends Lens[T, ID]
 
 class RememberingAggregator2[T, ID](implicit hasId: HasId[T, ID]) extends Aggregator[T] {
   private val list = new AtomicReference[List[T]](List())

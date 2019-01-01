@@ -47,6 +47,7 @@ sealed trait Projection[Shared, Domain] {
   def fromJson[J: JsonParser](j: J): Domain
   def fromJsonString[J](json: String)(implicit jsonParser: JsonParser[J]): Domain = fromJson(jsonParser(json))
   def walk[T1](fn: (List[String], FieldProjection[_, _]) => T1, prefix: List[String] = List()): Seq[T1]
+  def allObjectProjections: Seq[ObjectProjection[_, _]]
 }
 
 case class ObjectProjection[Shared, Domain](prototype: Domain, children: (String, FieldProjection[Domain, _])*)
@@ -59,6 +60,12 @@ case class ObjectProjection[Shared, Domain](prototype: Domain, children: (String
     }
   override def walk[T1](fn: (List[String], FieldProjection[_, _]) => T1, prefix: List[String]): Seq[T1] =
     children.flatMap { case (name, child) => child.walk(fn, prefix :+ name) }
+
+  override def allObjectProjections: Seq[ObjectProjection[_, _]] = walk[Option[ObjectProjection[_, _]]] {
+    case (fields, fp: ObjectFieldProjection[_, _, _, _]) => Some(fp.projection)
+    case (fields, fp: ListFieldProjection[_, _, _, _]) => Some(fp.projection)
+    case _ => None
+  }.flatten :+ this
 }
 
 sealed trait FieldProjection[T, Child] {
@@ -91,7 +98,7 @@ case class ObjectFieldProjection[Shared, SharedTarget, Domain, DomainTarget](len
 }
 
 case class ListFieldProjection[Shared, SharedTarget, Domain, DomainTarget](lens: XingYiDomainObjectLens[Shared, List[SharedTarget], Domain, List[DomainTarget]])
-                                                                          (implicit val projection: Projection[SharedTarget, DomainTarget],
+                                                                          (implicit val projection: ObjectProjection[SharedTarget, DomainTarget],
                                                                            sharedProof: ProofOfBinding[Shared, Domain],
                                                                            targetProof: ProofOfBinding[SharedTarget, DomainTarget],
                                                                            val sharedClassTag: ClassTag[Shared],

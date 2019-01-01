@@ -88,7 +88,7 @@ object ToScalaCode {
   //  }
 
 
-  implicit def makeScalaCode[T](implicit interfaceAndLensToScala: ToScalaCode[InterfaceAndLens], interfaceToImplName: InterfaceToImplName): ToScalaCode[DomainDefn[T]] = {
+  implicit def makeScalaCode[SharedE, DomainE](implicit interfaceAndLensToScala: ToScalaCode[InterfaceAndLens], interfaceToImplName: InterfaceToImplName): ToScalaCode[DomainDefn[SharedE, DomainE]] = {
     domainDefn =>
       val packageSring = s"package ${domainDefn.packageName}"
       val imports = s"import ${domainDefn.sharedPackageName}._\nimport one.xingyi.core.optics.Lens\nimport one.xingyi.core.script.{Domain,DomainMaker, IXingYi,ServerDomain}"

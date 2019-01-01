@@ -17,6 +17,7 @@ case class XingYiManualPath[A, B](prefix: String, lensType: String, javascript: 
 object DomainDefn {
   val xingyiHeaderPrefix = "application/xingyi."
   val xingyiCodeSummaryMediaType = "application/json"
+
 }
 
 case class InterfaceAndProjection[Shared, Domain](sharedOps: IXingYiSharedOps[IXingYiLens, Shared], projection: ObjectProjection[Shared, Domain])
@@ -26,9 +27,12 @@ object InterfaceAndProjection {
     InterfaceAndProjection(tuple._1, tuple._2)
 }
 
-abstract class DomainDefn[T: ClassTag](val sharedPackageName: String, val renderers: List[String], val interfacesToProjections: List[InterfaceAndProjection[_, _]] = List(),
-                                       val manual: List[IXingYiSharedOps[XingYiManualPath, _]] = List())(implicit projectionToLensDefns: ProjectionToLensDefns) {
-  def rootName: String = ClassTags.nameOf[T]
+
+class DomainDefn[SharedE, DomainE: ClassTag](val sharedPackageName: String, val renderers: List[String],
+                                             val interfacesToProjections: List[InterfaceAndProjection[_, _]] = List(),
+                                             val manual: List[IXingYiSharedOps[XingYiManualPath, _]] = List())
+                                            (implicit objectProjection: ObjectProjection[SharedE, DomainE], projectionToLensDefns: ProjectionToLensDefns) {
+  def rootName: String = ClassTags.nameOf[DomainE]
 
   def packageName: String = getClass.getPackage.getName
 
@@ -50,14 +54,15 @@ abstract class DomainDefn[T: ClassTag](val sharedPackageName: String, val render
 }
 
 
-trait DomainDefnToDetails[T] extends (DomainDefn[T] => DomainDetails[T])
+trait DomainDefnToDetails[SharedE, DomainE] extends (DomainDefn[SharedE, DomainE] => DomainDetails[SharedE, DomainE])
 
 object DomainDefnToDetails {
-  def apply[T:ClassTag](domainDefn: DomainDefn[T])(implicit domainDefnToDetails: DomainDefnToDetails[T]) = domainDefnToDetails(domainDefn)
-  implicit def default[T](implicit javascript: HasLensCodeMaker[Javascript], scala: ToScalaCode[DomainDefn[T]]): DomainDefnToDetails[T] = { defn =>
+  def apply[SharedE, DomainE: ClassTag](domainDefn: DomainDefn[SharedE, DomainE])(implicit domainDefnToDetails: DomainDefnToDetails[SharedE, DomainE]) = domainDefnToDetails(domainDefn)
+
+  implicit def default[SharedE, DomainE](implicit javascript: HasLensCodeMaker[Javascript], scala: ToScalaCode[DomainDefn[SharedE, DomainE]]): DomainDefnToDetails[SharedE, DomainE] = { defn =>
     val scalaDetails = CodeDetails(scala(defn))
     val javascriptDetails = script.CodeDetails(javascript(defn))
-    DomainDetails[T](defn.domainName, defn.packageName, defn.accepts, javascriptDetails.hash, defn.lens.map(_.name).toSet, Map(Javascript -> javascriptDetails, ScalaCode -> scalaDetails))
+    DomainDetails[SharedE, DomainE](defn.domainName, defn.packageName, defn.accepts, javascriptDetails.hash, defn.lens.map(_.name).toSet, Map(Javascript -> javascriptDetails, ScalaCode -> scalaDetails))
   }
 
 }
@@ -67,7 +72,7 @@ case class CodeDetails(code: String)(implicit digestor: Digestor) {
 }
 
 
-case class DomainDetails[T](name: String, packageName: String, accept: String, codeHeader: String, lensNames: Set[String], code: Map[CodeFragment, CodeDetails]) {
+case class DomainDetails[SharedE, DomainE](name: String, packageName: String, accept: String, codeHeader: String, lensNames: Set[String], code: Map[CodeFragment, CodeDetails]) {
   def normalisedLens = DomainDetails.stringsToString(lensNames)
 
   def isDefinedAt(lensNames: Set[String]) = lensNames.forall(this.lensNames.contains)
@@ -97,7 +102,7 @@ object DomainList {
   def stringToSet(s: String) = s.split(",").filterNot(_.isEmpty).toSet
 }
 
-case class DomainList[T](firstDomain: DomainDetails[T], restDomains: DomainDetails[T]*) {
+case class DomainList[SharedE, DomainE](firstDomain: DomainDetails[SharedE, DomainE], restDomains: DomainDetails[SharedE, DomainE]*) {
   val domains = firstDomain :: restDomains.toList
 
   def accept(xingyiHeader: Option[String]) = {
