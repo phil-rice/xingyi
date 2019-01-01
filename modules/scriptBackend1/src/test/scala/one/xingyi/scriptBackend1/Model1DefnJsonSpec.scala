@@ -4,7 +4,7 @@ package one.xingyi.scriptBackend1
 import one.xingyi.core.UtilsSpec
 import one.xingyi.core.json.{JsonParser, JsonWriter, ObjectProjection}
 import one.xingyi.scriptModel1.IPerson
-import one.xingyi.scriptSharedBackend.PersonStore
+import one.xingyi.scriptSharedBackend.EntityStore
 
 abstract class Model1DefnJsonSpec[J: JsonParser](implicit writer: JsonWriter[J]) extends UtilsSpec {
 

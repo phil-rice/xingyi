@@ -10,7 +10,7 @@ import one.xingyi.core.script.{DomainDefnToDetails, DomainDetails, DomainList}
 import one.xingyi.json4s.Json4sParser._
 import one.xingyi.json4s.Json4sWriter._
 import one.xingyi.scriptModel3.IPerson
-import one.xingyi.scriptSharedBackend.{PersonStore, SharedBackend}
+import one.xingyi.scriptSharedBackend.{EntityStore, SharedBackend}
 import org.json4s.JValue
 
 import scala.language.higherKinds

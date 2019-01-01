@@ -15,16 +15,14 @@ import one.xingyi.core.strings.Strings
 
 import scala.language.higherKinds
 
-class PersonStore[M[_] : Monad, SP, P](implicit changeId: CopyWithNewId[P, String], objectProjection: ObjectProjection[SP, P]) {
+class EntityStore[M[_] : Monad, SharedE, DomainE](implicit changeId: CopyWithNewId[DomainE, String], objectProjection: ObjectProjection[SharedE, DomainE]) {
 
-  var people = Map[String, P]()
-  newPerson apply "someName"
+  var store = Map[String, DomainE]()
+  newEntity apply "someName"
 
-  def save(id: String, person: P) = people = people + (id -> person)
-
-  def getPerson: String => M[P] = id => people.getOrElse(id, throw new RuntimeException("could not find name: " + id)).liftM[M]
-  def putPerson: (String, P) => M[P] = { (id, person) => people = people + (id -> person); person.liftM }
-  def newPerson = { id: String => putPerson(id, changeId(id, objectProjection.prototype)) }
+  def getEntity: String => M[DomainE] = id => store.getOrElse(id, throw new RuntimeException("could not find name: " + id)).liftM[M]
+  def putEntity: (String, DomainE) => M[DomainE] = { (id, entity) => store = store + (id -> entity); entity.liftM }
+  def newEntity = { id: String => putEntity(id, changeId(id, objectProjection.prototype)) }
 
 }
 
@@ -101,12 +99,6 @@ object EditPersonRequest {
 
 }
 
-
-/**
-  * /prefix/code gives all the code for the entity prefix. Probably with data about domains
-  * /code/hash gives the code for a single hash. It is fully defined by the hash
-  **/
-
 class EntityCodeMaker[M[_], Fail, SharedE, DomainE](implicit val monad: MonadCanFailWithException[M, Fail], failer: SimpleFailer[Fail],
                                                     domainList: DomainList[DomainE],
                                                     entityPrefixFinder: EntityPrefix[DomainE],
@@ -149,11 +141,11 @@ object EditEntityRequest {
 
   implicit def hasHost[P]: HasHost[EditEntityRequest[P]] = _.host
 
-  implicit def fromServiceRequest[M[_], J: JsonParser, SharedP, DomainP](implicit monad: Monad[M], projection: Projection[SharedP, DomainP]): FromServiceRequest[M, EditEntityRequest[DomainP]] = { sr =>
+  implicit def fromServiceRequest[M[_], J: JsonParser, SharedP, DomainP](implicit monad: Monad[M], hasId: HasId[DomainP, String], projection: Projection[SharedP, DomainP]): FromServiceRequest[M, EditEntityRequest[DomainP]] = { sr =>
     val name = Strings.lastButOneSection("/")(sr.uri.path.path)
-    val newPerson: DomainP = projection.fromJsonString(sr.body.getOrElse(throw new RuntimeException("cannot create person as body of request empty")).s)
-    //    if (name != newPerson.name) throw new RuntimeException("Cannot edit name")
-    monad.liftM(EditEntityRequest(newPerson, sr.header("xingyi"), sr.host))
+    val newEntity: DomainP = projection.fromJsonString(sr.body.getOrElse(throw new RuntimeException("cannot create as body of request empty")).s)
+    if (name != hasId(newEntity)) throw new RuntimeException(s"Cannot edit name. Name is request is $name. Object is $newEntity")
+    monad.liftM(EditEntityRequest(newEntity, sr.header("xingyi"), sr.host))
   }
 
   implicit def toContentType[P]: ToContentType[EditEntityRequest[P]] = req => req.xingYiHeader.getOrElse(DomainDefn.xingyiHeaderPrefix)
@@ -197,12 +189,10 @@ class SharedBackend[M[_] : Async, Fail: Failer, J: JsonParser : JsonWriter, Shar
  val logReqAndResult: LogRequestAndResult[Fail],
  hasId: HasId[DomainP, String],
  copyWithId: CopyWithNewId[DomainP, String],
- loggingAdapter: LoggingAdapter,
- projection: ObjectProjection[SharedP, DomainP],
-) extends CheapServer[M, Fail](9001) {
+ loggingAdapter: LoggingAdapter, projection: ObjectProjection[SharedP, DomainP]) extends CheapServer[M, Fail](9001) {
   import projection.proof
 
-  val personStore = new PersonStore[M, SharedP, DomainP]
+  val personStore = new EntityStore[M, SharedP, DomainP]
   val entityCodeMaker = new EntityCodeMaker[M, Fail, SharedP, DomainP]
   val entityMaker = new EntityMaker[M, Fail, SharedP, DomainP](List(Get, Post, Put))
 
@@ -212,8 +202,8 @@ class SharedBackend[M[_] : Async, Fail: Failer, J: JsonParser : JsonWriter, Shar
     entityMaker.detailsEndpoint,
     chain(entityCodeMaker.endpoints: _*),
     entityMaker.newEntity(id => copyWithId(id, projection.prototype).liftM),
-    entityMaker.getEndpoint(personStore.getPerson),
-    entityMaker.editEndpoint(personStore.putPerson),
+    entityMaker.getEndpoint(personStore.getEntity),
+    entityMaker.editEndpoint(personStore.putEntity),
     keepalive)
 
 }
