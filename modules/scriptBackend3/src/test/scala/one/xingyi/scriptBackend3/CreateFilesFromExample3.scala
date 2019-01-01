@@ -26,14 +26,14 @@ class CreateFilesFromExample3 extends UtilsSpec {
     checkCorrectDirectory
 
     val codeMaker = implicitly[HasLensCodeMaker[Javascript]]
-    val javascript = codeMaker.apply(new Model3Defn)
+    val javascript = codeMaker.apply(new Model3PersonDefn)
     Files.printToFile(javascriptFile)(pw => pw.print(javascript))
   }
 
   it should "make the scala" in {
     ToScalaCode.makeScalaCode[Person]
     val codeMaker = implicitly[ToScalaCode[DomainDefn[Person]]]
-    val scala = codeMaker(new Model3Defn)
+    val scala = codeMaker(new Model3PersonDefn)
     Files.printToFile(scalaFile)(pw => pw.print(scala))
 
   }

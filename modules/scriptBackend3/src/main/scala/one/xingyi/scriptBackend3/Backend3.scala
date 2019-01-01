@@ -8,7 +8,7 @@ import one.xingyi.core.script.{DomainDefnToDetails, DomainList}
 import one.xingyi.core.simpleServer.CheapServer
 import one.xingyi.json4s.Json4sParser._
 import one.xingyi.json4s.Json4sWriter._
-import one.xingyi.scriptModel3.IPerson
+import one.xingyi.scriptModel3.{IAddress, IPerson}
 import one.xingyi.scriptSharedBackend.EntityEndpoints
 import org.json4s.JValue
 
@@ -19,10 +19,11 @@ object Backend3 extends App {
 
   import SimpleLogRequestAndResult._
 
-  implicit val domainList = DomainList(DomainDefnToDetails(new Model3Defn))
+  implicit val personDomainList = DomainList(DomainDefnToDetails(new Model3PersonDefn))
 
-  val website = new EntityEndpoints[IdentityMonad, Throwable, JValue, IPerson, Person]
-  val backend = new CheapServer[IdentityMonad, Throwable](9001, website.endpoints)
+//  val addressWebsite = new EntityEndpoints[IdentityMonad, Throwable, JValue, IAddress, Address]
+  val personWebsite = new EntityEndpoints[IdentityMonad, Throwable, JValue, IPerson, Person]
+  val backend = new CheapServer[IdentityMonad, Throwable](9001, personWebsite.endpoints)
 
   println("running")
   backend.start

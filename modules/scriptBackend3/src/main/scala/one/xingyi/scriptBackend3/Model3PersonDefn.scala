@@ -28,6 +28,10 @@ case class Address(line1: String, line2: String, postcode: String)
 
 object Address extends JsonWriterLanguage {
   val prototype = Address("", "", "")
+
+  implicit val links: Links[Address] = _ => List(LinkDetail("self", "/address/<id>"))
+  implicit val entityPrefix: EntityPrefix[Address] = () => "address"
+
   val line1L = Lens[Address, String](_.line1, (a, s) => a.copy(line1 = s))
   val line2L = Lens[Address, String](_.line2, (a, s) => a.copy(line2 = s))
 
@@ -81,7 +85,7 @@ object Person extends JsonWriterLanguage {
 
 }
 
-class Model3Defn extends DomainDefn[Person]("one.xingyi.scriptModel3", List("json", "pretty"),
+class Model3PersonDefn extends DomainDefn[Person]("one.xingyi.scriptModel3", List("json", "pretty"),
   List(
     Person.personNameOps -> Person.projection,
     Person.personTelephoneOps -> Person.projection,
@@ -105,11 +109,19 @@ class Model3Defn extends DomainDefn[Person]("one.xingyi.scriptModel3", List("jso
   override def domainName: String = "ExampleDomain"
 }
 
+class Model3AddressDefn extends DomainDefn[Address]("one.xingyi.scriptModel3", List("json", "pretty"),
+  List(Address.addressOps -> Address.projection),
+  List()) {
+  override def packageName: String = "one.xingyi.scriptExample.createdCode"
+
+  override def domainName: String = "Address"
+}
+
 
 object TestItQuick2 extends App {
   //  val x: ToScalaCode[IXingYiLensAndLensDefn] => ToScalaCode[InterfaceAndLens[Any, Any]] = ToScalaCode.makeScaleForInterface[Any, Any]
   //  ToScalaCode.makeScaleForInterface[Any, Any]
   //  val x = ToScalaCode.makeScalaCode[DomainDefn[Person]]
   val makeScala = implicitly[ToScalaCode[DomainDefn[Person]]]
-  println(makeScala(new Model3Defn))
+  println(makeScala(new Model3PersonDefn))
 }
