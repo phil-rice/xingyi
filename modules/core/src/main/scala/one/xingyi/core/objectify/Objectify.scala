@@ -48,14 +48,16 @@ trait XingyiKleisli[M[_], Fail] {
       (implicit entityDetailsUrl: EntityDetailsUrl[Dom],
        fromServiceResponseForEntityDetails: FromServiceResponse[EntityDetailsResponse],
        fromEntityDetailsResponse: FromEntityDetailsResponse[Req],
-       xingYiLoader: IXingYiLoader): Req => M[Res] = {
+       xingYiLoader: IXingYiLoader,
+       interfaceHeaders: IXingYiHeaderFor[Ops]): Req => M[Res] = {
 
     req =>
       RecordedCall.default.remove()
       for {
         serviceDiscoveryProducedServiceRequest <- http(ServiceRequest(Method("get"), entityDetailsUrl.url)).
           map(fromServiceResponseForEntityDetails andThen fromEntityDetailsResponse(req, serverDomain))
-        codeBody <- http(serviceDiscoveryProducedServiceRequest).map(ServiceResponse.serviceResponseToXingYiCodeAndBody)
+        withCorrectHeaders = serviceDiscoveryProducedServiceRequest.addHeader("accept", DomainDefn.accepts(interfaceHeaders()))
+        codeBody <- http(withCorrectHeaders).map(ServiceResponse.serviceResponseToXingYiCodeAndBody)
         (code, body) = codeBody
         _ = println(s"code is $code")
         xingyi <- http(ServiceRequest(Method("get"), Uri(code))).map(sr => xingYiLoader(sr.body.s))
@@ -88,7 +90,7 @@ trait XingyiKleisli[M[_], Fail] {
         dom = xingyi.parse[Dom](body)
         ops = implicitly[ClassTag[Ops]].runtimeClass.getConstructor(classOf[IXingYi]).newInstance(xingyi).asInstanceOf[Ops]
         modifiedDom = fn(req, ops)(dom)
-        modifyServiceRequest = serviceDiscoveryProducedServiceRequest.copy(method = Method("put"), body = Some(Body(xingyi.render("pretty", modifiedDom))))
+        modifyServiceRequest = withCorrectHeaders.copy(method = Method("put"), body = Some(Body(xingyi.render("pretty", modifiedDom))))
         modifyResponse <- http(modifyServiceRequest)
       } yield {
         fromEditXingYi(req, modifiedDom, modifyResponse)

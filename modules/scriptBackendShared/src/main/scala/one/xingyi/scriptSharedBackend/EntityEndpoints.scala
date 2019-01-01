@@ -30,7 +30,7 @@ class EntityCodeMaker[M[_], Fail, SharedE, DomainE](implicit val monad: MonadCan
   def codeDetails: CodeDetailsRequest => M[CodeDetailsResponse] = cr =>
     hashMap.get(cr.hash).fold(monad.fail[CodeDetailsResponse](failer.simpleNotFound("Cannot find hash. values are" + hashMap.keys.toList.sorted)))(_.liftM[M])
 
-  def allCodeEndpoint[J: JsonWriter] = function(s"$entityPrefix.allCode")(allCode) |+| endpoint[CodeRequest, Code[SharedE,DomainE]](s"/$entityPrefix/code", MatchesServiceRequest.fixedPath(Method("get")))
+  def allCodeEndpoint[J: JsonWriter] = function(s"$entityPrefix.allCode")(allCode) |+| endpoint[CodeRequest, Code[SharedE, DomainE]](s"/$entityPrefix/code", MatchesServiceRequest.fixedPath(Method("get")))
   def codeDetailsEndpoint[J: JsonWriter] = codeDetails |+| endpoint[CodeDetailsRequest, CodeDetailsResponse](s"/$entityPrefix/code", MatchesServiceRequest.idAtEnd(Method("get")))
 
   def endpoints[J: JsonWriter] = List(allCodeEndpoint, codeDetailsEndpoint)
@@ -47,7 +47,7 @@ class EntityMaker[M[_], Fail, SharedE, DomainE: Links](methods: List[Method])
   import one.xingyi.core.language.MonadLanguage._
 
   val details = function[EntityServiceFinderRequest, EntityServiceFinderResponse](s"$entityPrefix.persondetails")(
-    req => EntityServiceFinderResponse(req.host, s"http://${req.host}/code/<hash>", s"http://${req.host}/$entityPrefix/<id>", methods.map(_.toString))
+    req => EntityServiceFinderResponse(req.host, s"http://${req.host}/code/<hash>", s"http://${req.host}/$entityPrefix/<id>", methods.map(_.toString), domainList)
   )
   def detailsEndpoint[J: JsonWriter] =
     details |+| endpoint[EntityServiceFinderRequest, EntityServiceFinderResponse](s"/$entityPrefix", MatchesServiceRequest.fixedPath(Method("get")))
@@ -70,10 +70,10 @@ class EntityMaker[M[_], Fail, SharedE, DomainE: Links](methods: List[Method])
 
 }
 
-class EntityEndpoints[M[_] : Async, Fail, J: JsonParser : JsonWriter, SharedE, DomainE: Links : EntityPrefix ]
+class EntityEndpoints[M[_] : Async, Fail, J: JsonParser : JsonWriter, SharedE, DomainE: Links : EntityPrefix]
 (implicit val monad: MonadCanFailWithException[M, Fail], val logReqAndResult: LogRequestAndResult[Fail],
  val failer: Failer[Fail], hasId: HasId[DomainE, String], copyWithId: CopyWithNewId[DomainE, String], loggingAdapter: LoggingAdapter,
-domainList: DomainList[SharedE, DomainE],
+ domainList: DomainList[SharedE, DomainE],
  projection: ObjectProjection[SharedE, DomainE]) extends LiftFunctionKleisli[M] with ChainKleisli[M, Fail] with EndpointKleisli[M] with MicroserviceComposers[M] {
 
   import projection.proof

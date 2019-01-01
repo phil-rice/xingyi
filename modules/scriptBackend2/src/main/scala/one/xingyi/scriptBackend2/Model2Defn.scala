@@ -107,7 +107,6 @@ class Model2Defn extends DomainDefn[IPerson, Person]("one.xingyi.scriptModel2", 
     })) {
   override def packageName: String = "one.xingyi.scriptExample.createdCode"
 
-  override def domainName: String = "ExampleDomain"
 }
 
 

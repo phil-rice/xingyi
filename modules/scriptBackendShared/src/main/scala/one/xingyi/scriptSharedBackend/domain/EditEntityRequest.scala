@@ -19,9 +19,9 @@ object EditEntityRequest {
     val name = Strings.lastSection("/")(sr.uri.path.path)
     val newEntity: DomainP = projection.fromJsonString(sr.body.getOrElse(throw new RuntimeException("cannot create as body of request empty")).s)
     if (name != hasId(newEntity)) throw new RuntimeException(s"Cannot edit: id conflict. Id in request is $name. Request is $sr Object is $newEntity")
-    monad.liftM(EditEntityRequest(newEntity, sr.header("xingyi"), sr.host))
+    monad.liftM(EditEntityRequest(newEntity, sr.header("accept"), sr.host))
   }
 
-  implicit def toContentType[P]: ToContentType[EditEntityRequest[P]] = req => req.xingYiHeader.getOrElse(DomainDefn.xingyiHeaderPrefix)
+  implicit def toContentType[P]: ToContentType[EditEntityRequest[P]] = req => req.xingYiHeader.getOrElse("Error")//DomainDefn.xingyiHeaderPrefix)
 
 }

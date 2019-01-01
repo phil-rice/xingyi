@@ -62,7 +62,10 @@ object DomainDefnToDetails {
   implicit def default[SharedE, DomainE](implicit javascript: HasLensCodeMaker[Javascript], scala: ToScalaCode[DomainDefn[SharedE, DomainE]]): DomainDefnToDetails[SharedE, DomainE] = { defn =>
     val scalaDetails = CodeDetails(scala(defn))
     val javascriptDetails = script.CodeDetails(javascript(defn))
-    DomainDetails[SharedE, DomainE](defn.domainName, defn.packageName, defn.accepts, javascriptDetails.hash, defn.lens.map(_.name).toSet, Map(Javascript -> javascriptDetails, ScalaCode -> scalaDetails))
+    DomainDetails[SharedE, DomainE](defn.domainName, defn.packageName, defn.accepts, javascriptDetails.hash,
+      defn.renderers,
+      defn.lens.map(_.name).toSet,
+      Map(Javascript -> javascriptDetails, ScalaCode -> scalaDetails))
   }
 
 }
@@ -72,7 +75,7 @@ case class CodeDetails(code: String)(implicit digestor: Digestor) {
 }
 
 
-case class DomainDetails[SharedE, DomainE](name: String, packageName: String, accept: String, codeHeader: String, lensNames: Set[String], code: Map[CodeFragment, CodeDetails]) {
+case class DomainDetails[SharedE, DomainE](name: String, packageName: String, accept: String, codeHeader: String, renderers: Seq[String], lensNames: Set[String], code: Map[CodeFragment, CodeDetails]) {
   def normalisedLens = DomainDetails.stringsToString(lensNames)
 
   def isDefinedAt(lensNames: Set[String]) = lensNames.forall(this.lensNames.contains)
