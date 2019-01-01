@@ -97,6 +97,17 @@ class Model2Defn extends DomainDefn[IPerson, Person]("one.xingyi.scriptModel2", 
     Person.personAddressOps -> Person.projection,
     Address.addressOps -> Address.projection,
     Telephone.telephoneOps -> Telephone.projection),
+  List()) {
+  override def packageName: String = "one.xingyi.scriptExample.createdCode"
+
+}
+class Model2LegacyDefn extends DomainDefn[IPerson, Person]("one.xingyi.scriptModel2", List("json", "pretty", "form"),
+  List(
+    Person.personNameOps -> Person.projection,
+    Person.personTelephoneOps -> Person.projection,
+    Person.personAddressOps -> Person.projection,
+    Address.addressOps -> Address.projection,
+    Telephone.telephoneOps -> Telephone.projection),
   List(
     new IPersonLine12Ops[XingYiManualPath, IPerson] {
       override val line1Lens = XingYiManualPath[IPerson, String]("lens_person_line1_string", "stringLens",

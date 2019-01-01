@@ -20,7 +20,7 @@ object Backend2 extends App {
 
   import SimpleLogRequestAndResult._
 
-  implicit val domainList = DomainList(DomainDefnToDetails(new Model2Defn))
+  implicit val domainList = DomainList(DomainDefnToDetails(new Model2Defn), DomainDefnToDetails(new Model2LegacyDefn))
 
   val website = new EntityEndpoints[IdentityMonad, Throwable, JValue, IPerson, Person]
   val backend = new CheapServer[IdentityMonad, Throwable](9001, website.endpoints)
