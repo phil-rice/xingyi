@@ -6,7 +6,6 @@ import one.xingyi.core.json._
 import one.xingyi.core.reflection.{ClassTags, Reflect}
 import one.xingyi.core.script
 
-import scala.collection.immutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
@@ -108,8 +107,7 @@ object DomainList {
 case class DomainList[SharedE, DomainE](firstDomain: DomainDetails[SharedE, DomainE], restDomains: DomainDetails[SharedE, DomainE]*) {
   val domains = firstDomain :: restDomains.toList
 
-  def accept(xingyiHeader: Option[String]) = {
-    println(s"in Domain list$xingyiHeader")
+  def accept(xingyiHeader: Option[String]) =
     xingyiHeader match {
       case None => firstDomain
       case Some(header) if !header.contains(DomainDefn.xingyiHeaderPrefix) => firstDomain
@@ -125,7 +123,4 @@ case class DomainList[SharedE, DomainE](firstDomain: DomainDetails[SharedE, Doma
             throw new CannotRespondToQuery(header, set, DomainDetails.stringsToString(set), failures)
         }
     }
-  }
-
-
 }

@@ -1,8 +1,8 @@
-package one.xingyi.scriptSharedBackend.domain
+package one.xingyi.core.script
+
 import one.xingyi.core.builder.HasId
 import one.xingyi.core.http.FromServiceRequest
 import one.xingyi.core.monad.Monad
-import one.xingyi.core.script.{DomainDefn, HasHost, ToContentType}
 import one.xingyi.core.strings.Strings
 
 import scala.language.higherKinds

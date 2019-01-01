@@ -1,10 +1,10 @@
-package one.xingyi.scriptSharedBackend.domain
+package one.xingyi.core.script
+
 import one.xingyi.core.http._
 import one.xingyi.core.json.{JsonWriter, ObjectProjection}
-import one.xingyi.core.monad.Monad
-import one.xingyi.core.script.ServerPayload
-import one.xingyi.core.strings.Strings
 import one.xingyi.core.language.AnyLanguage._
+import one.xingyi.core.monad.Monad
+import one.xingyi.core.strings.Strings
 
 import scala.language.higherKinds
 

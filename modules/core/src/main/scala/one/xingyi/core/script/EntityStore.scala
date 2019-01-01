@@ -1,8 +1,10 @@
-package one.xingyi.scriptSharedBackend.domain
+package one.xingyi.core.script
+
 import one.xingyi.core.builder.CopyWithNewId
 import one.xingyi.core.json.ObjectProjection
-import one.xingyi.core.monad.Monad
 import one.xingyi.core.language.AnyLanguage._
+import one.xingyi.core.monad.Monad
+
 import scala.language.higherKinds
 
 class EntityStore[M[_] : Monad, SharedE, DomainE](implicit changeId: CopyWithNewId[DomainE, String], objectProjection: ObjectProjection[SharedE, DomainE]) {

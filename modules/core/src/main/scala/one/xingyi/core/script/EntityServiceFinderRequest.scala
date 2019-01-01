@@ -1,11 +1,11 @@
-package one.xingyi.scriptSharedBackend.domain
+package one.xingyi.core.script
+
 import one.xingyi.core.http.FromServiceRequest
 import one.xingyi.core.json._
+import one.xingyi.core.language.AnyLanguage._
 import one.xingyi.core.monad.Monad
 
 import scala.language.higherKinds
-import one.xingyi.core.language.AnyLanguage._
-import one.xingyi.core.script.DomainList
 
 case class EntityServiceFinderRequest(host: String)
 object EntityServiceFinderRequest {

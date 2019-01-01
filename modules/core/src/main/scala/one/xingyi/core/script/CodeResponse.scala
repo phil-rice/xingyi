@@ -1,10 +1,9 @@
-package one.xingyi.scriptSharedBackend.domain
+package one.xingyi.core.script
 
 import one.xingyi.core.http._
 import one.xingyi.core.json._
 import one.xingyi.core.language.Language._
 import one.xingyi.core.monad.Monad
-import one.xingyi.core.script._
 import one.xingyi.core.strings.Strings
 
 import scala.language.higherKinds
@@ -15,12 +14,12 @@ object CodeRequest {
   implicit def fromServiceRequest[M[_] : Monad]: FromServiceRequest[M, CodeRequest] = { sr => CodeRequest().liftM[M] }
 }
 
-case class Code[SharedE, DomainE](domainList: DomainList[SharedE, DomainE])
+case class CodeResponse[SharedE, DomainE](domainList: DomainList[SharedE, DomainE])
 
-object Code extends JsonWriterLanguage {
-  implicit def toServiceResponse[J, SharedE, DomainE](implicit jsonWriter: JsonWriter[J]): ToServiceResponse[CodeRequest, Code[SharedE, DomainE]] = {
+object CodeResponse extends JsonWriterLanguage {
+  implicit def toServiceResponse[J, SharedE, DomainE](implicit jsonWriter: JsonWriter[J]): ToServiceResponse[CodeRequest, CodeResponse[SharedE, DomainE]] = {
     codeRequest =>
-      code: Code[SharedE, DomainE] =>
+      code: CodeResponse[SharedE, DomainE] =>
         val summary: JsonValue = JsonList(code.domainList.domains.map { details: DomainDetails[SharedE, DomainE] =>
           JsonObject(
             "name" -> details.name,
