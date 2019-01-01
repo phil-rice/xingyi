@@ -17,7 +17,7 @@ case class XingYiManualPath[A, B](prefix: String, lensType: String, javascript: 
 object DomainDefn {
   val xingyiHeaderPrefix = "application/xingyi."
   val xingyiCodeSummaryMediaType = "application/json"
-
+  def accepts(lensNames: List[String]) = DomainDefn.xingyiHeaderPrefix + DomainDetails.stringsToString(lensNames)
 }
 
 case class InterfaceAndProjection[Shared, Domain](sharedOps: IXingYiSharedOps[IXingYiLens, Shared], projection: ObjectProjection[Shared, Domain])
@@ -42,7 +42,7 @@ class DomainDefn[SharedE, DomainE: ClassTag](val sharedPackageName: String, val 
   val manualLens: List[LensDefn[_, _]] = manual.flatMap(Reflect(_).zeroParamMethodsNameAndValue[XingYiManualPath[_, _]].map { case (name, path) => path.makeManualLens(name) }.toList)
   val lens = (projectionLens.values ++ manualLens).toList
 
-  def accepts: String = DomainDefn.xingyiHeaderPrefix + DomainDetails.stringsToString(lens.map(_.name))
+  def accepts: String = DomainDefn.accepts(lens.map(_.name))
 
   override def toString: String =
     s"""${getClass.getSimpleName}(
@@ -79,7 +79,7 @@ case class DomainDetails[SharedE, DomainE](name: String, packageName: String, ac
 }
 
 object DomainDetails {
-  def stringsToString(set: Iterable[String]) = set.toList.sorted.mkString(".")
+  def stringsToString(set: Iterable[String]) = set.toList.sorted.mkString(",")
 }
 
 

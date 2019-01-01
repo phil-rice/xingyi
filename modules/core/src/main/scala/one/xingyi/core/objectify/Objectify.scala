@@ -6,7 +6,7 @@ import one.xingyi.core.json._
 import one.xingyi.core.language.Language._
 import one.xingyi.core.logging.DetailedLogging
 import one.xingyi.core.monad._
-import one.xingyi.core.script.{DomainMaker, IXingYi, IXingYiLoader, ServerDomain}
+import one.xingyi.core.script._
 
 import scala.language.higherKinds
 import scala.reflect.ClassTag
@@ -74,12 +74,15 @@ trait XingyiKleisli[M[_], Fail] {
       (implicit entityDetailsUrl: EntityDetailsUrl[Dom],
        fromServiceResponseForEntityDetails: FromServiceResponse[EntityDetailsResponse],
        fromEntityDetailsResponse: FromEntityDetailsResponse[Req], fromEditXingYi: FromEditXingYi[Req, Dom, Res],
-       xingYiLoader: IXingYiLoader): Req => M[Res] = {
+       xingYiLoader: IXingYiLoader,
+       interfaceHeaders: IXingYiHeaderFor[Ops]
+      ): Req => M[Res] = {
     req =>
       RecordedCall.default.remove()
       for {
-        serviceDiscoveryProducedServiceRequest <- http(ServiceRequest(Method("get"), entityDetailsUrl.url)).map(fromServiceResponseForEntityDetails andThen fromEntityDetailsResponse(req, serverDomain))
-        codeBody <- http(serviceDiscoveryProducedServiceRequest).map(ServiceResponse.serviceResponseToXingYiCodeAndBody)
+        serviceDiscoveryProducedServiceRequest <- http(ServiceRequest(Method("" + "get"), entityDetailsUrl.url)).map(fromServiceResponseForEntityDetails andThen fromEntityDetailsResponse(req, serverDomain))
+        withCorrectHeaders = serviceDiscoveryProducedServiceRequest.addHeader("accept", DomainDefn.accepts(interfaceHeaders()))
+        codeBody <- http(withCorrectHeaders).map(ServiceResponse.serviceResponseToXingYiCodeAndBody)
         (code, body) = codeBody
         xingyi <- http(ServiceRequest(Method("get"), Uri(code))).map(sr => xingYiLoader(sr.body.s))
         dom = xingyi.parse[Dom](body)

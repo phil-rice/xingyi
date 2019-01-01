@@ -73,18 +73,21 @@ object ToScalaCode {
       }.mkString(",")
 
       val classStart =
-        s"""class ${interfaceToImplName.opsServerSideImpl(interface)}(implicit val xingYi: IXingYi) extends ${interfaceToImplName.opsInterface(interface)}[Lens, $s] with IXingYiGeneratedSharedOps{""".stripMargin
-      val headerField = s"""   def header=List(${list.map(x => "\"" + x.lensDefn.name + "\"").mkString(",")})"""
+        s"""class ${interfaceToImplName.opsServerSideImpl(interface)}(implicit val xingYi: IXingYi) extends ${interfaceToImplName.opsInterface(interface)}[Lens, $s] {""".stripMargin
+//      val headerField = s"""   def header=List(${list.map(x => "\"" + x.lensDefn.name + "\"").mkString(",")})"""
 
       val middle = list.map(lensAndLensDefnToScala)
       val end = "}"
-      (classStart :: headerField :: middle ::: List(end)).mkString("\n")
+      val objectHeader = "object " + interfaceToImplName.opsServerSideImpl(interface) + " {//" + interface.getClass
+      val objectHeaderField = s"""   implicit def hasHeader: IXingYiHeaderFor[${interfaceToImplName.opsServerSideImpl(interface)}] =  () => List(${list.map(x => "\"" + x.lensDefn.name + "\"").mkString(",")})"""
+
+      (objectHeader :: objectHeaderField :: end :: classStart ::  middle ::: List(end)).mkString("\n")
   }
 
   implicit def makeScalaCode[SharedE, DomainE](implicit interfaceAndLensToScala: ToScalaCode[InterfaceAndLens], interfaceToImplName: InterfaceToImplName): ToScalaCode[DomainDefn[SharedE, DomainE]] = {
     domainDefn =>
       val packageSring = s"package ${domainDefn.packageName}"
-      val imports = s"import ${domainDefn.sharedPackageName}._\nimport one.xingyi.core.json.IXingYiGeneratedSharedOps\nimport one.xingyi.core.optics.Lens\nimport one.xingyi.core.script.{Domain,DomainMaker, IXingYi,ServerDomain}"
+      val imports = s"import ${domainDefn.sharedPackageName}._\nimport one.xingyi.core.json.IXingYiHeaderFor\nimport one.xingyi.core.optics.Lens\nimport one.xingyi.core.script.{Domain,DomainMaker, IXingYi,ServerDomain}"
       val domainClasses = domainDefn.interfacesToProjections.map(_.projection).distinct.map {
         interface =>
           val impl = interfaceToImplName.impl(interface.sharedClassTag.runtimeClass)
@@ -111,14 +114,20 @@ object ToScalaCode {
             })
       }.map(interfaceAndLensToScala).mkString("\n")
 
+      //      val implicitsForOps = domainDefn.manual.map { ops =>
+      //        val methodNamesAndXingYiLines: immutable.Seq[(String, XingYiManualPath[_, _])] = Reflect(ops).zeroParamMethodsNameAndValue[XingYiManualPath[_, _]]()
+      //        val objectHeader = "object " + interfaceToImplName.opsServerSideImpl(ops) + " {//" + ops.getClass
+      //        val objectHeaderField = s"""   def hasHeader: IXingYiHeaderFor[${interfaceToImplName.opsServerSideImpl(ops)}] =  () => List(${methodNamesAndXingYiLines.map(x => "\"" + x._2.prefix + "\"").mkString(",")})"""
+      //        List(objectHeader, objectHeaderField, "}").mkString("\n")
+      //      }.mkString("\n")
+
       val opsFromLegacy = domainDefn.manual.map { ops =>
         val opClass = Reflect.findParentClassWith(ops.getClass, classOf[IXingYiSharedOps[XingYiManualPath, _]])
         val classes = opClass.getAnnotation(classOf[XingYiInterface]).clazzes().map(interfaceToImplName.impl).mkString(",")
-        val header = "class " + interfaceToImplName.opsServerSideImpl(ops) + s"(implicit val xingYi: IXingYi) extends ${interfaceToImplName.opsInterface(ops)}[Lens, $classes] with IXingYiGeneratedSharedOps {//" + ops.getClass
+        val header = "class " + interfaceToImplName.opsServerSideImpl(ops) + s"(implicit val xingYi: IXingYi) extends ${interfaceToImplName.opsInterface(ops)}[Lens, $classes]  {//" + ops.getClass
         val methodNamesAndXingYiLines: immutable.Seq[(String, XingYiManualPath[_, _])] = Reflect(ops).zeroParamMethodsNameAndValue[XingYiManualPath[_, _]]()
-        val headerField = s"""   def header=List(${methodNamesAndXingYiLines.map(x => "\"" + x._2.prefix + "\"").mkString(",")})"""
 
-//        val headerField = "  def header=" + methodNamesAndXingYiLines.map(_._2.prefix)
+        //        val headerField = "  def header=" + methodNamesAndXingYiLines.map(_._2.prefix)
         val middle = methodNamesAndXingYiLines.map { case (name, value) =>
           val lensString = value.lensType match {
             case "stringLens" => s"${value.lensType}[${interfaceToImplName.impl(value.classTag.runtimeClass)}]"
@@ -126,7 +135,9 @@ object ToScalaCode {
           }
           s"""   def $name = xingYi.$lensString("${value.prefix}") """
         }.mkString("\n")
-        List(header, headerField, middle, "}").mkString("\n")
+        val objectHeader = "object " + interfaceToImplName.opsServerSideImpl(ops) + " {//" + ops.getClass
+        val objectHeaderField = s"""   implicit def hasHeader: IXingYiHeaderFor[${interfaceToImplName.opsServerSideImpl(ops)}] =  () => List(${methodNamesAndXingYiLines.map(x => "\"" + x._2.prefix + "\"").mkString(",")})"""
+        List(objectHeader, objectHeaderField, "}", header, middle, "}").mkString("\n")
       }.mkString("\n")
 
       val domainCode = List(s"object ${domainDefn.domainName} extends ServerDomain{",

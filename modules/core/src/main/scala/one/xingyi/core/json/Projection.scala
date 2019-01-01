@@ -9,8 +9,8 @@ import one.xingyi.core.reflection.ClassTags
 import scala.language.{higherKinds, implicitConversions}
 trait IXingYiShared
 trait IXingYiSharedOps[Lens[_, _], T]
-trait IXingYiGeneratedSharedOps {
-  def header: List[String]
+trait IXingYiHeaderFor [T] {
+  def apply(): List[String]
 }
 trait IXingYiLens[A, B]
 
