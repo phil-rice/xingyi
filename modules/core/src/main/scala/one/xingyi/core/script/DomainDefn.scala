@@ -14,10 +14,10 @@ case class XingYiManualPath[A, B](prefix: String, lensType: String, javascript: 
   def makeManualLens(name: String) = ManualLensDefn[A, B](prefix, isList, javascript)
 }
 
-case class InterfaceAndProjection[Shared, Domain](sharedOps: IXingYiSharedOps[IXingYiLens, Shared], projection: ObjectProjection[Shared, Domain])
+case class InterfaceAndProjection[Shared, Domain](projection: ObjectProjection[Shared, Domain], sharedOps: IXingYiSharedOps[IXingYiLens, Shared])
 object InterfaceAndProjection {
   implicit def tupleTo[Shared, Domain](tuple: (IXingYiSharedOps[IXingYiLens, Shared], ObjectProjection[Shared, Domain])) =
-    InterfaceAndProjection(tuple._1, tuple._2)
+    InterfaceAndProjection(tuple._2, tuple._1)
 }
 
 

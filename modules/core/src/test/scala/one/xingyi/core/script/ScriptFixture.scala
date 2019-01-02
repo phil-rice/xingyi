@@ -102,5 +102,20 @@ trait ScriptFixture {
   val js1Hash = code1(Javascript).hash
   val scala1Hash = code1(ScalaCode).hash
 
+  val sharedPackageName = new ParentDomainForTest1().sharedPackageName
+  val domainCd1 = DomainCD("one.xingyi.core.script", sharedPackageName, "ParentDomainForTest1", DomainDefnToCodeDom.imports(sharedPackageName),
+    List(EntityCD("House", "one.xingyi.core.script.IHouse"),
+      EntityCD("Child", "one.xingyi.core.script.IChild"),
+      EntityCD("Parent", "one.xingyi.core.script.IParent")),
+    List(InterfaceCD("IParentNameOps", "ParentNameOps", List("Parent"), List(LensMethodCD("nameLens", "lens_parent_name_string", "stringLens[Parent]"))),
+      InterfaceCD("IParentHouseOps", "ParentHouseOps", List("Parent", "House"), List(LensMethodCD("houseLens", "lens_parent_house_house", "objectLens[Parent,House]")))))
+
+
+  val domainCd2 = DomainCD("one.xingyi.core.script", sharedPackageName, "ParentDomainForTest2", DomainDefnToCodeDom.imports(sharedPackageName),
+    List(EntityCD("House", "one.xingyi.core.script.IHouse"),
+      EntityCD("Child", "one.xingyi.core.script.IChild"),
+      EntityCD("Parent", "one.xingyi.core.script.IParent")),
+    List(InterfaceCD("IParentNameOps", "ParentNameOps", List("Parent"), List(LensMethodCD("nameLens", "lens_parent_name_string", "stringLens[Parent]"))),
+      InterfaceCD("IParentChildrenOps", "ParentChildrenOps", List("Parent", "Child"), List(LensMethodCD("childrenLens", "lens_parent_children_childlist", "listLens[Parent,Child]")))))
 
 }

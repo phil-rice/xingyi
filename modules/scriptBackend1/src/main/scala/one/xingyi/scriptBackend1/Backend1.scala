@@ -23,6 +23,7 @@ object Backend1 extends App {
   implicit val domainList = DomainList(DomainDefnToDetails(new Model1Defn))
 
   val personEndpoints = new EntityEndpoints[IdentityMonad, Throwable, JValue, IPerson, Person]
+
   val backend = new CheapServer[IdentityMonad, Throwable](9001, personEndpoints.endpoints)
 
   println("running")

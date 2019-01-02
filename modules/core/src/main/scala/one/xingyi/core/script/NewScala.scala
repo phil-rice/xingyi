@@ -104,7 +104,7 @@ object ToScalaCode {
           List(classString, objectString).mkString("\n")
       }.mkString("\n")
       val opsFromObjectProjections: String = domainDefn.interfacesToProjections.map {
-        case InterfaceAndProjection(interface, projection) =>
+        case InterfaceAndProjection( projection, interface) =>
           InterfaceAndLens(interfaceToImplName.impl(projection.sharedClassTag.runtimeClass), interface, Reflect(interface).zeroParamMethodsNameAndValue[IXingYiLens[_, _]].
             map {
               case (name, l) =>
