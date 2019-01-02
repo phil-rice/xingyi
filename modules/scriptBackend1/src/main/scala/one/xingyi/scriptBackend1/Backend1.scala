@@ -4,7 +4,7 @@ package one.xingyi.scriptBackend1
 import one.xingyi.core.http.Failer.failerForThrowable
 import one.xingyi.core.logging._
 import one.xingyi.core.monad.IdentityMonad
-import one.xingyi.core.script.{DomainDefnToDetails, DomainList}
+import one.xingyi.core.script.{DomainDefnToDetails, DomainList, IEntityStore}
 import one.xingyi.core.simpleServer.CheapServer
 import one.xingyi.json4s.Json4sParser._
 import one.xingyi.json4s.Json4sWriter._
@@ -21,6 +21,7 @@ object Backend1 extends App {
   import SimpleLogRequestAndResult._
 
   implicit val domainList = DomainList(DomainDefnToDetails(new Model1Defn))
+  implicit val personStore = IEntityStore.demo[IdentityMonad, Throwable, IPerson, Person]
 
   val personEndpoints = new EntityEndpoints[IdentityMonad, Throwable, JValue, IPerson, Person]
 
