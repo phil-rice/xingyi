@@ -10,7 +10,6 @@ import one.xingyi.core.monad.{LiftFunctionKleisli, MonadCanFailWithException}
 import scala.language.higherKinds
 
 
-
 class EntityCodeMaker[M[_], Fail, SharedE, DomainE](implicit val monad: MonadCanFailWithException[M, Fail], failer: SimpleFailer[Fail],
                                                     domainList: DomainList[SharedE, DomainE],
                                                     entityPrefixFinder: EntityPrefix[DomainE],
@@ -34,7 +33,9 @@ class EntityCodeMaker[M[_], Fail, SharedE, DomainE](implicit val monad: MonadCan
 
 
 class EntityMaker[M[_], Fail, SharedE, DomainE: Links](methods: List[Method])
-                                                      (implicit val monad: MonadCanFailWithException[M, Fail], failer: SimpleFailer[Fail],
+                                                      (implicit val monad: MonadCanFailWithException[M, Fail],
+                                                       failer: SimpleFailer[Fail],
+                                                       editEntityFailer: EditEntityRequestFailer[Fail],
                                                        domainList: DomainList[SharedE, DomainE],
                                                        entityPrefixFinder: EntityPrefix[DomainE],
                                                        hasId: HasId[DomainE, String],
@@ -60,7 +61,8 @@ class EntityMaker[M[_], Fail, SharedE, DomainE: Links](methods: List[Method])
   def newEntity[J: JsonWriter](fn: String => M[DomainE])(implicit project: ObjectProjection[SharedE, DomainE]) =
     newFn(fn) |+| endpoint[GetEntityRequest, ServerPayload[SharedE, DomainE]](s"/$entityPrefix", MatchesServiceRequest.idAtEnd(Method("post")))
 
-  def editFn(fn: (String, DomainE) => M[DomainE]) = { req: EditEntityRequest[DomainE] => fn(hasId(req.entity), req.entity).map(newDom => makeServerPayload(req.xingYiHeader, newDom)) }
+
+  def editFn(fn: (String, DomainE) => M[DomainE]) = { req: EditEntityRequest[DomainE] => fn(hasId(req.entity), req.entity).map(newDom => makeServerPayload(req.acceptHeader, newDom)) }
   def editEndpoint[J: JsonWriter : JsonParser](fn: (String, DomainE) => M[DomainE])(implicit project: ObjectProjection[SharedE, DomainE], links: Links[DomainE]) =
     editFn(fn) |+| endpoint[EditEntityRequest[DomainE], ServerPayload[SharedE, DomainE]](s"/$entityPrefix", MatchesServiceRequest.idAtEnd(Method("put")))
 

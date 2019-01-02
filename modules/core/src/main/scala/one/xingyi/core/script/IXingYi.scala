@@ -73,7 +73,7 @@ object ServerPayload extends JsonWriterLanguage {
             JsonObject(payload.links(payload.domainObject).map {
               case LinkDetail(verb, pattern) => verb -> JsonString(pattern.replace("<id>", hasId(req)).replace("<host>", host))
             }: _*)))),
-        List(Header("content-type", toContentType(req)), Header("xingyi", payload.domain.codeHeader)))
+        List(Header("content-type", toContentType(req)), Header("xingyi", payload.domain.name)))
   }
 }
 
