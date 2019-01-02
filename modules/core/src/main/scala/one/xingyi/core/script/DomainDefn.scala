@@ -25,6 +25,8 @@ object DomainDefn {
   val xingyiHeaderPrefix = "application/xingyi."
   val xingyiCodeSummaryMediaType = "application/json"
   def accepts(lensNames: List[String]) = DomainDefn.xingyiHeaderPrefix + DomainDetails.stringsToString(lensNames)
+
+  implicit def domainDefnToScala[SharedE, DomainE:ClassTag](implicit domainDefnToCodeDom: DomainDefnToCodeDom, domainCdToScala: ToScalaCode[DomainCD]): ToScalaCode[DomainDefn[SharedE, DomainE]] = { defn => domainCdToScala(domainDefnToCodeDom(defn)) }
 }
 
 
@@ -59,7 +61,8 @@ trait DomainDefnToDetails[SharedE, DomainE] extends (DomainDefn[SharedE, DomainE
 object DomainDefnToDetails {
   def apply[SharedE, DomainE: ClassTag](domainDefn: DomainDefn[SharedE, DomainE])(implicit domainDefnToDetails: DomainDefnToDetails[SharedE, DomainE]) = domainDefnToDetails(domainDefn)
 
-  implicit def default[SharedE, DomainE](implicit javascript: HasLensCodeMaker[Javascript], scala: ToScalaCode[DomainDefn[SharedE, DomainE]]): DomainDefnToDetails[SharedE, DomainE] = { defn =>
+  implicit def default[SharedE, DomainE](implicit javascript: HasLensCodeMaker[Javascript],
+                                         scala: ToScalaCode[DomainDefn[SharedE, DomainE]]): DomainDefnToDetails[SharedE, DomainE] = { defn =>
     val scalaDetails = CodeDetails(scala(defn))
     val javascriptDetails = script.CodeDetails(javascript(defn))
     DomainDetails[SharedE, DomainE](defn.domainName, defn.packageName, defn.accepts, javascriptDetails.hash,

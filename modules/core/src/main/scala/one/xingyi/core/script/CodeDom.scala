@@ -1,9 +1,48 @@
 package one.xingyi.core.script
-import one.xingyi.core.json.{IXingYiLens, LensDefn}
+import one.xingyi.core.json.{IXingYiLens, IXingYiSharedOps, LensDefn}
 import one.xingyi.core.reflection.Reflect
+import one.xingyi.core.strings.Strings
 
 import scala.collection.immutable
+import scala.language.higherKinds
 import scala.reflect.ClassTag
+
+object ScalaCode extends ScalaCode {
+  override def mediaType: MediaType = MediaType("application/scala")
+}
+
+trait ScalaCode extends CodeFragment
+
+trait ToScalaCode[T] extends (T => String)
+trait InterfaceToImplName {
+  def opsInterface[L[_, _]](ops: IXingYiSharedOps[L, _]): String
+
+  def opsServerSideImpl[L[_, _]](ops: IXingYiSharedOps[L, _]): String
+
+  def impl(projection: Class[_]): String
+}
+
+object InterfaceToImplName {
+
+  implicit object default extends InterfaceToImplName {
+    override def opsServerSideImpl[L[_, _]](v1: IXingYiSharedOps[L, _]): String =
+      impl(Reflect.findParentClassWith(v1.getClass, classOf[IXingYiSharedOps[L, _]]))
+
+    override def impl(clazz: Class[_]): String = {
+      Strings.removeOptional$(clazz.getSimpleName) match {
+        //        case "String" => "String"
+        case s if s.startsWith("I") && s.size > 1 => s.substring(1)
+        case s => s + "Impl"
+      }
+    }
+
+    override def opsInterface[L[_, _]](ops: IXingYiSharedOps[L, _]): String = {
+      Reflect.findParentClassWith(ops.getClass, classOf[IXingYiSharedOps[L, _]]).getSimpleName
+    }
+  }
+
+}
+
 
 case class LensMethodCD(methodName: String, lensName: String, lensType: String)
 object LensMethodCD {

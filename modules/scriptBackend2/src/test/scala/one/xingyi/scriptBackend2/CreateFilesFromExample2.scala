@@ -31,13 +31,13 @@ class CreateFilesFromExample2 extends UtilsSpec {
     Files.printToFile(javascriptFile)(pw => pw.print(javascript))
   }
 
-  //not quite sure what to do? Should I make three websites?
-  it should "make the scala" ignore {
-    ToScalaCode.makeScalaCode[IPerson,Person]
-    val codeMaker = implicitly[ToScalaCode[DomainDefn[IPerson,Person]]]
-    val scala = codeMaker(new Model2Defn)
-    Files.printToFile(scalaFile)(pw => pw.print(scala))
-
-  }
+//  //not quite sure what to do? Should I make three websites?
+//  it should "make the scala" ignore {
+//    ToScalaCode.makeScalaCode[IPerson,Person]
+//    val codeMaker = implicitly[ToScalaCode[DomainDefn[IPerson,Person]]]
+//    val scala = codeMaker(new Model2Defn)
+//    Files.printToFile(scalaFile)(pw => pw.print(scala))
+//
+//  }
 
 }
