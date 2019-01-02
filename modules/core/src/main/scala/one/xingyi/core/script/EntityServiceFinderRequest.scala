@@ -3,13 +3,14 @@ package one.xingyi.core.script
 import one.xingyi.core.http.FromServiceRequest
 import one.xingyi.core.json._
 import one.xingyi.core.language.AnyLanguage._
-import one.xingyi.core.monad.Monad
+import one.xingyi.core.monad.{Monad, MonadCanFailWithException}
 
 import scala.language.higherKinds
 
 case class EntityServiceFinderRequest(host: String)
 object EntityServiceFinderRequest {
-  implicit def fromServiceRequest[M[_] : Monad]: FromServiceRequest[M, EntityServiceFinderRequest] = sr => EntityServiceFinderRequest(sr.host).liftM[M]
+  implicit def fromServiceRequest[M[_], Fail](implicit monad: MonadCanFailWithException[M, Fail], failer: NoHostFailer[Fail]): FromServiceRequest[M, EntityServiceFinderRequest] =
+    sr => failer.failOrUseHost(sr)(host => EntityServiceFinderRequest(host).liftM)
 }
 
 
