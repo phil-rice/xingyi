@@ -1,5 +1,5 @@
 package one.xingyi.core.script
-import one.xingyi.core.http.ServiceRequest
+import one.xingyi.core.http.{Body, ServiceRequest}
 import one.xingyi.core.monad.MonadCanFailWithException
 import one.xingyi.core.language.AnyLanguage._
 
@@ -17,8 +17,9 @@ trait NoHostFailer[Fail] {
 trait EditEntityRequestFailer[Fail] extends NoHostFailer[Fail] {
   def failNoJson(sr: ServiceRequest): Fail
   def failIdDoesntMatch(id: String, sr: ServiceRequest): Fail
-  def failOrUseBody[M[_], T](sr: ServiceRequest)(fn: String => M[T])(implicit monad: MonadCanFailWithException[M, Fail]): M[T] = sr.header("host") match {
-    case Some(host) => fn(host)
+  def failOrUseBody[M[_], T](sr: ServiceRequest)(fn: String => M[T])(implicit monad: MonadCanFailWithException[M, Fail]): M[T] =
+    sr.body match {
+    case Some(Body(body)) => fn(body)
     case None => monad.fail(failNoJson(sr))
   }
 

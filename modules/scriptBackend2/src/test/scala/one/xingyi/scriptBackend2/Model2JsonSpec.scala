@@ -13,17 +13,13 @@ abstract class Model2JsonSpec[J: JsonParser](implicit writer: JsonWriter[J]) ext
     """{
   "name":"someName",
   "telephoneNumber":{
-    "number":"someNumber"
+    "number":"someTelephoneNo"
   },
-  "addresses":[{
-    "line1":"line1",
-    "line2":"line2",
-    "postcode":"pc1"
-  },{
-    "line1":"line2",
-    "line2":"line2",
-    "postcode":"pc2"
-  }]
+  "address":{
+    "line1":"someLine1",
+    "line2":"someLine2",
+    "postcode":"somePostcode"
+  }
 }"""
 
   val person: Person = Person("someName", Address("someLine1", "someLine2", "somePostcode"), Telephone("someTelephoneNo"))

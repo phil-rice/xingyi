@@ -14,19 +14,19 @@ abstract class Model3JsonSpec[J: JsonParser](implicit writer: JsonWriter[J], obj
     """{
   "name":"someName",
   "telephoneNumber":{
-    "number":"someNumber"
+    "number":"someTelephoneNo"
   },
   "addresses":[{
-    "line1":"line1",
-    "line2":"line2",
-    "postcode":"pc1"
+    "line1":"someLine1",
+    "line2":"someLine2",
+    "postcode":"somePostcode"
   },{
-    "line1":"line2",
-    "line2":"line2",
+    "line1":"line21",
+    "line2":"line22",
     "postcode":"pc2"
   }]
 }"""
-  val person: Person = Person("someName", List(Address("someLine1", "someLine2", "somePostcode")), Telephone("someTelephoneNo"))
+  val person: Person = Person("someName", List(Address("someLine1", "someLine2", "somePostcode"), Address("line21", "line22", "pc2")), Telephone("someTelephoneNo"))
 
 
   it should "use the projection to turn a person into json" in {

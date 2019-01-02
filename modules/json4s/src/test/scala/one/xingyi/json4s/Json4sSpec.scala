@@ -9,7 +9,7 @@ import Json4sWriter._
 class Json4sSpec extends JsonParserWriterSpec[JValue]{
 
   it should "throw a FromJson4sException if cannot parse" in {
-    intercept[FromJson4sException](jsonParser("""$$$asd""")).getMessage shouldBe "$$$asd"
+    intercept[FromJson4sException](jsonParser("""$$$asd""")).getMessage shouldBe "String is [$$$asd]"
   }
 
 }

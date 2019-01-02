@@ -23,7 +23,7 @@ trait Json4sParser {
     override def extractOptString(j: JValue): Option[String] = j.extractOpt[String]
     override def asList(j: JValue): List[JValue] = j.extract[List[JValue]]
     override def \(j: JValue, s: String): JValue = j \ s
-    override def apply(s: String): JValue = JsonMethods.parse(s).ifError(e => throw new FromJson4sException(s, e))
+    override def apply(s: String): JValue = JsonMethods.parse(s).ifError(e => throw new FromJson4sException(s"String is [$s]", e))
   }
 
 }

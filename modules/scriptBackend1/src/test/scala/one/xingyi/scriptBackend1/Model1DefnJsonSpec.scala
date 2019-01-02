@@ -3,7 +3,7 @@ package one.xingyi.scriptBackend1
 
 import one.xingyi.core.UtilsSpec
 import one.xingyi.core.json.{JsonParser, JsonWriter, ObjectProjection}
-import one.xingyi.core.script.EntityStore
+import one.xingyi.core.script.DemoEntityStore
 import one.xingyi.scriptModel1.IPerson
 
 abstract class Model1DefnJsonSpec[J: JsonParser](implicit writer: JsonWriter[J]) extends UtilsSpec {
@@ -13,18 +13,11 @@ abstract class Model1DefnJsonSpec[J: JsonParser](implicit writer: JsonWriter[J])
   val json =
     """{
   "name":"someName",
+  "line1":"someLine1",
+  "line2":"someLine2",
   "telephoneNumber":{
-    "number":"someNumber"
-  },
-  "addresses":[{
-    "line1":"line1",
-    "line2":"line2",
-    "postcode":"pc1"
-  },{
-    "line1":"line2",
-    "line2":"line2",
-    "postcode":"pc2"
-  }]
+    "number":"someTelephoneNo"
+  }
 }"""
 
   val person = Person("someName", "someLine1", "someLine2", Telephone("someTelephoneNo"))

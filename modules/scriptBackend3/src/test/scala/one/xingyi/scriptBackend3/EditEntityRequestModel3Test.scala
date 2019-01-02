@@ -7,7 +7,7 @@ import one.xingyi.scriptModel3.IPerson
 import org.json4s.JsonAST.JValue
 
 class EditEntityRequestModel3Test extends EditEntityRequestTest[JValue, IPerson, Person] {
-  override def dom: Person = Person("someName", List(Address("someLine1", "someLine2", "pc")), Telephone("someTelNo"))
+  override def dom: Person = Person(id1, List(Address("someLine1", "someLine2", "pc")), Telephone("someTelNo"))
 }
 
 class EntityRequestModel3Test extends EntityRequestTest[JValue, IPerson, Person]

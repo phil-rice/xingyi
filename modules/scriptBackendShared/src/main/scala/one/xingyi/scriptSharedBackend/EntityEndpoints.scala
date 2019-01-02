@@ -17,13 +17,14 @@ class EntityEndpoints[M[_] : Async, Fail, J: JsonParser : JsonWriter, SharedE, D
 (implicit val monad: MonadCanFailWithException[M, Fail], val logReqAndResult: LogRequestAndResult[Fail],
  val failer: Failer[Fail],
  editEntityFailer: EditEntityRequestFailer[Fail],
+ entityStoreFailer: IEntityStoreFailer[Fail],
  hasId: HasId[DomainE, String], copyWithId: CopyWithNewId[DomainE, String], loggingAdapter: LoggingAdapter,
  domainList: DomainList[SharedE, DomainE],
  projection: ObjectProjection[SharedE, DomainE]) extends LiftFunctionKleisli[M] with ChainKleisli[M, Fail] with EndpointKleisli[M] with MicroserviceComposers[M] {
 
   import projection.proof
 
-  val personStore = new EntityStore[M, SharedE, DomainE]
+  val personStore = IEntityStore.demo[M, Fail, SharedE, DomainE]
 
   val entityCodeMaker = new EntityCodeMaker[M, Fail, SharedE, DomainE]
   val entityMaker = new EntityMaker[M, Fail, SharedE, DomainE](List(Get, Post, Put))

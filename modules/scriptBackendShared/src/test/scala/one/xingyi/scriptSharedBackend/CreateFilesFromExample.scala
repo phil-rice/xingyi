@@ -22,22 +22,5 @@ class CreateFilesFromExample extends UtilsSpec {
     withClue(s"directory is $scalaFile")(isCorrectDirectory shouldBe true)
   }
 
-  it should "make the javascript" in {
-    fail()
-  }
-//    checkCorrectDirectory
-//
-//    val codeMaker = implicitly[HasLensCodeMaker[Javascript]]
-//    val javascript = codeMaker.apply(new ExampleDomainDefn)
-//    Files.printToFile(javascriptFile)(pw => pw.print(javascript))
-//  }
-//
-//  it should "make the scala" in {
-//    ToScalaCode.makeScalaCode[Person]
-//    val codeMaker = implicitly[ToScalaCode[DomainDefn[Person]]]
-//    val scala = codeMaker(new ExampleDomainDefn)
-//    Files.printToFile(scalaFile)(pw => pw.print(scala))
-//
-//  }
 
 }

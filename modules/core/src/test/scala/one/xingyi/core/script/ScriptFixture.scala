@@ -1,4 +1,5 @@
 package one.xingyi.core.script
+import one.xingyi.core.builder.IdLens
 import one.xingyi.core.json._
 import one.xingyi.core.optics.Lens
 
@@ -46,6 +47,8 @@ case class ParentForTest(name: String, age: Int, house: HouseForTest, children: 
 object ParentForTest {
   implicit val proof: ProofOfBinding[IParent, ParentForTest] = new ProofOfBinding
   val prototype = ParentForTest("someParent", 1, HouseForTest(12, "somePostcode"), List())
+  implicit val idLens = IdLens[ParentForTest, String](_.name, (p, n) => p.copy(name = n))
+
 
   object parentNameOps extends IParentNameOps[IXingYiLens, IParent] {
     override def nameLens = XingYiDomainStringLens(Lens[ParentForTest, String](_.name, (p, n) => p.copy(name = n)))

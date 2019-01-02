@@ -8,7 +8,7 @@ import org.json4s.JsonAST.JValue
 
 
 class EditEntityRequestModel2Test extends EditEntityRequestTest[JValue, IPerson, Person] {
-  override def dom: Person = Person("someName", Address("someLine1", "someLine2", "pc"), Telephone("someTelNo"))
+  override def dom: Person = Person(id1, Address("someLine1", "someLine2", "pc"), Telephone("someTelNo"))
 }
 
 class EntityRequestModel2Test extends EntityRequestTest[JValue, IPerson, Person]
