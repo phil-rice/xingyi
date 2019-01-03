@@ -2,6 +2,7 @@
 package one.xingyi.core.script
 
 import one.xingyi.core.crypto.Digestor
+import one.xingyi.core.http.{Get, Method, Post, Put}
 import one.xingyi.core.json._
 import one.xingyi.core.reflection.{ClassTags, Reflect}
 import one.xingyi.core.script
@@ -26,9 +27,24 @@ object DomainDefn {
   val xingyiCodeSummaryMediaType = "application/json"
   def accepts(lensNames: List[String]) = DomainDefn.xingyiHeaderPrefix + DomainDetails.stringsToString(lensNames)
 
-  implicit def domainDefnToScala[SharedE, DomainE:ClassTag](implicit domainDefnToCodeDom: DomainDefnToCodeDom, domainCdToScala: ToScalaCode[DomainCD]): ToScalaCode[DomainDefn[SharedE, DomainE]] = { defn => domainCdToScala(domainDefnToCodeDom(defn)) }
+  implicit def domainDefnToScala[SharedE, DomainE: ClassTag](implicit domainDefnToCodeDom: DomainDefnToCodeDom, domainCdToScala: ToScalaCode[DomainCD]): ToScalaCode[DomainDefn[SharedE, DomainE]] = { defn => domainCdToScala(domainDefnToCodeDom(defn)) }
 }
 
+trait MethodData[DomainE] {
+  def method: Method
+  def urlPattern: String
+}
+case class GetMethodData[DomainE](urlPattern: String, fn: String => DomainE) extends MethodData[DomainE] {
+  override def method: Method = Get
+}
+case class PutMethodData[DomainE](urlPattern: String, fn: (DomainE, String) => DomainE) extends MethodData[DomainE] {
+  override def method: Method = Put
+}
+case class PostMethodData[DomainE](urlPattern: String, fn: String => DomainE) extends MethodData[DomainE] {
+  override def method: Method = Post
+}
+
+case class DomainAndMethods[SharedE, DomainE](methodDatas: List[MethodData[DomainE]], defn: DomainDefn[SharedE, DomainE])
 
 class DomainDefn[SharedE, DomainE: ClassTag](val sharedPackageName: String, val renderers: List[String],
                                              val interfacesToProjections: List[InterfaceAndProjection[_, _]] = List(),

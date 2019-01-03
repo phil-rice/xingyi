@@ -29,30 +29,24 @@ case class Person(name: String, line1: String, line2: String, telephoneNumber: T
 object Person extends JsonWriterLanguage {
   implicit val entityPrefix: EntityPrefix[Person] = () => "person"
   implicit val hasId: HasId[Person, String] = _.name
-  implicit val copyWithNewId: CopyWithNewId[Person, String] = (id, p) => p.copy(name=id)
+  implicit val copyWithNewId: CopyWithNewId[Person, String] = (id, p) => p.copy(name = id)
 
   implicit val links: Links[Person] = _ => List(LinkDetail("self", "/person/<id>"))
-
-  implicit val nameL = Lens[Person, String](_.name, (p, n) => p.copy(name = n))
-  implicit val line1L = Lens[Person, String](_.line1, (p, n) => p.copy(line1 = n))
-  implicit val line2L = Lens[Person, String](_.line2, (p, n) => p.copy(line2 = n))
-  implicit val telephoneL = Lens[Person, Telephone](_.telephoneNumber, (p, t) => p.copy(telephoneNumber = t))
 
   implicit object personProof extends ProofOfBinding[IPerson, Person]
 
   implicit object personNameOps extends IPersonNameOps[IXingYiLens, IPerson] {
-    override def nameLens = XingYiDomainStringLens(nameL)
+    override def nameLens = XingYiDomainStringLens(Lens[Person, String](_.name, (p, n) => p.copy(name = n)))
   }
 
   implicit object personLine12Ops extends IPersonLine12Ops[IXingYiLens, IPerson] {
-    override def line1Lens = XingYiDomainStringLens(line1L)
-
-    override def line2Lens = XingYiDomainStringLens(line2L)
+    override def line1Lens = XingYiDomainStringLens(Lens[Person, String](_.line1, (p, n) => p.copy(line1 = n)))
+    override def line2Lens = XingYiDomainStringLens(Lens[Person, String](_.line2, (p, n) => p.copy(line2 = n)))
 
   }
 
   implicit object personTelephoneOps extends IPersonTelephoneOps[IXingYiLens, IPerson, ITelephoneNumber] {
-    override def telephoneNumberLens = XingYiDomainObjectLens(telephoneL)
+    override def telephoneNumberLens = XingYiDomainObjectLens(Lens[Person, Telephone](_.telephoneNumber, (p, t) => p.copy(telephoneNumber = t)))
   }
 
   val prototype = Person("", "", "", Telephone.prototype)
@@ -64,7 +58,7 @@ object Person extends JsonWriterLanguage {
 }
 
 
-class Model1Defn extends DomainDefn[IPerson,Person]("one.xingyi.scriptModel1", List("json", "pretty", "form"),
+class Model1Defn extends DomainDefn[IPerson, Person]("one.xingyi.scriptModel1", List("json", "pretty", "form"),
   List(
     Person.personNameOps -> Person.projection,
     Person.personTelephoneOps -> Person.projection,
@@ -80,6 +74,6 @@ object TestItQuick extends App {
   //  val x: ToScalaCode[IXingYiLensAndLensDefn] => ToScalaCode[InterfaceAndLens[Any, Any]] = ToScalaCode.makeScaleForInterface[Any, Any]
   //  ToScalaCode.makeScaleForInterface[Any, Any]
   //  val x = ToScalaCode.makeScalaCode[DomainDefn[Person]]
-  val makeScala = implicitly[ToScalaCode[DomainDefn[IPerson,Person]]]
+  val makeScala = implicitly[ToScalaCode[DomainDefn[IPerson, Person]]]
   println(makeScala(new Model1Defn))
 }

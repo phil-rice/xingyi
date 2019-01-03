@@ -92,8 +92,21 @@ class ParentDomainForTest2 extends DomainDefn[IParent, ParentForTest](
 
 
 trait ScriptFixture {
-  val details1 = DomainDefnToDetails(new ParentDomainForTest1)
-  val details2 = DomainDefnToDetails(new ParentDomainForTest2)
+  val dom1 = new ParentDomainForTest1
+  val dom2 = new ParentDomainForTest2
+
+  val getMethod = GetMethodData[ParentForTest]("/parent/<id>", _ => ???)
+  val postMethod = PostMethodData[ParentForTest]("/parent/<id>", _ => ???)
+  val putMethod = PutMethodData[ParentForTest]("/parent/<id>", (a, b) => throw new RuntimeException)
+
+  val domAndMethods1 = DomainAndMethods(List(getMethod, postMethod), dom1)
+  val domAndMethods2 = DomainAndMethods(List(getMethod, postMethod), dom2)
+  val listOfDomainAndMethods1 = ListofDomainAndMethods(domAndMethods1, List(domAndMethods1, domAndMethods2))
+  val listofDomainAndMethods2 = ListofDomainAndMethods(domAndMethods2, List(domAndMethods1, domAndMethods2))
+
+
+  val details1 = DomainDefnToDetails(dom1)
+  val details2 = DomainDefnToDetails(dom2)
   val domainList = DomainList[IParent, ParentForTest](details1, details2)
   val code0 = domainList.domains(0).code
   val js0Hash = code0(Javascript).hash
@@ -101,6 +114,7 @@ trait ScriptFixture {
   val code1 = domainList.domains(1).code
   val js1Hash = code1(Javascript).hash
   val scala1Hash = code1(ScalaCode).hash
+
 
   val sharedPackageName = new ParentDomainForTest1().sharedPackageName
   val domainCd1 = DomainCD("one.xingyi.core.script", sharedPackageName, "ParentDomainForTest1", DomainDefnToCodeDom.imports(sharedPackageName),
@@ -117,5 +131,24 @@ trait ScriptFixture {
       EntityCD("Parent", "one.xingyi.core.script.IParent")),
     List(InterfaceCD("IParentNameOps", "ParentNameOps", List("Parent"), List(LensMethodCD("nameLens", "lens_parent_name_string", "stringLens[Parent]"))),
       InterfaceCD("IParentChildrenOps", "ParentChildrenOps", List("Parent", "Child"), List(LensMethodCD("childrenLens", "lens_parent_children_childlist", "listLens[Parent,Child]")))))
+
+  val domainDd1 = DomainDD("ParentDomainForTest1",
+    List(MethodDD("Get", "/parent/<id>"), MethodDD("Post", "/parent/<id>")),
+    List(EntityDD("House", "one.xingyi.core.script.IHouse"),
+      EntityDD("Child", "one.xingyi.core.script.IChild"),
+      EntityDD("Parent", "one.xingyi.core.script.IParent")),
+    Map("one.xingyi.core.script.IParent" -> List(LensMethodDD("lens_parent_name_string"), LensMethodDD("lens_parent_house_house"))),
+    List("renderer1", "renderer2"))
+
+  val domainDd2 =
+    DomainDD("ParentDomainForTest2",
+      List(MethodDD("Get", "/parent/<id>"), MethodDD("Post", "/parent/<id>")),
+      List(EntityDD("House", "one.xingyi.core.script.IHouse"),
+        EntityDD("Child", "one.xingyi.core.script.IChild"),
+        EntityDD("Parent", "one.xingyi.core.script.IParent")),
+      Map("one.xingyi.core.script.IParent" ->
+        List(LensMethodDD("lens_parent_name_string"),
+          LensMethodDD("lens_parent_children_childlist"))),
+      List("renderer1", "renderer2"))
 
 }

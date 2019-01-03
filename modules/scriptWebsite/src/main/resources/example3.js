@@ -94,9 +94,9 @@ function lens_root() {
 
 
 
-function lens_person_addresses_addresslist(){ return lens("addresses");}; 
 function lens_person_name_string(){ return lens("name");}; 
 function lens_address_line2_string(){ return lens("line2");}; 
+function lens_person_addresses_addresslist(){ return lens("addresses");}; 
 function lens_address_line1_string(){ return lens("line1");}; 
 function lens_person_telephonenumber_telephonenumber(){ return lens("telephoneNumber");}; 
 function lens_telephonenumber_number_string(){ return lens("number");}; 
