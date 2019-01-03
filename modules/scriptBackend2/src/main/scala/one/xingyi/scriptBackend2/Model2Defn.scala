@@ -27,6 +27,7 @@ object Telephone {
 case class Address(line1: String, line2: String, postcode: String)
 
 object Address extends JsonWriterLanguage {
+  implicit val idLens: IdLens[Address, String] = IdLens(_.postcode, (a, p)=> a.copy(postcode = p))
   val prototype = Address("", "", "")
   val line1L = Lens[Address, String](_.line1, (a, s) => a.copy(line1 = s))
   val line2L = Lens[Address, String](_.line2, (a, s) => a.copy(line2 = s))

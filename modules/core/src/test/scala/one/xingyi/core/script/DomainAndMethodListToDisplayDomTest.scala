@@ -13,8 +13,6 @@ class DomainAndMethodListToDisplayDomTest extends UtilsSpec with ScriptFixture {
     toDisplayDom(listofDomainAndMethods2) shouldBe DomainListDD(domainDd2, List(domainDd1, domainDd2))
   }
 
-  behavior of "DomainListToJson"
-
-  val toJson =implicitly[ToJsonLib[DomainListDD]]
-
 }
+
+

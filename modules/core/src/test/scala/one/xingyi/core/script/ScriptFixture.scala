@@ -132,12 +132,13 @@ trait ScriptFixture {
     List(InterfaceCD("IParentNameOps", "ParentNameOps", List("Parent"), List(LensMethodCD("nameLens", "lens_parent_name_string", "stringLens[Parent]"))),
       InterfaceCD("IParentChildrenOps", "ParentChildrenOps", List("Parent", "Child"), List(LensMethodCD("childrenLens", "lens_parent_children_childlist", "listLens[Parent,Child]")))))
 
+
   val domainDd1 = DomainDD("ParentDomainForTest1",
     List(MethodDD("Get", "/parent/<id>"), MethodDD("Post", "/parent/<id>")),
     List(EntityDD("House", "one.xingyi.core.script.IHouse"),
       EntityDD("Child", "one.xingyi.core.script.IChild"),
       EntityDD("Parent", "one.xingyi.core.script.IParent")),
-    Map("one.xingyi.core.script.IParent" -> List(LensMethodDD("lens_parent_name_string"), LensMethodDD("lens_parent_house_house"))),
+    Map("one.xingyi.core.script.IParent" -> List(LensMethodDD("nameLens", "lens_parent_name_string"), LensMethodDD("houseLens","lens_parent_house_house"))),
     List("renderer1", "renderer2"))
 
   val domainDd2 =
@@ -147,8 +148,8 @@ trait ScriptFixture {
         EntityDD("Child", "one.xingyi.core.script.IChild"),
         EntityDD("Parent", "one.xingyi.core.script.IParent")),
       Map("one.xingyi.core.script.IParent" ->
-        List(LensMethodDD("lens_parent_name_string"),
-          LensMethodDD("lens_parent_children_childlist"))),
+        List(LensMethodDD("nameLens","lens_parent_name_string"),
+          LensMethodDD("childrenLens","lens_parent_children_childlist"))),
       List("renderer1", "renderer2"))
 
 }
