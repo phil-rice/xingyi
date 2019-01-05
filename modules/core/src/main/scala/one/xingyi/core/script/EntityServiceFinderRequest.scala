@@ -13,7 +13,6 @@ object EntityServiceFinderRequest {
     sr => failer.failOrUseHost(sr)(host => EntityServiceFinderRequest(host).liftM)
 }
 
-
 case class EntityServiceFinderResponse(hostAndPort: String, codePattern: String, urlPattern: String, supportedVerbs: List[String], domainList: DomainList[_, _])
 object EntityServiceFinderResponse extends JsonWriterLanguage {
   implicit def toJson[J: JsonWriter]: ToJsonLib[EntityServiceFinderResponse] = { res =>

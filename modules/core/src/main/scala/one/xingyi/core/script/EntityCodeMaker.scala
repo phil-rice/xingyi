@@ -49,7 +49,6 @@ class EntityMaker[M[_], Fail, SharedE, DomainE: Links](methods: List[Method])
   def detailsEndpoint[J: JsonWriter] =
     details |+| endpoint[EntityServiceFinderRequest, EntityServiceFinderResponse](s"/$entityPrefix", MatchesServiceRequest.fixedPath(Method("get")))
 
-
   def makeServerPayload[Req](xingYiHeader: Option[String], dom: DomainE) =
     ServerPayload(Status(200), dom, domainList.accept(xingYiHeader))
 
@@ -61,10 +60,8 @@ class EntityMaker[M[_], Fail, SharedE, DomainE: Links](methods: List[Method])
   def newEntity[J: JsonWriter](fn: String => M[DomainE])(implicit project: ObjectProjection[SharedE, DomainE]) =
     newFn(fn) |+| endpoint[GetEntityRequest, ServerPayload[SharedE, DomainE]](s"/$entityPrefix", MatchesServiceRequest.idAtEnd(Method("post")))
 
-
   def editFn(fn: (String, DomainE) => M[DomainE]) = { req: EditEntityRequest[DomainE] => fn(hasId(req.entity), req.entity).map(newDom => makeServerPayload(req.acceptHeader, newDom)) }
   def editEndpoint[J: JsonWriter : JsonParser](fn: (String, DomainE) => M[DomainE])(implicit project: ObjectProjection[SharedE, DomainE], links: Links[DomainE]) =
     editFn(fn) |+| endpoint[EditEntityRequest[DomainE], ServerPayload[SharedE, DomainE]](s"/$entityPrefix", MatchesServiceRequest.idAtEnd(Method("put")))
-
 }
 

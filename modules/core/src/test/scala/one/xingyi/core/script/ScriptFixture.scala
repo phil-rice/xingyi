@@ -132,7 +132,6 @@ trait ScriptFixture {
     List(InterfaceCD("IParentNameOps", "ParentNameOps", List("Parent"), List(LensMethodCD("nameLens", "lens_parent_name_string", "stringLens[Parent]"))),
       InterfaceCD("IParentChildrenOps", "ParentChildrenOps", List("Parent", "Child"), List(LensMethodCD("childrenLens", "lens_parent_children_childlist", "listLens[Parent,Child]")))))
 
-
   val domainDd1 = DomainDD("ParentDomainForTest1",
     List(MethodDD("Get", "/parent/<id>"), MethodDD("Post", "/parent/<id>")),
     List(EntityDD("House", "one.xingyi.core.script.IHouse"),

@@ -21,7 +21,6 @@ object InterfaceAndProjection {
     InterfaceAndProjection(tuple._2, tuple._1)
 }
 
-
 object DomainDefn {
   val xingyiHeaderPrefix = "application/xingyi."
   val xingyiCodeSummaryMediaType = "application/json"
@@ -71,7 +70,6 @@ class DomainDefn[SharedE, DomainE: ClassTag](val sharedPackageName: String, val 
        |""".stripMargin
 }
 
-
 trait DomainDefnToDetails[SharedE, DomainE] extends (DomainDefn[SharedE, DomainE] => DomainDetails[SharedE, DomainE])
 
 object DomainDefnToDetails {
@@ -86,13 +84,11 @@ object DomainDefnToDetails {
       defn.lens.map(_.name).toSet,
       Map(Javascript -> javascriptDetails, ScalaCode -> scalaDetails))
   }
-
 }
 
 case class CodeDetails(code: String)(implicit digestor: Digestor) {
   val hash = digestor(code)
 }
-
 
 case class DomainDetails[SharedE, DomainE](name: String, packageName: String, accept: String, codeHeader: String, renderers: Seq[String], lensNames: Set[String], code: Map[CodeFragment, CodeDetails]) {
   def normalisedLens = DomainDetails.stringsToString(lensNames)

@@ -51,7 +51,6 @@ object DomainAndMethodListToDisplayDom {
   }
 }
 
-
 class DefaultDomainAndMethodsToDisplayDom(implicit interfaceToImplName: InterfaceToImplName) extends DomainAndMethodsToDisplayDom {
   override def apply[SharedE, DomainE: ClassTag](domainAndMethods: DomainAndMethods[SharedE, DomainE]): DomainDD = {
     val domainDefn = domainAndMethods.defn

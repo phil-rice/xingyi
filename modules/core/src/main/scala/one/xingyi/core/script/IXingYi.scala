@@ -77,12 +77,10 @@ object ServerPayload extends JsonWriterLanguage {
   }
 }
 
-
 trait IXingYi {
   def parse[T <: Domain](s: String)(implicit domainMaker: DomainMaker[T]): T
 
   protected def rawRender(name: String, t: Object): String
-
 
   def stringLens[T <: Domain](name: String)(implicit maker: DomainMaker[T]): Lens[T, String]
 
@@ -133,11 +131,8 @@ class DefaultXingYi(engine: ScriptEngine) extends IXingYi {
   def fromList(list: List[Domain]): Object =
     inv.invokeFunction("makeArray", list.map(_.mirror): _*)
 
-
   override def listLens[T1 <: Domain, T2 <: Domain](name: String)(implicit maker1: DomainMaker[T1], maker2: DomainMaker[T2]): Lens[T1, List[T2]] = Lens[T1, List[T2]](
     { t => toList(inv.invokeFunction("getL", name, t.mirror)).map(maker2.create) }, {
       (t, v) => maker1.create(inv.invokeFunction("setL", name, t.mirror, fromList(v)))
     })
 }
-
-
