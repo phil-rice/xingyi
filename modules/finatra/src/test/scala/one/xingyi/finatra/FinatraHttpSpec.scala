@@ -24,6 +24,8 @@ class ResponseToServiceResponseSpec extends AbstractToServiceResponseSpec[String
       override def +=(kv: (String, String)): this.type = ???
       override def -=(key: String): this.type = ???
       override def iterator: Iterator[(String, String)] = List("header1" -> "value1").iterator
+      override def addUnsafe(k: String, v: String): HeaderMap = ???
+      override def setUnsafe(k: String, v: String): HeaderMap = ???
     }
     doReturn(headerMap).when(response).headerMap
     response

@@ -20,7 +20,9 @@ class FinatraServer(port: Int, controllers: Controller*) extends HttpServer {
 
   //  override def defaultHttpPort: Int = 9200
 
-  override val defaultFinatraHttpPort: String = s":$port"
+  override val defaultHttpPort : String = s":$port"
+
+//  override val defaultFinatraHttpPort: String = s":$port"
 
   override def configureHttp(router: HttpRouter): Unit = {
     val raw = router

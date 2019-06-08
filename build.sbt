@@ -4,7 +4,7 @@ import sbt.url
 val versions = new {
   val scala = "2.12.6"
   //  val scala = "2.12.1"
-  val finatra = "18.2.0"
+  val finatra = "19.5.1"
   val scalatest = "3.0.5"
   val mockito = "1.10.19"
   val guice = "4.0"
@@ -65,6 +65,7 @@ lazy val finatraSettings = publishSettings ++ Seq(
   libraryDependencies += "com.twitter" %% "inject-modules" % versions.finatra % "test",
   libraryDependencies += "com.google.inject.extensions" % "guice-testlib" % versions.guice % "test",
   libraryDependencies += "com.twitter" %% "finatra-jackson" % versions.finatra % "test",
+  libraryDependencies += "com.sun.activation" % "javax.activation" % "1.2.0",
 
   libraryDependencies += "com.twitter" %% "finatra-http" % versions.finatra % "test" classifier "tests",
   libraryDependencies += "com.twitter" %% "inject-server" % versions.finatra % "test" classifier "tests",
@@ -115,12 +116,12 @@ val apachejdbc = (project in file("modules/apachejdbc")).
   dependsOn(core % "test->test;compile->compile").
   settings(apacheDbcp2Settings)
 
-val cddmustache = (project in file("modules/cddmustache")).
+val cddmustache = (project in file("cdd/cddmustache")).
   dependsOn(core % "test->test;compile->compile").
   aggregate(core).
   settings(mustacheSettings)
 
-val cddscalatest = (project in file("modules/cddscalatest")).
+val cddscalatest = (project in file("cdd/cddscalatest")).
   dependsOn(core % "test->test;compile->compile").
   dependsOn(cddengine % "test->test;compile->compile").
   settings(scalatestSettings)
@@ -130,17 +131,17 @@ val cddscalatest = (project in file("modules/cddscalatest")).
 //  settings(publishSettings: _*).
 //  dependsOn(core % "test->test;compile->compile").aggregate(core)
 
-lazy val cddscenario = (project in file("modules/cddscenario")).
+lazy val cddscenario = (project in file("cdd/cddscenario")).
   settings(reflectionSettings: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core)
 
-lazy val cep = (project in file("modules/cep")).
-  settings(reflectionSettings: _*).
-  dependsOn(core % "test->test;compile->compile").aggregate(core)
+//lazy val cep = (project in file("modules/cep")).
+//  settings(reflectionSettings: _*).
+//  dependsOn(core % "test->test;compile->compile").aggregate(core)
 
 val javaServer = (project in file("modules/javaserver")).settings(publishSettings)
 
-val cddexamples = (project in file("modules/cddexamples")).
+val cddexamples = (project in file("cdd/cddexamples")).
   dependsOn(core % "test->test;compile->compile").
   dependsOn(cddengine % "test->test;compile->compile").
   dependsOn(cddscalatest % "test->test;compile->compile").
@@ -151,12 +152,12 @@ val cddexamples = (project in file("modules/cddexamples")).
   dependsOn(apachejdbc % "test->test;compile->compile").
   settings(publishSettings)
 
-lazy val cddengine = (project in file("modules/cddengine")).
+lazy val cddengine = (project in file("cdd/cddengine")).
   settings(publishSettings: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(cddscenario % "test->test;compile->compile").aggregate(cddscenario)
 
-lazy val cddscripts = (project in file("modules/cddscripts")).
+lazy val cddscripts = (project in file("cdd/cddscripts")).
   settings(publishSettings: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core)
 
@@ -164,13 +165,13 @@ lazy val test = (project in file("modules/test")).
   settings(publishSettings: _*).
   dependsOn(core % "test->test;compile->compile").
   dependsOn(cddengine % "test->test;compile->compile").
-  dependsOn(cep % "test->test;compile->compile").
+//  dependsOn(cep % "test->test;compile->compile").
   dependsOn(apachejdbc % "test->test;compile->compile").
   dependsOn(json4s % "test->test;compile->compile").
   dependsOn(cddmustache % "test->test;compile->compile").
   aggregate(core)
 
-lazy val sampleServer = (project in file("modules/sampleServer")).
+lazy val sampleServer = (project in file("examples/sampleServer")).
   settings(publishSettings: _*).
   settings(publishArtifact := false).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
@@ -186,35 +187,35 @@ lazy val json4s = (project in file("modules/json4s")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   settings(json4sSettings: _*)
 
-lazy val sample = (project in file("modules/sample")).
+lazy val sample = (project in file("examples/sample")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
 
 
-lazy val scriptModel1 = (project in file("modules/scriptModel1")).
-  dependsOn(core % "test->test;compile->compile").aggregate(core).
-  dependsOn(json4s % "test->test;compile->compile").
-  //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
-  settings(publishArtifact := false).
-  settings(pactSettings: _*)
-
-lazy val scriptModel2 = (project in file("modules/scriptModel2")).
+lazy val scriptModel1 = (project in file("examples/scriptModel1")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(json4s % "test->test;compile->compile").
   //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
 
-lazy val scriptModel3 = (project in file("modules/scriptModel3")).
+lazy val scriptModel2 = (project in file("examples/scriptModel2")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(json4s % "test->test;compile->compile").
   //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
 
-lazy val scriptBackendShared = (project in file("modules/scriptBackendShared")).
+lazy val scriptModel3 = (project in file("examples/scriptModel3")).
+  dependsOn(core % "test->test;compile->compile").aggregate(core).
+  dependsOn(json4s % "test->test;compile->compile").
+  //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
+  settings(publishArtifact := false).
+  settings(pactSettings: _*)
+
+lazy val scriptBackendShared = (project in file("examples/scriptBackendShared")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(scriptModel1 % "test->test;compile->compile").aggregate(scriptModel1).
   dependsOn(json4s % "test->test;compile->compile").
@@ -222,7 +223,7 @@ lazy val scriptBackendShared = (project in file("modules/scriptBackendShared")).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
 
-lazy val scriptBackend1 = (project in file("modules/scriptBackend1")).
+lazy val scriptBackend1 = (project in file("examples/scriptBackend1")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(scriptBackendShared % "test->test;compile->compile").aggregate(scriptBackendShared).
   dependsOn(scriptModel1 % "test->test;compile->compile").aggregate(scriptModel1).
@@ -231,7 +232,7 @@ lazy val scriptBackend1 = (project in file("modules/scriptBackend1")).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
 
-lazy val scriptBackend2 = (project in file("modules/scriptBackend2")).
+lazy val scriptBackend2 = (project in file("examples/scriptBackend2")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(scriptBackendShared % "test->test;compile->compile").aggregate(scriptBackendShared).
   dependsOn(scriptModel2 % "test->test;compile->compile").aggregate(scriptModel2).
@@ -240,7 +241,7 @@ lazy val scriptBackend2 = (project in file("modules/scriptBackend2")).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
 
-lazy val scriptBackend3 = (project in file("modules/scriptBackend3")).
+lazy val scriptBackend3 = (project in file("examples/scriptBackend3")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(scriptBackendShared % "test->test;compile->compile").aggregate(scriptBackendShared).
   dependsOn(scriptModel3 % "test->test;compile->compile").aggregate(scriptModel3).
@@ -249,7 +250,7 @@ lazy val scriptBackend3 = (project in file("modules/scriptBackend3")).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
 
-lazy val scriptWebsite = (project in file("modules/scriptWebsite")).
+lazy val scriptWebsite = (project in file("examples/scriptWebsite")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(json4s % "test->test;compile->compile").
   dependsOn(cddmustache % "test->test;compile->compile").
@@ -258,7 +259,7 @@ lazy val scriptWebsite = (project in file("modules/scriptWebsite")).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
 
-lazy val finatraSample = (project in file("modules/finatraSample")).
+lazy val finatraSample = (project in file("examples/finatraSample")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(finatra % "test->test;compile->compile").aggregate(finatra).
   dependsOn(sample % "test->test;compile->compile").aggregate(sample).
