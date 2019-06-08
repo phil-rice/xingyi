@@ -6,7 +6,7 @@ import one.xingyi.core.monad.IdentityMonad
 
 import scala.util.Failure
 
-class AbstractEntityServiceFinderRequestTest[J: JsonWriter] extends UtilsSpec {
+abstract class AbstractEntityServiceFinderRequestTest[J: JsonWriter] extends UtilsSpec {
 
   import EditEntityRequestFailer.EditEntityRequestFailerForThrowable
 

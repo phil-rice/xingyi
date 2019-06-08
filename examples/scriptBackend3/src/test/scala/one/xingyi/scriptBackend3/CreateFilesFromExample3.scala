@@ -10,11 +10,11 @@ import one.xingyi.scriptModel3.IPerson
 
 class CreateFilesFromExample3 extends UtilsSpec {
 
-  val scalaFile = new File("modules/scriptWebsite/src/main/scala/one/xingyi/scriptWebsite/createdCode3/Example3.scala").getAbsoluteFile
-  val javascriptFile = new File("modules/scriptWebsite/src/main/resources/example3.js").getAbsoluteFile
+  val scalaFile = new File("examples/scriptWebsite/src/main/scala/one/xingyi/scriptWebsite/createdCode3/Example3.scala").getAbsoluteFile
+  val javascriptFile = new File("examples/scriptWebsite/src/main/resources/example3.js").getAbsoluteFile
   behavior of "Create The Example Domain Classes"
 
-  val isCorrectDirectory = scalaFile.getPath.replace('/', '\\').endsWith("xingyi\\modules\\scriptWebsite\\src\\main\\scala\\one\\xingyi\\scriptWebsite\\createdCode3\\Example3.scala")
+  val isCorrectDirectory = scalaFile.getPath.replace('/', '\\').endsWith("xingyi\\examples\\scriptWebsite\\src\\main\\scala\\one\\xingyi\\scriptWebsite\\createdCode3\\Example3.scala")
   it should "be talking to the correct directory" in {
     checkCorrectDirectory
   }
