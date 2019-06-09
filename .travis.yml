@@ -1,4 +1,6 @@
 language: scala
+env:
+  - travis=true
 scala:
 - 2.12.2
 jdk:
