@@ -14,8 +14,7 @@ import org.json4s.JValue
 
 import scala.language.higherKinds
 
-
-object Backend2 extends App {
+class Backend2 {
   implicit val logger: LoggingAdapter = PrintlnLoggingAdapter
 
   import SimpleLogRequestAndResult._
@@ -26,9 +25,12 @@ object Backend2 extends App {
   implicit val addressStore = IEntityStore.demo[IdentityMonad, Throwable, IAddress, Address]
 
   val websiteP = new EntityEndpoints[IdentityMonad, Throwable, JValue, IPerson, Person]
-//  val websiteA = new EntityEndpoints[IdentityMonad, Throwable, JValue, IAddress, Address]
+  //  val websiteA = new EntityEndpoints[IdentityMonad, Throwable, JValue, IAddress, Address]
   val backend = new CheapServer[IdentityMonad, Throwable](9001, websiteP.endpoints)
 
-  println("running")
-  backend.start
 }
+object Backend2 extends Backend2 with App {
+  println("running")
+  val server = backend.start
+}
+

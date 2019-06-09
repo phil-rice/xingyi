@@ -38,34 +38,34 @@ trait XingyiKleisli[M[_], Fail] {
   protected implicit def detailedLoggingForSR: DetailedLogging[ServiceResponse]
 
 
-  def withXingyi[Req: ClassTag : DetailedLogging,
-  Dom <: one.xingyi.core.script.Domain : ClassTag : DetailedLogging : DomainMaker,
-  Ops <: IXingYiSharedOps[Lens, Dom] : ClassTag,
-  Res](serverDomain: ServerDomain, fn: (Req, Dom, Ops) => Res)(http: ServiceRequest => M[ServiceResponse])
-      (implicit entityDetailsUrl: EntityDetailsUrl[Dom],
-       fromServiceResponseForEntityDetails: FromServiceResponse[EntityDetailsResponse],
-       fromEntityDetailsResponse: FromEntityDetailsResponse[Req],
-       xingYiLoader: IXingYiLoader,
-       interfaceHeaders: IXingYiHeaderFor[Ops]): Req => M[Res] = {
-
-    req =>
-      RecordedCall.default.remove()
-      for {
-        serviceDiscoveryProducedServiceRequest <- http(ServiceRequest(Method("get"), entityDetailsUrl.url)).
-          map(fromServiceResponseForEntityDetails andThen fromEntityDetailsResponse(req, serverDomain))
-        withCorrectHeaders = serviceDiscoveryProducedServiceRequest.addHeader("accept", DomainDefn.accepts(interfaceHeaders()))
-        codeBody <- http(withCorrectHeaders).map(ServiceResponse.serviceResponseToXingYiCodeAndBody)
-        (code, body) = codeBody
-        _ = println(s"code is $code")
-        xingyi <- http(ServiceRequest(Method("get"), Uri(code))).map(sr => xingYiLoader(sr.body.s))
-      } yield {
-        println("About to parse")
-        val dom = xingyi.parse[Dom](body)
-        val ops = implicitly[ClassTag[Ops]].runtimeClass.getConstructor(classOf[IXingYi]).newInstance(xingyi).asInstanceOf[Ops]
-        fn(req, dom, ops)
-      }
-  }
-
+//  def withXingyi[Req: ClassTag : DetailedLogging,
+//  Dom <: one.xingyi.core.script.Domain : ClassTag : DetailedLogging : DomainMaker,
+//  Ops <: IXingYiSharedOps[Lens, Dom] : ClassTag,
+//  Res](serverDomain: ServerDomain, fn: (Req, Dom, Ops) => Res)(http: ServiceRequest => M[ServiceResponse])
+//      (implicit entityDetailsUrl: EntityDetailsUrl[Dom],
+//       fromServiceResponseForEntityDetails: FromServiceResponse[EntityDetailsResponse],
+//       fromEntityDetailsResponse: FromEntityDetailsResponse[Req],
+//       xingYiLoader: IXingYiLoader,
+//       interfaceHeaders: IXingYiHeaderFor[Ops]): Req => M[Res] = {
+//
+//    req =>
+//      RecordedCall.default.remove()
+//      for {
+//        serviceDiscoveryProducedServiceRequest <- http(ServiceRequest(Method("get"), entityDetailsUrl.url)).
+//          map(fromServiceResponseForEntityDetails andThen fromEntityDetailsResponse(req, serverDomain))
+//        withCorrectHeaders = serviceDiscoveryProducedServiceRequest.addHeader("accept", DomainDefn.accepts(interfaceHeaders()))
+//        codeBody <- http(withCorrectHeaders).map(ServiceResponse.serviceResponseToXingYiCodeAndBody)
+//        (code, body) = codeBody
+//        _ = println(s"code is $code")
+//        xingyi <- http(ServiceRequest(Method("get"), Uri(code))).map(sr => xingYiLoader(sr.body.s))
+//      } yield {
+//        println("About to parse")
+//        val dom = xingyi.parse[Dom](body)
+//        val ops = implicitly[ClassTag[Ops]].runtimeClass.getConstructor(classOf[IXingYi]).newInstance(xingyi).asInstanceOf[Ops]
+//        fn(req, dom, ops)
+//      }
+//  }
+//
   def editXingYi[Req: ClassTag : DetailedLogging,
   Dom <: one.xingyi.core.script.Domain : ClassTag : DetailedLogging : DomainMaker,
   Ops <: IXingYiSharedOps[Lens, Dom] : ClassTag,

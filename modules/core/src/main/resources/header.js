@@ -79,9 +79,9 @@ function render_form(t) {
     var line2 = lens_person_line2_string().get(t);
     var html = "<form method='post' action='/person/" + name + "/edit' enctype='application/x-www-form-urlencoded'>" +
         "   <table>" +
-        "      <tr><td>Name</td><td><input name ='name'type='text' value='" + name + "' readonly /></td></tr>" +
-        "      <tr><td>Line1</td><td><input name='line1' type='text' value='" + line1 + "' /></td></tr>" +
-        "      <tr><td>Line2</td><td><input name='line2' type='text' value='" + line2 + "' /></td></tr>" +
+        "      <tr><td>Name</td><td><input id='name' name ='name'type='text' value='" + name + "' readonly /></td></tr>" +
+        "      <tr><td>Line1</td><td><input id='line1' name='line1' type='text' value='" + line1 + "' /></td></tr>" +
+        "      <tr><td>Line2</td><td><input id='line2' name='line2' type='text' value='" + line2 + "' /></td></tr>" +
         "   </table>" +
         "   <input type='submit'/>" +
         "</form>";

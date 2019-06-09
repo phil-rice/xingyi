@@ -55,7 +55,7 @@ class Website[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : 
   implicit val recordedCalls = LocalVariable[RecordedCall]
   val index = function[IndexPageRequest, IndexPageResponse]("index")(_ => IndexPageResponse()) |+| endpoint[IndexPageRequest, IndexPageResponse]("/", MatchesServiceRequest.fixedPath(Method("get")))
 
-  val person = backend |+| recordCalls |+| xingyify[PersonAddressRequest, PersonAddressResponse](Model1Defn) |+| endpoint[PersonAddressRequest, PersonAddressResponse]("/person", MatchesServiceRequest.idAtEnd(Method("get"))) |+| andDisplayRecorded[J]
+  val person: ServiceRequest => M[Option[ServiceResponse]] = backend |+| recordCalls |+| xingyify[PersonAddressRequest, PersonAddressResponse](Model1Defn) |+| endpoint[PersonAddressRequest, PersonAddressResponse]("/person", MatchesServiceRequest.idAtEnd(Method("get"))) |+| andDisplayRecorded[J]
 
  val x: EditPersonRequest => M[EditPersonResponse] = backend|+| recordCalls |+|editXingYi[EditPersonRequest, Person, PersonLine12Ops, EditPersonResponse](Model1Defn, {
    (par, line12Ops) => (line12Ops.line1Lens.setFn(par.newLine1) andThen line12Ops.line2Lens.setFn(par.newLine2))
@@ -72,7 +72,7 @@ class Website[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : 
 
 }
 
-object Website extends App {
+class WebsiteApp{
 
   import one.xingyi.json4s.Json4sParser._
   import one.xingyi.json4s.Json4sWriter._
@@ -81,11 +81,12 @@ object Website extends App {
 
   import SimpleLogRequestAndResult._
 
-  println("Checking backend")
-
-
   val website = new Website[IdentityMonad, Throwable, JValue]
-  val server = new CheapServer[IdentityMonad, Throwable](9000, website.endpoints)
+  val cheapServer = new CheapServer[IdentityMonad, Throwable](9000, website.endpoints)
+
+}
+
+object Website extends WebsiteApp with  App {
   println("running")
-  server.start
+  val server = cheapServer.start
 }
