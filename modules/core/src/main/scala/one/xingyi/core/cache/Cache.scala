@@ -9,10 +9,12 @@ import scala.util.Try
 trait CacheKleisli[M[_]] {
 
   protected def cacheFactory: CacheFactory[M]
+
   def cache[Req: ClassTag : CachableKey : ShouldUseCache, Res: ClassTag : ShouldCacheResult](name: String)(raw: Req => M[Res]): Req => M[Res] =
     cacheFactory.apply[Req, Res](name, raw)
 
 }
+
 case class CacheStats(size: Int)
 
 
@@ -39,11 +41,16 @@ object ShouldCacheResult {
 
 trait CacheFactory[M[_]] {
   def apply[Req: CachableKey, Res: ShouldCacheResult](name: String, raw: Req => M[Res]): Cache[M, Req, Res]
+
+  def cacheForName[Req, Res](name: String): Option[Cache[M, Req, Res]]
+
+  def entries: Iterable[(String, CachingInfoAndOps)]
 }
 
 
 trait Cache[M[_], Req, Res] extends (Req => M[Res]) {
   def raw: Req => M[Res]
+
   def clear()
 }
 

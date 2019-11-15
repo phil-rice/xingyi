@@ -1,7 +1,7 @@
 /** Copyright (c) 2018, Phil Rice. Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS AS IS AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 package one.xingyi.core.cache
 
-import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
 
 import one.xingyi.core.language.Language._
 import one.xingyi.core.map.{MapSizeStrategy, SafeMap}
@@ -36,15 +36,27 @@ object CachableKey {
 
 trait CachingInfoAndOps {
   def name: String
+
   def clear
+
   def cachingMetrics: CachingMetricSnapShot
 }
 
 class CachingServiceFactory[M[_] : MonadWithException](val cachingStrategy: StaleCacheStrategy,
                                                        val sizeStrategy: MapSizeStrategy)(implicit timeService: NanoTimeService) extends CacheFactory[M] {
+  val map: AtomicReference[Map[String, CachingService[M, _, _]]] = new AtomicReference[Map[String, CachingService[M, _, _]]](Map())
+
   override def apply[Req: CachableKey, Res: ShouldCacheResult](name: String, raw: Req => M[Res]): Cache[M, Req, Res] = {
-    new CachingService[M, Req, Res](name, raw, cachingStrategy, sizeStrategy)
+    val result = new CachingService[M, Req, Res](name, raw, cachingStrategy, sizeStrategy)
+    map.updateAndGet(old => old + (name -> result))
+    result
   }
+
+  override def cacheForName[Req, Res](name: String): Option[Cache[M, Req, Res]] = map.get.get(name).map(_.asInstanceOf[Cache[M, Req, Res]])
+
+  override def entries: Iterable[(String, CachingInfoAndOps)] =
+    map.get.keys.map(key => (key, map.get.apply(key)))
+
 }
 
 

@@ -2,6 +2,8 @@ package one.xingyi.kwikServer
 
 import java.util.concurrent.{Executor, Executors}
 
+import one.xingyi.core.cache.{CachableKey, Id, ShouldCacheResult, StringId}
+import one.xingyi.core.crypto.Digestor
 import one.xingyi.core.endpoint.{EndpointKleisli, MatchesServiceRequest}
 import one.xingyi.core.http._
 import one.xingyi.core.language.AnyLanguage._
@@ -15,18 +17,28 @@ import one.xingyi.core.time.NanoTimeService
 import scala.concurrent.ExecutionContext
 import scala.io.Source
 import scala.language.higherKinds
+import scala.util.Try
 
-case class PomBundle(envVariables: Seq[Variable], systemProperties: Seq[Variable], pomData: Seq[PomData])
+case class PomBundle(envVariables: Seq[Variable], systemProperties: Seq[Variable], pomData: Seq[PomData], hash: String)
 
 object PomBundle {
-  def parse(s: Iterator[String]) =
+  def parse(s: String)(implicit digestor:Digestor) = {
+    val iterator= Source.fromString(s).getLines()
     PomBundle(
-      Variable.parseList("environment")(s),
-      Variable.parseList("system")(s),
-      TitleLengthValue.parseList(s).map(PomData.apply))
+      Variable.parseList("environment")(iterator),
+      Variable.parseList("system")(iterator),
+      TitleLengthValue.parseList(iterator).map(PomData.apply),
+      digestor(s))
+  }
+
+  implicit object cachingKeyForPomBundle extends CachableKey[PomBundle] {
+    override def id(req: PomBundle): Id = StringId(req.hash)
+
+    override def bypassCache(req: PomBundle): Boolean = false
+  }
 
   implicit def ServiceRequestToPomBundle[M[_] : Liftable]: FromServiceRequest[M, PomBundle] =
-    sr => PomBundle.parse(Source.fromString(sr.body.getOrElse(throw new RuntimeException("expected a body and it was empty")).s).getLines()).liftM[M]
+    sr => PomBundle.parse(sr.body.getOrElse(throw new RuntimeException("expected a body and it was empty")).s).liftM[M]
 }
 
 case class PomData(relativePath: String, pom: String)
@@ -41,6 +53,10 @@ case class KwikResult(jars: List[String], poms: List[String], debugHash: String)
 object KwikResult {
   implicit def kwikResultToServiceResponse[M[_] : Liftable]: ToServiceResponse[PomBundle, KwikResult] =
     pomBundle => kwikResult => ServiceResponse(Status(200), Body(pomBundle.toString + "\n\n" + kwikResult.toString), ContentType("text/plain"))
+
+  implicit object shouldCacheResultForKwikResult extends ShouldCacheResult[KwikResult] {
+    override def shouldCacheStrategy(req: Try[KwikResult]): Boolean = true
+  }
 }
 
 

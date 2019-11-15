@@ -56,7 +56,6 @@ object ToServiceRequest {
     override def apply(httpExchange: HttpExchange): ServiceRequest = {
       val method = Method(httpExchange.getRequestMethod.toLowerCase())
       val bodyString = Streams.readAll(httpExchange.getRequestBody)
-      println(s"the body string was $bodyString")
       val body = if (bodyString == "") None else Some(Body(bodyString))
       val uri = Uri(httpExchange.getRequestURI.toString)
       val javaHeaders: com.sun.net.httpserver.Headers = httpExchange.getRequestHeaders;

@@ -29,7 +29,8 @@ class PomBundleTest extends FlatSpec with Matchers with KwikFixture {
     List(
       PomData("pom1loc", List("pom11", "pom12", "pom13").mkString("\n")),
       PomData("pom2loc", "pom21")
-    )
+    ),
+    "somehash"
   )
 
   it should "parse from a string" in {
