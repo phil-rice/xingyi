@@ -17,7 +17,7 @@ class Tennis {
     scenario(4, 0) produces "left won" when { (l, r) => (l - r) >= 2 && l >= 4 }
     scenario(4, 1) produces "left won"
     scenario(4, 2) produces "left won" reference wikipedia
-    scenario(5, 3) produces "left won" title "this is some stuff"
+    scenario(5, 3) produces "left won"
   }
   //  reference("2.1", definition).
   val ucRightWins = new TennisUseCase("Receiver winning") {

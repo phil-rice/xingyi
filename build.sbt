@@ -131,17 +131,9 @@ val cddscalatest = (project in file("cdd/cddscalatest")).
   settings(scalatestSettings)
 
 
-//lazy val tagless = (project in file("modules/tagless")).
-//  settings(publishSettings: _*).
-//  dependsOn(core % "test->test;compile->compile").aggregate(core)
-
 lazy val cddscenario = (project in file("cdd/cddscenario")).
   settings(reflectionSettings: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core)
-
-//lazy val cep = (project in file("modules/cep")).
-//  settings(reflectionSettings: _*).
-//  dependsOn(core % "test->test;compile->compile").aggregate(core)
 
 val javaServer = (project in file("modules/javaserver")).settings(publishSettings)
 
@@ -152,7 +144,6 @@ val cddexamples = (project in file("cdd/cddexamples")).
   dependsOn(json4s % "test->test;compile->compile").
   dependsOn(javaServer).
   dependsOn(cddmustache % "test->test;compile->compile").
-  //  dependsOn(cddlegacy % "test->test;compile->compile").
   dependsOn(apachejdbc % "test->test;compile->compile").
   settings(publishSettings)
 
@@ -164,12 +155,11 @@ lazy val cddengine = (project in file("cdd/cddengine")).
 lazy val cddscripts = (project in file("cdd/cddscripts")).
   settings(publishSettings: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core)
-
+//
 lazy val test = (project in file("modules/test")).
   settings(publishSettings: _*).
   dependsOn(core % "test->test;compile->compile").
   dependsOn(cddengine % "test->test;compile->compile").
-//  dependsOn(cep % "test->test;compile->compile").
   dependsOn(apachejdbc % "test->test;compile->compile").
   dependsOn(json4s % "test->test;compile->compile").
   dependsOn(cddmustache % "test->test;compile->compile").
@@ -179,7 +169,6 @@ lazy val sampleServer = (project in file("examples/sampleServer")).
   settings(publishSettings: _*).
   settings(publishArtifact := false).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
-  //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   dependsOn(sample % "test->test;compile->compile").aggregate(sample).
   dependsOn(json4s)
 
@@ -193,7 +182,6 @@ lazy val json4s = (project in file("modules/json4s")).
 
 lazy val sample = (project in file("examples/sample")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
-  //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
 
@@ -201,21 +189,18 @@ lazy val sample = (project in file("examples/sample")).
 lazy val scriptModel1 = (project in file("examples/scriptModel1")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(json4s % "test->test;compile->compile").
-  //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
 
 lazy val scriptModel2 = (project in file("examples/scriptModel2")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(json4s % "test->test;compile->compile").
-  //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
 
 lazy val scriptModel3 = (project in file("examples/scriptModel3")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(json4s % "test->test;compile->compile").
-  //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
 
@@ -223,7 +208,6 @@ lazy val scriptBackendShared = (project in file("examples/scriptBackendShared"))
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(scriptModel1 % "test->test;compile->compile").aggregate(scriptModel1).
   dependsOn(json4s % "test->test;compile->compile").
-  //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
 
@@ -232,7 +216,6 @@ lazy val scriptBackend1 = (project in file("examples/scriptBackend1")).
   dependsOn(scriptBackendShared % "test->test;compile->compile").aggregate(scriptBackendShared).
   dependsOn(scriptModel1 % "test->test;compile->compile").aggregate(scriptModel1).
   dependsOn(json4s % "test->test;compile->compile").
-  //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
 
@@ -241,7 +224,6 @@ lazy val scriptBackend2 = (project in file("examples/scriptBackend2")).
   dependsOn(scriptBackendShared % "test->test;compile->compile").aggregate(scriptBackendShared).
   dependsOn(scriptModel2 % "test->test;compile->compile").aggregate(scriptModel2).
   dependsOn(json4s % "test->test;compile->compile").
-  //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
 
@@ -250,7 +232,6 @@ lazy val scriptBackend3 = (project in file("examples/scriptBackend3")).
   dependsOn(scriptBackendShared % "test->test;compile->compile").aggregate(scriptBackendShared).
   dependsOn(scriptModel3 % "test->test;compile->compile").aggregate(scriptModel3).
   dependsOn(json4s % "test->test;compile->compile").
-  //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
 
@@ -259,7 +240,6 @@ lazy val scriptWebsite = (project in file("examples/scriptWebsite")).
   dependsOn(json4s % "test->test;compile->compile").
   dependsOn(cddmustache % "test->test;compile->compile").
   dependsOn(scriptModel1 % "test->test;compile->compile").aggregate(scriptModel1).
-  //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   settings(publishArtifact := false).
   settings(pactSettings: _*)
 
@@ -287,6 +267,20 @@ lazy val finatraSample = (project in file("examples/finatraSample")).
 //    cep,
 //  )
 
+lazy val kwikServer = (project in file("examples/kwikServer")).
+  dependsOn(core % "test->test;compile->compile").aggregate(core).
+  dependsOn(json4s % "test->test;compile->compile").
+  dependsOn(javaServer % "test->test;compile->compile").
+  settings(publishSettings: _*)
+
+lazy val kwikTests = (project in file("examples/kwikTests")).
+  dependsOn(core % "test->test;compile->compile").aggregate(core).
+  dependsOn(json4s % "test->test;compile->compile").
+  dependsOn(javaServer % "test->test;compile->compile").
+  dependsOn(kwikServer % "test->test;compile->compile").
+  settings(publishArtifact := false).
+  settings(publishSettings: _*)
+
 val xingYi = (project in file(".")).
   settings(publishSettings).
   settings(publishArtifact := false).
@@ -307,7 +301,8 @@ val xingYi = (project in file(".")).
     scriptTest,
     sample,
     sampleServer,
+    kwikServer,
     json4s, //
-    //    tagless ,//
     test
   )
+
