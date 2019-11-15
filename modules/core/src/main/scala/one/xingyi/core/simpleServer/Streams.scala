@@ -16,6 +16,8 @@ object Streams {
         if (inputLine == null)
           result.toString
         else {
+          if (result.size >0)
+            result.append("\n")
           result.append(inputLine)
           recurse()
         }
