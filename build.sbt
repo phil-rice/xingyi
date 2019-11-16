@@ -22,6 +22,7 @@ lazy val commonSettings = Seq(
   publishMavenStyle := true,
   scalaVersion := versions.scala,
   scalacOptions ++= Seq("-feature"),
+  javacOptions ++= Seq("-source", "11"),
   libraryDependencies += "org.mockito" % "mockito-all" % versions.mockito % "test",
   libraryDependencies += "org.scalatest" %% "scalatest" % versions.scalatest % "test"
 )

@@ -9,14 +9,15 @@ public class Streams {
         try {
             StringBuilder result = new StringBuilder();
             String inputLine;
-            while ((inputLine = in.readLine()) != null)
+            while ((inputLine = in.readLine()) != null) {
+                if (result.length() > 0) result.append("\n");
                 result.append(inputLine);
+            }
             return result.toString();
         } finally {
             in.close();
         }
     }
-
 
 
     public static void sendAll(OutputStream stream, byte[] bytes) throws IOException {

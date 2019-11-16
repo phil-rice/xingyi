@@ -55,8 +55,6 @@ class KwikEndpoints[M[_], Fail](implicit executor: Executor,
     function[ServiceRequest, CacheResult[M]]("status")(sr => CacheResult(cacheFactory)) |+|
       endpoint[ServiceRequest, CacheResult[M]]("/cache", MatchesServiceRequest.fixedPath(Get))
   val microservice=chain(depsEndpoint, cachingStatusEndpoint)
-
-
 }
 
 

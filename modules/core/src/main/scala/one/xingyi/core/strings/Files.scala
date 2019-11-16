@@ -38,6 +38,29 @@ object Files {
     }
 
   }
+
+
+  @throws[IOException]
+  def deleteDirectory(directoryFilePath: String): Unit = {
+    import java.io.IOException
+    import java.nio.file.FileVisitResult
+    import java.nio.file.Files
+    import java.nio.file.Paths
+    import java.nio.file.SimpleFileVisitor
+    import java.nio.file.attribute.BasicFileAttributes
+    val directory = Paths.get(directoryFilePath)
+    if (NioFiles.exists(directory)) NioFiles.walkFileTree(directory, new SimpleFileVisitor[Path]() {
+      override def visitFile(path: Path, basicFileAttributes: BasicFileAttributes): FileVisitResult = {
+        NioFiles.delete(path)
+        FileVisitResult.CONTINUE
+      }
+
+      override def postVisitDirectory(directory: Path, ioException: IOException): FileVisitResult = {
+        NioFiles.delete(directory)
+        FileVisitResult.CONTINUE
+      }
+    })
+  }
 }
 
 

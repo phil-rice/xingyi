@@ -1,30 +1,22 @@
 package one.xingyi.kwikServer
 
-import java.util.concurrent.{Executor, Executors}
-
 import one.xingyi.core.cache.{CachableKey, Id, ShouldCacheResult, StringId}
 import one.xingyi.core.crypto.Digestor
-import one.xingyi.core.endpoint.{EndpointKleisli, MatchesServiceRequest}
 import one.xingyi.core.http._
 import one.xingyi.core.language.AnyLanguage._
-import one.xingyi.core.language.MicroserviceComposers
-import one.xingyi.core.local.ExecutionContextWithLocal
-import one.xingyi.core.logging.{DetailedLogging, PrintlnLoggingAdapter}
 import one.xingyi.core.monad._
-import one.xingyi.core.simpleServer.{EndpointHandler, SimpleHttpServer}
-import one.xingyi.core.time.NanoTimeService
 
-import scala.concurrent.ExecutionContext
 import scala.io.Source
 import scala.language.higherKinds
 import scala.util.Try
 
-case class PomBundle(envVariables: Seq[Variable], systemProperties: Seq[Variable], pomData: Seq[PomData], hash: String)
+case class PomBundle(repositoryUrls: Seq[String], envVariables: Seq[Variable], systemProperties: Seq[Variable], pomData: Seq[PomData], hash: String)
 
 object PomBundle {
-  def parse(s: String)(implicit digestor:Digestor) = {
-    val iterator= Source.fromString(s).getLines()
+  def parse(s: String)(implicit digestor: Digestor) = {
+    val iterator = Source.fromString(s).getLines()
     PomBundle(
+      TitleLengthValue.parseAndValidate("repositories")(iterator).value,
       Variable.parseList("environment")(iterator),
       Variable.parseList("system")(iterator),
       TitleLengthValue.parseList(iterator).map(PomData.apply),
@@ -57,6 +49,7 @@ object KwikResult {
   implicit object shouldCacheResultForKwikResult extends ShouldCacheResult[KwikResult] {
     override def shouldCacheStrategy(req: Try[KwikResult]): Boolean = true
   }
+
 }
 
 

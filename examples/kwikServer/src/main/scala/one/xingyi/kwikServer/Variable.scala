@@ -16,7 +16,9 @@ object Variable {
     TitleLengthValue.parseAndValidate(expectedTitle)(s).value.map(Variable.parse)
 }
 
-case class Variable(name: String, value: String)
+case class Variable(name: String, value: String) {
+  def toEqualString: String = name+"=" + value //TODO needs cleaning/security leak
+}
 
 
 case class TitleLengthValue(title: String, value: List[String]) {

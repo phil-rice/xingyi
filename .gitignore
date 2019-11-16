@@ -2,6 +2,7 @@
 .idea_modules
 *.iml
 target/
+temp/
 project/target
 _site/
 Gemfile.lock
