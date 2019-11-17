@@ -22,7 +22,7 @@ case class EntityDetailsResponse(urlPattern: String)
 
 object EntityDetailsResponse extends JsonParserLanguage {
   implicit def fromServiceResponse[J](implicit jsonParser: JsonParser[J]): FromServiceResponse[EntityDetailsResponse] =
-    sr => EntityDetailsResponse(jsonParser(sr.body.s) \ "url")
+    sr => EntityDetailsResponse(jsonParser(sr.body.asUtf) \ "url")
 
 
 }
@@ -83,7 +83,7 @@ trait XingyiKleisli[M[_], Fail] {
         withCorrectHeaders = serviceDiscoveryProducedServiceRequest.addHeader("accept", DomainDefn.accepts(interfaceHeaders()))
         codeBody <- http(withCorrectHeaders).map(ServiceResponse.serviceResponseToXingYiCodeAndBody)
         (code, body) = codeBody
-        xingyi <- http(ServiceRequest(Method("get"), Uri(code))).map(sr => xingYiLoader(sr.body.s))
+        xingyi <- http(ServiceRequest(Method("get"), Uri(code))).map(sr => xingYiLoader(sr.body.asUtf))
         dom = xingyi.parse[Dom](body)
         ops = implicitly[ClassTag[Ops]].runtimeClass.getConstructor(classOf[IXingYi]).newInstance(xingyi).asInstanceOf[Ops]
         modifiedDom = fn(req, ops)(dom)
@@ -107,7 +107,7 @@ trait XingyiKleisli[M[_], Fail] {
         serviceDiscoveryProducedServiceRequest <- http(ServiceRequest(Method("get"), entityDetailsUrl.url)).map(fromServiceResponseForEntityDetails andThen fromEntityDetailsResponse(req, serverDomain))
         codeBody <- http(serviceDiscoveryProducedServiceRequest).map(ServiceResponse.serviceResponseToXingYiCodeAndBody)
         (code, body) = codeBody
-        xingyi <- http(ServiceRequest(Method("get"), Uri(code))).map(sr => xingYiLoader(sr.body.s))
+        xingyi <- http(ServiceRequest(Method("get"), Uri(code))).map(sr => xingYiLoader(sr.body.asUtf))
       } yield {
         fromXingYi(xingyi)(req)(body)
       }

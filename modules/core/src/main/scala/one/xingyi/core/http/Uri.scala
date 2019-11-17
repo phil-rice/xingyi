@@ -34,8 +34,20 @@ object Status {
 
 case class Status(code: Int) extends AnyVal
 
-case class Body(s: String) extends AnyVal
+class Body(val bytes: Array[Byte]) {
+  lazy val asUtf = new String(bytes, "UTF-8")
+  override def toString: String = s"Body($asUtf)"
+  override def hashCode(): Int = bytes.hashCode()
+  override def equals(obj: Any): Boolean = obj match{
+    case b: Body => b.asUtf == asUtf
+    case _ => false
+  }
+}
 
+object Body {
+  def apply(s: String): Body = new Body(s.getBytes("UTF-8"))
+  def apply(bytes: Array[Byte]) = new Body(bytes)
+}
 
 trait Header {
   def name: String
@@ -47,7 +59,7 @@ object Header extends JsonWriterLanguage {
   def apply(name: String, value: String): Header = SimpleHeader(name, value)
 
   implicit val toJsonLib: ToJsonLib[Header] = header => JsonObject(Option(header.name).getOrElse("--") -> header.value)
-  implicit val seqJsonLib: ToJsonLib[Seq[Header]] = headers => JsonList(headers.map(header => JsonObject("name"->Option(header.name).getOrElse[String]("--"), "value" -> JsonString(header.value))))
+  implicit val seqJsonLib: ToJsonLib[Seq[Header]] = headers => JsonList(headers.map(header => JsonObject("name" -> Option(header.name).getOrElse[String]("--"), "value" -> JsonString(header.value))))
 }
 
 abstract class SpecificHeader(val name: String) extends Header
@@ -57,7 +69,6 @@ case class ContentType(value: String) extends SpecificHeader(Headers.contentType
 case class AcceptHeader(value: String) extends SpecificHeader(Headers.accept)
 
 case class SimpleHeader(name: String, value: String) extends Header
-
 
 trait UriFragment {
   protected def encode(s: String) = URLEncoder.encode(s, "UTF-8")
@@ -69,11 +80,9 @@ case class ServiceName(name: String) extends AnyVal
 
 case class ProtocolHostAndPort(protocol: Protocol, hostName: HostName, port: Port)
 
-
 case class HostName(host: String) extends UriFragment {
   override def asUriString: String = host
 }
-
 
 case class Protocol(protocol: String) extends UriFragment {
   require(protocol.forall(_.isLetter), protocol)

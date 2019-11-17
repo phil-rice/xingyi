@@ -15,7 +15,7 @@ trait ResponseParser[Req, Res] {
 object ResponseParser {
   implicit def defaultDirtyParser[M[_], Req: DetailedLogging, Res](implicit parser: Parser[Res], srDetails: DetailedLogging[ServiceResponse]) = new ResponseParser[Req, Res] {
     override def parse[Fail](requestAndServiceResponse: RequestAndServiceResponse[Req])(implicit failer: ResponseParserFailer[Fail], reqDetails: DetailedLogging[Req], srDetails: DetailedLogging[ServiceResponse]): Either[Fail, Res] =
-      Right(parser(requestAndServiceResponse.serviceResponse.body.s))
+      Right(parser(requestAndServiceResponse.serviceResponse.body.asUtf))
 
   }
 

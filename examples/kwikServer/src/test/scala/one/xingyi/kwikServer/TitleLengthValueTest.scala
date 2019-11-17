@@ -3,6 +3,7 @@ package one.xingyi.kwikServer
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.io.Source
+import scala.language.implicitConversions
 
 trait KwikFixture {
 

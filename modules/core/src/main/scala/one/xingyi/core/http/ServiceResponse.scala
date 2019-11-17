@@ -29,7 +29,7 @@ object ServiceResponse extends JsonWriterLanguage {
   def removeHeader(name: String)(serviceResponse: ServiceResponse) = serviceResponse.copy(headers = serviceResponse.headers.filterNot(_.name == name))
 
   def serviceResponseToXingYiCodeAndBody(sr: ServiceResponse): (String, String) = {
-    val body = sr.body.s
+    val body = sr.body.asUtf
     val index = body.indexOf("=")
     if (index == -1) throw new RuntimeException("The response from server is not a XingYi payload\n" + sr)
     val code = body.substring(0, index + 1)
@@ -41,8 +41,8 @@ object ServiceResponse extends JsonWriterLanguage {
       case Some(ct) if ct.startsWith("application/xingyi") =>
         val (code, body) = serviceResponseToXingYiCodeAndBody(serviceResponse)
         "xingyi"-> JsonObject("code" -> code, "body" -> body)
-      case Some(ct) if ct.startsWith("application/json") => "jsonBody" -> serviceResponse.body.s
-      case _ => "body"-> serviceResponse.body.s
+      case Some(ct) if ct.startsWith("application/json") => "jsonBody" -> serviceResponse.body.asUtf
+      case _ => "body"-> serviceResponse.body.asUtf
     }
   }
 
@@ -81,7 +81,7 @@ object FromServiceResponse extends JsonWriterLanguage {
 
   implicit def toJsonLib(implicit headerToJson: ToJsonLib[Seq[Header]]): ToJsonLib[ServiceResponse] =
     sr => JsonObject("status" -> sr.status.code,
-      "body" -> sr.body.s,
+      "body" -> sr.body.asUtf,
       "headers" -> headerToJson(sr.headers))
 
 }

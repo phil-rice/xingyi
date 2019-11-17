@@ -19,7 +19,7 @@ trait EditEntityRequestFailer[Fail] extends NoHostFailer[Fail] {
   def failIdDoesntMatch(id: String, sr: ServiceRequest): Fail
   def failOrUseBody[M[_], T](sr: ServiceRequest)(fn: String => M[T])(implicit monad: MonadCanFailWithException[M, Fail]): M[T] =
     sr.body match {
-    case Some(Body(body)) => fn(body)
+    case Some(body) => fn(body.asUtf)
     case None => monad.fail(failNoJson(sr))
   }
 

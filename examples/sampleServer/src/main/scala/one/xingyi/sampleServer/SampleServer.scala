@@ -22,7 +22,7 @@ class SampleServer(port: Int) extends Json4sWriter with Json4sParser {
 
   implicit val httpFactory = new HttpFactory[Future, ServiceRequest, ServiceResponse] {
     override def apply(v1: ServiceName) = { req =>
-      Future.successful(ServiceResponse(Status(200), Body(s"response: ${req.body.map(_.s).getOrElse("")}"), ContentType("text/html")))
+      Future.successful(ServiceResponse(Status(200), Body(s"response: ${req.body.map(_.asUtf).getOrElse("")}"), ContentType("text/html")))
     }
   }
   implicit val loggingAdapter = PrintlnLoggingAdapter

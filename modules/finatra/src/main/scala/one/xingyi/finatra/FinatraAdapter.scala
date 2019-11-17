@@ -74,7 +74,7 @@ object FinatraAdapter {
     val serviceRequest = implicitly[ToServiceRequest[Request]] apply (request)
     val result = fn(serviceRequest)
     result.map {
-      case Some(serRes) => response.status(serRes.status.code).body(serRes.body.s).contentType(serviceRequest.contentType.map(_.value).getOrElse("text/html"))
+      case Some(serRes) => response.status(serRes.status.code).body(serRes.body.asUtf).contentType(serviceRequest.contentType.map(_.value).getOrElse("text/html"))
       case None => response.status(404).body(s"Endpoint  ${serviceRequest.method}  ${serviceRequest.uri} not found").contentType("text/html")
     }
   }
@@ -110,7 +110,7 @@ object FinatraImplicits {
     override def apply(serviceRequest: ServiceRequest) = {
       val request = Request(Method(serviceRequest.method.toString.toUpperCase), serviceRequest.uri.asUriString)
       serviceRequest.headers.foreach { h => request.headerMap.add(h.name, h.value) }
-      serviceRequest.body.foreach(body => request.setContentString(body.s))
+      serviceRequest.body.foreach(body => request.setContentString(body.asUtf))
       TFuture.value(request)
     }
   }

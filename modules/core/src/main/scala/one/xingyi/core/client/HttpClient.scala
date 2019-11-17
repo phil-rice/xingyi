@@ -17,6 +17,10 @@ trait StreamOps {
   def write(stream: OutputStream, s: String): Unit = try {
     stream.write(s.getBytes("UTF-8"))
   } finally (stream.close())
+
+  def write(stream: OutputStream, bytes: Array[Byte]): Unit = try {
+    stream.write(bytes)
+  } finally (stream.close())
 }
 
 object StreamOps extends StreamOps {
@@ -36,7 +40,7 @@ object HttpClient {
 
   def addHeaders(serviceRequest: ServiceRequest, connection: HttpURLConnection) = serviceRequest.headers.foreach { h => connection.setRequestProperty(h.name, h.value) }
 
-  def addBody(serviceRequest: ServiceRequest, connection: HttpURLConnection) = serviceRequest.body.foreach { body => connection.setDoOutput(true); StreamOps.write(connection.getOutputStream, body.s) }
+  def addBody(serviceRequest: ServiceRequest, connection: HttpURLConnection) = serviceRequest.body.foreach { body => connection.setDoOutput(true); StreamOps.write(connection.getOutputStream, body.bytes) }
 
   def addSslSocketFactory(serviceRequest: ServiceRequest, connection: HttpURLConnection)(implicit sslContext: Option[SSLContext]) =
     sslContext.foreach(ssl => connection.sideeffectIfIs[HttpsURLConnection] { h: HttpsURLConnection => h.setSSLSocketFactory(ssl.getSocketFactory) })

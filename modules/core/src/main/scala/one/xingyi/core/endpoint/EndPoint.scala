@@ -26,7 +26,7 @@ trait DisplayRecordedKleisli[M[_]] {
   def recordedCallToString(recordedCall: RecordedCall) =
     s"""Request: ${recordedCall.req.method}${recordedCall.req.path} ${recordedCall.req.headers.mkString(",")}
        |Result: ${recordedCall.res.status.code}
-       |${recordedCall.res.body.s}
+       |${recordedCall.res.body.asUtf}
        |${recordedCall.res.headers.mkString(",")}
      """.stripMargin
 
