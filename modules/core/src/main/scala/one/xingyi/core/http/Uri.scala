@@ -3,6 +3,7 @@ package one.xingyi.core.http
 
 import java.net.{URL, URLEncoder}
 
+import one.xingyi.core.crypto.Base64Codec
 import one.xingyi.core.json._
 
 object Method {
@@ -34,19 +35,20 @@ object Status {
 
 case class Status(code: Int) extends AnyVal
 
-class Body(val bytes: Array[Byte]) {
-  lazy val asUtf = new String(bytes, "UTF-8")
-  override def toString: String = s"Body($asUtf)"
+class Body(val bytes: Array[Byte], val optString: Option[String]) {
+  def asString(implicit base64Codec: Base64Codec) = optString.getOrElse(base64Codec.forwards(bytes))
+  override def toString: String = "Body" + optString.fold("<" + bytes.toList.mkString(",") + ">")(s => s"($s)")
   override def hashCode(): Int = bytes.hashCode()
-  override def equals(obj: Any): Boolean = obj match{
-    case b: Body => b.asUtf == asUtf
+  override def equals(obj: Any): Boolean = obj match {
+    case b: Body if optString.isDefined => b.optString.get == optString.get
+    case b: Body => b.bytes.toList == bytes.toList
     case _ => false
   }
 }
 
 object Body {
-  def apply(s: String): Body = new Body(s.getBytes("UTF-8"))
-  def apply(bytes: Array[Byte]) = new Body(bytes)
+  def apply(s: String): Body = new Body(s.getBytes("UTF-8"), Some(s))
+  def apply(bytes: Array[Byte]) = new Body(bytes, None)
 }
 
 trait Header {

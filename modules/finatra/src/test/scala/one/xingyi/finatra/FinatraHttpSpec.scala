@@ -51,6 +51,6 @@ class RequestToServiceRequestSpec extends AbstractToServiceRequestSpec[Request] 
 class RequestAbstractFromServiceRequestSpec extends AbstractFromServiceRequestSpec[TFuture, Request] with RequestFixture {
   override def checkMethod(res: Request, sr: ServiceRequest): Unit = res.method.name.toLowerCase shouldBe sr.method.toString.toLowerCase
   override def checkHeaders(res: Request, sr: ServiceRequest): Unit = res.headerMap.map { case (n, v) => Header(n, v) }.toList shouldBe sr.headers
-  override def checkBody(res: Request, sr: ServiceRequest): Unit = Strings.toOption(res.contentString) shouldBe sr.body.map(_.asUtf)
+  override def checkBody(res: Request, sr: ServiceRequest): Unit = Strings.toOption(res.contentString) shouldBe sr.body.map(_.asString)
   override def checkUri(res: Request, sr: ServiceRequest): Unit = res.uri shouldBe sr.uri.asUriString
 }

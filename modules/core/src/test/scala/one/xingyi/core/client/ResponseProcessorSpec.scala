@@ -11,7 +11,7 @@ class ResponseProcessorSpec extends UtilsSpec {
 
 
   val rp = new AbstractResponseProcess[IdentityMonad, Int, String] {
-    override def process200(req: Int, sr: ServiceResponse): IdentityMonad[String] = IdentityMonad(Success(sr.body.asUtf + "Processed"), Map())
+    override def process200(req: Int, sr: ServiceResponse): IdentityMonad[String] = IdentityMonad(Success(sr.body.asString + "Processed"), Map())
   }
 
   behavior of "AbstractResponseProcessor"

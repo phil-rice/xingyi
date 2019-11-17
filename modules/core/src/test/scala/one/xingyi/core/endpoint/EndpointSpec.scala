@@ -20,7 +20,7 @@ class EndpointSpec extends UtilsSpec with ServiceRequestForEndpointFixture {
     val matchesServiceRequest = MatchesServiceRequest.fixedPath(Get)
     val delegate = mock[String => Future[String]]
     implicit object fromServiceRequestForString extends FromServiceRequest[Future, String] {
-      override def apply(v1: ServiceRequest) = Future.successful(v1.body.map(_.asUtf).getOrElse("") + "_fromSR")
+      override def apply(v1: ServiceRequest) = Future.successful(v1.body.map(_.asString).getOrElse("") + "_fromSR")
     }
     implicit def toServiceResponseForString[Req]: ToServiceResponse[Req, String] =
       req => string => ServiceResponse(Status(123), Body(string + "_toSR"), ContentType("someContentType"))

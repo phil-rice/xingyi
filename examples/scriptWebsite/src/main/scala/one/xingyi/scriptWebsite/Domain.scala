@@ -97,7 +97,7 @@ case class EditPersonRequest(name: String, newLine1: String, newLine2: String)
 
 object EditPersonRequest {
   implicit def fromServiceRequest[M[_] : Monad]: FromServiceRequest[M, EditPersonRequest] = { sr =>
-    val params = Strings.paramsToMap(sr.body.map(_.asUtf).getOrElse(""))
+    val params = Strings.paramsToMap(sr.body.map(_.asString).getOrElse(""))
     EditPersonRequest(Strings.lastButOneSection("/")(sr.path.path), params("line1"), params("line2")).liftM[M]
   }
 
@@ -119,7 +119,7 @@ object EditPersonResponse {
   implicit def toServiceResponse: ToServiceResponse[EditPersonRequest, EditPersonResponse] = { req => res => ServiceResponse(Status(200), Body(res.json + "some content"), ContentType("application/json")) }
 
   implicit def fromEditXingYi: FromEditXingYi[EditPersonRequest, Person, EditPersonResponse] =
-    (req, dom, sr) => EditPersonResponse(Strings.withoutStringBefore('=')(sr.body.asUtf))
+    (req, dom, sr) => EditPersonResponse(Strings.withoutStringBefore('=')(sr.body.asString))
 
   implicit def fromXingYi: FromXingYi[EditPersonRequest, EditPersonResponse] = {
     implicit xingYi =>

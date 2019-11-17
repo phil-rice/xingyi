@@ -30,7 +30,7 @@ object PomBundle {
   }
 
   implicit def ServiceRequestToPomBundle[M[_] : Liftable]: FromServiceRequest[M, PomBundle] =
-    sr => PomBundle.parse(sr.body.getOrElse(throw new RuntimeException("expected a body and it was empty")).asUtf).liftM[M]
+    sr => PomBundle.parse(sr.body.getOrElse(throw new RuntimeException("expected a body and it was empty")).asString).liftM[M]
 }
 
 case class PomData(relativePath: String, pom: String)

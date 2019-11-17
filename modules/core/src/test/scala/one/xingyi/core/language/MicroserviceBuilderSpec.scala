@@ -44,7 +44,7 @@ object ThingResponse {
     override def parse[Fail](requestAndServiceResponse: RequestAndServiceResponse[ThingRequest])(
       implicit failer: ResponseParserFailer[Fail], reqDetails: DetailedLogging[ThingRequest], srDetails: DetailedLogging[ServiceResponse]):
     Either[Fail, ThingResponse] = requestAndServiceResponse match {
-      case RequestAndServiceResponse(req, res) if res.status.code == 200 => Right(ThingResponse(req.id, res.body.asUtf))
+      case RequestAndServiceResponse(req, res) if res.status.code == 200 => Right(ThingResponse(req.id, res.body.asString))
       case reqAndSr => Left(failer.responseParserfailer(reqAndSr, "failed"))
 
     }

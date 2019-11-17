@@ -19,7 +19,7 @@ abstract class CodeDetailsRequestTest[J: JsonWriter] extends UtilsSpec with Scri
 
     serviceResponse.status shouldBe Status(200)
     serviceResponse.headers shouldBe List(ContentType("someMediaType"))
-    serviceResponse.body.asUtf shouldBe "someCode"
+    serviceResponse.body.asString shouldBe "someCode"
 
   }
 

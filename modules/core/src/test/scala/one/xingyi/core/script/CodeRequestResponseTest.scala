@@ -20,7 +20,7 @@ abstract class CodeRequestResponseTest[J: JsonWriter] extends UtilsSpec with Scr
     val response = toSr(CodeRequest())(CodeResponse(domainList))
     response.status shouldBe Status(200)
     response.headers shouldBe List(ContentType("application/json"))
-    response.body.asUtf.noWhiteSpace shouldBe
+    response.body.asString.noWhiteSpace shouldBe
       s"""[
          |{"name":"ParentDomainForTest1",
          |"code":{"Javascript":"$js0Hash",

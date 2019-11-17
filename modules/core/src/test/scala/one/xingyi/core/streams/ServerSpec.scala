@@ -110,7 +110,7 @@ class ServerSpec extends UtilsSpec {
         List(SimpleHeader("accept", "text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2"),
           SimpleHeader("connection", "keep-alive"), SimpleHeader("h1", "v1"), SimpleHeader("host", "localhost:10000")), None)
 
-      val body = response.body.asUtf
+      val body = response.body.asString
       body should include ("FileNotFoundException")
       ServiceResponse.removeHeader("Date")(response.copy(body=Body(""))) shouldBe ServiceResponse(Status(404), Body(""), List())
 
@@ -139,7 +139,7 @@ class ServerSpec extends UtilsSpec {
           SimpleHeader("connection", "keep-alive"), SimpleHeader("h1", "v1"), SimpleHeader("host", "localhost:10000")), None)
 
 
-      val body = response.body.asUtf
+      val body = response.body.asString
       body should include ("java.lang.RuntimeException\nSomeMessage")
 
       ServiceResponse.removeHeader("Date")(response.copy(body = Body(""))) shouldBe ServiceResponse(Status(500), Body(""), List())
