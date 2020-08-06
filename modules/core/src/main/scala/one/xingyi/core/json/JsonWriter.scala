@@ -38,6 +38,12 @@ trait JsonWriter[J] extends (JsonValue => String) {
 
 trait ToJsonLib[T] extends (T => JsonValue)
 
+object ToJsonLib{
+  implicit object toJsonLibForJsonObject extends ToJsonLib[JsonObject] {
+    override def apply(v1: JsonObject): JsonValue = v1
+  }
+}
+
 object JsonWriterLanguage extends JsonWriterLanguage
 trait JsonWriterLanguage {
   implicit def toJsonString(s: String) = JsonString(s)
@@ -46,4 +52,8 @@ trait JsonWriterLanguage {
   implicit def toJsonDouble(d: Double) = JsonDouble(d)
   implicit def toT[T](t: T)(implicit forT: ToJsonLib[T]): JsonValue = forT(t)
   implicit def toListT[T](ts: Seq[T])(implicit forT: ToJsonLib[T]): JsonList = JsonList(ts.map(forT))
+  implicit object ToJsonLibForJsonValue extends ToJsonLib[JsonValue] {
+    override def apply(jsonValue: JsonValue): JsonValue = jsonValue
+  }
+
 }

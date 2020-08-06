@@ -19,4 +19,6 @@ class HttpClientSpec extends UtilsSpec {
     when(connection.connect()) thenThrow new RuntimeException
     intercept[UrlDidntResponse](HttpClient.connect(serviceRequest, connection))
   }
+
+
 }

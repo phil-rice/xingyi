@@ -2,8 +2,8 @@
 package one.xingyi.cddengine
 
 import one.xingyi.cddscenario._
-import one.xingyi.core.UtilsSpec
-import org.scalatest.mockito.MockitoSugar
+import one.xingyi.core.{MockitoSugar, UtilsSpec}
+
 import scala.language.postfixOps
 
 trait UseCaseFixture extends EngineBuilderLanguage1 with MockitoSugar {

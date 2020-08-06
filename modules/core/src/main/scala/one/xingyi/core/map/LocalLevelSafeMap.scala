@@ -72,7 +72,7 @@ class LowLevelSafeMap[M[_], K, V](threadSafeDataManips: ThreadSafeDataManips[M, 
   import threadSafeDataManips._
 
   private val initialValueLock = new DoubleCheckLock
-  private var _map = empty()
+   var _map = empty()
 
   def clear = initialValueLock(true)(_map = empty())
 

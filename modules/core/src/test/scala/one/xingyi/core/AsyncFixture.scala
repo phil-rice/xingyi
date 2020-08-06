@@ -3,12 +3,11 @@ package one.xingyi.core
 
 import one.xingyi.core.language.Language._
 import one.xingyi.core.monad.MonadWithException
-import org.scalatest.Matchers
 
 import scala.language.higherKinds
 import scala.util.Try
 
-trait AsyncFixture[M[_]] extends Matchers {
+trait AsyncFixture[M[_]] extends CoreSpec {
 
   def kleisli[Req, Res](expected: Req, result: => Try[Res])(implicit async: MonadWithException[M]): Req => M[Res] = { req: Req =>
     req shouldBe expected

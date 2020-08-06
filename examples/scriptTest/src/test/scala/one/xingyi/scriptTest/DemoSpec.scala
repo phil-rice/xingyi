@@ -5,11 +5,12 @@ import one.xingyi.scriptBackend1.Backend1
 import one.xingyi.scriptBackend2.Backend2
 import one.xingyi.scriptBackend3.Backend3
 import one.xingyi.scriptWebsite.WebsiteApp
-import org.openqa.selenium.chrome.{ChromeDriver, ChromeOptions}
+import org.openqa.selenium.chrome.ChromeDriver
 import org.scalatest.concurrent.Eventually
-import org.scalatest.selenium.{Chrome, HtmlUnit, WebBrowser}
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Millis, Span}
-import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
+import org.scalatest.{BeforeAndAfter, FlatSpec}
+import org.scalatestplus.selenium.WebBrowser
 
 abstract class DemoSpec[P] extends FlatSpec with Matchers with BeforeAndAfter with Eventually with UtilsSpec with WebBrowser {
 

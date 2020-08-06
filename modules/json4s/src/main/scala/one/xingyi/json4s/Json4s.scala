@@ -24,6 +24,10 @@ trait Json4sParser {
     override def asList(j: JValue): List[JValue] = j.extract[List[JValue]]
     override def \(j: JValue, s: String): JValue = j \ s
     override def apply(s: String): JValue = JsonMethods.parse(s).ifError(e => throw new FromJson4sException(s"String is [$s]", e))
+    override def asObject(j: JValue): Map[String, JValue] = j match {
+      case JObject(values) => values.toMap
+      case _ => throw new FromJson4sException(s"Cannot extract as object, J is $j", null)
+    }
   }
 
 }

@@ -97,14 +97,16 @@ case class EndPoint[M[_] : Monad, Req, Res](normalisedPath: String, matchesServi
 }
 
 trait MatchesServiceRequest {
-  def method: Method
+//  def method: Method
 
   def apply(endpointName: String)(serviceRequest: ServiceRequest): Boolean
 }
 
 
 object MatchesServiceRequest {
+  val anyPathOrVerb = AnyPathOrVerb
   def fixedPath(method: Method) = FixedPathAndVerb(method)
+  def prefix(method: Method) = Prefix(method)
 
   def idAtEnd(method: Method) = IdAtEndAndVerb(method)
 
@@ -117,6 +119,14 @@ case class FixedPathAndVerb(method: Method) extends MatchesServiceRequest {
     serviceRequest.method == method && serviceRequest.uri.path.asUriString == endpointName
 }
 
+case class Prefix(method: Method) extends MatchesServiceRequest {
+  override def apply(endpointName: String)(serviceRequest: ServiceRequest): Boolean =
+    serviceRequest.method == method && serviceRequest.uri.path.asUriString.startsWith(endpointName)
+}
+case object AnyPathOrVerb extends MatchesServiceRequest {
+  override def apply(endpointName: String)(serviceRequest: ServiceRequest): Boolean = true
+
+}
 case class IdAtEndAndVerb(method: Method) extends MatchesServiceRequest {
   val startFn = Strings.allButlastSection("/") _
 

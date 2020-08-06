@@ -11,6 +11,9 @@ object Method {
     case "post" => Post
     case "put" => Put
     case "delete" => Delete
+    case "options" => Options
+    case "head" => Head
+    case _ => throw new RuntimeException("Unknown method: " + s)
   }
 }
 
@@ -26,6 +29,8 @@ case object Post extends Method
 case object Put extends Method
 
 case object Delete extends Method
+case object Options extends Method
+case object Head extends Method
 
 object Status {
   val Ok = Status(200)
@@ -47,7 +52,7 @@ object Header extends JsonWriterLanguage {
   def apply(name: String, value: String): Header = SimpleHeader(name, value)
 
   implicit val toJsonLib: ToJsonLib[Header] = header => JsonObject(Option(header.name).getOrElse("--") -> header.value)
-  implicit val seqJsonLib: ToJsonLib[Seq[Header]] = headers => JsonList(headers.map(header => JsonObject("name"->Option(header.name).getOrElse[String]("--"), "value" -> JsonString(header.value))))
+  implicit val seqJsonLib: ToJsonLib[Seq[Header]] = headers => JsonList(headers.map(header => JsonObject("name" -> Option(header.name).getOrElse[String]("--"), "value" -> JsonString(header.value))))
 }
 
 abstract class SpecificHeader(val name: String) extends Header

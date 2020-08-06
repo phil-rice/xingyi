@@ -4,7 +4,7 @@ import one.xingyi.core.UtilsSpec
 import one.xingyi.core.json.JsonWriterLanguage._
 import one.xingyi.core.json.{JsonMaps, JsonObject, JsonWriter}
 
-class AbstractMustacheSpec[J: JsonWriter] extends UtilsSpec {
+abstract class AbstractMustacheSpec[J: JsonWriter] extends UtilsSpec {
 
   case class TestForMustache(one: String, two: Int)
   val jsonMap = JsonMaps(JsonObject("one" -> "111", "two" -> "map"))

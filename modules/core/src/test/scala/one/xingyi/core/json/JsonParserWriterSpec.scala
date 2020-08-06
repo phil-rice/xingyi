@@ -35,12 +35,18 @@ abstract class JsonParserWriterSpec[J: ClassTag](implicit val jsonParser: JsonPa
   it should "extract options of strings " in {
     jsonParser.extractOptString(stringAsJ("abc")) shouldBe Some("abc")
     jsonParser.extractOptString(mainA1B2SecondaryC3D4 \ "a") shouldBe None
-
   }
 
   it should "change a J into a list of J if possible" in {
     jsonParser.asList(listAsJ(List(1, 2, 3))) shouldBe List(jsonWriter.toJ(JsonInt(1)), jsonWriter.toJ(JsonInt(2)), jsonWriter.toJ(JsonInt(3)))
   }
+  it should "change a J into a Map of Strings to J if possible" in {
+    val map = jsonParser.asObject(mainA1B2SecondaryC3D4)
+    map.keys shouldBe Set("main", "secondary")
+    (map("main") \ "b").as[String] shouldBe "2"
+    map("main").asObject.keys shouldBe Set("a", "b")
+  }
+
 
   it should "allow backslash and extraction" in {
     val a1: Int = mainA1B2SecondaryC3D4 \ "main" \ "a"
@@ -59,8 +65,6 @@ abstract class JsonParserWriterSpec[J: ClassTag](implicit val jsonParser: JsonPa
     val j: J = jsonWriter.toJ(JsonList(Seq(JsonObject("a" -> 1, "b" -> 1.0, "c" -> "1", "d" -> true))))
     jsonWriter.toStringForJ(j).noWhiteSpace shouldBe """[{"a":1,"b":1.0,"c":"1","d":true}]"""
   }
-
-
 
 
   it should "turn a J into a string" in {
@@ -111,7 +115,7 @@ abstract class JsonParserWriterSpec[J: ClassTag](implicit val jsonParser: JsonPa
   }
   it should "Allow things with ToJsonLibs to be implicitly converted to json" in {
     val j: JsonValue = toT(thingy)
-    j shouldBe JsonObject("a"->1, "b"->"two", "children"-> toListT(Seq(child1, child2)))
+    j shouldBe JsonObject("a" -> 1, "b" -> "two", "children" -> toListT(Seq(child1, child2)))
   }
 
 

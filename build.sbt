@@ -2,22 +2,23 @@ import sbt.url
 
 
 val versions = new {
-  val scala = "2.12.6"
-  //  val scala = "2.12.1"
-  val finatra = "19.5.1"
-  val scalatest = "3.0.5"
-  val selenium = "2.35.0"
+//  val scala = "2.13.2"
+    val scala = "2.12.11"
+  val finatra = "20.4.1"
+  val scalatest = "3.0.8"
+  val seleniumTestSelenium = "1.0.0-M2"
+  val selenium = "2.45.0"
   val mockito = "1.10.19"
   val guice = "4.0"
   val play = "2.5.12"
-  val scalapact = "2.1.3"
+  val scalapact = "2.3.17"
   val junit = "4.12"
   val json4s = "3.5.3"
   val mustache = "0.9.5"
 }
 
 lazy val commonSettings = Seq(
-  version := "0.5.1",
+  version := "0.5.2-SNAPSHOT",
   organization := "one.xingyi",
   publishMavenStyle := true,
   scalaVersion := versions.scala,
@@ -110,7 +111,10 @@ lazy val scalatestSettings = publishSettings ++ Seq(
 )
 
 lazy val seleniumSettings = publishSettings ++ Seq(
-  libraryDependencies += "org.seleniumhq.selenium" % "selenium-java" % versions.selenium % "test"
+  libraryDependencies += "org.seleniumhq.selenium" % "selenium-java" % versions.selenium % "test",
+  libraryDependencies += "org.scalatestplus" %% "scalatestplus-selenium" % versions.seleniumTestSelenium % "test",
+  libraryDependencies += "org.seleniumhq.selenium" %  "selenium-chrome-driver" % versions.selenium % "test",
+  libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.3.0" % "test"
 )
 lazy val core = (project in file("modules/core")).
   settings(publishSettings: _*)
@@ -264,13 +268,15 @@ lazy val scriptWebsite = (project in file("examples/scriptWebsite")).
   settings(pactSettings: _*)
 
 lazy val scriptTest = (project in file("examples/scriptTest")).
-  dependsOn(scriptBackend1 % "test->test;compile->compile").aggregate(core).
-  dependsOn(scriptBackend2 % "test->test;compile->compile").aggregate(core).
-  dependsOn(scriptBackend3 % "test->test;compile->compile").aggregate(core).
-  dependsOn(scriptWebsite % "test->test;compile->compile").aggregate(core).
+  dependsOn(core % "test->test;compile->compile").aggregate(core).
+  dependsOn(scriptBackend1 % "test->test;compile->compile").aggregate(scriptBackend1).
+  dependsOn(scriptBackend2 % "test->test;compile->compile").aggregate(scriptBackend2).
+  dependsOn(scriptBackend3 % "test->test;compile->compile").aggregate(scriptBackend3).
+  dependsOn(scriptWebsite % "test->test;compile->compile").aggregate(scriptWebsite).
   settings(publishArtifact := false).
   settings(parallelExecution in Test := false).
-  settings(seleniumSettings: _*)
+  settings(seleniumSettings: _*).
+  settings(publishSettings: _*)
 
 lazy val finatraSample = (project in file("examples/finatraSample")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
@@ -304,7 +310,7 @@ val xingYi = (project in file(".")).
     scriptBackend2,
     scriptBackend3,
     scriptWebsite,
-    scriptTest,
+//    scriptTest,
     sample,
     sampleServer,
     json4s, //

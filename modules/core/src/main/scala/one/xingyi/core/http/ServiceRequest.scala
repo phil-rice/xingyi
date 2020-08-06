@@ -70,7 +70,7 @@ object ToServiceRequest {
 trait FromServiceRequest[M[_], T] extends (ServiceRequest => M[T])
 
 object FromServiceRequest {
-  implicit def FromServiceResponseForServiceResponse[M[_] : Liftable] = new FromServiceRequest[M, ServiceRequest] {
+  implicit def FromServiceResponseForServiceRequest[M[_] : Liftable] = new FromServiceRequest[M, ServiceRequest] {
     override def apply(v1: ServiceRequest): M[ServiceRequest] = v1.liftM
   }
 }

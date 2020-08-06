@@ -3,18 +3,17 @@ package one.xingyi.core.language
 
 import java.text.MessageFormat
 
-import one.xingyi.core.{FunctionFixture, UtilsSpec}
 import one.xingyi.core.cache._
 import one.xingyi.core.http._
+import one.xingyi.core.language.Language._
 import one.xingyi.core.logging._
 import one.xingyi.core.metrics.{CountMetricValue, MetricValue, PutMetrics, ReportData}
 import one.xingyi.core.monad.{Async, IdentityMonad, Liftable, MonadCanFailWithException}
-import one.xingyi.core.time.{MockTimeService, NanoTimeService, RandomDelay}
-import org.scalatest.mockito.MockitoSugar
-import org.mockito.Mockito._
-import Language._
 import one.xingyi.core.profiling.{ProfileService, TryProfileData}
 import one.xingyi.core.retry.{RetryConfig, RetryService}
+import one.xingyi.core.time.{MockTimeService, NanoTimeService, RandomDelay}
+import one.xingyi.core.{FunctionFixture, MockitoSugar, UtilsSpec}
+import org.mockito.Mockito._
 
 import scala.concurrent.duration.Duration
 import scala.language.higherKinds

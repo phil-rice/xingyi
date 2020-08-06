@@ -3,18 +3,24 @@ package one.xingyi.core
 
 import java.io.ByteArrayOutputStream
 
-import org.mockito.ArgumentCaptor
-import org.scalatest.concurrent.Eventually
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{FlatSpecLike, Matchers}
 import one.xingyi.core.logging.NullLoggingAdapter
+import org.mockito.{ArgumentCaptor, Mockito}
+import org.scalatest.concurrent.Eventually
+import org.scalatest.{FlatSpec, FlatSpecLike, Matchers}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import scala.language.{higherKinds, postfixOps}
 import scala.reflect.ClassTag
 
-trait UtilsSpec extends FlatSpecLike with Matchers with MockitoSugar with Eventually {
+trait MockitoSugar{
+  def mock[T: ClassTag]: T = Mockito.mock((implicitly[ClassTag[T]]).runtimeClass).asInstanceOf[T]
+}
+
+trait CoreSpec extends FlatSpec with Matchers with Eventually {}
+
+trait UtilsSpec extends CoreSpec with Eventually with MockitoSugar {
+
 
   def await[X](f: Future[X]) = Await.result(f, 5 seconds)
 
@@ -27,6 +33,7 @@ trait UtilsSpec extends FlatSpecLike with Matchers with MockitoSugar with Eventu
       }
     }
   }
+
   implicit class StringOps(s: String) {
     def noWhiteSpace = s.replaceAll("\\se*", "")
   }
@@ -34,7 +41,7 @@ trait UtilsSpec extends FlatSpecLike with Matchers with MockitoSugar with Eventu
   def capturePrintln[X](block: => X): (X, String) = {
     //    val stream = new
     val stream = new ByteArrayOutputStream()
-    val x= Console.withOut(stream)(block)
+    val x = Console.withOut(stream)(block)
     (x, stream.toString)
   }
 
