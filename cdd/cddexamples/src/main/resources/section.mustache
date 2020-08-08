@@ -1,8 +1,0 @@
-{{^leaf}}
-    <h2>{{name}}</h2>
-    <div class="section">{{#children}}{{>section}}{{/children}}</div>
-{{/leaf}}
-{{#leaf}}
-    {{name}} <input name="{{id}}" type="textfield" value="{{value}}" /> {{#validation}}{{.}}{{/validation}}<br />
-{{/leaf}}
-

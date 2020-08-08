@@ -19,7 +19,7 @@ val versions = new {
 }
 
 lazy val commonSettings = Seq(
-  version := "0.5.5",
+  version := "0.5.6-SNAPSHOT",
   organization := "one.xingyi",
   publishMavenStyle := true,
   scalaVersion := versions.scala,
@@ -118,66 +118,24 @@ lazy val seleniumSettings = publishSettings ++ Seq(
   libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.3.0" % "test"
 )
 lazy val core = (project in file("modules/core")).
-  settings(publishSettings: _*)
+  settings(publishSettings: _*).
+  settings( Test / publishArtifact := true)
 
 
 val apachejdbc = (project in file("modules/apachejdbc")).
   dependsOn(core % "test->test;compile->compile").
   settings(apacheDbcp2Settings)
 
-val cddmustache = (project in file("cdd/cddmustache")).
-  dependsOn(core % "test->test;compile->compile").
-  aggregate(core).
-  settings(mustacheSettings)
-
-val cddscalatest = (project in file("cdd/cddscalatest")).
-  dependsOn(core % "test->test;compile->compile").
-  dependsOn(cddengine % "test->test;compile->compile").
-  settings(scalatestSettings)
-
-
-//lazy val tagless = (project in file("modules/tagless")).
-//  settings(publishSettings: _*).
-//  dependsOn(core % "test->test;compile->compile").aggregate(core)
-
-lazy val cddscenario = (project in file("cdd/cddscenario")).
-  settings(reflectionSettings: _*).
-  dependsOn(core % "test->test;compile->compile").aggregate(core)
-
-//lazy val cep = (project in file("modules/cep")).
-//  settings(reflectionSettings: _*).
-//  dependsOn(core % "test->test;compile->compile").aggregate(core)
 
 val javaServer = (project in file("modules/javaserver")).settings(publishSettings)
 
-val cddexamples = (project in file("cdd/cddexamples")).
-  dependsOn(core % "test->test;compile->compile").
-  dependsOn(cddengine % "test->test;compile->compile").
-  dependsOn(cddscalatest % "test->test;compile->compile").
-  dependsOn(json4s % "test->test;compile->compile").
-  dependsOn(javaServer).
-  dependsOn(cddmustache % "test->test;compile->compile").
-  //  dependsOn(cddlegacy % "test->test;compile->compile").
-  dependsOn(apachejdbc % "test->test;compile->compile").
-  settings(publishSettings)
 
-lazy val cddengine = (project in file("cdd/cddengine")).
-  settings(publishSettings: _*).
-  dependsOn(core % "test->test;compile->compile").aggregate(core).
-  dependsOn(cddscenario % "test->test;compile->compile").aggregate(cddscenario)
-
-lazy val cddscripts = (project in file("cdd/cddscripts")).
-  settings(publishSettings: _*).
-  dependsOn(core % "test->test;compile->compile").aggregate(core)
 
 lazy val test = (project in file("modules/test")).
   settings(publishSettings: _*).
   dependsOn(core % "test->test;compile->compile").
-  dependsOn(cddengine % "test->test;compile->compile").
-//  dependsOn(cep % "test->test;compile->compile").
   dependsOn(apachejdbc % "test->test;compile->compile").
   dependsOn(json4s % "test->test;compile->compile").
-  dependsOn(cddmustache % "test->test;compile->compile").
   aggregate(core)
 
 lazy val sampleServer = (project in file("examples/sampleServer")).
@@ -262,7 +220,6 @@ lazy val scriptBackend3 = (project in file("examples/scriptBackend3")).
 lazy val scriptWebsite = (project in file("examples/scriptWebsite")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(json4s % "test->test;compile->compile").
-  dependsOn(cddmustache % "test->test;compile->compile").
   dependsOn(scriptModel1 % "test->test;compile->compile").aggregate(scriptModel1).
   //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   settings(publishArtifact := false).
@@ -300,11 +257,6 @@ val xingYi = (project in file(".")).
   aggregate(
     apachejdbc, //
     core, //
-    cddscenario, //
-    cddengine, //
-    cddmustache, //
-    cddscalatest, //
-    cddexamples, //
     finatra, //
     finatraSample,
     scriptBackend1,
