@@ -1,4 +1,5 @@
 import sbt.url
+import sbtpgp._
 
 
 val versions = new {
@@ -18,7 +19,7 @@ val versions = new {
 }
 
 lazy val commonSettings = Seq(
-  version := "0.5.2-SNAPSHOT",
+  version := "0.5.5",
   organization := "one.xingyi",
   publishMavenStyle := true,
   scalaVersion := versions.scala,
@@ -42,8 +43,8 @@ lazy val publishSettings = commonSettings ++ Seq(
   developers := List(
     Developer(
       id = "phil",
-      name = "Phil Rice",
-      email = "phil.rice@iee.org",
+      name = "Philip Rice",
+      email = "phil.rice@validoc.org",
       url = url("https://www.linkedin.com/in/phil-rice-53959460")
     )
   ),

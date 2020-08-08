@@ -18,4 +18,5 @@ repositories-truststore.jks
 repositories
 modules/playSample/
 project/project/
+credentials.sbt
 

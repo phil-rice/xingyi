@@ -7,6 +7,7 @@ import scala.annotation.tailrec
 
 object Streams {
   def readAll(stream: InputStream): String = {
+    getClass().getClassLoader().getResourceAsStream("football.dat")
     val in = new BufferedReader(new InputStreamReader(stream))
     try {
       val result = new StringBuilder

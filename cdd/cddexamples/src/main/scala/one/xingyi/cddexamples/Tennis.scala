@@ -82,6 +82,10 @@ object Tennis extends Tennis with App {
   implicit def v[P, R] = new SimpleValidation[P, R]
   tennis.tools.printTraceAboutAdding("tennis")
   tennis.tools.printPages("tennis")
+  val x: TraceThroughEngineResultData[(Int, Int), String] = tennis.tools.trace(2,3)
+  println("trace")
+  println(x)
   dump
+
 }
 

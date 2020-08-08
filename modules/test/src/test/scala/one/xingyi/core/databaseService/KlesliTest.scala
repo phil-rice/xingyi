@@ -1,0 +1,64 @@
+package one.xingyi.core.databaseService
+
+import java.sql.{CallableStatement, ResultSet}
+
+import javax.sql.DataSource
+import one.xingyi.core.databaseService._
+import one.xingyi.core.monad.IdentityMonad
+import org.mockito
+import org.mockito.{ArgumentCaptor, Mockito}
+import org.scalatest.{FlatSpec, Matchers}
+import org.scalatestplus.mockito.MockitoSugar
+
+class KlesliTest extends FlatSpec with Matchers with MockitoSugar {
+
+  val nameToSql: Map[String, SqlAndParams] = Map()
+
+
+  behavior of "Kleisli.update"
+
+
+  it should "return the result of passing the datasource and the nameToSql to the stored procedure factory, and the result of that should executeUpdate" in {
+    implicit val factory = mock[StoredProcedureKleisliFactory[IdentityMonad, UpdateRequest, UpdateResponse]]
+    val dataSource = mock[DataSource]
+    val capture = new ArgumentCaptor[(CallableStatement, Option[QueryResults]) => UpdateResponse]()
+    val kleisli = mock[UpdateRequest => IdentityMonad[UpdateResponse]]
+
+    Mockito.when(factory.apply(mockito.Matchers.eq(dataSource), mockito.Matchers.eq(nameToSql), capture.capture())).thenReturn(kleisli)
+    StoredProcedureKleisliFactory.update(dataSource, nameToSql) shouldBe kleisli
+
+    val statement = mock[CallableStatement]
+    Mockito.when(statement.executeUpdate()).thenReturn(123)
+
+    capture.getValue.apply(statement, None) shouldBe UpdateResponse(123)
+    capture.getValue.apply(statement, Some(mock[QueryResults])) shouldBe UpdateResponse(123)
+  }
+
+
+  behavior of "Kleisi.query"
+
+  it should "return the result of passing the datasource and the nameToSql to the stored procedure factory, and the result of that should executeQuery" in {
+    implicit val factory = mock[StoredProcedureKleisliFactory[IdentityMonad, QueryRequest, QueryResponse]]
+    implicit val resultSetToResults = mock[ResultSetToResults]
+    val dataSource = mock[DataSource]
+    val capture = new ArgumentCaptor[(CallableStatement, Option[QueryResults]) => QueryResponse]()
+    val kleisli = mock[QueryRequest => IdentityMonad[QueryResponse]]
+
+    Mockito.when(factory.apply(mockito.Matchers.eq(dataSource), mockito.Matchers.eq(nameToSql), capture.capture())).thenReturn(kleisli)
+    implicit val resultSetToString: ResultsToT[String] = mock[ResultsToT[String]]
+
+    StoredProcedureKleisliFactory.query(dataSource, nameToSql) shouldBe kleisli
+
+    val statement = mock[CallableStatement]
+
+    val resultSet = mock[ResultSet]
+    val results = mock[QueryResults]
+    Mockito.when(resultSetToResults.apply(resultSet)).thenReturn(results)
+    Mockito.when(statement.executeQuery()).thenReturn(resultSet)
+    Mockito.when(resultSetToString.apply(results)).thenReturn("result")
+    capture.getValue.apply(statement, None) shouldBe QueryResponse(results)
+
+    Mockito.verify(resultSet, Mockito.times(0)).next()
+  }
+
+}
