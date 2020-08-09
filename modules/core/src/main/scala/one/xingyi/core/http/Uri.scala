@@ -52,7 +52,9 @@ object Header extends JsonWriterLanguage {
   def apply(name: String, value: String): Header = SimpleHeader(name, value)
 
   implicit val toJsonLib: ToJsonLib[Header] = header => JsonObject(Option(header.name).getOrElse("--") -> header.value)
-  implicit val seqJsonLib: ToJsonLib[Seq[Header]] = headers => JsonList(headers.map(header => JsonObject("name" -> Option(header.name).getOrElse[String]("--"), "value" -> JsonString(header.value))))
+//  implicit val seqJsonLib: ToJsonLib[Seq[Header]] = headers => JsonList(headers.map(header => JsonObject("name" -> Option(header.name).getOrElse[String]("--"), "value" -> JsonString(header.value))))
+
+  implicit val toJsonLibForHeaders: ToJsonLib[Seq[Header]] = hs => JsonObject(hs.map(h => h.name +"." -> JsonString(h.value)): _*)
 }
 
 abstract class SpecificHeader(val name: String) extends Header

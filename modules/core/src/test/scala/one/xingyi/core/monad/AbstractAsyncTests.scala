@@ -22,14 +22,15 @@ trait ContainerSpec[A[_]] extends UtilsWithLoggingSpec {
 
 }
 
+object ScalaFutureAsAsyncAndMonadAndFailer extends ScalaFutureAsAsyncAndMonadAndFailer
 trait ScalaFutureAsAsyncAndMonadAndFailer {
 
   import one.xingyi.core.monad.AsyncForScalaFuture.ImplicitsForTest._
 
   private val a = AsyncForScalaFuture.defaultAsyncForScalaFuture
-  implicit protected def async: Async[Future] = a
-  implicit protected def monad: MonadCanFailWithException[Future, Throwable] = a
-  implicit protected def failer = implicitly[Failer[Throwable]]
+  implicit def async: Async[Future] = a
+  implicit def monad: MonadCanFailWithException[Future, Throwable] = a
+  implicit def failer = implicitly[Failer[Throwable]]
 }
 
 trait AbstractAsyncTests[A[_]] extends ContainerSpec[A] {

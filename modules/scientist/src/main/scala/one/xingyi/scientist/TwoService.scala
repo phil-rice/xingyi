@@ -1,4 +1,4 @@
-package one.xingyi.core.proveInProduction
+package one.xingyi.scientist
 
 import one.xingyi.core.language.MonadLanguage._
 import one.xingyi.core.monad.MonadCanFail

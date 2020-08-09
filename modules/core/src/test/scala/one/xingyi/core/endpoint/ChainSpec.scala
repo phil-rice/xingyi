@@ -3,7 +3,6 @@ package one.xingyi.core.endpoint
 
 import one.xingyi.core.UtilsSpec
 import one.xingyi.core.http._
-import one.xingyi.core.monad.ScalaFutureAsAsyncAndMonadAndFailer
 import org.mockito.Mockito._
 
 import scala.concurrent.Future
@@ -14,7 +13,8 @@ class ChainSpec extends UtilsSpec with ServiceRequestForEndpointFixture {
 
 
   def setup(fn: ((ServiceRequest => Future[Option[ServiceResponse]]), EndPoint[Future, Int, String], EndPoint[Future, String, Int], EndPoint[Future, String, Double]) => Unit): Unit = {
-    val chainKleisli = new ChainKleisli[Future, Throwable] with ScalaFutureAsAsyncAndMonadAndFailer
+    import one.xingyi.core.monad.ScalaFutureAsAsyncAndMonadAndFailer._
+    val chainKleisli = new ChainKleisli[Future] {}
     val endPoint1 = mock[EndPoint[Future, Int, String]]
     val endPoint2 = mock[EndPoint[Future, String, Int]]
     val endPoint3 = mock[EndPoint[Future, String, Double]]

@@ -24,8 +24,8 @@ object CheapServer {
   }
 }
 
-class CheapServer[M[_] : Async, Fail](port: Int, endpoints: (ServiceRequest => M[Option[ServiceResponse]])*)
-                                     (implicit val monad: MonadCanFailWithException[M, Fail], val failer: Failer[Fail]) extends ChainKleisli[M, Fail] {
+class CheapServer[M[_] : Async, Fail: Failer](port: Int, endpoints: (ServiceRequest => M[Option[ServiceResponse]])*)
+                                             (implicit monad: MonadCanFailWithException[M, Fail]) extends ChainKleisli[M] {
 
   implicit val executors = Executors.newFixedThreadPool(10)
 

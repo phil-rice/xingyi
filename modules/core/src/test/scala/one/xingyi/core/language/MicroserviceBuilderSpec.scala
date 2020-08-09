@@ -23,11 +23,11 @@ class MicroserviceBuilderForTest[M[_], Fail](implicit val async: Async[M], val m
   override val cacheFactory: CacheFactory[M] = mock[CacheFactory[M]]
   override implicit val timeService: NanoTimeService = new MockTimeService
   implicit val log = new RememberLoggingAdapter
-  override val logReqAndResult: LogRequestAndResult[Fail] = new AbstractLogRequestAndResult[Fail]() {
+  implicit val logReqAndResult: LogRequestAndResult[Fail] = new AbstractLogRequestAndResult[Fail]() {
     override protected def format(messagePrefix: String, messagePostFix: String)(strings: String*): String =
       MessageFormat.format(messagePrefix, strings: _*)
   }
-  override val failer: Failer[Fail] = mock[Failer[Fail]]
+  override implicit val failer: Failer[Fail] = mock[Failer[Fail]]
   override val putMetrics: PutMetrics = mock[PutMetrics]
   override val httpFactory: HttpFactory[M, ServiceRequest, ServiceResponse] = mock[HttpFactory[M, ServiceRequest, ServiceResponse]]
 }
@@ -50,11 +50,11 @@ object ThingResponse {
   }
 }
 
-abstract class MicroserviceBuilderSpec[M[_], Fail](monadName: String)(implicit val async: Async[M], val monad: MonadCanFailWithException[M, Fail]) extends UtilsSpec with MicroserviceComposers[M] with FunctionFixture {
+abstract class MicroserviceBuilderSpec[M[_], Fail](monadName: String)(implicit val async: Async[M],  val monad: MonadCanFailWithException[M, Fail]) extends UtilsSpec with MicroserviceComposers[M] with FunctionFixture {
 
   def builder = new MicroserviceBuilderForTest[M, Fail]
-  def fail: Fail
   val exception = new RuntimeException("the error")
+  def fail: Fail
 
   def getFailure[X](block: => M[X]): Fail
   val serviceRequest = ServiceRequest(Method("get"), Uri("/thingyId"))
@@ -75,6 +75,7 @@ abstract class MicroserviceBuilderSpec[M[_], Fail](monadName: String)(implicit v
 
   it should "have an objectify that returns a M[Result] - happy path" in {
     val b = builder
+    import b.failer
     val service = mock[ServiceRequest => M[ServiceResponse]]
 
     val obj = service |+| b.objectify[ThingRequest, ThingResponse]
@@ -84,6 +85,7 @@ abstract class MicroserviceBuilderSpec[M[_], Fail](monadName: String)(implicit v
   }
   it should "have an objectify that returns a M[Result] - failure path" in {
     val b = builder
+    import b.failer
     val service = mock[ServiceRequest => M[ServiceResponse]]
     val request = ThingRequest("thingyId")
 
@@ -133,6 +135,8 @@ abstract class MicroserviceBuilderSpec[M[_], Fail](monadName: String)(implicit v
   it should "have a logging that wraps the delegate in a logging service" ignore {
     val pattern = "pattern {0} {2}"
     val b = builder
+    import b.logReqAndResult
+
     val service = mock[ServiceRequest => M[ServiceResponse]]
     val lService = (service |+| b.logging[ServiceRequest, ServiceResponse](pattern)).asInstanceOf[LoggingService[M, Fail, ServiceRequest, ServiceResponse]]
     lService.delegate shouldBe service

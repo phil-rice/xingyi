@@ -7,9 +7,7 @@ import scala.language.higherKinds
 import scala.reflect.ClassTag
 
 trait LiftFunctionKleisli[M[_]] {
-  protected implicit def monad: Monad[M]
-
-  def function[Req: ClassTag, Res: ClassTag](name: String)(fn: Req => Res) = fn.liftFn
-
+  def function[Req: ClassTag, Res: ClassTag](name: String)(fn: Req => Res)(implicit monad: Monad[M]): Req => M[Res] =
+    fn.liftFn
 }
 

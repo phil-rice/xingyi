@@ -28,12 +28,11 @@ abstract class LoggingKleisliWhenNoRealFailSpec[M[_] : Async, Fail](implicit m: 
   def setup[X](setupFn: (StringKleisli, StringKleisli, RememberLoggingAdapter) => X): X = {
     implicit val nanoTimeService = new MockTimeService
     implicit val loggingAdapter = new RememberLoggingAdapter
+    implicit val logReqAndResult = new AbstractLogRequestAndResult[Fail] {
+      override protected def format(messagePrefix: String, messagePostFix: String)(strings: String*) =
+        MessageFormat.format(messagePrefix + "." + messagePrefix + "{0}{1}{2}{3}{4}", strings: _*)
+    }
     val loggingKleisli = new LoggingKleisli[M, Fail] {
-      override implicit def monad: MonadCanFailWithException[M, Fail] = m
-      override protected val logReqAndResult = new AbstractLogRequestAndResult[Fail] {
-        override protected def format(messagePrefix: String, messagePostFix: String)(strings: String*) =
-          MessageFormat.format(messagePrefix + "." + messagePrefix + "{0}{1}{2}{3}{4}", strings: _*)
-      }
     }
     val raw = mock[String => M[String]]
     setupFn(loggingKleisli.logging[String, String]("someMessagePrefix")(raw), raw, loggingAdapter)

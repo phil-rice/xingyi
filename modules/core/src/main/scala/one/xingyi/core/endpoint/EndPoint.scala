@@ -13,15 +13,13 @@ import scala.language.higherKinds
 import scala.reflect.ClassTag
 
 trait EndpointKleisli[M[_]] {
-  protected implicit def monad: Monad[M]
 
   def endpoint[Req: ClassTag, Res: ClassTag](normalisedPath: String, matchesServiceRequest: MatchesServiceRequest, debug: Boolean = false)(raw: Req => M[Res])
-                                            (implicit fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Req, Res]): ServiceRequest => M[Option[ServiceResponse]] =
+                                            (implicit monad: Monad[M], fromServiceRequest: FromServiceRequest[M, Req], toServiceResponse: ToServiceResponse[Req, Res]): ServiceRequest => M[Option[ServiceResponse]] =
     EndPoint(normalisedPath, matchesServiceRequest, debug)(raw)
 }
 
 trait DisplayRecordedKleisli[M[_]] {
-  protected implicit def monad: Monad[M]
 
   def recordedCallToString(recordedCall: RecordedCall) =
     s"""Request: ${recordedCall.req.method}${recordedCall.req.path} ${recordedCall.req.headers.mkString(",")}
@@ -30,7 +28,7 @@ trait DisplayRecordedKleisli[M[_]] {
        |${recordedCall.res.headers.mkString(",")}
      """.stripMargin
 
-  def andDisplayRecorded[J](raw: ServiceRequest => M[Option[ServiceResponse]])(implicit jsonWriter: JsonWriter[J],
+  def andDisplayRecorded[J](raw: ServiceRequest => M[Option[ServiceResponse]])(implicit monad: Monad[M], jsonWriter: JsonWriter[J],
                                                                                recordedCalls: InheritableThreadLocal[Seq[RecordedCall]],
                                                                                toHtml: ToHtml[ResultWithRecordedCalls[ServiceResponse]]): ServiceRequest => M[Option[ServiceResponse]] = {
     req =>
@@ -44,17 +42,14 @@ trait DisplayRecordedKleisli[M[_]] {
 }
 
 
-trait ChainKleisli[M[_], Fail] {
-  protected implicit def monad: MonadCanFail[M, Fail]
+trait ChainKleisli[M[_]] {
 
-  protected def failer: Failer[Fail]
-
-  def chain(chains: (ServiceRequest => M[Option[ServiceResponse]])*): ServiceRequest => M[Option[ServiceResponse]] = { serviceRequest: ServiceRequest =>
+  def chain(chains: (ServiceRequest => M[Option[ServiceResponse]])*)(implicit monad: Monad[M]): ServiceRequest => M[Option[ServiceResponse]] = { serviceRequest: ServiceRequest =>
     chains.foldLeft[M[Option[ServiceResponse]]](monad.liftM(Option.empty[ServiceResponse])) {
       case (acc, v) => acc.flatMap[Option[ServiceResponse]] {
         _ match {
           case s if s.isDefined => monad.liftM(s)
-          case none => v match {
+          case None => v match {
             case pf: PartialFunction[ServiceRequest, _] =>
               if (pf.isDefinedAt(serviceRequest))
                 v(serviceRequest)
@@ -97,7 +92,7 @@ case class EndPoint[M[_] : Monad, Req, Res](normalisedPath: String, matchesServi
 }
 
 trait MatchesServiceRequest {
-//  def method: Method
+  //  def method: Method
 
   def apply(endpointName: String)(serviceRequest: ServiceRequest): Boolean
 }

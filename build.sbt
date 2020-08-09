@@ -19,7 +19,7 @@ val versions = new {
 }
 
 lazy val commonSettings = Seq(
-  version := "0.5.7-SNAPSHOTs",
+  version := "0.5.8",
   organization := "one.xingyi",
   publishMavenStyle := true,
   scalaVersion := versions.scala,
@@ -33,11 +33,11 @@ lazy val publishSettings = commonSettings ++ Seq(
   publishMavenStyle := true,
   publishArtifact in Test := false,
   licenses := Seq("BSD-style" -> url("http://www.opensource.org/licenses/bsd-license.php")),
-  homepage := Some(url("http://example.com")),
+  homepage := Some(url("https://github.com/phil-rice/xingyi.git")),
   scmInfo := Some(
     ScmInfo(
-      url("https://github.com/phil-rice/pact-stubber"),
-      "scm:git@github.com/phil-rice/pact-stubber.git"
+      url("https://github.com/phil-rice/xingyi"),
+      "scm:git@github.com:phil-rice/xingyi.git"
     )
   ),
   developers := List(
@@ -121,6 +121,9 @@ lazy val core = (project in file("modules/core")).
 
 
 val apachejdbc = (project in file("modules/apachejdbc")).
+  dependsOn(core % "test->test;compile->compile").
+  settings(apacheDbcp2Settings)
+val scientist = (project in file("modules/scientist")).
   dependsOn(core % "test->test;compile->compile").
   settings(apacheDbcp2Settings)
 
@@ -268,10 +271,10 @@ val xingYi = (project in file(".")).
     scriptBackend2,
     scriptBackend3,
     scriptWebsite,
+    scientist,
 //    scriptTest,
     sample,
     sampleServer,
     json4s, //
-    //    tagless ,//
     test
   )

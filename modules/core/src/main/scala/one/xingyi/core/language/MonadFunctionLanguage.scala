@@ -58,5 +58,18 @@ trait MonadFunctionLanguage extends MonadLanguage {
       }
     }
   }
+  implicit class Tuple2OfCurriedKleislisPimper[M[_], Req, Mid, Res1, Res2](tuple: (Req => Mid => M[Res1], Req => Mid => M[Res2]))(implicit monad: Monad[M]) {
+    def join[Res]: Req => Mid => M[(Res1, Res2)] = req => mid => join2(tuple._1(req)(mid), tuple._2(req)(mid))
+    def joinWithMid[Res](fn: (Mid, (Res1, Res2)) => Res): Req => Mid => M[Res] = req => mid => join(req)(mid).map(tuple => fn(mid, tuple))
+  }
+  implicit class Tuple3OfCurriedKleislisPimper[M[_] : Monad, Req, Mid, Res1, Res2, Res3](tuple: (Req => Mid => M[Res1], Req => Mid => M[Res2], Req => Mid => M[Res3])) {
+    def join[Res]: Req => Mid => M[(Res1, Res2, Res3)] = req => mid => join3(tuple._1(req)(mid), tuple._2(req)(mid), tuple._3(req)(mid))
+    def joinWithMid[Res](fn: (Mid, (Res1, Res2, Res3)) => Res): Req => Mid => M[Res] = req => mid => join(req)(mid).map(tuple => fn(mid, tuple))
+  }
+  implicit class Tuple4OfCurriedKleislisPimper[M[_] : Monad, Req, Mid, Res1, Res2, Res3, Res4](tuple: (Req => Mid => M[Res1], Req => Mid => M[Res2], Req => Mid => M[Res3], Req => Mid => M[Res4])) {
+    def join[Res]: Req => Mid => M[(Res1, Res2, Res3, Res4)] = req => mid => join4(tuple._1(req)(mid), tuple._2(req)(mid), tuple._3(req)(mid), tuple._4(req)(mid))
+    def joinWithMid[Res](fn: (Mid, (Res1, Res2, Res3, Res4)) => Res): Req => Mid => M[Res] = req => mid => join(req)(mid).map(tuple => fn(mid, tuple))
+  }
+
 
 }

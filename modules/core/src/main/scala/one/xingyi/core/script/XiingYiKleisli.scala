@@ -1,4 +1,5 @@
 package one.xingyi.core.script
+
 import one.xingyi.core.http._
 import one.xingyi.core.json.{IXingYiHeaderFor, IXingYiSharedOps, JsonParser, JsonParserLanguage}
 import one.xingyi.core.language.Language._
@@ -31,51 +32,22 @@ trait FromEntityDetailsResponse[Req] extends ((Req, ServerDomain) => EntityDetai
 
 
 trait XingyiKleisli[M[_], Fail] {
-  protected implicit def monad: MonadCanFailWithException[M, Fail] with MonadWithState[M]
-
-  protected implicit def failer: Failer[Fail]
-
-  protected implicit def detailedLoggingForSR: DetailedLogging[ServiceResponse]
 
 
-//  def withXingyi[Req: ClassTag : DetailedLogging,
-//  Dom <: one.xingyi.core.script.Domain : ClassTag : DetailedLogging : DomainMaker,
-//  Ops <: IXingYiSharedOps[Lens, Dom] : ClassTag,
-//  Res](serverDomain: ServerDomain, fn: (Req, Dom, Ops) => Res)(http: ServiceRequest => M[ServiceResponse])
-//      (implicit entityDetailsUrl: EntityDetailsUrl[Dom],
-//       fromServiceResponseForEntityDetails: FromServiceResponse[EntityDetailsResponse],
-//       fromEntityDetailsResponse: FromEntityDetailsResponse[Req],
-//       xingYiLoader: IXingYiLoader,
-//       interfaceHeaders: IXingYiHeaderFor[Ops]): Req => M[Res] = {
-//
-//    req =>
-//      RecordedCall.default.remove()
-//      for {
-//        serviceDiscoveryProducedServiceRequest <- http(ServiceRequest(Method("get"), entityDetailsUrl.url)).
-//          map(fromServiceResponseForEntityDetails andThen fromEntityDetailsResponse(req, serverDomain))
-//        withCorrectHeaders = serviceDiscoveryProducedServiceRequest.addHeader("accept", DomainDefn.accepts(interfaceHeaders()))
-//        codeBody <- http(withCorrectHeaders).map(ServiceResponse.serviceResponseToXingYiCodeAndBody)
-//        (code, body) = codeBody
-//        _ = println(s"code is $code")
-//        xingyi <- http(ServiceRequest(Method("get"), Uri(code))).map(sr => xingYiLoader(sr.body.s))
-//      } yield {
-//        println("About to parse")
-//        val dom = xingyi.parse[Dom](body)
-//        val ops = implicitly[ClassTag[Ops]].runtimeClass.getConstructor(classOf[IXingYi]).newInstance(xingyi).asInstanceOf[Ops]
-//        fn(req, dom, ops)
-//      }
-//  }
-//
   def editXingYi[Req: ClassTag : DetailedLogging,
-  Dom <: one.xingyi.core.script.Domain : ClassTag : DetailedLogging : DomainMaker,
-  Ops <: IXingYiSharedOps[Lens, Dom] : ClassTag,
-  Res](serverDomain: ServerDomain, fn: (Req, Ops) => Dom => Dom)(http: ServiceRequest => M[ServiceResponse])
-      (implicit entityDetailsUrl: EntityDetailsUrl[Dom],
-       fromServiceResponseForEntityDetails: FromServiceResponse[EntityDetailsResponse],
-       fromEntityDetailsResponse: FromEntityDetailsResponse[Req], fromEditXingYi: FromEditXingYi[Req, Dom, Res],
-       xingYiLoader: IXingYiLoader,
-       interfaceHeaders: IXingYiHeaderFor[Ops]
-      ): Req => M[Res] = {
+    Dom <: one.xingyi.core.script.Domain : ClassTag : DetailedLogging : DomainMaker,
+    Ops <: IXingYiSharedOps[Lens, Dom] : ClassTag,
+    Res](serverDomain: ServerDomain, fn: (Req, Ops) => Dom => Dom)(http: ServiceRequest => M[ServiceResponse])
+        (implicit
+         monad: MonadCanFailWithException[M, Fail] with MonadWithState[M],
+         failer: Failer[Fail],
+         detailedLoggingForSR: DetailedLogging[ServiceResponse],
+         entityDetailsUrl: EntityDetailsUrl[Dom],
+         fromServiceResponseForEntityDetails: FromServiceResponse[EntityDetailsResponse],
+         fromEntityDetailsResponse: FromEntityDetailsResponse[Req], fromEditXingYi: FromEditXingYi[Req, Dom, Res],
+         xingYiLoader: IXingYiLoader,
+         interfaceHeaders: IXingYiHeaderFor[Ops]
+        ): Req => M[Res] = {
     req =>
       RecordedCall.default.remove()
       for {
@@ -95,7 +67,10 @@ trait XingyiKleisli[M[_], Fail] {
   }
 
   def xingyify[Req: ClassTag : DetailedLogging, Res: ClassTag](serverDomain: ServerDomain)(http: ServiceRequest => M[ServiceResponse])
-                                                              (implicit entityDetailsUrl: EntityDetailsUrl[Req],
+                                                              (implicit monad: MonadCanFailWithException[M, Fail] with MonadWithState[M],
+                                                               failer: Failer[Fail],
+                                                               detailedLoggingForSR: DetailedLogging[ServiceResponse],
+                                                               entityDetailsUrl: EntityDetailsUrl[Req],
                                                                fromServiceResponseForEntityDetails: FromServiceResponse[EntityDetailsResponse],
                                                                fromEntityDetailsResponse: FromEntityDetailsResponse[Req],
                                                                categoriser: ResponseCategoriser[Req],

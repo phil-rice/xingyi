@@ -13,15 +13,13 @@ import one.xingyi.core.script._
 
 import scala.language.higherKinds
 
-class EntityEndpoints[M[_] : Async, Fail, J: JsonParser : JsonWriter, SharedE, DomainE: Links : EntityPrefix]
+class EntityEndpoints[M[_] : Async, Fail: Failer : EditEntityRequestFailer : IEntityStoreFailer, J: JsonParser : JsonWriter, SharedE, DomainE: Links : EntityPrefix]
 (implicit val monad: MonadCanFailWithException[M, Fail], val logReqAndResult: LogRequestAndResult[Fail],
- val failer: Failer[Fail],
- editEntityFailer: EditEntityRequestFailer[Fail],
- entityStoreFailer: IEntityStoreFailer[Fail],
  entityStore: IEntityStore[M, DomainE],
- hasId: HasId[DomainE, String], copyWithId: CopyWithNewId[DomainE, String], loggingAdapter: LoggingAdapter,
+ hasId: HasId[DomainE, String], copyWithId: CopyWithNewId[DomainE, String],
+ loggingAdapter: LoggingAdapter,
  domainList: DomainList[SharedE, DomainE],
- projection: ObjectProjection[SharedE, DomainE]) extends LiftFunctionKleisli[M] with ChainKleisli[M, Fail] with EndpointKleisli[M] with MicroserviceComposers[M] {
+ projection: ObjectProjection[SharedE, DomainE]) extends LiftFunctionKleisli[M] with ChainKleisli[M] with EndpointKleisli[M] with MicroserviceComposers[M] {
 
   import projection.proof
 

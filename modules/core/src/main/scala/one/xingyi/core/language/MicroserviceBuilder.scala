@@ -40,7 +40,7 @@ trait AndAfterKleisli[M[_]] {
 }
 
 trait MicroserviceBuilder[M[_], Fail] extends ObjectifyKleisli[M, Fail] with  HttpKlesili[M] with MetricsKleisli[M, Fail] with LoggingKleisli[M, Fail]
-  with ChainKleisli[M, Fail] with EndpointKleisli[M] with RetryKleisli[M, Fail] with ProfileKleisli[M, Fail] with CacheKleisli[M] with LiftFunctionKleisli[M]
+  with ChainKleisli[M] with EndpointKleisli[M] with RetryKleisli[M, Fail] with ProfileKleisli[M, Fail] with CacheKleisli[M] with LiftFunctionKleisli[M]
   with MergeKleisli[M] with EnrichKleisli[M] with AndAfterKleisli[M] {
 
   protected implicit def async: Async[M]

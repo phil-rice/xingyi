@@ -27,13 +27,12 @@ case class MustacheToHtml[J: JsonWriter, T](templateName: String, title: String)
 }
 
 class Website[M[_] : Async, Fail: Failer : LogRequestAndResult, J: JsonParser : JsonWriter]
-(implicit val monad: MonadCanFailWithException[M, Fail] with MonadWithState[M],
- val failer: Failer[Fail],
- val detailedLoggingForSR: DetailedLogging[ServiceResponse],
- val logReqAndResult: LogRequestAndResult[Fail],
+(implicit  monad: MonadCanFailWithException[M, Fail] with MonadWithState[M],
+  detailedLoggingForSR: DetailedLogging[ServiceResponse],
+  logReqAndResult: LogRequestAndResult[Fail],
  loggingAdapter: LoggingAdapter)
   extends LiftFunctionKleisli[M] with MicroserviceComposers[M] with EndpointKleisli[M] with HttpKlesili[M]
-    with XingyiKleisli[M, Fail] with RecordCallsKleisli[M, Fail] with DisplayRecordedKleisli[M] with ChainKleisli[M, Fail] {
+    with XingyiKleisli[M, Fail] with RecordCallsKleisli[M, Fail] with DisplayRecordedKleisli[M] with ChainKleisli[M] {
 
   implicit val ssl: Option[SSLContext] = None
   private val domain: Domain = Domain(Protocol("http"), HostName("127.0.0.1"), Port(9001))
