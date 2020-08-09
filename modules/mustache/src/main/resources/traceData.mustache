@@ -1,0 +1,22 @@
+{{#tree}}
+    <h1>Trace</h1>
+    {{#scenario}}
+        <h2>Adding scenario</h2>
+        <table>
+            <tr>
+                <th>Situation</th>
+                <th>Defined</th>
+            </tr>{{>scenario}}</table>
+    {{/scenario}}
+    {{#oldNode}}
+        <h2>Old Node</h2>
+        {{>node}}
+    {{/oldNode}}
+    {{#newNode}}
+        <h2>New Node</h2>
+        {{>node}}
+    {{/newNode}}
+
+    <h2>New Tree</h2>
+    {{>decisionTree}}
+{{/tree}}

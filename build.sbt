@@ -19,7 +19,7 @@ val versions = new {
 }
 
 lazy val commonSettings = Seq(
-  version := "0.5.6-SNAPSHOT",
+  version := "0.5.6",
   organization := "one.xingyi",
   publishMavenStyle := true,
   scalaVersion := versions.scala,
@@ -83,7 +83,9 @@ lazy val finatraSettings = publishSettings ++ Seq(
 //  libraryDependencies ++= Seq(jdbc, ehcache, ws, guice)
 //
 //)
-
+lazy val mustacheSettings = publishSettings ++ Seq(
+  libraryDependencies += "com.github.spullara.mustache.java" % "scala-extensions-2.11" % versions.mustache
+)
 lazy val pactSettings = publishSettings ++ Seq(
   libraryDependencies += "com.itv" %% "scalapact-scalatest" % versions.scalapact % "test",
   libraryDependencies += "junit" % "junit" % versions.junit % "test"
@@ -101,10 +103,6 @@ lazy val json4sSettings = publishSettings ++ Seq(
 lazy val apacheDbcp2Settings = publishSettings ++ Seq(
   libraryDependencies += "org.apache.commons" % "commons-dbcp2" % "2.3.0",
   libraryDependencies += "com.h2database" % "h2" % "1.4.197"
-)
-
-lazy val mustacheSettings = publishSettings ++ Seq(
-  libraryDependencies += "com.github.spullara.mustache.java" % "scala-extensions-2.11" % versions.mustache
 )
 
 lazy val scalatestSettings = publishSettings ++ Seq(
@@ -136,6 +134,7 @@ lazy val test = (project in file("modules/test")).
   dependsOn(core % "test->test;compile->compile").
   dependsOn(apachejdbc % "test->test;compile->compile").
   dependsOn(json4s % "test->test;compile->compile").
+  dependsOn(mustache % "test->test;compile->compile").
   aggregate(core)
 
 lazy val sampleServer = (project in file("examples/sampleServer")).
@@ -145,6 +144,10 @@ lazy val sampleServer = (project in file("examples/sampleServer")).
   //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   dependsOn(sample % "test->test;compile->compile").aggregate(sample).
   dependsOn(json4s)
+
+lazy val mustache = (project in file("modules/mustache")).
+  settings(mustacheSettings).
+  dependsOn(core % "test->test;compile->compile").aggregate(core)
 
 lazy val finatra = (project in file("modules/finatra")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
@@ -220,6 +223,7 @@ lazy val scriptBackend3 = (project in file("examples/scriptBackend3")).
 lazy val scriptWebsite = (project in file("examples/scriptWebsite")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(json4s % "test->test;compile->compile").
+  dependsOn(mustache % "test->test;compile->compile").
   dependsOn(scriptModel1 % "test->test;compile->compile").aggregate(scriptModel1).
   //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
   settings(publishArtifact := false).
@@ -258,6 +262,7 @@ val xingYi = (project in file(".")).
     apachejdbc, //
     core, //
     finatra, //
+    mustache,//
     finatraSample,
     scriptBackend1,
     scriptBackend2,

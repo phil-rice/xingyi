@@ -3,7 +3,6 @@ package one.xingyi.core.databaseService
 import java.sql.{CallableStatement, ResultSet}
 
 import javax.sql.DataSource
-import one.xingyi.core.databaseService._
 import one.xingyi.core.monad.IdentityMonad
 import org.mockito
 import org.mockito.{ArgumentCaptor, Mockito}

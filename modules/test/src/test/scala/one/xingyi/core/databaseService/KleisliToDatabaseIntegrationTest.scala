@@ -5,6 +5,7 @@ import one.xingyi.core.monad.{IdentityMonad, Monad}
 import org.apache.commons.dbcp2.BasicDataSource
 import org.scalatest.{FlatSpec, Matchers}
 
+import scala.language.{higherKinds, implicitConversions}
 import scala.util.Success
 
 class KleisliToDatabaseIntegrationTest extends FlatSpec with Matchers {

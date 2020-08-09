@@ -2,7 +2,7 @@
 package one.xingyi.scriptWebsite
 
 import javax.net.ssl.SSLContext
-import one.xingyi.cddmustache.{Mustache, NameToMustacheTemplate}
+import one.xingyi.mustache.{Mustache, NameToMustacheTemplate}
 import one.xingyi.core.client.HttpClient
 import one.xingyi.core.endpoint.{ChainKleisli, DisplayRecordedKleisli, EndpointKleisli, MatchesServiceRequest}
 import one.xingyi.core.http._

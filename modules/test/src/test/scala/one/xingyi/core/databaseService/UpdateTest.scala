@@ -1,7 +1,7 @@
 package one.xingyi.core.databaseService
 
 import one.xingyi.core.FunctionFixture
-import one.xingyi.core.databaseService.{DatabaseServiceImplicits, UpdateRequest, UpdateResponse}
+
 import one.xingyi.core.http._
 import one.xingyi.core.json._
 import one.xingyi.core.monad.IdentityMonad
