@@ -25,6 +25,16 @@ trait TwoServiceProcessor[M[_], Fail, Req, Res] {
   def postProcessResults: TwoServiceMerger[M, Req, Res]
 }
 
+trait TwoServiceKlesli[M[_], Fail] {
+
+  implicit class TwoServicePimper[Req, Res](tuple: (Req => M[Res], Req => M[Res]))
+                                           (implicit twoServiceProcessor: TwoServiceProcessor[M, Fail, Req, Res],
+                                            monad: MonadCanFail[M, Fail],
+                                            twoServiceFailer: TwoServiceFailer[M, Fail]) {
+    def asOneService: Req => M[Res] = TwoService(twoServiceProcessor, tuple._1, tuple._2)
+  }
+}
+
 case class TwoService[M[_], Fail, Req, Res](
                                              twoServiceProcessor: TwoServiceProcessor[M, Fail, Req, Res],
                                              service1: Req => M[Res],

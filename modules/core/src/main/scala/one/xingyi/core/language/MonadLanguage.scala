@@ -13,7 +13,8 @@ trait FunctorLanguage {
     def map[T1](fn: T => T1): M[T1] = functor.map(m, fn)
 
     def forEach(fn: T => Unit): M[T] = functor.map(m, (t: T) => {
-      fn(t); t
+      fn(t);
+      t
     })
 
     def |=>[T2](fn: T => T2): M[T2] = functor.map(m, fn)
@@ -43,6 +44,7 @@ trait MonadLanguage extends FunctorLanguage {
     def |=+>[T1](fn: T => T => M[T1]): M[T1] = monad.flatMap(m, { t: T => fn(t)(t) })
   }
 
+
   def join2WithReq[M[_], Req, Res1, Res2](firstService: Req => M[Res1], secondService: Req => M[Res2])(implicit monad: Monad[M]): Req => M[(Req, Res1, Res2)] = { req: Req => join3(monad.liftM(req), firstService(req), secondService(req)) }
 
   def join3WithReq[M[_], Req, Res1, Res2, Res3](firstService: Req => M[Res1], secondService: Req => M[Res2], thirdService: Req => M[Res3])(implicit monad: Monad[M]): Req => M[(Req, Res1, Res2, Res3)] = { req: Req => join4(monad.liftM(req), firstService(req), secondService(req), thirdService(req)) }
@@ -51,8 +53,17 @@ trait MonadLanguage extends FunctorLanguage {
 
   implicit class MonadWithExceptionPimper[M[_], T](m: M[T])(implicit monad: MonadWithException[M]) {
     def registerSideeffect(fn: Try[T] => Unit): M[T] = monad.flatMap[T, T](monad.recover(m, { e => fn(Failure(e)); monad.exception[T](e) }), { x => fn(Success(x)); monad.liftM(x) })
+    def toSuccessOrFail[S[_]](implicit s: SuccessOrFail[S]): M[S[T]] = monad.toSucessFail[S, T](m)
+  }
+  implicit class MonadWithExceptionSeqPimper[M[_], T](seq: Seq[M[T]])(implicit monad: MonadWithException[M]) {
+    def flattenToSuccessFail[S[_] : SuccessOrFail]: M[Seq[S[T]]] =
+      monad.flattenM(seq.map(monad.toSucessFail[S, T]))
+
   }
 
+  implicit class MonadOfSucessFailPimper[M[_], S[_], T](m: M[S[T]])(implicit monadWithException: MonadWithException[M], s: SuccessOrFail[S]) {
+    def fold[Res](error: Throwable => Res, fn: T => Res) = m.map(s.fold(_, error, fn))
+  }
   implicit class MonadCanFailWithExceptionPimper[M[_], T](m: M[T]) {
     def onComplete[Fail](fn: Try[Either[Fail, T]] => Unit)(implicit monad: MonadCanFailWithException[M, Fail]): M[T] = monad.foldWithExceptionAndFail[T, T](m,
       { e: Throwable => fn(Failure(e)); monad.exception(e) },

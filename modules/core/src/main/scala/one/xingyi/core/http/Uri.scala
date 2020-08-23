@@ -3,6 +3,7 @@ package one.xingyi.core.http
 
 import java.net.{URL, URLEncoder}
 
+import one.xingyi.core.client.HttpClient
 import one.xingyi.core.json._
 
 object Method {
@@ -73,6 +74,7 @@ trait UriFragment {
 }
 
 case class ServiceName(name: String) extends AnyVal
+
 
 case class ProtocolHostAndPort(protocol: Protocol, hostName: HostName, port: Port)
 

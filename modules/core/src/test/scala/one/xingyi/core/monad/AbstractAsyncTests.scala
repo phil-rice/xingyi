@@ -129,9 +129,9 @@ trait AbstractMonadTests[A[_]] extends AbstractFunctorTests[A] with MonadLanguag
 
 }
 
-abstract class AbstractMonadWithExceptionTests[A[_]](implicit m: MonadWithException[A]) extends AbstractMonadTests[A] with AnyLanguage {
-  def liftTryA[T](t: Try[T]): A[T] = t.liftTry
-  def liftA[T](t: T): A[T] = liftTryA(Success(t))
+abstract class AbstractMonadWithExceptionTests[M[_]](implicit m: MonadWithException[M]) extends AbstractMonadTests[M] with AnyLanguage {
+  def liftTryA[T](t: Try[T]): M[T] = t.liftTry
+  def liftA[T](t: T): M[T] = liftTryA(Success(t))
 
 
   it should "execute map when an exception occurs in the functor" in {
@@ -143,6 +143,21 @@ abstract class AbstractMonadWithExceptionTests[A[_]](implicit m: MonadWithExcept
     val runtimeException = new RuntimeException
     val a = functor.map[String, String](liftTryA(Success("1")), { x: String => throw runtimeException })
     checkHasException[RuntimeException](a) shouldBe runtimeException
+  }
+
+
+  it should "execute map when an exception happens in the language" in {
+    val runtimeException = new RuntimeException
+    val a: M[String] = liftTryA(Success("1").map { x: String => throw runtimeException })
+    checkHasException[RuntimeException](a) shouldBe runtimeException
+
+  }
+  it should "have a toSucessFail which works when no exceptions" in {
+    getT(m.toSucessFail[Try, Int](1.liftM[M])) shouldBe Success(1)
+  }
+  it should "have a toSucessFail which works when exception" in {
+    val runtimeException = new RuntimeException
+    getT(m.toSucessFail[Try, Int](liftTryA(Failure(runtimeException)))) shouldBe Failure(runtimeException)
   }
 
   it should "execute flatMap when a exception in monad" in {

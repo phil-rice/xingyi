@@ -9,6 +9,7 @@ import scala.language.higherKinds
 import scala.util.{Failure, Success, Try}
 
 
+object AsyncLanguage extends AsyncLanguage
 trait AsyncLanguage {
 
   def liftTry[M[_], T](tryT: Try[T])(implicit monad: MonadWithException[M]): M[T] = tryT match {
@@ -16,6 +17,10 @@ trait AsyncLanguage {
     case Failure(t) => monad.exception(t)
   }
 
+  implicit class AsyncFunctionPimper[M[_], From, To](fn: From => M[To])(implicit async: Async[M]) {
+    def turnSynchronous: From => To =
+      from => async.await(fn(from))
+  }
 
   implicit class AsyncPimper[M[_], T](m: M[T])(implicit async: Async[M]) {
     def await(): T = async.await(m)
@@ -26,4 +31,4 @@ trait AsyncLanguage {
 
 }
 
-object Language extends AnyLanguage with FunctionLanguage with MonadFunctionLanguage with AsyncLanguage with JsonParserLanguage with JsonWriterLanguage
+object Language extends AnyLanguage with FunctionLanguage with MonadFunctionLanguage with AsyncLanguage with JsonParserLanguage with JsonWriterLanguage with SuccessOrFailLanguage

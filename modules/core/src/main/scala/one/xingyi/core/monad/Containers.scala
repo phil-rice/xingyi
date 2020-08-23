@@ -5,6 +5,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.concurrent.TrieMap
 import scala.language.higherKinds
+import scala.util.{Failure, Success, Try}
 
 trait Liftable[M[_]] {
   def liftM[T](t: T): M[T]
@@ -16,13 +17,38 @@ trait Functor[M[_]] extends Liftable[M] {
 
 trait Monad[M[_]] extends Functor[M] {
   def flatMap[T, T1](m: M[T], fn: T => M[T1]): M[T1]
+  //  def flattenIterator[T](ms: Iterator[M[T]]): M[Iterator[T]] =
+  //    ms.foldLeft(liftM(Seq[T]())) { (mAcc: M[Seq[T]], mV: M[T]) => flatMap(mAcc, (acc: Seq[T]) => flatMap(mV, (v: T) => liftM(acc :+ v))) }
+
   def flattenM[T](ms: Seq[M[T]]): M[Seq[T]] = ms.foldLeft(liftM(Seq[T]())) { (mAcc: M[Seq[T]], mV: M[T]) => flatMap(mAcc, (acc: Seq[T]) => flatMap(mV, (v: T) => liftM(acc :+ v))) }
   def flattenListM[T](ms: List[M[T]]): M[List[T]] = ms.foldLeft(liftM(List[T]())) { (mAcc: M[List[T]], mV: M[T]) => flatMap(mAcc, (acc: List[T]) => flatMap(mV, (v: T) => liftM(acc :+ v))) }
 }
 
+trait SuccessOrFail[S[_]] extends Functor[S] {
+  def exception[T](t: Throwable): S[T]
+  def fold[T, Res](t: S[T], errorFn: Throwable => Res, fn: T => Res): Res
+  def get[T](t: S[T], errorFn: Throwable => T): T = fold(t, errorFn, (r: T) => r)
+}
+
+object SuccessOrFail {
+  implicit object SuccessOrFailForTry extends SuccessOrFail[Try] {
+    override def liftM[T](t: T): Try[T] = Success(t)
+    override def exception[T](t: Throwable): Try[T] = Failure(t)
+    override def map[T, T1](m: Try[T], fn: T => T1): Try[T1] = m.map(fn)
+    override def fold[T, Res](t: Try[T], errorFn: Throwable => Res, fn: T => Res): Res = t.fold(errorFn, fn)
+    override def get[T](t: Try[T], errorFn: Throwable => T): T = t.get
+  }
+}
+
+
+
+
 trait MonadWithException[M[_]] extends Monad[M] {
   def exception[T](t: Throwable): M[T]
   def recover[T](m: M[T], fn: Throwable => M[T]): M[T]
+  def toSucessFail[S[_], T](m: M[T])(implicit successOrFail: SuccessOrFail[S]): M[S[T]] =
+    recover(map(m, successOrFail.liftM[T]), t => liftM(successOrFail.exception[T](t)))
+  def flattenToSuccessFail[S[_] : SuccessOrFail, T](i: Seq[M[T]]): M[Seq[S[T]]] = flattenM(i.map(toSucessFail[S, T]))
 }
 
 trait LiftFailure[M[_], Fail] {
@@ -74,11 +100,11 @@ trait SimpleMonadWithState[M[_]] extends MonadWithState[M] {
     map[T, T1](m, t => fn(get(localVariable)))
 
   def mapWith[V, T, T1](m: M[T], localVariable: LocalVariable[V], fn: (T, Seq[V]) => T1): M[T1] =
-    map[T,T1](m, t => fn(t, get(localVariable)))
+    map[T, T1](m, t => fn(t, get(localVariable)))
   def putInto[V, T](localVariable: LocalVariable[V], v: V)(m: M[T]): M[T] =
     map[T, T](m, { t => localVariables.set(localVariables.get + (localVariable -> (get(localVariable) :+ v))); t })
 
-  override def clear: M[Unit] = {localVariables.set(Map()); liftM(())}
+  override def clear: M[Unit] = {localVariables.set(Map()); liftM(()) }
 }
 
 object LocalVariable {

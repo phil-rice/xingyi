@@ -13,17 +13,18 @@ import scala.concurrent.Future
 import scala.language.higherKinds
 import scala.util.{Failure, Success}
 
-trait FunctionFixture extends Matchers{
+trait FunctionFixture extends Matchers {
   def fn[X, Y](expected: X, y: => Y) = { x: X => x shouldBe expected; y }
   def fn2[X, Y, Z](expectedX: X, expectedY: Y, z: => Z) = { (x: X, y: Y) => x shouldBe expectedX; y shouldBe expectedY; z }
   def fn2Curried[X, Y, Z](expectedX: X, expectedY: Y, z: => Z) = { x: X => y: Y => x shouldBe expectedX; y shouldBe expectedY; println(s"fn2 $expectedX, $expectedY, $z"); z }
   def sideeffect[X](atomicReference: AtomicReference[X]): X => Unit = atomicReference.set _
-    def k1[M[_] : Liftable, F, T](f: F, t: T): F => M[T] = {
-      from => {
-        from shouldBe f
-        t.liftM[M]
-      }
+
+  def k1[M[_] : Liftable, F, T](f: F, t: T): F => M[T] = {
+    from => {
+      from shouldBe f
+      t.liftM[M]
     }
+  }
 
 }
 

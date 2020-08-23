@@ -10,16 +10,8 @@ import one.xingyi.core.simpleServer.CheapServer
 
 import scala.language.{higherKinds, postfixOps}
 
-trait DatabaseRequest {
-  def name: String
-  def map: Map[String, String]
-}
 
-object DatabaseRequest {
-  def needException(msg: String) = new RuntimeException(s"body of request must include a Json object. $msg")
-}
-
-object StoredProcedureApi {
+object DatabaseApi {
 
   implicit val toJsonLibForMapStringString: ToJsonLib[Map[String, String]] = m => JsonObject(m.map { case (k, v) => k -> JsonString(v) }.toList: _*)
 
@@ -28,19 +20,18 @@ object StoredProcedureApi {
                                                                      queryKleisli: SPKleisli[M, QueryRequest, QueryResponse],
                                                                      storedProcKleisli: SPKleisli[M, StoredProcedureRequest, StoredProcedureResponse],
                                                                      stopAtEnd: Boolean = true, print: Boolean = true)
-                                                                    (block: (StoredProcedureApi[M, Fail, J]) => Unit)
+                                                                    (block: => Unit)
                                                                     (implicit monad: MonadCanFailWithException[M, Fail]): Unit = {
     implicit val loggingAdapter: LoggingAdapter = if (print) PrintlnLoggingAdapter else NullLoggingAdapter
-    val api: StoredProcedureApi[M, Fail, J] = new StoredProcedureApi[M, Fail, J](updateKleisli, queryKleisli, storedProcKleisli)
-    CheapServer(port, api.endpoints, stopAtEnd)(block(api))
+    CheapServer(port, new DatabaseApi(updateKleisli, queryKleisli, storedProcKleisli).endpoints, stopAtEnd)(block)
   }
 }
 
 
-class StoredProcedureApi[M[_] : Async, Fail: Failer, J: JsonParser : JsonWriter](updateKleisli: SPKleisli[M, UpdateRequest, UpdateResponse],
-                                                                                 queryKleisli: SPKleisli[M, QueryRequest, QueryResponse],
-                                                                                 storedProcKleisli: SPKleisli[M, StoredProcedureRequest, StoredProcedureResponse])
-                                                                                (implicit monad: MonadCanFailWithException[M, Fail], loggingAdapter: LoggingAdapter)
+class DatabaseApi[M[_] : Async, Fail: Failer, J: JsonParser : JsonWriter](updateKleisli: SPKleisli[M, UpdateRequest, UpdateResponse],
+                                                                          queryKleisli: SPKleisli[M, QueryRequest, QueryResponse],
+                                                                          storedProcKleisli: SPKleisli[M, StoredProcedureRequest, StoredProcedureResponse])
+                                                                         (implicit monad: MonadCanFailWithException[M, Fail], loggingAdapter: LoggingAdapter)
   extends CheapApi[M, Fail, J] with DatabaseServiceImplicits {
   val updateEndPoint = updateKleisli |+| endpoint[UpdateRequest, UpdateResponse]("/update", MatchesServiceRequest.idAtEnd(Post))
   val queryEndPoint = queryKleisli |+| endpoint[QueryRequest, QueryResponse]("/query", MatchesServiceRequest.idAtEnd(Post))

@@ -61,3 +61,4 @@ object Monoid {
     override def add(one: T, two: T): T = implicitly[SemiGroup[T]].add(one, two)
   }
 }
+

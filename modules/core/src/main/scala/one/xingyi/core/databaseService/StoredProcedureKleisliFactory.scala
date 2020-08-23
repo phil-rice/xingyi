@@ -11,6 +11,12 @@ import scala.language.higherKinds
 
 case class SqlAndParams(sql: String, params: Seq[String], fakeResults: Option[QueryResults] = None)
 
+object SqlAndParams {
+  def insertStatement(table: String, columns: String*): SqlAndParams =
+    SqlAndParams(s"insert into $table (${columns.mkString(",")}) values (${columns.map(_ => "?")})", columns)
+
+}
+
 //The Results in this signature are 'fake results'
 trait StoredProcedureKleisliFactory[M[_], Req <: DatabaseRequest, Res] extends ((DataSource, Map[String, SqlAndParams], ((CallableStatement, Option[QueryResults]) => Res)) => Req => M[Res])
 

@@ -85,7 +85,14 @@ trait AnyLanguage {
     def foldLeftWithOptionsEatingExceptions[Acc](initial: Acc)(foldFn: (Acc, X) => Option[Acc]) =
       foldLeftWithOptions(initial) { (acc, v) => try (foldFn(acc, v)) catch {case e: Exception => None} }
     def +(opt: Option[X]): List[X] = opt.fold(s)(_ :: s)
-
   }
+//  implicit class IteratorOps[T](it: Iterator[T]) {
+//    def split(batchSize: Int): Iterator[Iterator[T]] = new Iterator[Iterator[T]] {
+//      val lock = new Object()
+//      override def hasNext: Boolean = lock.synchronized(it.hasNext)
+//      override def next(): Iterator[T] = lock.synchronized(it.take(batchSize))
+//    }
+//  }
+
 
 }

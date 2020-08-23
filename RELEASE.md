@@ -6,3 +6,4 @@
 0.5.4 databaseService package added to core: allows easy making of a 'database wrapping service'
 0.5.7 Simplifying the usage of the Kleisli traits
 0.5.8 Some helpers for merging curried kleislis
+0.5.9 Database API 

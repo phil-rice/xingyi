@@ -43,6 +43,14 @@ trait MonadFunctionLanguage extends MonadLanguage {
   }
 
   implicit class MonadWithExceptionFunctionPimper[M[_], Req, Res](fn: Req => M[Res])(implicit monad: MonadWithException[M]) {
+    def recover(eFn: Req => Exception => Res): Req => M[Res] = {
+      req =>
+        monad.recover(fn(req), _ match {
+          case e: Exception => monad.liftM(eFn(req)(e))
+          case t => monad.exception(t)
+        })
+    }
+
     def onEnterAndExitM[Mid](mid: Req => Mid, after: Mid => Try[Res] => Unit): Req => M[Res] = { req: Req =>
       withValue(mid(req))(m => Exceptions(fn(req)).registerSideeffect(after(m)))
     }

@@ -10,7 +10,7 @@ class OrmSpec extends UtilsSpec with EntityFixture {
   val esSimple = EntityStrategy(m => m.tableName + "_s")
   val es2 = es.map(_ + "_done")
 
-  it should "have a map method that produces a new streategy that is the composition of the two" in {
+  it should "have a map method that produces a new strategy that is the composition of the two" in {
     es2.mainEntityFn(mainEntity) shouldBe "person_m_done"
     es2.oneToManyEntityFn(mainEntity)(phoneEntity) shouldBe "person/phone_done"
   }
