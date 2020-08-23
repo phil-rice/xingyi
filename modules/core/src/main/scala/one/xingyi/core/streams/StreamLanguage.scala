@@ -4,6 +4,8 @@ import one.xingyi.core.functions.Monoid
 import one.xingyi.core.language.Language.MonadWithExceptionSeqPimper
 import one.xingyi.core.monad.{Async, MonadWithException, SuccessOrFail}
 
+import scala.language.higherKinds
+
 object StreamLanguage extends StreamLanguage
 trait StreamLanguage {
   implicit class StreamPimper[In](s: Stream[In]) {

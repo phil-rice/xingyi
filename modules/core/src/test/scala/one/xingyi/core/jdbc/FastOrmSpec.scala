@@ -9,6 +9,7 @@ import one.xingyi.core.orm._
 
 import scala.language.higherKinds
 import one.xingyi.core.map.Maps._
+
 trait OrmFixture {
   val address = OneToManyEntity("Address", "A", IntField("aid"), IntField("personid"), List(StringField("add")), List())
   val phone = OneToManyEntity("Phone", "Ph", IntField("aid"), IntField("personid"), List(StringField("phoneNo")), List())
@@ -30,7 +31,8 @@ trait FastOrmFixture extends OrmFixture {
 
 
   import Jdbc._
-  def setupPerson[M[_] : ClosableM](ds: DataSource)(implicit jdbcOps: JdbcOps[DataSource]) = {
+
+  def setupPerson[M[_] : ClosableM](ds: DataSource)(block: => Unit)(implicit jdbcOps: JdbcOps[DataSource]): Unit = {
     import jdbcOps._
     def execute = { s: String => executeSql(s) apply ds }
     def query = { s: String => getList(s) { rs: ResultSet => (1 to rs.getMetaData.getColumnCount).toList.map(rs.getObject) } apply ds }
@@ -44,8 +46,12 @@ trait FastOrmFixture extends OrmFixture {
     executeSql(s"""insert into  Person (pid, name ) values (3, 'Jill');""") apply ds
     executeSql(s"""insert into  Address (aid, personid, add ) values (3, 3, 'Jills first address');""") apply ds
     OrmStrategies.dropTempTables.map(execute).walk(main)
+    try {
+      block
+    } finally {
+      OrmStrategies.dropTables.map(execute).walk(main)
+    }
   }
-
 }
 
 abstract class AbstractFastOrmSpec[M[_] : ClosableM, DS <: DataSource] extends DatabaseSourceFixture[DS] with FastOrmFixture with Jdbc {
@@ -96,11 +102,23 @@ abstract class AbstractFastOrmSpec[M[_] : ClosableM, DS <: DataSource] extends D
 
   behavior of classOf[FastReaderImpl[Person]].getSimpleName
 
-  it should "allow the items to be read" ignore {
+  it should "allow the items to be read through the FastReader" in {
     val reader: FastReaderImpl[Person] = FastReader(OrmBatchConfig(ds, 2))
-    reader(main)(0) shouldBe List(Person("Phil", List(Address("Phils first address"), Address("Phils second address")), List()), Person("Bob", List(), List()))
-    reader(main)(1) shouldBe List(Person("Jill", List(Address("Jills first address")), List()))
-    reader(main)(2) shouldBe List()
+    setupPerson(ds) {
+      reader(main)(0) shouldBe List(Person("Phil", List(Address("Phils first address"), Address("Phils second address")), List()), Person("Bob", List(), List()))
+      reader(main)(1) shouldBe List(Person("Jill", List(Address("Jills first address")), List()))
+      reader(main)(2) shouldBe List()
+    }
+  }
+
+  it should "allow the items to be read as a stream" in {
+    val streamEntity: StreamEntity[Person] = StreamEntity(OrmBatchConfig(ds, 2))
+    setupPerson(ds) {
+      streamEntity(main).toList shouldBe
+        List(Person("Phil", List(Address("Phils first address"), Address("Phils second address")), List()),
+          Person("Bob", List(), List()),
+          Person("Jill", List(Address("Jills first address")), List()))
+    }
   }
 }
 

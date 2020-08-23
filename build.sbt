@@ -3,8 +3,8 @@ import sbtpgp._
 
 
 val versions = new {
-//  val scala = "2.13.2"
-    val scala = "2.12.11"
+  //  val scala = "2.13.2"
+  val scala = "2.12.11"
   val finatra = "20.4.1"
   val scalatest = "3.0.8"
   val seleniumTestSelenium = "1.0.0-M2"
@@ -112,12 +112,12 @@ lazy val scalatestSettings = publishSettings ++ Seq(
 lazy val seleniumSettings = publishSettings ++ Seq(
   libraryDependencies += "org.seleniumhq.selenium" % "selenium-java" % versions.selenium % "test",
   libraryDependencies += "org.scalatestplus" %% "scalatestplus-selenium" % versions.seleniumTestSelenium % "test",
-  libraryDependencies += "org.seleniumhq.selenium" %  "selenium-chrome-driver" % versions.selenium % "test",
+  libraryDependencies += "org.seleniumhq.selenium" % "selenium-chrome-driver" % versions.selenium % "test",
   libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.3.0" % "test"
 )
 lazy val core = (project in file("modules/core")).
   settings(publishSettings: _*).
-  settings( Test / publishArtifact := true)
+  settings(Test / publishArtifact := true)
 
 
 val apachejdbc = (project in file("modules/apachejdbc")).
@@ -258,6 +258,11 @@ lazy val finatraSample = (project in file("examples/finatraSample")).
 //    cep,
 //  )
 
+lazy val scripts = (project in file("module/scripts")).
+  settings(publishSettings: _*)
+
+
+
 val xingYi = (project in file(".")).
   settings(publishSettings).
   settings(publishArtifact := false).
@@ -265,14 +270,15 @@ val xingYi = (project in file(".")).
     apachejdbc, //
     core, //
     finatra, //
-    mustache,//
+    mustache, //
     finatraSample,
     scriptBackend1,
     scriptBackend2,
     scriptBackend3,
     scriptWebsite,
     scientist,
-//    scriptTest,
+    scripts,
+    //    scriptTest,
     sample,
     sampleServer,
     json4s, //

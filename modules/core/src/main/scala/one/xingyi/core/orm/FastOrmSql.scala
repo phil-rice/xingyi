@@ -20,7 +20,7 @@ object EntityStrategy {
   def apply[X](ormEntityFn: OrmEntity => X): EntityStrategy[X] = EntityStrategy(ormEntityFn, _ => ormEntityFn)
 }
 case class EntityStrategy[X](mainEntityFn: OrmEntity => X, oneToManyEntityFn: OrmEntity => OneToManyEntity => X) {
-  def map[T](fn: X => T) = EntityStrategy(mainEntityFn andThen fn, p => c => fn(oneToManyEntityFn(p)(c)))
+  def map[T](fn: X => T): EntityStrategy[T] = EntityStrategy(mainEntityFn andThen fn, p => c => fn(oneToManyEntityFn(p)(c)))
   def childEntity(parentEntity: OrmEntity): ChildEntity => X = {case e: OneToManyEntity => oneToManyEntityFn(parentEntity)(e)}
   def walk(e: MainEntity): List[(OrmEntity, X)] = (e, mainEntityFn(e)) :: e.children.flatMap(walkChildren(e))
   private def walkChildren(parent: OrmEntity)(child: ChildEntity): List[(OrmEntity, X)] = (child, childEntity(parent)(child)) :: child.children.flatMap(walkChildren(child))

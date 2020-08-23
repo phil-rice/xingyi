@@ -7,10 +7,29 @@ import javax.sql.DataSource
 import one.xingyi.core.closable.ClosableM
 import one.xingyi.core.jdbc.JdbcOps
 
+import scala.annotation.tailrec
 import scala.language.higherKinds
-trait FastReader[T] extends (MainEntity => Int => List[T])
+
+trait StreamEntity[T] extends (MainEntity => Stream[T])
+object StreamEntity {
+  def apply[T](batchConfig: OrmBatchConfig)(implicit ormMaker: OrmMaker[T], fastReaderOps: FastReaderDal, sqlOps: FastOrmSql) =
+    new SimpleStreamEntity[T](FastReader(batchConfig))
+}
+
+class SimpleStreamEntity[T](fastReader: FastReader[T])(implicit ormMaker: OrmMaker[T], fastReaderOps: FastReaderDal, sqlOps: FastOrmSql) extends StreamEntity[T] {
+  override def apply(mainEntity: MainEntity): Stream[T] = stream(mainEntity, 0)
+
+  private def stream(mainEntity: MainEntity, n: Int): Stream[T] = {
+    val subStream: Stream[T] = fastReader(mainEntity)(n)
+    if (subStream.isEmpty) subStream else subStream #::: stream(mainEntity, n + 1)
+  }
+
+}
+
+trait FastReader[T] extends (MainEntity => Int => Stream[T])
 object FastReader {
-  def apply[T](batchConfig: OrmBatchConfig)(implicit ormMaker: OrmMaker[T], fastReaderOps: FastReaderDal, sqlOps: FastOrmSql) = new FastReaderImpl[T](batchConfig)
+  def apply[T](batchConfig: OrmBatchConfig)(implicit ormMaker: OrmMaker[T], fastReaderOps: FastReaderDal, sqlOps: FastOrmSql) =
+    new FastReaderImpl[T](batchConfig)
 }
 
 trait FastReaderDal extends {
@@ -20,6 +39,7 @@ trait FastReaderDal extends {
 object FastReaderDal {
   implicit def defaultFastReaderOps[M[_] : ClosableM](implicit jdbcOps: JdbcOps[Connection]) = new FastReaderDal {
     import jdbcOps._
+
     def execute(c: Connection): String => Unit = { s: String => executeSql(s) apply c }
     def query(c: Connection): String => List[List[AnyRef]] = { s: String => getList(s) { rs: ResultSet => (1 to rs.getMetaData.getColumnCount).toList.map(rs.getObject) } apply c }
   }
@@ -34,7 +54,8 @@ case class BatchDetails(batchSize: Int, index: Int) {
 }
 class FastReaderImpl[T](batchConfig: OrmBatchConfig)(implicit ormMaker: OrmMaker[T], fastReaderOps: FastReaderDal, sqlOps: FastOrmSql) extends FastReader[T] {
   import fastReaderOps._
-  override def apply(main: MainEntity): Int => List[T] = { n: Int =>
+
+  override def apply(main: MainEntity): Int => Stream[T] = { n: Int =>
     val connection = batchConfig.dataSource.getConnection
     try {
       OrmStrategies.dropTempTables.map(execute(connection)).walk(main)

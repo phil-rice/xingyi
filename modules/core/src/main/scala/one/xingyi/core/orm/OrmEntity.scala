@@ -3,11 +3,11 @@ package one.xingyi.core.orm
 
 import one.xingyi.core.map.Maps._
 
-trait OrmMaker[T] extends (Map[OrmEntity, List[List[AnyRef]]] => List[T])
+trait OrmMaker[T] extends (Map[OrmEntity, List[List[AnyRef]]] => Stream[T])
 
 object OrmMaker {
   implicit class ListofVOps[K, V](list: List[V]) {
-    def mapPf[T](pf: PartialFunction[V, T]) = list.map {pf orElse { case x => throw new RuntimeException(s"Unexpected issue. Cannot match $x") }}
+    def mapPf[T](pf: PartialFunction[V, T]) = list.toStream.map {pf orElse { case x => throw new RuntimeException(s"Unexpected issue. Cannot match $x") }}
   }
   def toMap[X](list: List[List[AnyRef]])(fn: List[AnyRef] => X): Map[Any, List[X]] =
     list.foldLeft[Map[Any, List[X]]](Map()) { case (acc, key :: _ :: values) => acc addToList key -> fn(values); case x => throw new RuntimeException(s"Unexpected issue in fold. Cannot match $x") }
