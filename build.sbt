@@ -258,9 +258,9 @@ lazy val finatraSample = (project in file("examples/finatraSample")).
 //    cep,
 //  )
 
-lazy val scripts = (project in file("module/scripts")).
-  settings(publishSettings: _*)
-
+lazy val scripts = (project in file("modules/scripts")).
+  settings(publishSettings: _*).
+  dependsOn(core % "test->test;compile->compile").aggregate(core)
 
 
 val xingYi = (project in file(".")).
