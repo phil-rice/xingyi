@@ -6,22 +6,26 @@ import one.xingyi.core.language.AnyLanguage._
 /** This applies the sql defined in FastOrmSql to the entities in a composite entity  */
 object OrmStrategies extends OrmStrategies
 trait OrmStrategies {
-  def dropTables(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] = EntityStrategy(fastOrmSql.dropTable, _ => fastOrmSql.dropTable)
-  def createTables(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] = EntityStrategy(fastOrmSql.createTable, _ => fastOrmSql.createOneToManyTable)
+  def dropTables(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] = EntityStrategy(fastOrmSql.dropTable, _ => fastOrmSql.dropTable, _ => fastOrmSql.dropTable)
+  def createTables(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] = EntityStrategy(fastOrmSql.createTable, _ => fastOrmSql.createOneToManyTable, _ => fastOrmSql.createTable)
 
-  def dropTempTables(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] = EntityStrategy(fastOrmSql.dropTempTable, _ => fastOrmSql.dropTempTable)
-  def createTempTables(batchDetails: BatchDetails)(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] = EntityStrategy(fastOrmSql.createMainTempTable(batchDetails), fastOrmSql.createChildTempTable)
-  def drainTempTables(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] = EntityStrategy(fastOrmSql.drainSql, _ => fastOrmSql.drainSql)
+  def dropTempTables(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] = EntityStrategy(fastOrmSql.dropTempTable, _ => fastOrmSql.dropTempTable, _ => fastOrmSql.dropTempTable)
+  def createTempTables(batchDetails: BatchDetails)(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] =
+    EntityStrategy(fastOrmSql.createMainTempTable(batchDetails), fastOrmSql.createOneToManyTempTable, fastOrmSql.createManyToOneTempTable)
+  def drainTempTables(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] = EntityStrategy(fastOrmSql.drainSql, _ => fastOrmSql.drainSql, _ => fastOrmSql.drainSql)
 
-  def insertData(implicit fastOrmSql: FastOrmSql) = EntityStrategy(fastOrmSql.insertSql, _ => fastOrmSql.insertSql)
+  def insertData(implicit fastOrmSql: FastOrmSql) = EntityStrategy(fastOrmSql.insertSql, _ => fastOrmSql.insertSql, _ => fastOrmSql.insertSql)
 }
 
 object EntityStrategy {
-  def apply[X](ormEntityFn: OrmEntity => X): EntityStrategy[X] = EntityStrategy(ormEntityFn, _ => ormEntityFn)
+  def apply[X](ormEntityFn: OrmEntity => X): EntityStrategy[X] = EntityStrategy(ormEntityFn, _ => ormEntityFn, _ => ormEntityFn)
 }
-case class EntityStrategy[X](mainEntityFn: OrmEntity => X, oneToManyEntityFn: OrmEntity => OneToManyEntity => X) {
-  def map[T](fn: X => T): EntityStrategy[T] = EntityStrategy(mainEntityFn andThen fn, p => c => fn(oneToManyEntityFn(p)(c)))
-  def childEntity(parentEntity: OrmEntity): ChildEntity => X = {case e: OneToManyEntity => oneToManyEntityFn(parentEntity)(e)}
+case class EntityStrategy[X](mainEntityFn: OrmEntity => X, oneToManyEntityFn: OrmEntity => OneToManyEntity => X, manyToOneEntityFn: OrmEntity => ManyToOneEntity => X) {
+  def map[T](fn: X => T): EntityStrategy[T] = EntityStrategy(mainEntityFn andThen fn, p => c => fn(oneToManyEntityFn(p)(c)), p => c => fn(manyToOneEntityFn(p)(c)))
+  def childEntity(parentEntity: OrmEntity): ChildEntity => X = {
+    case e: OneToManyEntity => oneToManyEntityFn(parentEntity)(e)
+    case e: ManyToOneEntity => manyToOneEntityFn(parentEntity)(e)
+  }
   def walk(e: MainEntity): List[(OrmEntity, X)] = (e, mainEntityFn(e)) :: e.children.flatMap(walkChildren(e))
   private def walkChildren(parent: OrmEntity)(child: ChildEntity): List[(OrmEntity, X)] = (child, childEntity(parent)(child)) :: child.children.flatMap(walkChildren(child))
 }
@@ -40,14 +44,19 @@ trait FastOrmSql {
   def createMainTempTable(batchDetails: BatchDetails)(e: OrmEntity): String =
     s"create temporary table ${tempTableName(e)} as select ${selectFields(e)} from ${e.tableName} ${e.alias} limit ${batchDetails.batchSize} offset ${batchDetails.offset}"
 
-  def createChildTempTable(parent: OrmEntity)(e: OneToManyEntity): String =
+  def createOneToManyTempTable(parent: OrmEntity)(e: OneToManyEntity): String =
     s"create temporary table temp_${e.tableName} as select ${e.alias}.${e.parentId.name}, ${selectFields(e)} " +
-    s"from ${tempTableName(parent)} ${parent.alias},${e.tableName} ${e.alias} " +
-    s"where ${parent.alias}.${parent.primaryKeyField.name} = ${e.alias}.${e.parentId.name}"
+      s"from ${tempTableName(parent)} ${parent.alias},${e.tableName} ${e.alias} " +
+      s"where ${parent.alias}.${parent.primaryKeyField.name} = ${e.alias}.${e.parentId.name}"
+
+  def createManyToOneTempTable(parent: OrmEntity)(e: ManyToOneEntity): String =
+    s"create temporary table temp_${e.tableName} as select DISTINCT  ${selectFields(e)} " +
+      s"from ${tempTableName(parent)} ${parent.alias},${e.tableName} ${e.alias} " +
+      s"where ${parent.alias}.${e.idInParent.name} = ${e.alias}.${e.primaryKeyField.name}"
 
   def drainSql(e: OrmEntity): String = s"select * from ${tempTableName(e)}"
 
-  def selectFields(e: OrmEntity): String = (e.primaryKeyField :: e.dataFields).map(f => e.alias + "." + f.name).mkString(", ")
+  def selectFields(e: OrmEntity): String = (e.primaryKeyField :: e.fieldsAddedByChildren ::: e.dataFields).map(f => e.alias + "." + f.name).mkString(", ")
 
   def insertSql(e: OrmEntity) =
     s"insert into ${e.tableName} (${e.fieldsForCreate.asString(_.name)}) values (${e.fieldsForCreate.asString(_ => "?")})"

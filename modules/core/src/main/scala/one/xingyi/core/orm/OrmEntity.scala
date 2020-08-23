@@ -7,10 +7,14 @@ trait OrmMaker[T] extends (Map[OrmEntity, List[List[AnyRef]]] => Stream[T])
 
 object OrmMaker {
   implicit class ListofVOps[K, V](list: List[V]) {
-    def mapPf[T](pf: PartialFunction[V, T]) = list.toStream.map {pf orElse { case x => throw new RuntimeException(s"Unexpected issue. Cannot match $x") }}
+    def mapPf[T](pf: PartialFunction[V, T]): Stream[T] = list.toStream.map { pf orElse { case x => throw new RuntimeException(s"Unexpected issue. Cannot match $x") } }
   }
-  def toMap[X](list: List[List[AnyRef]])(fn: List[AnyRef] => X): Map[Any, List[X]] =
+  def toMapForOneToMany[X](list: List[List[AnyRef]])(fn: List[AnyRef] => X): Map[Any, List[X]] =
     list.foldLeft[Map[Any, List[X]]](Map()) { case (acc, key :: _ :: values) => acc addToList key -> fn(values); case x => throw new RuntimeException(s"Unexpected issue in fold. Cannot match $x") }
+
+  def toMapForManyToOne[X](list: List[List[AnyRef]])(fn: List[AnyRef] => X): Map[Any, X] = {
+    list.foldLeft[Map[Any, X]](Map()) { case (acc, key :: values) => acc + (key -> fn(values)); case x => throw new RuntimeException(s"Unexpected issue in fold. Cannot match $x") }
+  }
   def str(n: Int)(implicit list: List[AnyRef]): String = list(n).toString
 
 }
@@ -18,17 +22,25 @@ object OrmMaker {
 trait OrmEntity {
   def tableName: String
   def alias: String
-  def primaryKeyField: FieldType[Int]
-  def dataFields: List[FieldType[_]]
+  def primaryKeyField: FieldType
+  def dataFields: List[FieldType]
   def children: List[ChildEntity]
-  def fieldsForCreate: List[FieldType[_]]
+  def fieldsForCreate: List[FieldType]
+  def fieldsAddedByChildren: List[FieldType] = children.flatMap(_.parentFields)
 }
 
-trait ChildEntity extends OrmEntity
-
-case class MainEntity(tableName: String, alias: String, primaryKeyField: FieldType[Int], dataFields: List[FieldType[_]], children: List[ChildEntity]) extends OrmEntity {
-  val fieldsForCreate = primaryKeyField :: dataFields
+sealed trait ChildEntity extends OrmEntity {
+  def parentFields: List[FieldType]
 }
-case class OneToManyEntity(tableName: String, alias: String, primaryKeyField: FieldType[Int], parentId: FieldType[Int], dataFields: List[FieldType[_]], children: List[ChildEntity]) extends ChildEntity {
+
+case class MainEntity(tableName: String, alias: String, primaryKeyField: FieldType, dataFields: List[FieldType], children: List[ChildEntity]) extends OrmEntity {
+  val fieldsForCreate = primaryKeyField :: fieldsAddedByChildren ::: dataFields
+}
+case class OneToManyEntity(tableName: String, alias: String, primaryKeyField: FieldType, parentId: FieldType, dataFields: List[FieldType], children: List[ChildEntity]) extends ChildEntity {
   val fieldsForCreate = primaryKeyField :: parentId :: dataFields
+  override def parentFields: List[FieldType] = List()
+}
+case class ManyToOneEntity(tableName: String, alias: String, primaryKeyField: FieldType, idInParent: FieldType, dataFields: List[FieldType], children: List[ChildEntity]) extends ChildEntity {
+  val fieldsForCreate = primaryKeyField :: dataFields
+  override def parentFields: List[FieldType] = List(idInParent)
 }

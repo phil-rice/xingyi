@@ -3,10 +3,20 @@ package one.xingyi.core.strings
 
 import java.io.{ByteArrayOutputStream, PrintStream, StringWriter}
 
-import one.xingyi.core.metrics.PrintlnPutMetrics
-
+class ParseException(msg: String, e: Exception) extends RuntimeException(msg, e) {
+  def this(msg: String) = this(msg, null)
+}
 object Strings {
-  def withoutStringBefore(beforeChar:  Char)(s: String):String = s.dropWhile(_ != beforeChar).drop(1)
+  def splitInTwo(separator: String = ":"): (String => (String, String)) = {
+    s =>
+      s.split(separator).map(_.trim).filter(_.nonEmpty) match {
+        case Array(left, right) => (left, right)
+        case _ => throw new ParseException(s"Cannot split a string into two non empty parts using [$separator] string was [$s]")
+      }
+
+
+  }
+  def withoutStringBefore(beforeChar: Char)(s: String): String = s.dropWhile(_ != beforeChar).drop(1)
 
   def toOption(s: String) = if (s == null || s == "") None else Some(s)
 

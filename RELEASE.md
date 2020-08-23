@@ -7,3 +7,4 @@
 0.5.7 Simplifying the usage of the Kleisli traits
 0.5.8 Some helpers for merging curried kleislis
 0.5.9 Database API 
+0.5.10 Fast Orm updated to now produce scala streams

@@ -2,6 +2,7 @@
 package one.xingyi.core.strings
 
 import one.xingyi.core.UtilsWithLoggingSpec
+import one.xingyi.core.orm.{FieldType, IntField, StringField}
 import one.xingyi.core.strings.Strings.indent
 
 
@@ -44,10 +45,10 @@ class StringsTest extends UtilsWithLoggingSpec {
   "Strings.indentTuple" should "line up strings" in {
     val indent = Strings.indentTuple(".", 10, 20) _
     indent("one", "two") shouldBe
-    //1234567890123456789012
-    "..........one.......two"
+      //1234567890123456789012
+      "..........one.......two"
     indent("o", "t") shouldBe
-    "..........o.........t"
+      "..........o.........t"
   }
 
   "Strings.trimChar" should "trim the char from both ends" in {
@@ -64,7 +65,20 @@ class StringsTest extends UtilsWithLoggingSpec {
   }
 
   "Strings.uri" should "make a uri" in {
-    Strings.uri("/abc","def/","/gh/", "i", "j") shouldBe "abc/def/gh/i/j"
+    Strings.uri("/abc", "def/", "/gh/", "i", "j") shouldBe "abc/def/gh/i/j"
+  }
+
+  "Strings.splitInTwo" should "return a tuple or an exception" in {
+
+    val splitter = Strings.splitInTwo(":")
+    splitter("one:int") shouldBe("one", "int")
+    splitter("one: int") shouldBe("one", "int")
+    splitter("one : int") shouldBe("one", "int")
+    the[ParseException] thrownBy (splitter("one")) should have message ("Cannot split a string into two non empty parts using [:] string was [one]")
+    the[ParseException] thrownBy (splitter("one:")) should have message ("Cannot split a string into two non empty parts using [:] string was [one:]")
+    the[ParseException] thrownBy (splitter("one: ")) should have message ("Cannot split a string into two non empty parts using [:] string was [one: ]")
+    the[ParseException] thrownBy (splitter("one:abdc:a")) should have message ("Cannot split a string into two non empty parts using [:] string was [one:abdc:a]")
+
   }
 
 }
