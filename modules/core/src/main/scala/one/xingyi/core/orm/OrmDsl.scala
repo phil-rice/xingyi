@@ -6,7 +6,7 @@ import one.xingyi.core.strings.ParseException
 trait OrmDslClass {
   protected def wrap[X](msg: String)(block: => X): X = try {block } catch {case e: Exception => throw new ParseException(s" $msg - ${e.getClass.getSimpleName} ${e.getMessage}", e)}
 }
-trait BuildOrmEntity[OrmEntity] extends ((List[FieldType], List[ChildEntity]) => OrmEntity)
+trait BuildOrmEntity[OrmEntity] extends ((List[FieldType[_]], List[ChildEntity]) => OrmEntity)
 
 case class FieldsWord[OrmEntity](nameAndTypes: Seq[String])(implicit validateAndBuild: BuildOrmEntity[OrmEntity]) extends OrmDslClass {
   val dataFieldTypes = wrap("dataFieldTypes")(nameAndTypes.map(FieldType.parse).toList)
@@ -16,11 +16,11 @@ case class FieldsWord[OrmEntity](nameAndTypes: Seq[String])(implicit validateAnd
 
 abstract class ormDslTable[OrmEntity](tableName: String, primaryKeyDefn: String, aliasOverride: String = "") extends OrmDslClass {
   require(tableName.nonEmpty)
-  protected val primaryKey: FieldType = wrap(s"$tableName / primarykey")(FieldType.parse(primaryKeyDefn))
+  protected val primaryKey: FieldType[_] = wrap(s"$tableName / primarykey")(FieldType.parse(primaryKeyDefn))
   protected val alias: String = if (aliasOverride == "") tableName.take(1) else aliasOverride
 
   protected def validate(childEntity: List[ChildEntity]): Unit = childEntity.foreach {
-    case o: OneToManyEntity => if (o.parentId.getClass != primaryKey.getClass) throw new RuntimeException(s"One to many table ${o.tableName} has parentId ${o.parentId} which is incompatible with parent ${tableName} which has primary key ${primaryKey}")
+    case o: OneToManyEntity => if (o.parentId.classTag.runtimeClass != primaryKey.classTag.runtimeClass) throw new RuntimeException(s"One to many table ${o.tableName} has parentId ${o.parentId} which is incompatible with parent ${tableName} which has primary key ${primaryKey}")
     case _ =>
   }
 }

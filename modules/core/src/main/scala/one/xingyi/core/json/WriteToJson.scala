@@ -8,4 +8,5 @@ object WriteToJson {
   implicit def WriteToJsonForString: WriteToJson[String] = (t: String) => JsonString(t)
   implicit def WriteToJsonFoDouble: WriteToJson[Double] = (t: Double) => JsonDouble(t)
   implicit def WriteToJsonFoBoolean: WriteToJson[Boolean] = (t: Boolean) => JsonBoolean(t)
+  implicit def WriteToJsonForInt: WriteToJson[Int] = (t: Int) => JsonDouble(t)
 }

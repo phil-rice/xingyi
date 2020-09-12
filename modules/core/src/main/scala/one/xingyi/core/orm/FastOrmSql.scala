@@ -40,8 +40,8 @@ trait FastOrmSql {
   def dropTempTable(e: OrmEntity) = s"drop table if exists ${tempTableName(e)}"
   def tempTableName(e: OrmEntity): String = "temp_" + e.tableName
 
-  def createTable(e: OrmEntity): String = s"create table ${e.tableName} (${e.fieldsForCreate.asString(nameAndTypeName)})"
-  def createOneToManyTable(e: OneToManyEntity): String = s"create table ${e.tableName} (${e.fieldsForCreate.asString(nameAndTypeName)})"
+  def createTable(e: OrmEntity): String = s"create table ${e.tableName} (${e.fieldsForCreate.asString(nameAndTypeName(_))})"
+  def createOneToManyTable(e: OneToManyEntity): String = s"create table ${e.tableName} (${e.fieldsForCreate.asString(nameAndTypeName(_))})"
 
   def createMainTempTable(batchDetails: BatchDetails)(e: OrmEntity): String =
     s"create temporary table ${tempTableName(e)} as select ${selectFields(e)} from ${e.tableName} ${e.alias} limit ${batchDetails.batchSize} offset ${batchDetails.offset}"

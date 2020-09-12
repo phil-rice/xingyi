@@ -2,8 +2,6 @@
 package one.xingyi.core.strings
 
 import one.xingyi.core.UtilsWithLoggingSpec
-import one.xingyi.core.orm.{FieldType, IntField, StringField}
-import one.xingyi.core.strings.Strings.indent
 
 
 class StringsTest extends UtilsWithLoggingSpec {

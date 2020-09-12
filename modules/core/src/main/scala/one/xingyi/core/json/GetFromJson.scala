@@ -24,6 +24,9 @@ object GetFromJson {
   implicit def getFromJsonFoDouble: GetFromJson[Double] = new GetFromJson[Double] {
     override def apply[J](j: J)(implicit jsonParser: JsonParser[J]): Double = wrapAndTry(j)(jsonParser.extractDouble)(_.toDouble)
   }
+  implicit def getFromJsonForInt: GetFromJson[Int] = new GetFromJson[Int] {
+    override def apply[J](j: J)(implicit jsonParser: JsonParser[J]): Int = wrapAndTry(j)(jsonParser.extractDouble)(_.toDouble).toInt
+  }
   implicit def getFromJsonFoBoolean: GetFromJson[Boolean] = new GetFromJson[Boolean] {
     override def apply[J](j: J)(implicit jsonParser: JsonParser[J]): Boolean = wrapAndTry(j)(jsonParser.extractBoolean)(_.toBoolean)
   }

@@ -6,19 +6,20 @@ import java.sql.ResultSet
 import javax.sql.DataSource
 import one.xingyi.core.closable.ClosableM
 import one.xingyi.core.jdbc.{DatabaseSourceFixture, Jdbc, JdbcOps}
-import one.xingyi.core.json.JsonObject
+import one.xingyi.core.json.{JsonObject, JsonParser}
 import one.xingyi.core.map.Maps._
+import one.xingyi.core.orm.FieldType.{int, string}
 import one.xingyi.core.strings.Strings
 
 import scala.language.higherKinds
 
 trait OrmFixture {
-  val employer = ManyToOneEntity("Employer", "E", IntField("eid"), IntField("employerid"), List(StringField("name")), List())
-  val address = OneToManyEntity("Address", "A", IntField("aid"), IntField("personid"), List(StringField("add")), List())
-  val phone = OneToManyEntity("Phone", "Ph", IntField("aid"), IntField("personid"), List(StringField("phoneNo")), List())
+  val employer = ManyToOneEntity("Employer", "E", int("eid"), int("employerid"), List(string("name")), List())
+  val address = OneToManyEntity("Address", "A", int("aid"), int("personid"), List(string("add")), List())
+  val phone = OneToManyEntity("Phone", "Ph", int("aid"), int("personid"), List(string("phoneNo")), List())
   //each person has a contact email, and the id of the email is the same as the person
-  val email = SameIdEntity("ContactEmail", "E", IntField("eid"), List(StringField("email")), List())
-  val main = MainEntity("Person", "P", IntField("pid"), List(StringField("name")), List(employer, address, phone, email))
+  val email = SameIdEntity("ContactEmail", "E", int("eid"), List(string("email")), List())
+  val main = MainEntity("Person", "P", int("pid"), List(string("name")), List(employer, address, phone, email))
 
   case class Employer(name: String)
   case class Address(add: String)
@@ -71,7 +72,7 @@ trait FastOrmFixture extends OrmFixture {
   }
 }
 
-abstract class AbstractFastOrmSpec[M[_] : ClosableM, DS <: DataSource] extends DatabaseSourceFixture[DS] with FastOrmFixture with Jdbc {
+abstract class AbstractFastOrmSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends DatabaseSourceFixture[DS] with FastOrmFixture with Jdbc {
 
 
   behavior of "FastOrm"
@@ -158,7 +159,6 @@ abstract class AbstractFastOrmSpec[M[_] : ClosableM, DS <: DataSource] extends D
           Person("Jill", Employer("Employer1"), List(Address("Jills first address")), List(), "jillsEmail"))
     }
   }
-
   behavior of "OrmMakerForJson"
 
   it should "allow the items to be read as a stream of json" ignore {
@@ -167,7 +167,6 @@ abstract class AbstractFastOrmSpec[M[_] : ClosableM, DS <: DataSource] extends D
       main.stream[JsonObject](OrmBatchConfig(ds, 2)).toList shouldBe ""
     }
   }
-
 
 }
 

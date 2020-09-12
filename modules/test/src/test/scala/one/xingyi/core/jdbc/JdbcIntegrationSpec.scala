@@ -9,6 +9,7 @@ import one.xingyi.core.closable.ClosableLanguage._
 import one.xingyi.core.closable.{ClosableM, SimpleClosable}
 import one.xingyi.core.orm.AbstractFastOrmSpec
 import org.apache.commons.dbcp2.BasicDataSource
+import org.json4s.JValue
 
 import scala.language.higherKinds
 
@@ -71,7 +72,7 @@ abstract class AbstractJdbcIntegrationSpec[M[_] : ClosableM] extends BasicDataSo
   }
 
 }
-
-class FastOrmSpec extends AbstractFastOrmSpec[SimpleClosable, BasicDataSource] with BasicDataSourceFixture
+import one.xingyi.json4s.Json4sParser._
+class FastOrmSpec extends AbstractFastOrmSpec[SimpleClosable, JValue, BasicDataSource] with BasicDataSourceFixture
 
 class JdbcIntegrationSpec extends AbstractJdbcIntegrationSpec[SimpleClosable]

@@ -3,22 +3,23 @@ package one.xingyi.core.orm
 import one.xingyi.core.UtilsSpec
 
 trait EntityFixture {
-  val personIdField = IntField("id")
-  val nameField = StringField("name")
+  import FieldType._
+  val personIdField = int("id")
+  val nameField = string("name")
 
-  val addressIdField = IntField("id")
-  val addressPersonIdField = IntField("personId")
-  val line1Field = StringField("line1")
-  val line2Field = StringField("line2")
+  val addressIdField = int("id")
+  val addressPersonIdField = int("personId")
+  val line1Field = string("line1")
+  val line2Field = string("line2")
 
 
-  val phoneIdField = IntField("id")
-  val phonePersonIdField = IntField("personId")
-  val manufacturerField = StringField("manufacturer")
+  val phoneIdField = int("id")
+  val phonePersonIdField = int("personId")
+  val manufacturerField = string("manufacturer")
 
-  val phoneDetailsIdField = IntField("id")
-  val purposeField = StringField("purpose")
-  val telField = StringField("tel")
+  val phoneDetailsIdField = int("id")
+  val purposeField = string("purpose")
+  val telField = string("tel")
 
   val addressEntity = OneToManyEntity("address", "a", addressIdField, addressPersonIdField, List(line1Field, line2Field), List())
   val phoneDetailsEntity = OneToManyEntity("phonedetails", "pd", phoneDetailsIdField, phonePersonIdField, List(purposeField, telField), List())
