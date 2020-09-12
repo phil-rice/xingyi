@@ -4,7 +4,7 @@ package one.xingyi.core.endpoint
 import one.xingyi.core.UtilsSpec
 import one.xingyi.core.http._
 
-trait ServiceRequestForEndpointFixture{
+trait ServiceRequestForEndpointFixture {
   val srGetPath = ServiceRequest(Get, Uri("/some/path?a=1"), body = Some(Body("someGetPathBody")))
   val srPutPath = ServiceRequest(Put, Uri("/some/path?a=1"), body = Some(Body("somePutPathBody")))
   val srGetPathWithId = ServiceRequest(Get, Uri("/some/path/someId?a=1"), body = Some(Body("someGetPathBody")))
@@ -33,6 +33,17 @@ class MatchesServiceRequestSpec extends UtilsSpec with ServiceRequestForEndpoint
 
     MatchesServiceRequest.idAtEnd(Put)("/some/path1")(srPutPathWithId) shouldBe false
     MatchesServiceRequest.idAtEnd(Put)("/some/path")(srPutPath) shouldBe false
+  }
+
+  behavior of "Regex"
+
+  it should "match if regex and method match" in {
+    def sr(path: String, method: Method = Get) = ServiceRequest(method, Uri(path), List(), None)
+    val matcher = MatchesServiceRequest.regex(Get)("/some/([^/])*/path") _
+    matcher(sr("/some/path")) shouldBe false
+    matcher(sr("/some/123/path")) shouldBe true
+    matcher(sr("/some/12/3/path")) shouldBe false
+    matcher(sr("/some/123/path", Post)) shouldBe false
   }
 
 }

@@ -3,7 +3,7 @@ package one.xingyi.core.http
 
 import one.xingyi.core.exceptions.{EndpointNotFoundException, NotFoundException, ResponseParserException, UnexpectedStatusCodeException}
 import one.xingyi.core.logging.DetailedLogging
-import one.xingyi.core.parser.Parser
+import one.xingyi.core.parserAndWriter.Parser
 import one.xingyi.core.script.IXingYi
 
 import scala.language.higherKinds

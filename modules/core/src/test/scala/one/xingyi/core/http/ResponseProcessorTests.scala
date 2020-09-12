@@ -3,7 +3,7 @@ package one.xingyi.core.http
 
 import org.mockito.Mockito._
 import one.xingyi.core._
-import one.xingyi.core.parser.Parser
+import one.xingyi.core.parserAndWriter.Parser
 
 class ResponseProcessorTests extends UtilsWithLoggingSpec {
   val serviceResponse = ServiceResponse(Status(200), Body("someBody"), ContentType("someContentType"))

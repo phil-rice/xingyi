@@ -104,6 +104,7 @@ object MatchesServiceRequest {
   def prefix(method: Method) = Prefix(method)
 
   def idAtEnd(method: Method) = IdAtEndAndVerb(method)
+  def regex(method: Method) = Regex(method)
 
   def prefixIdCommand(method: Method, command: String) = PrefixThenIdThenCommand(method, command)
 
@@ -121,6 +122,12 @@ case class Prefix(method: Method) extends MatchesServiceRequest {
 case object AnyPathOrVerb extends MatchesServiceRequest {
   override def apply(endpointName: String)(serviceRequest: ServiceRequest): Boolean = true
 
+}
+case class Regex(method: Method) extends MatchesServiceRequest {
+  override def apply(endpointName: String)(serviceRequest: ServiceRequest): Boolean = {
+    val r = endpointName.r
+    method == serviceRequest.method && r.findFirstIn(serviceRequest.uri.asUriString).isDefined
+  }
 }
 case class IdAtEndAndVerb(method: Method) extends MatchesServiceRequest {
   val startFn = Strings.allButlastSection("/") _

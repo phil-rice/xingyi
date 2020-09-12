@@ -10,21 +10,6 @@ import one.xingyi.core.jdbc.JdbcOps
 import scala.annotation.tailrec
 import scala.language.higherKinds
 
-trait StreamEntity[T] extends (MainEntity => Stream[T])
-object StreamEntity {
-  def apply[T](batchConfig: OrmBatchConfig)(implicit ormMaker: OrmMaker[T], fastReaderOps: FastReaderDal, sqlOps: FastOrmSql) =
-    new SimpleStreamEntity[T](FastReader(batchConfig))
-}
-
-class SimpleStreamEntity[T](fastReader: FastReader[T])(implicit ormMaker: OrmMaker[T], fastReaderOps: FastReaderDal, sqlOps: FastOrmSql) extends StreamEntity[T] {
-  override def apply(mainEntity: MainEntity): Stream[T] = stream(mainEntity, 0)
-
-  private def stream(mainEntity: MainEntity, n: Int): Stream[T] = {
-    val subStream: Stream[T] = fastReader(mainEntity)(n)
-    if (subStream.isEmpty) subStream else subStream #::: stream(mainEntity, n + 1)
-  }
-
-}
 
 trait FastReader[T] extends (MainEntity => Int => Stream[T])
 object FastReader {
@@ -60,7 +45,8 @@ class FastReaderImpl[T](batchConfig: OrmBatchConfig)(implicit ormMaker: OrmMaker
     try {
       OrmStrategies.dropTempTables.map(execute(connection)).walk(main)
       OrmStrategies.createTempTables(BatchDetails(batchConfig.batchSize, n)).map(execute(connection)).walk(main)
-      ormMaker(OrmStrategies.drainTempTables.map(query(connection)).walk(main).toMap)
+      val map = OrmStrategies.drainTempTables.map(query(connection)).walk(main).toMap
+      ormMaker(main)(map)
     } finally {
       connection.close()
     }

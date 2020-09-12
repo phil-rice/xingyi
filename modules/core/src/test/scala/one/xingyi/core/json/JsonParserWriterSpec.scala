@@ -2,7 +2,7 @@
 package one.xingyi.core.json
 
 import one.xingyi.core.UtilsSpec
-import one.xingyi.core.parser.Parser
+import one.xingyi.core.parserAndWriter.Parser
 
 import scala.reflect.ClassTag
 

@@ -17,8 +17,11 @@ class FieldTypeTest extends UtilsSpec {
     FieldType.parse("one : string") shouldBe StringField("one")
   }
 
+  it should "allow default to  StringField" in {
+    FieldType.parse("one") shouldBe StringField("one")
+  }
+
   it should "allow throw exception if illegal syntax" in {
-    the[RuntimeException] thrownBy (FieldType.parse("one")) should have message ("Cannot split a string into two non empty parts using [:] string was [one]")
     the[RuntimeException] thrownBy (FieldType.parse("one:abdc")) should have message ("Cannot work out what type of field one is. Its type is [abdc] and not int or string")
   }
 

@@ -25,8 +25,7 @@ object Files {
 
   def printToFile(f: java.io.File)(op: java.io.PrintWriter => Unit) {
     try {
-      println(f)
-      f.getParentFile.mkdirs()
+      f.getCanonicalFile.getParentFile.mkdirs()
     } catch {
       case e: Exception => throw new RuntimeException(s"File: $f", e)
     }

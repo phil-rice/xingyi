@@ -2,7 +2,7 @@
 package one.xingyi.core.json
 
 import one.xingyi.core.databaseService.{DatabaseRequest, QueryResults}
-import one.xingyi.core.parser.Parser
+import one.xingyi.core.parserAndWriter.Parser
 
 import scala.language.implicitConversions
 import one.xingyi.core.language.AnyLanguage._

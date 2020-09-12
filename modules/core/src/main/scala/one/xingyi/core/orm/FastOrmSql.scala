@@ -3,28 +3,30 @@ package one.xingyi.core.orm
 
 import one.xingyi.core.language.AnyLanguage._
 
-/** This applies the sql defined in FastOrmSql to the entities in a composite entity  */
+/** This applies the sql defined in FastOrmSql to the entities in a composite entity */
 object OrmStrategies extends OrmStrategies
 trait OrmStrategies {
-  def dropTables(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] = EntityStrategy(fastOrmSql.dropTable, _ => fastOrmSql.dropTable, _ => fastOrmSql.dropTable)
-  def createTables(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] = EntityStrategy(fastOrmSql.createTable, _ => fastOrmSql.createOneToManyTable, _ => fastOrmSql.createTable)
+  //TODO Redo with type classes
+  def dropTables(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] = EntityStrategy(fastOrmSql.dropTable, _ => fastOrmSql.dropTable, _ => fastOrmSql.dropTable, _ => fastOrmSql.dropTable)
+  def createTables(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] = EntityStrategy(fastOrmSql.createTable, _ => fastOrmSql.createOneToManyTable, _ => fastOrmSql.createTable, _ => fastOrmSql.createTable)
 
-  def dropTempTables(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] = EntityStrategy(fastOrmSql.dropTempTable, _ => fastOrmSql.dropTempTable, _ => fastOrmSql.dropTempTable)
+  def dropTempTables(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] = EntityStrategy(fastOrmSql.dropTempTable, _ => fastOrmSql.dropTempTable, _ => fastOrmSql.dropTempTable, _ => fastOrmSql.dropTempTable)
   def createTempTables(batchDetails: BatchDetails)(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] =
-    EntityStrategy(fastOrmSql.createMainTempTable(batchDetails), fastOrmSql.createOneToManyTempTable, fastOrmSql.createManyToOneTempTable)
-  def drainTempTables(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] = EntityStrategy(fastOrmSql.drainSql, _ => fastOrmSql.drainSql, _ => fastOrmSql.drainSql)
+    EntityStrategy(fastOrmSql.createMainTempTable(batchDetails), fastOrmSql.createOneToManyTempTable, fastOrmSql.createManyToOneTempTable, fastOrmSql.createSameIdTempTable)
+  def drainTempTables(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] = EntityStrategy(fastOrmSql.drainSql, _ => fastOrmSql.drainSql, _ => fastOrmSql.drainSql, _ => fastOrmSql.drainSql)
 
-  def insertData(implicit fastOrmSql: FastOrmSql) = EntityStrategy(fastOrmSql.insertSql, _ => fastOrmSql.insertSql, _ => fastOrmSql.insertSql)
+  def insertData(implicit fastOrmSql: FastOrmSql) = EntityStrategy(fastOrmSql.insertSql, _ => fastOrmSql.insertSql, _ => fastOrmSql.insertSql, _ => fastOrmSql.insertSql)
 }
 
 object EntityStrategy {
-  def apply[X](ormEntityFn: OrmEntity => X): EntityStrategy[X] = EntityStrategy(ormEntityFn, _ => ormEntityFn, _ => ormEntityFn)
+  def apply[X](ormEntityFn: OrmEntity => X): EntityStrategy[X] = EntityStrategy(ormEntityFn, _ => ormEntityFn, _ => ormEntityFn, _ => ormEntityFn)
 }
-case class EntityStrategy[X](mainEntityFn: OrmEntity => X, oneToManyEntityFn: OrmEntity => OneToManyEntity => X, manyToOneEntityFn: OrmEntity => ManyToOneEntity => X) {
-  def map[T](fn: X => T): EntityStrategy[T] = EntityStrategy(mainEntityFn andThen fn, p => c => fn(oneToManyEntityFn(p)(c)), p => c => fn(manyToOneEntityFn(p)(c)))
+case class EntityStrategy[X](mainEntityFn: OrmEntity => X, oneToManyEntityFn: OrmEntity => OneToManyEntity => X, manyToOneEntityFn: OrmEntity => ManyToOneEntity => X, sameIdFn: OrmEntity => SameIdEntity => X) {
+  def map[T](fn: X => T): EntityStrategy[T] = EntityStrategy(mainEntityFn andThen fn, p => c => fn(oneToManyEntityFn(p)(c)), p => c => fn(manyToOneEntityFn(p)(c)), p => c => fn(sameIdFn(p)(c)))
   def childEntity(parentEntity: OrmEntity): ChildEntity => X = {
     case e: OneToManyEntity => oneToManyEntityFn(parentEntity)(e)
     case e: ManyToOneEntity => manyToOneEntityFn(parentEntity)(e)
+    case e: SameIdEntity => sameIdFn(parentEntity)(e)
   }
   def walk(e: MainEntity): List[(OrmEntity, X)] = (e, mainEntityFn(e)) :: e.children.flatMap(walkChildren(e))
   private def walkChildren(parent: OrmEntity)(child: ChildEntity): List[(OrmEntity, X)] = (child, childEntity(parent)(child)) :: child.children.flatMap(walkChildren(child))
@@ -50,9 +52,15 @@ trait FastOrmSql {
       s"where ${parent.alias}.${parent.primaryKeyField.name} = ${e.alias}.${e.parentId.name}"
 
   def createManyToOneTempTable(parent: OrmEntity)(e: ManyToOneEntity): String =
-    s"create temporary table temp_${e.tableName} as select DISTINCT  ${selectFields(e)} " +
+    s"create temporary table temp_${e.tableName} as select DISTINCT  ${selectFields(e)} " + //TODO Why do we have distinct here
       s"from ${tempTableName(parent)} ${parent.alias},${e.tableName} ${e.alias} " +
       s"where ${parent.alias}.${e.idInParent.name} = ${e.alias}.${e.primaryKeyField.name}"
+
+  def createSameIdTempTable(parent: OrmEntity)(e: SameIdEntity): String =
+    s"create temporary table temp_${e.tableName} as select DISTINCT  ${selectFields(e)} " +
+      s"from ${tempTableName(parent)} ${parent.alias},${e.tableName} ${e.alias} " +
+      s"where ${parent.alias}.${parent.primaryKeyField.name} = ${e.alias}.${e.primaryKeyField.name}"
+
 
   def drainSql(e: OrmEntity): String = s"select * from ${tempTableName(e)}"
 

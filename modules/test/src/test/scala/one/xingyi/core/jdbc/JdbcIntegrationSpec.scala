@@ -7,6 +7,7 @@ import javax.sql.DataSource
 import one.xingyi.core.cddlegacy.{LegacyData, LegacyResult}
 import one.xingyi.core.closable.ClosableLanguage._
 import one.xingyi.core.closable.{ClosableM, SimpleClosable}
+import one.xingyi.core.orm.AbstractFastOrmSpec
 import org.apache.commons.dbcp2.BasicDataSource
 
 import scala.language.higherKinds

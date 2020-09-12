@@ -7,7 +7,7 @@ class OrmSpec extends UtilsSpec with EntityFixture {
 
   behavior of "EntityStrategy"
 
-  val es = EntityStrategy(m => m.tableName + "_m", o1 => o2 => o1.tableName + "/" + o2.tableName, o1 => o2 => o1.tableName + "/" + o2.tableName)
+  val es = EntityStrategy(m => m.tableName + "_m", o1 => o2 => o1.tableName + "/" + o2.tableName, o1 => o2 => o1.tableName + "/" + o2.tableName, o1 => o2 => o1.tableName + "/" + o2.tableName)
   val esSimple = EntityStrategy(m => m.tableName + "_s")
   val es2 = es.map(_ + "_done")
 
