@@ -79,6 +79,7 @@ trait OrmEntity {
   def fieldsForCreate: List[FieldType[_]]
   def fieldsAddedByChildren: List[FieldType[_]] = children.flatMap(_.parentFields)
   def colsToDropForValues = fieldsForCreate.size - dataFields.size
+  def nonDataFields = fieldsForCreate.take(colsToDropForValues)
   protected def childrenPrettyString(indent: String) = if (children.isEmpty) "" else children.map(_.prettyPrint(indent + "  ")).mkString("{\n", "\n", s"$indent\n}")
   protected def fieldsPrettyString = {
     val data = s"data=${dataFields.map(_.name).mkString(",")}"

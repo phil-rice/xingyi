@@ -45,7 +45,7 @@ class FastReaderImpl[T](batchConfig: OrmBatchConfig)(implicit ormMaker: OrmMaker
     try {
       OrmStrategies.dropTempTables.map(execute(connection)).walk(main)
       OrmStrategies.createTempTables(BatchDetails(batchConfig.batchSize, n)).map(execute(connection)).walk(main)
-      val map = OrmStrategies.drainTempTables.map(query(connection)).walk(main).toMap
+      val map: Map[OrmEntity, List[List[AnyRef]]] = OrmStrategies.drainTempTables.map(query(connection)).walk(main).toMap
       ormMaker(main)(map)
     } finally {
       connection.close()

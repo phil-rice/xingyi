@@ -6,6 +6,14 @@ import one.xingyi.core.strings.{ParseException, Strings}
 
 import scala.reflect.ClassTag
 
+trait ToFieldType[T] {
+  def apply(name: String): FieldType[T]
+}
+object ToFieldType {
+  implicit def toFieldTypeForString: ToFieldType[String] = FieldType[String](_, "varchar(255)")
+  implicit def toFieldTypeForInt: ToFieldType[Int] = FieldType[Int](_, "integer")
+}
+
 case class FieldType[T](name: String, typeName: String)(implicit val writeToJson: WriteToJson[T], val getFromJson: GetFromJson[T], val classTag: ClassTag[T])
 object FieldType {
   private val splitter = Strings.splitInTwo(":")
@@ -16,7 +24,6 @@ object FieldType {
   } else string(s)
 
   def nameAndTypeName[T](ft: FieldType[T]): String = ft.name + " " + ft.typeName
-  def string(name: String) = FieldType[String](name, "varchar(255)")
-  def int(name: String) = FieldType[Int](name, "integer")
+  def string(name: String)(implicit toFieldType: ToFieldType[String]) = toFieldType(name)
+  def int(name: String)(implicit toFieldType: ToFieldType[Int]) = toFieldType(name)
 }
-
