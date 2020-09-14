@@ -7,29 +7,23 @@ import one.xingyi.core.language.AnyLanguage._
 object OrmStrategies extends OrmStrategies
 trait OrmStrategies {
   //TODO Redo with type classes
-  def dropTables(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] = EntityStrategy(fastOrmSql.dropTable, _ => fastOrmSql.dropTable, _ => fastOrmSql.dropTable, _ => fastOrmSql.dropTable)
-  def createTables(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] = EntityStrategy(fastOrmSql.createTable, _ => fastOrmSql.createOneToManyTable, _ => fastOrmSql.createTable, _ => fastOrmSql.createTable)
+  def dropTables(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] = EntityStrategy(_.dropTable)
+  def createTables(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] = EntityStrategy(_.createTable)
 
-  def dropTempTables(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] = EntityStrategy(fastOrmSql.dropTempTable, _ => fastOrmSql.dropTempTable, _ => fastOrmSql.dropTempTable, _ => fastOrmSql.dropTempTable)
+  def dropTempTables(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] = EntityStrategy(_.dropTempTable)
   def createTempTables(batchDetails: BatchDetails)(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] =
-    EntityStrategy(fastOrmSql.createMainTempTable(batchDetails), fastOrmSql.createOneToManyTempTable, fastOrmSql.createManyToOneTempTable, fastOrmSql.createSameIdTempTable)
-  def drainTempTables(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] = EntityStrategy(fastOrmSql.drainSql, _ => fastOrmSql.drainSql, _ => fastOrmSql.drainSql, _ => fastOrmSql.drainSql)
-
-  def insertData(implicit fastOrmSql: FastOrmSql) = EntityStrategy(fastOrmSql.insertSql, _ => fastOrmSql.insertSql, _ => fastOrmSql.insertSql, _ => fastOrmSql.insertSql)
+    EntityStrategy(_.createTempTable.apply(batchDetails), parent => child => child.createTempTable.apply(parent))
+  def drainTempTables(implicit fastOrmSql: FastOrmSql): EntityStrategy[String] = EntityStrategy(_.drainSql)
+  def insertData(implicit fastOrmSql: FastOrmSql) = EntityStrategy(fastOrmSql.insertSql)
 }
 
 object EntityStrategy {
-  def apply[X](ormEntityFn: OrmEntity => X): EntityStrategy[X] = EntityStrategy(ormEntityFn, _ => ormEntityFn, _ => ormEntityFn, _ => ormEntityFn)
+  def apply[X](ormEntityFn: OrmEntity => X): EntityStrategy[X] = EntityStrategy(ormEntityFn, _ => ormEntityFn)
 }
-case class EntityStrategy[X](mainEntityFn: OrmEntity => X, oneToManyEntityFn: OrmEntity => OneToManyEntity => X, manyToOneEntityFn: OrmEntity => ManyToOneEntity => X, sameIdFn: OrmEntity => SameIdEntity => X) {
-  def map[T](fn: X => T): EntityStrategy[T] = EntityStrategy(mainEntityFn andThen fn, p => c => fn(oneToManyEntityFn(p)(c)), p => c => fn(manyToOneEntityFn(p)(c)), p => c => fn(sameIdFn(p)(c)))
-  def childEntity(parentEntity: OrmEntity): ChildEntity => X = {
-    case e: OneToManyEntity => oneToManyEntityFn(parentEntity)(e)
-    case e: ManyToOneEntity => manyToOneEntityFn(parentEntity)(e)
-    case e: SameIdEntity => sameIdFn(parentEntity)(e)
-  }
+case class EntityStrategy[X](mainEntityFn: MainEntity => X, childFn: OrmEntity => ChildEntity => X) {
+  def map[T](fn: X => T): EntityStrategy[T] = EntityStrategy(mainEntityFn andThen fn, p => c => fn(childFn(p)(c)))
   def walk(e: MainEntity): List[(OrmEntity, X)] = (e, mainEntityFn(e)) :: e.children.flatMap(walkChildren(e))
-  private def walkChildren(parent: OrmEntity)(child: ChildEntity): List[(OrmEntity, X)] = (child, childEntity(parent)(child)) :: child.children.flatMap(walkChildren(child))
+  private def walkChildren(parent: OrmEntity)(child: ChildEntity): List[(OrmEntity, X)] = (child, childFn(parent)(child)) :: child.children.flatMap(walkChildren(child))
 }
 
 /** This is the layer of abstraction that needs to be rewritten for different databases. It's just a block of sql for each operation */
@@ -41,22 +35,21 @@ trait FastOrmSql {
   def tempTableName(e: OrmEntity): String = "temp_" + e.tableName
 
   def createTable(e: OrmEntity): String = s"create table ${e.tableName} (${e.fieldsForCreate.asString(nameAndTypeName(_))})"
-  def createOneToManyTable(e: OneToManyEntity): String = s"create table ${e.tableName} (${e.fieldsForCreate.asString(nameAndTypeName(_))})"
 
-  def createMainTempTable(batchDetails: BatchDetails)(e: OrmEntity): String =
+  def createMainTempTable(e: OrmEntity)(batchDetails: BatchDetails): String =
     s"create temporary table ${tempTableName(e)} as select ${selectFields(e)} from ${e.tableName} ${e.alias} limit ${batchDetails.batchSize} offset ${batchDetails.offset}"
 
-  def createOneToManyTempTable(parent: OrmEntity)(e: OneToManyEntity): String =
+  def createOneToManyTempTable(e: OneToManyEntity)(parent: OrmEntity): String =
     s"create temporary table temp_${e.tableName} as select ${e.alias}.${e.parentId.name}, ${selectFields(e)} " +
       s"from ${tempTableName(parent)} ${parent.alias},${e.tableName} ${e.alias} " +
       s"where ${parent.alias}.${parent.primaryKeyField.name} = ${e.alias}.${e.parentId.name}"
 
-  def createManyToOneTempTable(parent: OrmEntity)(e: ManyToOneEntity): String =
+  def createManyToOneTempTable(e: ManyToOneEntity)(parent: OrmEntity): String =
     s"create temporary table temp_${e.tableName} as select DISTINCT  ${selectFields(e)} " + //TODO Why do we have distinct here
       s"from ${tempTableName(parent)} ${parent.alias},${e.tableName} ${e.alias} " +
       s"where ${parent.alias}.${e.idInParent.name} = ${e.alias}.${e.primaryKeyField.name}"
 
-  def createSameIdTempTable(parent: OrmEntity)(e: SameIdEntity): String =
+  def createSameIdTempTable(e: SameIdEntity)(parent: OrmEntity): String =
     s"create temporary table temp_${e.tableName} as select DISTINCT  ${selectFields(e)} " +
       s"from ${tempTableName(parent)} ${parent.alias},${e.tableName} ${e.alias} " +
       s"where ${parent.alias}.${parent.primaryKeyField.name} = ${e.alias}.${e.primaryKeyField.name}"
