@@ -9,18 +9,20 @@ trait OrmDslClass {
 trait BuildOrmEntity[OrmEntity] extends ((List[FieldType[_]], List[ChildEntity]) => OrmEntity)
 
 case class FieldsWord[OrmEntity](nameAndTypes: Seq[String])(implicit validateAndBuild: BuildOrmEntity[OrmEntity]) extends OrmDslClass {
-  val dataFieldTypes = wrap("dataFieldTypes")(nameAndTypes.map(FieldType.parse).toList)
+  val dataFieldTypes = wrap("dataFieldTypes")(nameAndTypes.map(FieldType.apply).toList)
   def children(childEntities: ChildEntity*): OrmEntity = validateAndBuild(dataFieldTypes, childEntities.toList)
   def noChildren: OrmEntity = validateAndBuild(dataFieldTypes, List())
 }
 
 abstract class ormDslTable[OrmEntity](tableName: String, primaryKeyDefn: String, aliasOverride: String = "") extends OrmDslClass {
   require(tableName.nonEmpty)
-  protected val primaryKey: FieldType[_] = wrap(s"$tableName / primarykey")(FieldType.parse(primaryKeyDefn))
+  protected val primaryKey: Keys = wrap(s"$tableName / primarykey")(Keys(primaryKeyDefn))
   protected val alias: String = if (aliasOverride == "") tableName.take(1) else aliasOverride
 
   protected def validate(childEntity: List[ChildEntity]): Unit = childEntity.foreach {
-    case o: OneToManyEntity => if (o.parentId.classTag.runtimeClass != primaryKey.classTag.runtimeClass) throw new RuntimeException(s"One to many table ${o.tableName} has parentId ${o.parentId} which is incompatible with parent ${tableName} which has primary key ${primaryKey}")
+    case o: OneToManyEntity => o.parentId.checkCanLinkTo(primaryKey)
+    case m: ManyToOneEntity => m.idInParent.checkCanLinkTo(primaryKey)
+    case s: SingleChild => s.primaryKeyField.checkCanLinkTo(primaryKey)
     case _ =>
   }
 }
@@ -35,7 +37,7 @@ case class orm(tableName: String, primaryKeyDefn: String, aliasOverride: String 
 }
 case class oneToMany(tableName: String, primaryKeyDefn: String, aliasOverride: String = "") extends ormDslTable[OneToManyEntity](tableName, primaryKeyDefn, aliasOverride) {
   case class parentId(parentIdDefn: String) {
-    private val parentId = FieldType.parse(parentIdDefn)
+    private val parentId = Keys(parentIdDefn)
     implicit val oneToManyValidateAndBuild: BuildOrmEntity[OneToManyEntity] = { (dataFields, children) =>
       validate(children);
       OneToManyEntity(tableName, alias, primaryKey, parentId, dataFields, children)
@@ -45,7 +47,7 @@ case class oneToMany(tableName: String, primaryKeyDefn: String, aliasOverride: S
 }
 case class manyToOne(tableName: String, primaryKeyDefn: String, aliasOverride: String = "") extends ormDslTable[ManyToOneEntity](tableName, primaryKeyDefn, aliasOverride) {
   case class idInParent(idInParentDefn: String) {
-    private val idInParent = FieldType.parse(idInParentDefn)
+    private val idInParent = Keys(idInParentDefn)
     private implicit val ManyToOneValidateAndBuild: BuildOrmEntity[ManyToOneEntity] = { (dataFields, children) =>
       validate(children);
       ManyToOneEntity(tableName, alias, primaryKey, idInParent, dataFields, children)

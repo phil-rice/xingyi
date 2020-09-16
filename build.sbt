@@ -19,7 +19,7 @@ val versions = new {
 }
 
 lazy val commonSettings = Seq(
-  version := "0.5.13",
+  version := "0.5.15-SNAPSHOT",
   organization := "one.xingyi",
   publishMavenStyle := true,
   scalaVersion := versions.scala,
@@ -134,6 +134,7 @@ val javaServer = (project in file("modules/javaserver")).settings(publishSetting
 
 lazy val test = (project in file("modules/test")).
   settings(publishSettings: _*).
+  settings(parallelExecution in Test := false).
   dependsOn(core % "test->test;compile->compile").
   dependsOn(apachejdbc % "test->test;compile->compile").
   dependsOn(json4s % "test->test;compile->compile").

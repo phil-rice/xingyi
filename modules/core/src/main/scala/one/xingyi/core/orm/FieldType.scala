@@ -17,7 +17,7 @@ object ToFieldType {
 case class FieldType[T](name: String, typeName: String)(implicit val writeToJson: WriteToJson[T], val getFromJson: GetFromJson[T], val classTag: ClassTag[T])
 object FieldType {
   private val splitter = Strings.splitInTwo(":")
-  def parse(s: String): FieldType[_] = if (s.contains(":")) splitter(s) match {
+  def apply(s: String): FieldType[_] = if (s.contains(":")) splitter(s) match {
     case (l, "int") => int(l)
     case (l, "string") => string(l)
     case (l, r) => throw new ParseException(s"Cannot work out what type of field ${l} is. Its type is [$r] and not int or string")

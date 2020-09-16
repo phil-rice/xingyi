@@ -40,24 +40,26 @@ trait FastOrmSql {
     s"create temporary table ${tempTableName(e)} as select ${selectFields(e)} from ${e.tableName} ${e.alias} limit ${batchDetails.batchSize} offset ${batchDetails.offset}"
 
   def createOneToManyTempTable(e: OneToManyEntity)(parent: OrmEntity): String =
-    s"create temporary table temp_${e.tableName} as select ${e.alias}.${e.parentId.name}, ${selectFields(e)} " +
+    s"create temporary table temp_${e.tableName} as select ${selectKey(e.alias, e.parentId)}, ${selectFields(e)} " +
       s"from ${tempTableName(parent)} ${parent.alias},${e.tableName} ${e.alias} " +
-      s"where ${parent.alias}.${parent.primaryKeyField.name} = ${e.alias}.${e.parentId.name}"
+      s"where ${whereKey(parent.alias, parent.primaryKeyField, e.alias, e.parentId)}"
 
   def createManyToOneTempTable(e: ManyToOneEntity)(parent: OrmEntity): String =
     s"create temporary table temp_${e.tableName} as select DISTINCT  ${selectFields(e)} " + //TODO Why do we have distinct here
       s"from ${tempTableName(parent)} ${parent.alias},${e.tableName} ${e.alias} " +
-      s"where ${parent.alias}.${e.idInParent.name} = ${e.alias}.${e.primaryKeyField.name}"
+      s"where ${whereKey(parent.alias, e.idInParent, e.alias, e.primaryKeyField)}"
 
   def createSameIdTempTable(e: SameIdEntity)(parent: OrmEntity): String =
     s"create temporary table temp_${e.tableName} as select DISTINCT  ${selectFields(e)} " +
       s"from ${tempTableName(parent)} ${parent.alias},${e.tableName} ${e.alias} " +
-      s"where ${parent.alias}.${parent.primaryKeyField.name} = ${e.alias}.${e.primaryKeyField.name}"
+      s"where ${whereKey(parent.alias, parent.primaryKeyField, e.alias, e.primaryKeyField)}"
 
 
   def drainSql(e: OrmEntity): String = s"select * from ${tempTableName(e)}"
 
-  def selectFields(e: OrmEntity): String = (e.primaryKeyField :: e.fieldsAddedByChildren ::: e.dataFields).map(f => e.alias + "." + f.name).mkString(", ")
+  def selectKey(alias: String, keys: Keys): String = keys.list.map(k => alias + "." + k.name).mkString(", ")
+  def whereKey(alias1: String, keys1: Keys, alias2: String, keys2: Keys): String = Keys.zip(keys1, keys2).map { case (k1, k2) => s"$alias1.${k1.name} = $alias2.${k2.name}" }.mkString(" and ")
+  def selectFields(e: OrmEntity): String = (e.primaryKeyField.list ::: e.fieldsAddedByChildren ::: e.dataFields).map(f => e.alias + "." + f.name).mkString(", ")
 
   def insertSql(e: OrmEntity) =
     s"insert into ${e.tableName} (${e.fieldsForCreate.asString(_.name)}) values (${e.fieldsForCreate.asString(_ => "?")})"
