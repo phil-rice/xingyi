@@ -104,8 +104,7 @@ sealed trait ChildEntity extends OrmEntity {
   def findIdIndex(parent: OrmEntity): Int
 }
 trait SingleChild extends ChildEntity {
-  def getData[X](parent: OrmEntity, childsData: Map[Any, X], parentsData: List[AnyRef], default: (Map[Any, X], Any) => X = Keys.notFound _): X =
-    parent.primaryKeyField.getFrom[X](childsData, findIdIndex(parent), parentsData, default)
+  def getData[X](parent: OrmEntity, childsData: Map[Any, X], parentsData: List[AnyRef], default: (Keys, Map[Any, X], Any) => X = Keys.notFound _): X
 
   def toMap[X](data: Map[OrmEntity, List[List[AnyRef]]], fn: List[AnyRef] => X): Map[Any, X] =
     data(this).foldLeft[Map[Any, X]](Map())((acc, list) => primaryKeyField.asPrimaryKeyAddTo(acc, list, fn(list)))
@@ -116,7 +115,7 @@ object ChildEntity {
 
 abstract class Keys(val list: List[FieldType[_]]) {
 
-  def getFrom[V](map: Map[Any, V], index: Int, oneRow: List[Any], default: (Map[Any, V], Any) => V = Keys.notFound _): V
+  def getFrom[V](map: Map[Any, V], index: Int, oneRow: List[Any], default: (Keys, Map[Any, V], Any) => V = Keys.notFound _): V
 
   def asPrimaryKeyAddTo[V](map: Map[Any, V], oneRow: List[Any], data: V): Map[Any, V]
   def checkCanLinkTo(keys: Keys) = {
@@ -132,20 +131,20 @@ abstract class Keys(val list: List[FieldType[_]]) {
 
 case class SingleKey(key: FieldType[_]) extends Keys(List(key)) {
   override def asPrimaryKeyAddTo[V](map: Map[Any, V], oneRow: List[Any], data: V): Map[Any, V] = map + (asKey(oneRow) -> data)
-  override def getFrom[V](map: Map[Any, V], index: Int, oneRow: List[Any], default: (Map[Any, V], Any) => V): V = map.getOrElse(oneRow(index), default(map, oneRow(index)))
+  override def getFrom[V](map: Map[Any, V], index: Int, oneRow: List[Any], default: (Keys, Map[Any, V], Any) => V): V = map.getOrElse(oneRow(index), default(this, map, oneRow(index)))
   override def asKey(list: List[Any]): Any = list.head
 }
 case class MultipleKey(keys: List[FieldType[_]]) extends Keys(keys) {
   override def asPrimaryKeyAddTo[V](map: Map[Any, V], oneRow: List[Any], data: V): Map[Any, V] = map + (oneRow.take(keys.size) -> data)
-  override def getFrom[V](map: Map[Any, V], index: Int, oneRow: List[Any], default: (Map[Any, V], Any) => V): V = {
+  override def getFrom[V](map: Map[Any, V], index: Int, oneRow: List[Any], default: (Keys, Map[Any, V], Any) => V): V = {
     val key = oneRow.slice(index, index + keys.size)
     println(s"key is $key map is $map")
-    map.getOrElse(key, default(map, key))
+    map.getOrElse(key, default(this, map, key))
   }
   override def asKey(list: List[Any]): Any = list.take(keys.size)
 }
 object Keys {
-  def notFound[V](map: Map[Any, V], key: Any) = throw new RuntimeException(s"Cannot find key $key when the keys are $this map is $map")
+  def notFound[V](keys: Keys, map: Map[Any, V], key: Any) = throw new RuntimeException(s"Cannot find key $key when the keys are $keys map is $map")
   def apply(str: String): Keys = {
     val a = (str.split(",").map(_.trim).map(FieldType.apply)).toList
     a match {
@@ -184,7 +183,7 @@ case class OneToManyEntity(tableName: String, alias: String, primaryKeyField: Ke
   override def findIdIndex(parent: OrmEntity): Int = 0
   def toOneToManyMap[X](data: Map[OrmEntity, List[List[AnyRef]]], fn: List[AnyRef] => X): Map[Any, List[X]] =
     data(this).groupBy(_.take(parentId.size)).map { t => (parentId.asKey(t._1), t._2.map(fn)) }
-  protected def emptyList[X](map: Map[Any, List[X]], key: Any) = Nil
+  protected def emptyList[X](keys: Keys, map: Map[Any, List[X]], key: Any) = Nil
   def getData[X](parent: OrmEntity, childsData: Map[Any, List[X]], parentsData: List[Any]): List[X] =
     parentId.getFrom(childsData, 0, parentsData, emptyList)
 
@@ -199,6 +198,8 @@ case class ManyToOneEntity(tableName: String, alias: String, primaryKeyField: Ke
   override def createTempTable(implicit fastOrmSql: FastOrmSql): OrmEntity => String = fastOrmSql.createManyToOneTempTable(this)
   override def findIdIndex(parent: OrmEntity): Int = parent.fieldsForCreate.indexOf(idInParent.list.head)
   def load[X](data: Map[Any, X])(parent: OrmEntity)(parentRow: List[AnyRef]) = data(parentRow(findIdIndex(parent)))
+  def getData[X](parent: OrmEntity, childsData: Map[Any, X], parentsData: List[AnyRef], default: (Keys, Map[Any, X], Any) => X = Keys.notFound _): X =
+    idInParent.getFrom[X](childsData, findIdIndex(parent), parentsData, default)
 }
 case class SameIdEntity(tableName: String, alias: String, primaryKeyField: Keys, dataFields: List[FieldType[_]], children: List[ChildEntity]) extends SingleChild {
   override val fieldsForCreate = primaryKeyField.list ::: dataFields
@@ -207,4 +208,7 @@ case class SameIdEntity(tableName: String, alias: String, primaryKeyField: Keys,
   override def createTempTable(implicit fastOrmSql: FastOrmSql): OrmEntity => String = fastOrmSql.createSameIdTempTable(this)
   override def findIdIndex(parent: OrmEntity): Int = parent.fieldsForCreate.indexOf(parent.primaryKeyField.list.head)
   def load[X](data: Map[Any, X])(parent: OrmEntity)(parentRow: List[AnyRef]) = 0
+  def getData[X](parent: OrmEntity, childsData: Map[Any, X], parentsData: List[AnyRef], default: (Keys, Map[Any, X], Any) => X = Keys.notFound _): X =
+    parent.primaryKeyField.getFrom[X](childsData, findIdIndex(parent), parentsData, default)
+
 }
