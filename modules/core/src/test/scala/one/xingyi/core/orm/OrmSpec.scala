@@ -60,7 +60,7 @@ class OrmSpec extends UtilsSpec with EntityFixture {
   it should "have a createTempTables strategy" in {
     val s = OrmStrategies.createTempTables(BatchDetails(123, 456))
     s.mainEntityFn(mainEntity) shouldBe "create temporary table temp_person as select p.id, p.name from person p limit 123 offset 56088"
-    s.childFn(mainEntity)(phoneEntity) shouldBe "create temporary table temp_phone as select ph.personId, ph.id, ph.manufacturer from temp_person p,phone ph where p.id = ph.personId"
+    s.childFn(mainEntity)(phoneEntity) shouldBe "create temporary table temp_phone as select ph.id, ph.personId, ph.manufacturer from temp_person p,phone ph where p.id = ph.personId"
   }
 
   it should "have a drainTempTables strategy" in {

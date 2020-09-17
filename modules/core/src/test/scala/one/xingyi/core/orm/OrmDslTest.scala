@@ -10,7 +10,7 @@ class OrmDslTest extends UtilsSpec with FastOrmFixture {
     val personViaDsl = orm("Person", "pid:int").fields("name: string").children(
       manyToOne("Employer", "eid:int").idInParent("employerid:int").fields("name:string").noChildren,
       oneToMany("Address", "aid: int").parentId("personid:int").fields("add:string").noChildren,
-      oneToMany("Phone", "aid: int", aliasOverride = "Ph").parentId("personid:int").fields("phoneNo:string").noChildren,
+      oneToMany("Phone", "phid: int", aliasOverride = "Ph").parentId("personid:int").fields("phoneNo:string").noChildren,
       sameId("ContactEmail", "eid: int", aliasOverride = "E").fields("email:string").noChildren)
     personViaDsl shouldBe main
   }
