@@ -40,7 +40,7 @@ trait FastOrmSql {
     s"create temporary table ${tempTableName(e)} as select ${selectFields(e)} from ${e.tableName} ${e.alias} limit ${batchDetails.batchSize} offset ${batchDetails.offset}"
 
   def createOneToManyTempTable(e: OneToManyEntity)(parent: OrmEntity): String =
-    s"create temporary table temp_${e.tableName} as select ${selectKey(e.alias, e.parentId)}, ${selectFields(e)} " +
+    s"create temporary table temp_${e.tableName} as select ${selectFields(e)} " +
       s"from ${tempTableName(parent)} ${parent.alias},${e.tableName} ${e.alias} " +
       s"where ${whereKey(parent.alias, parent.primaryKeyField, e.alias, e.parentId)}"
 
@@ -59,7 +59,7 @@ trait FastOrmSql {
 
   def selectKey(alias: String, keys: Keys): String = keys.list.map(k => alias + "." + k.name).mkString(", ")
   def whereKey(alias1: String, keys1: Keys, alias2: String, keys2: Keys): String = Keys.zip(keys1, keys2).map { case (k1, k2) => s"$alias1.${k1.name} = $alias2.${k2.name}" }.mkString(" and ")
-  def selectFields(e: OrmEntity): String = (e.primaryKeyField.list ::: e.fieldsAddedByChildren ::: e.dataFields).map(f => e.alias + "." + f.name).mkString(", ")
+  def selectFields(e: OrmEntity): String = (e.fieldsForCreate ).map(f => e.alias + "." + f.name).mkString(", ")
 
   def insertSql(e: OrmEntity) =
     s"insert into ${e.tableName} (${e.fieldsForCreate.asString(_.name)}) values (${e.fieldsForCreate.asString(_ => "?")})"

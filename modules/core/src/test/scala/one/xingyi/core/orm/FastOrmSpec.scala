@@ -18,7 +18,7 @@ trait OrmFixture {
 
   val employer = ManyToOneEntity("Employer", "E", int("eid"), int("employerid"), List(string("name")), List())
   val address = OneToManyEntity("Address", "A", int("aid"), int("personid"), List(string("add")), List())
-  val phone = OneToManyEntity("Phone", "Ph", int("aid"), int("personid"), List(string("phoneNo")), List())
+  val phone = OneToManyEntity("Phone", "Ph", int("phid"), int("personid"), List(string("phoneNo")), List())
   //each person has a contact email, and the id of the email is the same as the person
   val email = SameIdEntity("ContactEmail", "E", int("eid"), List(string("email")), List())
   val main = MainEntity("Person", "P", int("pid"), List(string("name")), List(employer, address, phone, email))
@@ -32,14 +32,14 @@ trait OrmFixture {
 
 trait FastOrmFixture extends OrmFixture {
   implicit val maker: OrmMaker[Person] = { main =>
-    data: Map[OrmEntity, List[List[AnyRef]]] =>
+    data: Map[OrmEntity, List[List[Any]]] =>
       import OrmMaker._
 
       val eMap = employer.toMap(data, implicit list => Employer(str(employer.dataIndex)))
-      val aMap = address.toOneToManyMap(data, implicit list => Address(str(address.dataIndex)))
-      val phoneMap = phone.toOneToManyMap(data, implicit list => Phone(str(phone.dataIndex)))
+      val aMap = address.toOneToManyMap(data, main, implicit list => Address(str(address.dataIndex)))
+      val phoneMap = phone.toOneToManyMap(data, main, implicit list => Phone(str(phone.dataIndex)))
       val emailMap = email.toMap(data, implicit list => str(email.dataIndex))
-
+      println(s"amap $aMap")
       data(main).map { implicit oneRow =>
         Person(str(main.dataIndex),
           employer.getData(main, eMap, oneRow),
@@ -97,7 +97,7 @@ abstract class AbstractFastOrmSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSo
       main -> "create table Person (pid integer,employerid integer,name varchar(255))",
       employer -> "create table Employer (eid integer,name varchar(255))",
       address -> "create table Address (aid integer,personid integer,add varchar(255))",
-      phone -> "create table Phone (aid integer,personid integer,phoneNo varchar(255))",
+      phone -> "create table Phone (phid integer,personid integer,phoneNo varchar(255))",
       email -> "create table ContactEmail (eid integer,email varchar(255))"
     )
   }
@@ -116,8 +116,8 @@ abstract class AbstractFastOrmSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSo
     OrmStrategies.createTempTables(BatchDetails(1000, 3)).walk(main) shouldBe List(
       main -> "create temporary table temp_Person as select P.pid, P.employerid, P.name from Person P limit 1000 offset 3000",
       employer -> "create temporary table temp_Employer as select DISTINCT  E.eid, E.name from temp_Person P,Employer E where P.employerid = E.eid",
-      address -> "create temporary table temp_Address as select A.personid, A.aid, A.add from temp_Person P,Address A where P.pid = A.personid",
-      phone -> "create temporary table temp_Phone as select Ph.personid, Ph.aid, Ph.phoneNo from temp_Person P,Phone Ph where P.pid = Ph.personid",
+      address -> "create temporary table temp_Address as select A.aid, A.personid, A.add from temp_Person P,Address A where P.pid = A.personid",
+      phone -> "create temporary table temp_Phone as select Ph.phid, Ph.personid, Ph.phoneNo from temp_Person P,Phone Ph where P.pid = Ph.personid",
       email -> "create temporary table temp_ContactEmail as select DISTINCT  E.eid, E.email from temp_Person P,ContactEmail E where P.pid = E.eid"
     )
   }
@@ -133,23 +133,34 @@ abstract class AbstractFastOrmSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSo
   }
 
   it should "have a pretty print" in {
+    println(main.prettyPrint(""))
     Strings.removeWhiteSpace(main.prettyPrint("")) shouldBe Strings.removeWhiteSpace(
-      """MainEntity(Person, id=pid, childrenAdded=employerid, data=name){
+      """MainEntity(Person, id=KeysAndIndex(0,pid), childrenAdded=employerid, data=name){
         |  ManyToOne(Employer, id=eid, idInParent=employerid data=name)
-        |  OneToMany(Address, id=aid, parent=personid data=add)
-        |  OneToMany(Phone, id=aid, parent=personid data=phoneNo)
+        |  OneToMany(Address, id=KeysAndIndex(0,aid), parent=personid data=add)
+        |  OneToMany(Phone, id=KeysAndIndex(0,phid), parent=personid data=phoneNo)
         |  SameId(ContactEmail, id=eid, data=email)
         |}""".stripMargin)
   }
 
-  it should "allow the id used to select it to be extracted from the onerow of data of the parent for " in {
+  it should "allow the turn the parent id into an fields with index " in {
     //documenting assumptions
     main.fieldsAddedByChildren.map(_.name) shouldBe List("employerid")
     main.fieldsForCreate.map(_.name) shouldBe List("pid", "employerid", "name")
-    employer.findIdIndex(main) shouldBe 1
-    email.findIdIndex(main) shouldBe 0
-    phone.findIdIndex(main) shouldBe 0
+
+    employer.primaryKeyFieldsAndIndex shouldBe KeysAndIndex(List((0, FieldType("eid:int"))))
+    phone.primaryKeyFieldsAndIndex shouldBe KeysAndIndex(List((0, FieldType("phid:int"))))
+    address.primaryKeyFieldsAndIndex shouldBe KeysAndIndex(List((0, FieldType("aid:int"))))
+    email.primaryKeyFieldsAndIndex shouldBe KeysAndIndex(List((0, FieldType("eid:int"))))
   }
+  it should "have index and fields for the children" in {
+    employer.idInParent.toKeysAndIndex(main) shouldBe KeysAndIndex(List((1, FieldType("employerid:int"))))
+    phone.parentId.toKeysAndIndex(phone) shouldBe KeysAndIndex(List((1, FieldType("personid:int"))))
+    address.parentId.toKeysAndIndex(address) shouldBe KeysAndIndex(List((1, FieldType("personid:int"))))
+  }
+
+  behavior of "get data"
+
 
   behavior of classOf[FastReaderImpl[Person]].getSimpleName
 

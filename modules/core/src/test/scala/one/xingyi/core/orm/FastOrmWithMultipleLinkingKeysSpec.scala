@@ -18,7 +18,7 @@ trait OrmWithMultipleKeysFixture {
 
   val employer = ManyToOneEntity("Employer", "E", Keys("eid1:int,eid2:int"), Keys("employerid1:int,employerid2:int"), List(string("name")), List())
   val address = OneToManyEntity("Address", "A", Keys("aid1:int,aid2:int"), Keys("personid1:int,personid2:int"), List(string("add")), List())
-  val phone = OneToManyEntity("Phone", "Ph", Keys("phid"), Keys("personid1:int,personid2:int"), List(string("phoneNo")), List())
+  val phone = OneToManyEntity("Phone", "Ph", Keys("phid:int"), Keys("personid1:int,personid2:int"), List(string("phoneNo")), List())
   //each person has a contact email, and the id of the email is the same as the person
   val email = SameIdEntity("ContactEmail", "E", Keys("eid1:int,eid2:int"), List(string("email")), List())
   val main = MainEntity("Person", "P", Keys("pid1:int,pid2:int"), List(string("name")), List(employer, address, phone, email))
@@ -33,10 +33,10 @@ trait OrmWithMultipleKeysFixture {
 trait FastWithMultipleKeysOrmFixture extends OrmWithMultipleKeysFixture {
 
   implicit val maker: OrmMaker[Person] = { main =>
-    data: Map[OrmEntity, List[List[AnyRef]]] =>
+    data: Map[OrmEntity, List[List[Any]]] =>
       val eMap = employer.toMap(data, implicit list => Employer(str(employer.dataIndex)))
-      val aMap = address.toOneToManyMap(data, implicit list => Address(str(address.dataIndex)))
-      val phoneMap = phone.toOneToManyMap(data, implicit list => Phone(str(phone.dataIndex)))
+      val aMap = address.toOneToManyMap(data, main, implicit list => Address(str(address.dataIndex)))
+      val phoneMap = phone.toOneToManyMap(data, main, implicit list => Phone(str(phone.dataIndex)))
       val emailMap = email.toMap(data, implicit list => str(email.dataIndex))
       data(main).map { implicit oneRow =>
         Person(str(main.dataIndex),
@@ -96,7 +96,7 @@ abstract class AbstractWithMultipleKeysFastOrmSpec[M[_] : ClosableM, J: JsonPars
       main -> "create table Person (pid1 integer,pid2 integer,employerid1 integer,employerid2 integer,name varchar(255))",
       employer -> "create table Employer (eid1 integer,eid2 integer,name varchar(255))",
       address -> "create table Address (aid1 integer,aid2 integer,personid1 integer,personid2 integer,add varchar(255))",
-      phone -> "create table Phone (phid varchar(255),personid1 integer,personid2 integer,phoneNo varchar(255))",
+      phone -> "create table Phone (phid integer,personid1 integer,personid2 integer,phoneNo varchar(255))",
       email -> "create table ContactEmail (eid1 integer,eid2 integer,email varchar(255))"
     )
   }
@@ -117,8 +117,8 @@ abstract class AbstractWithMultipleKeysFastOrmSpec[M[_] : ClosableM, J: JsonPars
     OrmStrategies.createTempTables(details).walk(main) shouldBe List(
       main -> "create temporary table temp_Person as select P.pid1, P.pid2, P.employerid1, P.employerid2, P.name from Person P limit 1000 offset 3000",
       employer -> "create temporary table temp_Employer as select DISTINCT  E.eid1, E.eid2, E.name from temp_Person P,Employer E where P.employerid1 = E.eid1 and P.employerid2 = E.eid2",
-      address -> "create temporary table temp_Address as select A.personid1, A.personid2, A.aid1, A.aid2, A.add from temp_Person P,Address A where P.pid1 = A.personid1 and P.pid2 = A.personid2",
-      phone -> "create temporary table temp_Phone as select Ph.personid1, Ph.personid2, Ph.phid, Ph.phoneNo from temp_Person P,Phone Ph where P.pid1 = Ph.personid1 and P.pid2 = Ph.personid2",
+      address -> "create temporary table temp_Address as select A.aid1, A.aid2, A.personid1, A.personid2, A.add from temp_Person P,Address A where P.pid1 = A.personid1 and P.pid2 = A.personid2",
+      phone -> "create temporary table temp_Phone as select Ph.phid, Ph.personid1, Ph.personid2, Ph.phoneNo from temp_Person P,Phone Ph where P.pid1 = Ph.personid1 and P.pid2 = Ph.personid2",
       email -> "create temporary table temp_ContactEmail as select DISTINCT  E.eid1, E.eid2, E.email from temp_Person P,ContactEmail E where P.pid1 = E.eid1 and P.pid2 = E.eid2"
     )
   }
@@ -136,21 +136,29 @@ abstract class AbstractWithMultipleKeysFastOrmSpec[M[_] : ClosableM, J: JsonPars
   it should "have a pretty print" in {
     println(main.prettyPrint(""))
     Strings.removeWhiteSpace(main.prettyPrint("")) shouldBe Strings.removeWhiteSpace(
-      """MainEntity(Person, id=pid1,pid2, childrenAdded=employerid1,employerid2, data=name){
+      """MainEntity(Person, id=KeysAndIndex(0,pid1,1,pid2), childrenAdded=employerid1,employerid2, data=name){
         |  ManyToOne(Employer, id=eid1,eid2, idInParent=employerid1,employerid2 data=name)
-        |  OneToMany(Address, id=aid1,aid2, parent=personid1,personid2 data=add)
-        |  OneToMany(Phone, id=phid, parent=personid1,personid2 data=phoneNo)
+        |  OneToMany(Address, id=KeysAndIndex(0,aid1,1,aid2), parent=personid1,personid2 data=add)
+        |  OneToMany(Phone, id=KeysAndIndex(0,phid), parent=personid1,personid2 data=phoneNo)
         |  SameId(ContactEmail, id=eid1,eid2, data=email)
         |}""".stripMargin)
   }
 
-  it should "allow the id used to select it to be extracted from the onerow of data of the parent for " in {
+
+  it should "allow the turn the parent id into an fields with index " in {
     //documenting assumptions
     main.fieldsAddedByChildren.map(_.name) shouldBe List("employerid1", "employerid2")
     main.fieldsForCreate.map(_.name) shouldBe List("pid1", "pid2", "employerid1", "employerid2", "name")
-    employer.findIdIndex(main) shouldBe 2
-    email.findIdIndex(main) shouldBe 0
-    phone.findIdIndex(main) shouldBe 0
+
+    employer.primaryKeyFieldsAndIndex shouldBe KeysAndIndex(List((0,FieldType("eid1:int")), (1,FieldType("eid2:int"))))
+    phone.primaryKeyFieldsAndIndex shouldBe KeysAndIndex(List((0, FieldType("phid:int"))))
+    address.primaryKeyFieldsAndIndex shouldBe KeysAndIndex(List((0,FieldType("aid1:int")), (1,FieldType("aid2:int"))))
+    email.primaryKeyFieldsAndIndex shouldBe KeysAndIndex(List((0,FieldType("eid1:int")), (1,FieldType("eid2:int"))))
+  }
+  it should "have index and fields for the children" in {
+    employer.idInParent.toKeysAndIndex(main) shouldBe KeysAndIndex(List((2,FieldType("employerid1:int")), (3,FieldType("employerid2:int"))))
+    phone.parentId.toKeysAndIndex(phone) shouldBe KeysAndIndex(List((1,FieldType("personid1:int")), (2,FieldType("personid2:int"))))
+    address.parentId.toKeysAndIndex(address) shouldBe KeysAndIndex(List((2,FieldType("personid1:int")), (3,FieldType("personid2:int"))))
   }
 
   behavior of classOf[FastReaderImpl[Person]].getSimpleName
