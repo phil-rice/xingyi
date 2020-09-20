@@ -1,5 +1,7 @@
 package one.xingyi.core.orm
 
+import java.io.ByteArrayOutputStream
+
 import javax.sql.DataSource
 import one.xingyi.core.closable.ClosableM
 import one.xingyi.core.jdbc.{DatabaseSourceFixture, Jdbc, JdbcOps}
@@ -179,15 +181,28 @@ abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSou
           |3/Many(0)
           |4/OneChild
           |4.0  = jillsEmail {ContactEmail:email}""".stripMargin)
-    }
-  }
-  behavior of getClass.getSimpleName + " " + "OrmMakerForJson"
+      val stream = new ByteArrayOutputStream()
+      mainEntity.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).foreach(numericKeysForPerson.putJson(_, stream))
+      checkStrings(stream.toString(),
+        """{
+          |  "Person:name": "Phil", "employer": {"Employer:name": "Employer1"}, "address": [
+          |  {"Address:add": "Phils first address"},
+          |  {"Address:add": "Phils second address"}
+          |], "phone"     : [], "email": {"ContactEmail:email": "philsEmail"}
+          |}
+          |{
+          |  "Person:name": "Bob", "employer": {"Employer:name": "Employer2"}, "address": [], "phone": [],
+          |  "email"      : {"ContactEmail:email": "bobsEmail"}
+          |}
+          |{
+          |  "Person:name": "Jill", "employer": {"Employer:name": "Employer1"}, "address": [
+          |  {"Address:add": "Jills first address"}
+          |], "phone"     : [], "email": {"ContactEmail:email": "jillsEmail"}
+          |}""".stripMargin)
 
-  it should "allow the items to be read as a stream of json" ignore {
-    //under development
-    setupPerson(ds) {
-      main.stream[JsonObject](OrmBatchConfig(ds, 2)).toList shouldBe ""
     }
+
+
   }
 
 }

@@ -1,5 +1,9 @@
 package one.xingyi.core.orm
 
+import java.io.OutputStream
+
+import one.xingyi.core.strings.Strings
+
 import scala.language.higherKinds
 
 //OK This code is imperative, and mutable...
@@ -17,7 +21,8 @@ object ChildArity {
     //    println(s"got to print print and the key is $key")
     //    println(s"   key .t is ${key.t}")
     //    println(s"   asDebugString is $asDebugString")
-    s"$prefix  = $item ${asDebugString(key.t)}"
+    val itemString = if (item == null) "null" else Strings.escapeJson(item.toString)
+    s"$prefix  = $itemString ${asDebugString(key.t)}"
   }
 }
 sealed trait ChildArity {
@@ -74,7 +79,56 @@ case class NumericKeys[T](list: List[NumericKey[T]]) {
   def printArray(prefix: String, a: Array[Any], strict: Boolean = true)(implicit asDebugString: AsDebugString[T]): List[String] = {
     require(!strict || a.length == size, s"Array size is ${a.length} keys size is $size")
     list.zip(a).flatMap { case (key, item) => key.printArray(prefix, item, strict) }
+  }
+  def putJson(ar: Array[Any], outputStream: OutputStream, charSet: String = "UTF-8") {
+    def putRawString(s: String) = {
+      var i = 0
+      def escape(c: Char): Unit = {outputStream.write('\\'); outputStream.write(c) }
+      while (i < s.length) {
+        s.charAt(i) match {
+          case ('\\') => escape('\\')
+          case ('\b') => escape('b')
+          case ('\f') => escape('f')
+          case ('\n') => escape('n')
+          case ('\r') => escape('r')
+          case ('\t') => escape('t')
+          case ('"') => escape('"')
+          case c => outputStream.write(c)
+        }
+        i += 1
+      }
+    }
+    def putString(s: String): Unit = {
+      outputStream.write('"')
+      putRawString(s)
+      outputStream.write('"')
 
+    }
+    var i = 0
+    outputStream.write('{')
+    while (i < ar.length) {
+      if (i != 0) outputStream.write(',')
+      putString(list(i).key)
+      outputStream.write(':')
+      ar(i) match {
+        case s: String => putString(s)
+        case i: Integer => putRawString(i.toString)
+        case d: Double => putRawString(d.toString)
+        case a: Array[Any] => list(i).children.putJson(a, outputStream, charSet)
+        case (head: Array[Any]) :: tail =>
+          outputStream.write('[')
+          tail.reverse.foreach { case a: Array[Any] =>
+            list(i).children.putJson(a, outputStream, charSet)
+            outputStream.write(',')
+          }
+          list(i).children.putJson(head, outputStream, charSet)
+          outputStream.write(']')
+        case Nil => outputStream.write('['); outputStream.write(']')
+        case null => putRawString("null")
+      }
+      i += 1
+    }
+    outputStream.write('}')
   }
 
   val size: Int = list.size
@@ -88,7 +142,7 @@ case class NumericKeys[T](list: List[NumericKey[T]]) {
     while (i < size) {
       val thisKey = list(i)
       val a = thisKey.arity.optionallyCreateArray(array, i, thisKey.children.size)
-      thisKey.children.setup(a)
+      if (a != null) thisKey.children.setup(a)
       i = i + 1
     }
   }
@@ -189,6 +243,7 @@ object NumericKeys {
       val children: ChildrenInSchema[T] = schemaMapKey.children(t)
       NumericKey(parents, index, schemaMapKey.childKey(t), children.arity, recurse(parents :+ index, children.children), t)
     })
+
 }
 
 

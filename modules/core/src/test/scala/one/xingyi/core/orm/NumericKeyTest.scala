@@ -1,5 +1,7 @@
 package one.xingyi.core.orm
 
+import java.io.ByteArrayOutputStream
+
 import one.xingyi.core.UtilsSpec
 import one.xingyi.core.strings.Strings
 import org.scalatest.Matchers
@@ -128,14 +130,12 @@ class NumericKeyTest extends NumericKeySpecFixture {
         |1.0  = null {b}
         |1.1  = null {c}""".stripMargin)
   }
-  it should "make an array for things with many children" in {
+  it should "make an list for things with many children" in {
     val keys = NumericKeys(List(itema, bcAsMany))
     val array = keys.makeAndSetupArray
     checkArray(keys, array)(
       """0  = null {a}
-        |1/Many(1)
-        |1[0].0  = null {b}
-        |1[0].1  = null {c}""".stripMargin)
+        |1/Many(0)""".stripMargin)
   }
 
   behavior of "NumericKeys/put"
@@ -167,6 +167,7 @@ class NumericKeyTest extends NumericKeySpecFixture {
   it should "put an item into an array with a many child" in {
     val keys = NumericKeys(List(itema, bcAsMany))
     val array = keys.makeAndSetupArray
+    keys.next(Array(1), array)
     keys.put(Array(1), 0, array, "someData")
     checkArray(keys, array)(
       """0  = null {a}
@@ -185,10 +186,8 @@ class NumericKeyTest extends NumericKeySpecFixture {
         |1/OneChild
         |1.0  = someData {1}
         |1.1  = null {2}
-        |1.2/Many(1)
-        |1.2[0].0  = null {n}
-        |1.2[0].1/OneChild
-        |1.2[0].1.0  = null {10}""".stripMargin)
+        |1.2/Many(0)""".stripMargin)
+    keys.next(Array(1, 2), array)
     keys.put(Array(1, 2), 0, array, "someMoreData")
     checkArray(keys, array)(
       """0  = null {a}
@@ -253,14 +252,22 @@ class NumericKeyTest extends NumericKeySpecFixture {
         |1/OneChild
         |1.0  = null {1}
         |1.1  = null {2}
-        |1.2/Many(2)
+        |1.2/Many(1)
         |1.2[0].0  = null {n}
         |1.2[0].1/OneChild
-        |1.2[0].1.0  = null {10}
-        |1.2[1].0  = null {n}
-        |1.2[1].1/OneChild
-        |1.2[1].1.0  = null {10}""".stripMargin)
+        |1.2[0].1.0  = null {10}""".stripMargin)
     keys.put(Array(1, 2, 1), 0, array, "ShouldChangeHeadOfList")
+    checkArray(keys, array)(
+      """0  = null {a}
+        |1/OneChild
+        |1.0  = null {1}
+        |1.1  = null {2}
+        |1.2/Many(1)
+        |1.2[0].0  = null {n}
+        |1.2[0].1/OneChild
+        |1.2[0].1.0  = ShouldChangeHeadOfList {10}""".stripMargin)
+    keys.next(Array(1, 2), array)
+    keys.put(Array(1, 2, 1), 0, array, "AndAgain")
     checkArray(keys, array)(
       """0  = null {a}
         |1/OneChild
@@ -269,10 +276,10 @@ class NumericKeyTest extends NumericKeySpecFixture {
         |1.2/Many(2)
         |1.2[0].0  = null {n}
         |1.2[0].1/OneChild
-        |1.2[0].1.0  = ShouldChangeHeadOfList {10}
+        |1.2[0].1.0  = AndAgain {10}
         |1.2[1].0  = null {n}
         |1.2[1].1/OneChild
-        |1.2[1].1.0  = null {10}""".stripMargin)
+        |1.2[1].1.0  = ShouldChangeHeadOfList {10}""".stripMargin)
 
   }
   it should "not allow next to be called if the path isn't a many child" in {
@@ -284,7 +291,96 @@ class NumericKeyTest extends NumericKeySpecFixture {
     } catch {case e: IllegalArgumentException =>}
     check(1)
     check(1, 0)
+    keys.next(Array(1, 2), array)
     check(1, 2, 1)
   }
 
+
+  behavior of "NumericKeys/Json"
+
+  def checkJson[T](keys: NumericKeys[T], array: Array[Any], expected: String): Unit = {
+    val stream = new ByteArrayOutputStream()
+    keys.putJson(array, stream)
+    checkStrings(stream.toString(), expected)
+  }
+  it should "turn an array into json" in {
+    val keys = NumericKeys(List(itema, itemb, itemc))
+    val array = keys.makeAndSetupArray
+    keys.put(Array(), 0, array, "someData")
+    keys.put(Array(), 1, array, 123)
+    keys.put(Array(), 2, array, 1.2)
+    checkArray(keys, array)(
+      """0  = someData {a}
+        |1  = 123 {b}
+        |2  = 1.2 {c}""".stripMargin)
+    checkJson(keys, array, """{"a":"someData","b":123,"c":1.2}""")
+  }
+
+  it should "handle nulls" in {
+    val keys = NumericKeys(List(itema, itemb, itemc))
+    val array = keys.makeAndSetupArray
+    checkArray(keys, array)(
+      """0  = null {a}
+        |1  = null {b}
+        |2  = null {c}""".stripMargin)
+    checkJson(keys, array, """{"a":null,"b":null,"c":null}""")
+  }
+
+  it should "escape characters" in {
+    val keys = NumericKeys(List(itema))
+    val array = keys.makeAndSetupArray
+    keys.put(Array(), 0, array, "so\\me \b \f \n  \r  \t  va\"lue")
+    checkArray(keys, array)("""0  = so\\me \b \f \n  \r  \t  va\"lue {a}""".stripMargin)
+    checkJson(keys, array, """{"a":"so\\me \b \f \n  \r  \t  va\"lue"}""")
+    //    escaped = escaped.replace("\\", "\\\\")
+    //    escaped = escaped.replace("\"", "\\\"")
+    //    escaped = escaped.replace("\b", "\\b")
+    //    escaped = escaped.replace("\f", "\\f")
+    //    escaped = escaped.replace("\n", "\\n")
+    //    escaped = escaped.replace("\r", "\\r")
+    //    escaped = escaped.replace("\t", "\\t")
+  }
+
+
+  it should "turn an array with child objects into json" in {
+    val keys = NumericKeys(List(itema, bcAsSingleton))
+    val array = keys.makeAndSetupArray
+    keys.put(Array(), 0, array, "av")
+    keys.put(Array(1), 0, array, "bv")
+    keys.put(Array(1), 1, array, "cv")
+    checkArray(keys, array)(
+      """0  = av {a}
+        |1/OneChild
+        |1.0  = bv {b}
+        |1.1  = cv {c}""".stripMargin)
+    checkJson(keys, array, """{"a":"av","bc":{"b":"bv","c":"cv"}}""")
+  }
+
+  it should "turn an array with child arrays into json" in {
+    val keys = NumericKeys(List(itema, bcAsMany))
+    val array = keys.makeAndSetupArray
+    keys.put(Array(), 0, array, "av")
+    checkArray(keys, array)(
+      """0  = av {a}
+        |1/Many(0)""".stripMargin)
+    checkJson(keys, array, """{"a":"av","bc":[]}""")
+
+    keys.next(Array(1), array)
+    keys.put(Array(1), 0, array, "bv1")
+    keys.put(Array(1), 1, array, "cv1")
+    checkJson(keys, array, """{"a":"av","bc":[{"b":"bv1","c":"cv1"}]}""")
+
+    keys.next(Array(1), array)
+    keys.put(Array(1), 0, array, "bv2")
+    keys.put(Array(1), 1, array, "cv2")
+
+    checkArray(keys, array)(
+      """0  = av {a}
+        |1/Many(2)
+        |1[0].0  = bv2 {b}
+        |1[0].1  = cv2 {c}
+        |1[1].0  = bv1 {b}
+        |1[1].1  = cv1 {c}""".stripMargin)
+    checkJson(keys, array, """{"a":"av","bc":[{"b":"bv1","c":"cv1"},{"b":"bv2","c":"cv2"}]}""")
+  }
 }
