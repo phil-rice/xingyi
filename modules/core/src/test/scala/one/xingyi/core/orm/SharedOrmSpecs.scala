@@ -116,43 +116,39 @@ abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSou
         |""".stripMargin)
   }
 
+  lazy val tablesAndFieldsAndPaths: TablesAndFieldsAndPaths = EntityAndPath(numericKeysForPerson)
+  def mainEntityForKeys: EntityAndFieldsAndPath[MainEntity]
+  def addressEntity: EntityAndFieldsAndPath[OneToManyEntity]
+  def phoneEntity: EntityAndFieldsAndPath[OneToManyEntity]
+  lazy val ormFactory = tablesAndFieldsAndPaths.ormFactory(numericKeysForPerson)
+
+  def mapForNext: Map[OneToManyEntity, NumericKey[_]] = Map(
+    addressEntity.entity -> numericKeysForPerson.findForT(schemaForAddress).get,
+    phoneEntity.entity -> numericKeysForPerson.findForT(schemaForPhone).get)
+
 
   it should "allow the items to be read using the numeric keys" in {
-    val tablesAndFieldsAndPaths: TablesAndFieldsAndPaths = EntityAndPath(numericKeysForPerson)
-
-    val ormFactory = tablesAndFieldsAndPaths.ormFactory(numericKeysForPerson)
-
-    val addressEntity = ormFactory.oneToManyEntity(addressTable, "a", Keys("aid:int"), Keys("personid:int"), List())
-    val phoneEntity = ormFactory.oneToManyEntity(phoneTable, "ph", Keys("phid:int"), Keys("personid:int"), List())
-    val mainEntity = ormFactory.mainEntity(personTable, "p", Keys("pid:int"), List(
-      ormFactory.manyToOneEntity(employerTable, "e", Keys("eid:int"), Keys("employerid:int"), List()),
-      addressEntity,
-      phoneEntity,
-      ormFactory.sameIdEntity(emailTable, "em", Keys("eid:int"), List())))
-
-    implicit val maker = ormFactory.ormMaker(Map(
-      addressEntity.entity -> numericKeysForPerson.findForT(schemaForAddress).get,
-      phoneEntity.entity -> numericKeysForPerson.findForT(schemaForPhone).get))
     //under development
     setupPerson(ds) {
-      val data = FastReader.getOneBlockOfDataFromDs(ds, mainEntity.entity, 2)(0)
-      checkStrings(OrmMaker.prettyPrintData(data).mkString("\n"),
-        """Person(size=2)
-          |  0 name=Phil,  1 employerid=1,  2 pid=1
-          |  0 name=Bob,  1 employerid=2,  2 pid=2
-          |Phone(size=0)
-          |Employer(size=2)
-          |  0 name=Employer1,  1 eid=1
-          |  0 name=Employer2,  1 eid=2
-          |Address(size=2)
-          |  0 add=Phils first address,  1 aid=2,  2 personid=1
-          |  0 add=Phils second address,  1 aid=3,  2 personid=1
-          |ContactEmail(size=2)
-          |  0 email=bobsEmail,  1 eid=2
-          |  0 email=philsEmail,  1 eid=1""".stripMargin)
+      implicit val maker: OrmMaker[Array[Any]] = ormFactory.ormMaker(mapForNext)
+      val data = FastReader.getOneBlockOfDataFromDs(ds, mainEntityForKeys.entity, 2)(0)
+//      checkStrings(OrmMaker.prettyPrintData(data).mkString("\n"),
+//        """Person(size=2)
+//          |  0 name=Phil,  1 employerid=1,  2 pid=1
+//          |  0 name=Bob,  1 employerid=2,  2 pid=2
+//          |Phone(size=0)
+//          |Employer(size=2)
+//          |  0 name=Employer1,  1 eid=1
+//          |  0 name=Employer2,  1 eid=2
+//          |Address(size=2)
+//          |  0 add=Phils first address,  1 aid=2,  2 personid=1
+//          |  0 add=Phils second address,  1 aid=3,  2 personid=1
+//          |ContactEmail(size=2)
+//          |  0 email=bobsEmail,  1 eid=2
+//          |  0 email=philsEmail,  1 eid=1""".stripMargin)
 
-      maker(mainEntity.entity)(data)
-      val arrayForRow0 = mainEntity.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).toList
+      maker(mainEntityForKeys.entity)(data)
+      val arrayForRow0 = mainEntityForKeys.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).toList
       checkArray(numericKeysForPerson, arrayForRow0(0))(
         """0  = Phil {Person:name}
           |1/OneChild
@@ -182,7 +178,7 @@ abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSou
           |4/OneChild
           |4.0  = jillsEmail {ContactEmail:email}""".stripMargin)
       val stream = new ByteArrayOutputStream()
-      mainEntity.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).foreach(numericKeysForPerson.putJson(_, stream))
+      mainEntityForKeys.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).foreach(numericKeysForPerson.putJson(_, stream))
       checkStrings(stream.toString(),
         """{
           |  "Person:name": "Phil", "employer": {"Employer:name": "Employer1"}, "address": [

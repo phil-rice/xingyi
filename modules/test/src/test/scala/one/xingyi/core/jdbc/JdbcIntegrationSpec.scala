@@ -7,7 +7,7 @@ import javax.sql.DataSource
 import one.xingyi.core.cddlegacy.{LegacyData, LegacyResult}
 import one.xingyi.core.closable.ClosableLanguage._
 import one.xingyi.core.closable.{ClosableM, SimpleClosable}
-import one.xingyi.core.orm.{AbstractFastOrmWithSingleLinkingKeysSpec, AbstractWithMultipleKeysFastOrmSpec}
+import one.xingyi.core.orm.{AbstractFastOrmWithSingleLinkingKeysSpec, AbstractWithMultipleKeysFastOrmSpec, EntityAndFieldsAndPath, EntityAndPath, Keys, MainEntity, NumericKey, OneToManyEntity, OrmEntity, TablesAndFieldsAndPaths}
 import org.apache.commons.dbcp2.BasicDataSource
 import org.json4s.JValue
 
@@ -15,7 +15,7 @@ import scala.language.higherKinds
 
 trait BasicDataSourceFixture extends DatabaseSourceFixture[BasicDataSource] {
   def makeDataSource(): BasicDataSource = {
-    val bds= new BasicDataSource
+    val bds = new BasicDataSource
     bds.setDriverClassName("org.h2.Driver")
     bds.setUrl("jdbc:h2:~/test")
     bds.setUsername("sa")
@@ -52,7 +52,7 @@ abstract class AbstractJdbcIntegrationSpec[M[_] : ClosableM] extends BasicDataSo
 
 
   it should
-  "drop create  tables" in {
+    "drop create  tables" in {
     setup(1)
     val x = getValue("select * from testsource;", toLegacyData) apply ds
     x shouldBe LegacyData(1, "sit1", "result1")
@@ -73,7 +73,27 @@ abstract class AbstractJdbcIntegrationSpec[M[_] : ClosableM] extends BasicDataSo
 
 }
 import one.xingyi.json4s.Json4sParser._
-class FastOrmWithSingleLinkingKeysSpec extends AbstractFastOrmWithSingleLinkingKeysSpec[SimpleClosable, JValue, BasicDataSource] with BasicDataSourceFixture
-class FastOrmWithMultipleKeysSpec extends AbstractWithMultipleKeysFastOrmSpec[SimpleClosable, JValue, BasicDataSource] with BasicDataSourceFixture
+
+class FastOrmWithSingleLinkingKeysSpec extends AbstractFastOrmWithSingleLinkingKeysSpec[SimpleClosable, JValue, BasicDataSource] with BasicDataSourceFixture {
+  lazy val addressEntity = ormFactory.oneToManyEntity(addressTable, "a", Keys("aid:int"), Keys("personid:int"), List())
+  lazy val phoneEntity = ormFactory.oneToManyEntity(phoneTable, "ph", Keys("phid:int"), Keys("personid:int"), List())
+  lazy val mainEntityForKeys = ormFactory.mainEntity(personTable, "p", Keys("pid:int"), List(
+    ormFactory.manyToOneEntity(employerTable, "e", Keys("eid:int"), Keys("employerid:int"), List()),
+    addressEntity,
+    phoneEntity,
+    ormFactory.sameIdEntity(emailTable, "em", Keys("eid:int"), List())))
+}
+class FastOrmWithMultipleKeysSpec extends AbstractWithMultipleKeysFastOrmSpec[SimpleClosable, JValue, BasicDataSource] with BasicDataSourceFixture {
+  lazy val addressEntity = ormFactory.oneToManyEntity(addressTable, "a", Keys("aid1:int,aid2:int"), Keys("personid1:int,personid2:int"), List())
+  lazy val phoneEntity = ormFactory.oneToManyEntity(phoneTable, "ph", Keys("phid:int"), Keys("personid1:int,personid2:int"), List())
+  lazy val mainEntityForKeys = ormFactory.mainEntity(personTable, "p", Keys("pid1:int,pid2:int"), List(
+    ormFactory.manyToOneEntity(employerTable, "e", Keys("eid1:int,eid2:int"), Keys("employerid1:int,employerid2:int"), List()),
+    addressEntity,
+    phoneEntity,
+    ormFactory.sameIdEntity(emailTable, "em", Keys("eid1:int,eid2:int"), List())))
+
+
+
+}
 
 class JdbcIntegrationSpec extends AbstractJdbcIntegrationSpec[SimpleClosable]
