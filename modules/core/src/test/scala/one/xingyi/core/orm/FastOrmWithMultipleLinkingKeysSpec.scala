@@ -25,7 +25,7 @@ trait OrmWithMultipleKeysFixture {
 
 }
 
-trait FastWithMultipleKeysOrmFixture extends OrmWithMultipleKeysFixture {
+trait FastWithMultipleKeysOrmFixture[M[_]] extends OrmWithMultipleKeysFixture {
 
   implicit val maker: OrmMaker[Person] = { main =>
     data: Map[OrmEntity, List[List[Any]]] =>
@@ -41,8 +41,7 @@ trait FastWithMultipleKeysOrmFixture extends OrmWithMultipleKeysFixture {
           email.getData(main, emailMap, oneRow))
       }.toStream
   }
-
-  def setupPerson[M[_] : ClosableM](ds: DataSource)(block: => Unit)(implicit jdbcOps: JdbcOps[DataSource]): Unit = {
+  def setupPerson(ds: DataSource)(block: => Unit)(implicit jdbcOps: JdbcOps[DataSource], closableM: ClosableM[M]) {
     import jdbcOps._
     def execute = { s: String => executeSql(s) apply ds }
     def query = { s: String => getList(s) { rs: ResultSet => (1 to rs.getMetaData.getColumnCount).toList.map(rs.getObject) } apply ds }
@@ -69,7 +68,7 @@ trait FastWithMultipleKeysOrmFixture extends OrmWithMultipleKeysFixture {
   }
 }
 
-abstract class AbstractWithMultipleKeysFastOrmSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends SharedFastOrmTests[M, J, DS] with FastWithMultipleKeysOrmFixture with  OrmStrategyChecker {
+abstract class AbstractWithMultipleKeysFastOrmSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends SharedFastOrmTests[M, J, DS] with FastWithMultipleKeysOrmFixture[M] with OrmStrategyChecker {
 
 
   behavior of "FastOrm"

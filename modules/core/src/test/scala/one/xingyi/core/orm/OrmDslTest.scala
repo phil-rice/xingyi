@@ -1,8 +1,9 @@
 package one.xingyi.core.orm
 
 import one.xingyi.core.UtilsSpec
+import one.xingyi.core.closable.SimpleClosable
 
-class OrmDslTest extends UtilsSpec with FastOrmFixture {
+class OrmDslTest extends UtilsSpec with FastOrmFixture[SimpleClosable] {
 
   behavior of "OrmDsl"
 

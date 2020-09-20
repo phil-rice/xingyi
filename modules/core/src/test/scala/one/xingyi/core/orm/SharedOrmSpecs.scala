@@ -25,7 +25,7 @@ trait OrmStrategyChecker extends Matchers {
 
 abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends UtilsSpec  with DatabaseSourceFixture[DS]  with Jdbc {
 
-  def setupPerson[M[_] : ClosableM](ds: DataSource)(block: => Unit)(implicit jdbcOps: JdbcOps[DataSource]): Unit
+  def setupPerson(ds: DataSource)(block: => Unit)(implicit jdbcOps: JdbcOps[DataSource], closableM: ClosableM[M]): Unit
   def main: MainEntity
 
   implicit def maker: OrmMaker[Person]

@@ -29,7 +29,7 @@ trait OrmFixture {
 
 }
 
-trait FastOrmFixture extends OrmFixture {
+trait FastOrmFixture[M[_]] extends OrmFixture {
   implicit val maker: OrmMaker[Person] = { main =>
     data: Map[OrmEntity, List[List[Any]]] =>
       import OrmMaker._
@@ -48,7 +48,7 @@ trait FastOrmFixture extends OrmFixture {
       }.toStream
   }
 
-  def setupPerson[M[_] : ClosableM](ds: DataSource)(block: => Unit)(implicit jdbcOps: JdbcOps[DataSource]): Unit = {
+  def setupPerson(ds: DataSource)(block: => Unit)(implicit jdbcOps: JdbcOps[DataSource], closableM: ClosableM[M]): Unit = {
     import jdbcOps._
     def execute = { s: String => executeSql(s) apply ds }
     def query = { s: String => getList(s) { rs: ResultSet => (1 to rs.getMetaData.getColumnCount).toList.map(rs.getObject) } apply ds }
@@ -77,7 +77,7 @@ trait FastOrmFixture extends OrmFixture {
 
 
 
-abstract class AbstractFastOrmWithSingleLinkingKeysSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends SharedFastOrmTests[M, J, DS] with FastOrmFixture with  OrmStrategyChecker {
+abstract class AbstractFastOrmWithSingleLinkingKeysSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends SharedFastOrmTests[M, J, DS] with FastOrmFixture[M] with  OrmStrategyChecker {
 
 
   behavior of "FastOrm"
