@@ -3,7 +3,7 @@ package one.xingyi.core.orm
 import one.xingyi.core.UtilsSpec
 import one.xingyi.core.strings.Strings
 
-class EntityAndPathTest extends UtilsSpec with NumericKeyFixture {
+class EntityAndPathTest extends UtilsSpec with NumericKeySpecFixture {
 
   val t1a: SchemaForTest = "t1:a"
 
@@ -13,12 +13,6 @@ class EntityAndPathTest extends UtilsSpec with NumericKeyFixture {
       "t3:x", "t3:y"
     )))))
 
-  implicit val findKeys: FindOrmEntityAndField[SchemaForTest] = (item: SchemaForTest) => {
-    if (item.key.contains(":")) {
-      val (name, field) = Strings.splitInTwo(":")(item.key)
-      Some((TableName(name, ""), FieldType(field)))
-    } else None
-  }
   behavior of "Entity And Path"
 
   def checkEntityAndPath(entityAndPaths: TablesAndFieldsAndPaths)(expected: String) = {

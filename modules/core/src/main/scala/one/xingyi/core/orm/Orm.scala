@@ -13,6 +13,23 @@ import scala.language.higherKinds
 
 trait FastReader[T] extends (MainEntity => Int => Stream[T])
 object FastReader {
+  def getOneBlockOfDataFromDs(dataSource: DataSource, main: MainEntity, size: Int)(index: Int)(implicit fastReaderOps: FastReaderDal, sqlOps: FastOrmSql): Map[OrmEntity, List[List[AnyRef]]] = {
+    val batchConfig = OrmBatchConfig(dataSource, size)
+    val connection = dataSource.getConnection
+    try {
+      FastReader.getOneBlockOfData(connection, main, batchConfig, index)
+    } finally {
+      connection.close()
+    }
+  }
+
+  def getOneBlockOfData(connection: Connection, main: MainEntity, batchConfig: OrmBatchConfig, n: Int)(implicit fastReaderOps: FastReaderDal, sqlOps: FastOrmSql): Map[OrmEntity, List[List[AnyRef]]] = {
+    import fastReaderOps._
+    OrmStrategies.dropTempTables.map(execute(connection)).walk(main)
+    OrmStrategies.createTempTables(BatchDetails(batchConfig.batchSize, n)).map(execute(connection)).walk(main)
+    OrmStrategies.drainTempTables.map(query(connection)).walk(main).toMap
+  }
+
   def apply[T](batchConfig: OrmBatchConfig)(implicit ormMaker: OrmMaker[T], fastReaderOps: FastReaderDal, sqlOps: FastOrmSql) =
     new FastReaderImpl[T](batchConfig)
 }
@@ -38,14 +55,13 @@ case class BatchDetails(batchSize: Int, index: Int) {
   def offset: Int = batchSize * index
 }
 class FastReaderImpl[T](batchConfig: OrmBatchConfig)(implicit ormMaker: OrmMaker[T], fastReaderOps: FastReaderDal, sqlOps: FastOrmSql) extends FastReader[T] {
-  import fastReaderOps._
 
+
+  //TODO rewrite using closable
   override def apply(main: MainEntity): Int => Stream[T] = { n: Int =>
     val connection = batchConfig.dataSource.getConnection
     try {
-      OrmStrategies.dropTempTables.map(execute(connection)).walk(main)
-      OrmStrategies.createTempTables(BatchDetails(batchConfig.batchSize, n)).map(execute(connection)).walk(main)
-      val map: Map[OrmEntity, List[List[AnyRef]]] = OrmStrategies.drainTempTables.map(query(connection)).walk(main).toMap
+      val map: Map[OrmEntity, List[List[AnyRef]]] = FastReader.getOneBlockOfData(connection, main, batchConfig, n)
       ormMaker(main)(map)
     } finally {
       connection.close()

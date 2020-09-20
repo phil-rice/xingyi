@@ -43,9 +43,8 @@ case object OneChild extends ChildArity {
 }
 case object ManyChildren extends ChildArity {
   override protected[orm] def optionallyCreateArray(a: Array[Any], i: Int, size: Int) = {
-    val result = new Array[Any](size)
-    a(i) = List(result)
-    result
+    a(i) = List()
+    null
   }
   override def prettyPrintArray[T: AsDebugString](prefix: String, key: NumericKey[T], item: Any, strict: Boolean): List[String] = {
     require(item.isInstanceOf[List[_]])
@@ -70,6 +69,7 @@ trait SchemaMapKey[T] {
 
 case class NumericKeys[T](list: List[NumericKey[T]]) {
   def allKeys: List[NumericKey[T]] = list.flatMap { key => key :: key.children.allKeys }
+  def findForT(t: T) = allKeys.find(_.t == t)
   def prettyPrint(indent: String) = list.map(_.prettyPrint(indent)).mkString("\n")
   def printArray(prefix: String, a: Array[Any], strict: Boolean = true)(implicit asDebugString: AsDebugString[T]): List[String] = {
     require(!strict || a.length == size, s"Array size is ${a.length} keys size is $size")
@@ -161,6 +161,7 @@ case class NumericKeys[T](list: List[NumericKey[T]]) {
 
   }
   def next(path: Array[Int], array: Array[Any]): Unit = {
+    println(s"in next and path is [${path.mkString(",")}]")
     val lastArray = findLastArrayForList(path, array)
     val list = asList(lastArray(path(path.length - 1)), s"At end of the path $path")
     val ar = findKeyForPath(path).children.makeAndSetupArray

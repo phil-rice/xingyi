@@ -40,7 +40,7 @@ trait UtilsSpec extends CoreSpec with Eventually with MockitoSugar {
   }
 
   def checkStrings(actual: String, expected: String): Unit =
-    withClue(s"Actual:   $actual\n\nExpected: $expected\n\n") {
+    withClue(s"Actual:\n$actual\n\nExpected:\n$expected\n\n") {
       Strings.removeWhiteSpace(actual) shouldBe Strings.removeWhiteSpace(expected)
     }
 

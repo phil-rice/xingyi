@@ -6,22 +6,43 @@ import org.scalatest.Matchers
 
 import scala.language.implicitConversions
 
+
 trait NumericKeyFixture extends UtilsSpec {
-  object SchemaForTest {
-    implicit def debugArray: AsDebugString[SchemaForTest] = (t: SchemaForTest) => "{" + t.key + "}"
-  }
+
   sealed trait SchemaForTest {def key: String}
   case class SchemaItem(key: String) extends SchemaForTest
   case class SchemaItemWithChildren(key: String, hasMany: Boolean, children: List[SchemaForTest]) extends SchemaForTest
 
-  implicit object ObjectKeyMapForTest extends SchemaMapKey[SchemaForTest] {
-    override def childKey(t: SchemaForTest): String = t.key
-    override def children(t: SchemaForTest): ChildrenInSchema[SchemaForTest] = t match {
-      case item: SchemaItem => Zero()
-      case SchemaItemWithChildren(_, true, children) => ZeroOrMore(children)
-      case SchemaItemWithChildren(_, false, children) => AlwaysOne(children)
+  object SchemaForTest {
+    implicit val findKeys: FindOrmEntityAndField[SchemaForTest] = (item: SchemaForTest) => {
+      if (item.key.contains(":")) {
+        val (name, field) = Strings.splitInTwo(":")(item.key)
+        Some((TableName(name, ""), FieldType(field)))
+      } else None
+    }
+
+    implicit def debugArray: AsDebugString[SchemaForTest] = (t: SchemaForTest) => "{" + t.key + "}"
+    implicit object ObjectKeyMapForTest extends SchemaMapKey[SchemaForTest] {
+      override def childKey(t: SchemaForTest): String = t.key
+      override def children(t: SchemaForTest): ChildrenInSchema[SchemaForTest] = t match {
+        case item: SchemaItem => Zero()
+        case SchemaItemWithChildren(_, true, children) => ZeroOrMore(children)
+        case SchemaItemWithChildren(_, false, children) => AlwaysOne(children)
+      }
     }
   }
+  def checkNumericKeys[T](n: NumericKeys[T])(expected: String) =
+    checkStrings(n.prettyPrint(""), expected)
+
+  def checkArray[T: AsDebugString](key: NumericKeys[T], a: Array[Any])(expected: String) = {
+    require(key != null)
+    require(a != null)
+    checkStrings(key.printArray("", a).mkString("\n"), expected)
+  }
+
+}
+trait NumericKeySpecFixture extends NumericKeyFixture {
+
 
   val itema: SchemaForTest = SchemaItem("a")
   val itemb: SchemaForTest = SchemaItem("b")
@@ -43,14 +64,8 @@ trait NumericKeyFixture extends UtilsSpec {
   val complex = List[SchemaForTest]("a", ab)
 
 
-  def checkNumericKeys[T](n: NumericKeys[T])(expected: String) =
-    checkStrings(n.prettyPrint(""), expected)
-
-  def checkArray[T: AsDebugString](key: NumericKeys[T], a: Array[Any])(expected: String) =
-    checkStrings(key.printArray("", a).mkString("\n"), expected)
-
 }
-class NumericKeyTest extends  NumericKeyFixture {
+class NumericKeyTest extends NumericKeySpecFixture {
 
 
   behavior of "NumericKeys with Map[String,Any]"

@@ -5,19 +5,36 @@ import java.io
 
 import one.xingyi.core.json.{JsonObject, JsonParser, JsonValue}
 import one.xingyi.core.map.Maps._
+import one.xingyi.core.strings.Strings
 
 
 trait OrmMaker[T] extends (MainEntity => Map[OrmEntity, List[List[AnyRef]]] => Stream[T])
 
 object OrmMaker {
+  def prettyPrintData(data: Map[OrmEntity, List[List[AnyRef]]]) = {
+    data.flatMap { case (entity, lists) =>
+      s"${entity.tableName.tableName}(size=${lists.size})" :: lists.map { oneRow =>
+        entity.fieldsForCreate.zipAll(oneRow, FieldType("missingName"), "missingValues").zipWithIndex.
+          map { case ((f, d),i) => s"  $i ${f.name}=$d" }.mkString(",")
+      }
+    }
+  }
+
+
   type RawOrmMap = Map[OrmEntity, List[List[AnyRef]]]
   type MakeTFn[T] = OrmEntity => List[Any] => T
 
   def toMapOfIdToList(map: RawOrmMap): Map[OrmEntity, Map[Any, List[AnyRef]]] =
-    map.mapValues(_.map { case head :: rest => head -> rest; case _ => throw new RuntimeException() }.toMap)
+    map.mapValues(_.map {
+      case head :: rest => head -> rest;
+      case _ => throw new RuntimeException()
+    }.toMap)
 
   def toListofIdAnd[T](map: RawOrmMap, entity: OrmEntity)(fn: MakeTFn[T]): List[(Any, T)] =
-    map(entity).map { case id :: rest => id -> fn(entity)(rest); case _ => throw new RuntimeException() }
+    map(entity).map {
+      case id :: rest => id -> fn(entity)(rest);
+      case _ => throw new RuntimeException()
+    }
 
   def toMapofIdTo[T](map: RawOrmMap, entity: OrmEntity)(fn: MakeTFn[T]): Map[Any, T] =
     toListofIdAnd(map, entity)(fn).toMap
@@ -26,7 +43,9 @@ object OrmMaker {
   def toJson[J: JsonParser](entity: OrmEntity)(list: List[Any]): JsonObject = {
     //    println(s"OrmMaker.toJson $list  rows to drop ${entity.colsToDropForValues}")
     def fromTuple[T](data: Any, fieldType: FieldType[T]): (String, JsonValue) = fieldType.name -> fieldType.writeToJson(data.asInstanceOf[T])
-    JsonObject(list.zip(entity.dataFields).map { case (data, df) => fromTuple(data, df) }: _*)
+    JsonObject(list.zip(entity.dataFields).map {
+      case (data, df) => fromTuple(data, df)
+    }: _*)
   }
 
   def toIdAndJson[J: JsonParser](entity: OrmEntity)(list: List[AnyRef]): (String, JsonObject) = list match {

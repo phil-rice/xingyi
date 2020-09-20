@@ -1,15 +1,13 @@
 package one.xingyi.core.orm
 
 import javax.sql.DataSource
-import one.xingyi.core.UtilsSpec
 import one.xingyi.core.closable.ClosableM
 import one.xingyi.core.jdbc.{DatabaseSourceFixture, Jdbc, JdbcOps}
 import one.xingyi.core.json.{JsonObject, JsonParser}
-import org.scalatest.Matchers
 
-import scala.language.higherKinds
+import scala.language.{higherKinds, implicitConversions}
 
-trait SharedOrmFixture extends Matchers {
+trait SharedOrmFixture extends NumericKeyFixture {
   def checkStrategy(name: String, block: List[(OrmEntity, String)], expected: List[(OrmEntity, String)]): Unit = {
     val actual = block
     val fullDescription = List(name, actual.map(t => t._1.tableName + "->" + '"' + t._2 + '"').mkString(",\n"), "\n")
@@ -30,13 +28,27 @@ trait SharedOrmFixture extends Matchers {
   val emailTable = TableName("ContactEmail", "")
   val personTable = TableName("Person", "")
 
+  val schemaForAddress = SchemaItemWithChildren("address", true, List[SchemaForTest](SchemaItem("Address:add")))
+  val schemaForPhone = SchemaItemWithChildren("phone", true, List[SchemaForTest](SchemaItem("Phone:phoneNo")))
 
+  val schemaForPerson: List[SchemaForTest] = {
+    implicit def stringToSchemaForTest(s: String): SchemaForTest = SchemaItem(s)
+    List[SchemaForTest](
+      "Person:name",
+      SchemaItemWithChildren("employer", false, List[SchemaForTest]("Employer:name")),
+      schemaForAddress,
+      schemaForPhone,
+      SchemaItemWithChildren("email", false, List[SchemaForTest]("ContactEmail:email"))
+    )
+  }
+  val numericKeysForPerson: NumericKeys[SchemaForTest] = NumericKeys(schemaForPerson)
 }
 
-abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends UtilsSpec with DatabaseSourceFixture[DS] with Jdbc {
+abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends SharedOrmFixture with NumericKeyFixture with DatabaseSourceFixture[DS] with Jdbc {
 
   def setupPerson(ds: DataSource)(block: => Unit)(implicit jdbcOps: JdbcOps[DataSource], closableM: ClosableM[M]): Unit
   def main: MainEntity
+  //  def mainUsingArrays: MainEntity
 
   implicit def maker: OrmMaker[Person]
   behavior of getClass.getSimpleName + " get data"
@@ -61,6 +73,112 @@ abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSou
         List(Person("Phil", Employer("Employer1"), List(Address("Phils first address"), Address("Phils second address")), List(), "philsEmail"),
           Person("Bob", Employer("Employer2"), List(), List(), "bobsEmail"),
           Person("Jill", Employer("Employer1"), List(Address("Jills first address")), List(), "jillsEmail"))
+    }
+  }
+  behavior of getClass.getSimpleName + " with ormFactory"
+
+  it should "checkAssumptions and structure" in {
+    checkNumericKeys(numericKeysForPerson)(
+      """Person:name (),0 NoChildren
+        |employer (),1 OneChild
+        | Employer:name (1),0 NoChildren
+        |address (),2 ManyChildren
+        | Address:add (2),0 NoChildren
+        |phone (),3 ManyChildren
+        | Phone:phoneNo (3),0 NoChildren
+        |email (),4 OneChild
+        | ContactEmail:email (4),0 NoChildren""".stripMargin)
+    val ar = numericKeysForPerson.makeAndSetupArray
+    checkArray(numericKeysForPerson, ar)(
+      """0  = null {Person:name}
+        |1/OneChild
+        |1.0  = null {Employer:name}
+        |2/Many(0)
+        |3/Many(0)
+        |4/OneChild
+        |4.0  = null {ContactEmail:email}""".stripMargin)
+
+    val tablesAndFieldsAndPaths: TablesAndFieldsAndPaths = EntityAndPath(numericKeysForPerson)
+
+    checkStrings(tablesAndFieldsAndPaths.prettyPrint.mkString("\n"),
+      """Address
+        |   0 add - (2) - 0
+        |ContactEmail
+        |   0 email - (4) - 0
+        |Employer
+        |   0 name - (1) - 0
+        |Person
+        |   0 name - () - 0
+        |Phone
+        |   0 phoneNo - (3) - 0
+        |""".stripMargin)
+  }
+
+
+  it should "allow the items to be read using the numeric keys" in {
+    val tablesAndFieldsAndPaths: TablesAndFieldsAndPaths = EntityAndPath(numericKeysForPerson)
+
+    val ormFactory = tablesAndFieldsAndPaths.ormFactory(numericKeysForPerson)
+
+    val addressEntity = ormFactory.oneToManyEntity(addressTable, "a", Keys("aid:int"), Keys("personid:int"), List())
+    val phoneEntity = ormFactory.oneToManyEntity(phoneTable, "ph", Keys("phid:int"), Keys("personid:int"), List())
+    val mainEntity = ormFactory.mainEntity(personTable, "p", Keys("pid:int"), List(
+      ormFactory.manyToOneEntity(employerTable, "e", Keys("eid:int"), Keys("employerid:int"), List()),
+      addressEntity,
+      phoneEntity,
+      ormFactory.sameIdEntity(emailTable, "em", Keys("eid:int"), List())))
+
+    implicit val maker = ormFactory.ormMaker(Map(
+      addressEntity.entity -> numericKeysForPerson.findForT(schemaForAddress).get,
+      phoneEntity.entity -> numericKeysForPerson.findForT(schemaForPhone).get))
+    //under development
+    setupPerson(ds) {
+      val data = FastReader.getOneBlockOfDataFromDs(ds, mainEntity.entity, 2)(0)
+      checkStrings(OrmMaker.prettyPrintData(data).mkString("\n"),
+        """Person(size=2)
+          |  0 name=Phil,  1 employerid=1,  2 pid=1
+          |  0 name=Bob,  1 employerid=2,  2 pid=2
+          |Phone(size=0)
+          |Employer(size=2)
+          |  0 name=Employer1,  1 eid=1
+          |  0 name=Employer2,  1 eid=2
+          |Address(size=2)
+          |  0 add=Phils first address,  1 aid=2,  2 personid=1
+          |  0 add=Phils second address,  1 aid=3,  2 personid=1
+          |ContactEmail(size=2)
+          |  0 email=bobsEmail,  1 eid=2
+          |  0 email=philsEmail,  1 eid=1""".stripMargin)
+
+      maker(mainEntity.entity)(data)
+      val arrayForRow0 = mainEntity.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).toList
+      checkArray(numericKeysForPerson, arrayForRow0(0))(
+        """0  = Phil {Person:name}
+          |1/OneChild
+          |1.0  = Employer1 {Employer:name}
+          |2/Many(2)
+          |2[0].0  = Phils second address {Address:add}
+          |2[1].0  = Phils first address {Address:add}
+          |3/Many(0)
+          |4/OneChild
+          |4.0  = philsEmail {ContactEmail:email}
+          |""".stripMargin)
+      checkArray(numericKeysForPerson, arrayForRow0(1))(
+        """0  = Bob {Person:name}
+          |1/OneChild
+          |1.0  = Employer2 {Employer:name}
+          |2/Many(0)
+          |3/Many(0)
+          |4/OneChild
+          |4.0  = bobsEmail {ContactEmail:email}""".stripMargin)
+      checkArray(numericKeysForPerson, arrayForRow0(2))(
+        """0  = Jill {Person:name}
+          |1/OneChild
+          |1.0  = Employer1 {Employer:name}
+          |2/Many(1)
+          |2[0].0  = Jills first address {Address:add}
+          |3/Many(0)
+          |4/OneChild
+          |4.0  = jillsEmail {ContactEmail:email}""".stripMargin)
     }
   }
   behavior of getClass.getSimpleName + " " + "OrmMakerForJson"

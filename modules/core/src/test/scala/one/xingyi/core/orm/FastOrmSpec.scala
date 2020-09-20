@@ -28,6 +28,7 @@ trait OrmFixture extends SharedOrmFixture {
   val main = MainEntity(personTable, "P", int("pid"), List(string("name")), List(employer, address, phone, email))
 
 
+
 }
 
 trait FastOrmFixture[M[_]] extends OrmFixture {
