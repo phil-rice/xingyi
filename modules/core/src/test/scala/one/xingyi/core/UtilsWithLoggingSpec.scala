@@ -4,6 +4,7 @@ package one.xingyi.core
 import java.io.ByteArrayOutputStream
 
 import one.xingyi.core.logging.NullLoggingAdapter
+import one.xingyi.core.strings.Strings
 import org.mockito.{ArgumentCaptor, Mockito}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{FlatSpec, FlatSpecLike, Matchers}
@@ -37,6 +38,11 @@ trait UtilsSpec extends CoreSpec with Eventually with MockitoSugar {
   implicit class StringOps(s: String) {
     def noWhiteSpace = s.replaceAll("\\se*", "")
   }
+
+  def checkStrings(actual: String, expected: String): Unit =
+    withClue(actual + "\n\n") {
+      Strings.removeWhiteSpace(actual) shouldBe Strings.removeWhiteSpace(expected)
+    }
 
   def capturePrintln[X](block: => X): (X, String) = {
     //    val stream = new

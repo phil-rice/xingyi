@@ -6,6 +6,13 @@ import one.xingyi.core.UtilsWithLoggingSpec
 
 class StringsTest extends UtilsWithLoggingSpec {
 
+  "strings.split" should "split strings" in {
+    Strings.split()("") shouldBe List()
+    Strings.split()("a") shouldBe List("a")
+    Strings.split()("a.b") shouldBe List("a", "b")
+    Strings.split()(".a . b .d") shouldBe List("a", "b", "d")
+  }
+
   "Strings.ellipse" should "return the string if the length is less than the number" in {
     Strings.ellipses(3)("") shouldBe ""
     Strings.ellipses(3)("abc") shouldBe "abc"

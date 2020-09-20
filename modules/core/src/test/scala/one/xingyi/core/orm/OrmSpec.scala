@@ -47,8 +47,8 @@ class OrmSpec extends UtilsSpec with EntityFixture {
 
   it should "have a createtables strategy" in {
     val s = OrmStrategies.createTables
-    s.mainEntityFn(mainEntity) shouldBe "create table person (id integer,name varchar(255))"
-    s.childFn(mainEntity)(phoneEntity) shouldBe "create table phone (id integer,personId integer,manufacturer varchar(255))"
+    s.mainEntityFn(mainEntity) shouldBe "create table person (name varchar(255),id integer)"
+    s.childFn(mainEntity)(phoneEntity) shouldBe "create table phone (manufacturer varchar(255),id integer,personId integer)"
   }
 
   it should "have a dropTempTables strategy" in {
@@ -59,8 +59,8 @@ class OrmSpec extends UtilsSpec with EntityFixture {
 
   it should "have a createTempTables strategy" in {
     val s = OrmStrategies.createTempTables(BatchDetails(123, 456))
-    s.mainEntityFn(mainEntity) shouldBe "create temporary table temp_person as select p.id, p.name from person p limit 123 offset 56088"
-    s.childFn(mainEntity)(phoneEntity) shouldBe "create temporary table temp_phone as select ph.id, ph.personId, ph.manufacturer from temp_person p,phone ph where p.id = ph.personId"
+    s.mainEntityFn(mainEntity) shouldBe "create temporary table temp_person as select p.name, p.id from person p limit 123 offset 56088"
+    s.childFn(mainEntity)(phoneEntity) shouldBe "create temporary table temp_phone as select ph.manufacturer, ph.id, ph.personId from temp_person p,phone ph where p.id = ph.personId"
   }
 
   it should "have a drainTempTables strategy" in {
@@ -71,8 +71,8 @@ class OrmSpec extends UtilsSpec with EntityFixture {
 
   it should "have a insertData strategy" in {
     val s = OrmStrategies.insertData
-    s.mainEntityFn(mainEntity) shouldBe "insert into person (id,name) values (?,?)"
-    s.childFn(mainEntity)(phoneEntity) shouldBe "insert into phone (id,personId,manufacturer) values (?,?,?)"
+    s.mainEntityFn(mainEntity) shouldBe "insert into person (name,id) values (?,?)"
+    s.childFn(mainEntity)(phoneEntity) shouldBe "insert into phone (manufacturer,id,personId) values (?,?,?)"
   }
 
 

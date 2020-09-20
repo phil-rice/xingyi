@@ -11,3 +11,4 @@
 0.5.11 Fast Orm now has DSL and many to one tables
 0.5.13 Fast Orm has 'same parent id'
 0.5.15 Fast Orm entities can now have composite keys
+0.5.17 And the composite keys work much better

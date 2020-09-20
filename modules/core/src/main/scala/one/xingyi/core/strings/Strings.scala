@@ -3,10 +3,13 @@ package one.xingyi.core.strings
 
 import java.io.{ByteArrayOutputStream, PrintStream, StringWriter}
 
+import javax.swing.JPopupMenu.Separator
+
 class ParseException(msg: String, e: Exception) extends RuntimeException(msg, e) {
   def this(msg: String) = this(msg, null)
 }
 object Strings {
+  def split(separator: String = "\\."): (String => List[String]) = s => s.split(separator).filter(_.nonEmpty).map(_.trim).toList
   def splitInTwo(separator: String = ":"): (String => (String, String)) = {
     s =>
       s.split(separator).map(_.trim).filter(_.nonEmpty) match {

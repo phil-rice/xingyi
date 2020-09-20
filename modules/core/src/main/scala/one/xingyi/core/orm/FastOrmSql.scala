@@ -49,6 +49,12 @@ trait FastOrmSql {
       s"from ${tempTableName(parent)} ${parent.alias},${e.tableName} ${e.alias} " +
       s"where ${whereKey(parent.alias, e.idInParent, e.alias, e.primaryKeyField)}"
 
+  def createOneToZeroOneEntityTempTable(e: OneToZeroOneEntity)(parent: OrmEntity): String =
+    s"create temporary table temp_${e.tableName} as select DISTINCT  ${selectFields(e)} " +
+      s"from ${tempTableName(parent)} ${parent.alias},${e.tableName} ${e.alias} " +
+      s"where ${whereKey(parent.alias, e.idInParent, e.alias, e.primaryKeyField)} " +
+      s"sort by ${parent.primaryKeyField.list.map { f => s"${parent.alias}.${f.name}" }.mkString(",")}"
+
   def createSameIdTempTable(e: SameIdEntity)(parent: OrmEntity): String =
     s"create temporary table temp_${e.tableName} as select DISTINCT  ${selectFields(e)} " +
       s"from ${tempTableName(parent)} ${parent.alias},${e.tableName} ${e.alias} " +
@@ -59,7 +65,7 @@ trait FastOrmSql {
 
   def selectKey(alias: String, keys: Keys): String = keys.list.map(k => alias + "." + k.name).mkString(", ")
   def whereKey(alias1: String, keys1: Keys, alias2: String, keys2: Keys): String = Keys.zip(keys1, keys2).map { case (k1, k2) => s"$alias1.${k1.name} = $alias2.${k2.name}" }.mkString(" and ")
-  def selectFields(e: OrmEntity): String = (e.fieldsForCreate ).map(f => e.alias + "." + f.name).mkString(", ")
+  def selectFields(e: OrmEntity): String = (e.fieldsForCreate).map(f => e.alias + "." + f.name).mkString(", ")
 
   def insertSql(e: OrmEntity) =
     s"insert into ${e.tableName} (${e.fieldsForCreate.asString(_.name)}) values (${e.fieldsForCreate.asString(_ => "?")})"
