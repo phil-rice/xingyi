@@ -14,7 +14,7 @@ import scala.concurrent.{Await, Future}
 import scala.language.{higherKinds, postfixOps}
 import scala.reflect.ClassTag
 
-trait MockitoSugar{
+trait MockitoSugar {
   def mock[T: ClassTag]: T = Mockito.mock((implicitly[ClassTag[T]]).runtimeClass).asInstanceOf[T]
 }
 
@@ -40,7 +40,7 @@ trait UtilsSpec extends CoreSpec with Eventually with MockitoSugar {
   }
 
   def checkStrings(actual: String, expected: String): Unit =
-    withClue(actual + "\n\n") {
+    withClue(s"Actual:   $actual\n\nExpected: $expected\n\n") {
       Strings.removeWhiteSpace(actual) shouldBe Strings.removeWhiteSpace(expected)
     }
 

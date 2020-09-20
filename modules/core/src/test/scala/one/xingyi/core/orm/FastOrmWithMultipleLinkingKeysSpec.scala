@@ -23,11 +23,6 @@ trait OrmWithMultipleKeysFixture {
   val email = SameIdEntity("ContactEmail", "E", Keys("eid1:int,eid2:int"), List(string("email")), List())
   val main = MainEntity("Person", "P", Keys("pid1:int,pid2:int"), List(string("name")), List(employer, address, phone, email))
 
-  case class Employer(name: String)
-  case class Address(add: String)
-  case class Phone(phoneNo: String)
-  case class Person(name: String, employer: Employer, address: List[Address], phones: List[Phone], email: String)
-
 }
 
 trait FastWithMultipleKeysOrmFixture extends OrmWithMultipleKeysFixture {
@@ -74,7 +69,7 @@ trait FastWithMultipleKeysOrmFixture extends OrmWithMultipleKeysFixture {
   }
 }
 
-abstract class AbstractWithMultipleKeysFastOrmSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends DatabaseSourceFixture[DS] with FastWithMultipleKeysOrmFixture with Jdbc with OrmStrategyChecker {
+abstract class AbstractWithMultipleKeysFastOrmSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends SharedFastOrmTests[M, J, DS] with FastWithMultipleKeysOrmFixture with  OrmStrategyChecker {
 
 
   behavior of "FastOrm"

@@ -5,30 +5,17 @@ import java.sql.ResultSet
 
 import javax.sql.DataSource
 import one.xingyi.core.closable.ClosableM
-import one.xingyi.core.jdbc.{DatabaseSourceFixture, Jdbc, JdbcOps}
-import one.xingyi.core.json.{JsonObject, JsonParser}
-import one.xingyi.core.map.Maps._
+import one.xingyi.core.jdbc.JdbcOps
+import one.xingyi.core.json.JsonParser
 import one.xingyi.core.orm.FieldType.{int, string}
-import one.xingyi.core.strings.Strings
-import org.scalatest.Matchers
 
 import scala.language.{higherKinds, implicitConversions}
+case class Employer(name: String)
+case class Address(add: String)
+case class Phone(phoneNo: String)
+case class Person(name: String, employer: Employer, address: List[Address], phones: List[Phone], email: String)
 
-trait OrmStrategyChecker extends Matchers{
-  def checkStrategy(name: String, block: List[(OrmEntity, String)], expected: List[(OrmEntity, String)]): Unit = {
-    val actual = block
-    val fullDescription = List(name, actual.map(t => t._1.tableName + "->" + '"'+ t._2 + '"').mkString(",\n"), "\n")
-    val diffs = actual.zip(expected).collect { case (a, e) if a != e => s"Actual   ${a._1.tableName} -> ${a._2}\nExpected ${e._1.tableName} -> ${e._2}\n" }
-    withClue((fullDescription ::: diffs).mkString("\n")) {
-      actual.zip(expected).foreach { case (a, e) =>
-        a._1.tableName shouldBe e._1.tableName
-        a._2 shouldBe e._2
-      }
-      actual shouldBe expected
-    }
-  }
 
-}
 trait OrmFixture {
   implicit def fieldToKeys[T](f: FieldType[T]) = Keys(List(f))
 
@@ -39,10 +26,6 @@ trait OrmFixture {
   val email = SameIdEntity("ContactEmail", "E", int("eid"), List(string("email")), List())
   val main = MainEntity("Person", "P", int("pid"), List(string("name")), List(employer, address, phone, email))
 
-  case class Employer(name: String)
-  case class Address(add: String)
-  case class Phone(phoneNo: String)
-  case class Person(name: String, employer: Employer, address: List[Address], phones: List[Phone], email: String)
 
 }
 
@@ -92,7 +75,9 @@ trait FastOrmFixture extends OrmFixture {
   }
 }
 
-abstract class AbstractFastOrmSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends DatabaseSourceFixture[DS] with FastOrmFixture with Jdbc with OrmStrategyChecker {
+
+
+abstract class AbstractFastOrmWithSingleLinkingKeysSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends SharedFastOrmTests[M, J, DS] with FastOrmFixture with  OrmStrategyChecker {
 
 
   behavior of "FastOrm"
@@ -106,6 +91,25 @@ abstract class AbstractFastOrmSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSo
       email -> "drop table if exists ContactEmail"
     ))
   }
+  it should "make dropTempTables sql" in {
+    checkStrategy("dropTempTable", OrmStrategies.dropTempTables.walk(main), List(
+      main -> "drop table if exists temp_Person",
+      employer -> "drop table if exists temp_Employer",
+      address -> "drop table if exists temp_Address",
+      phone -> "drop table if exists temp_Phone",
+      email -> "drop table if exists temp_ContactEmail"
+    ))
+  }
+
+  it should "make drainTempTables sql" in {
+    checkStrategy("drainTempTables", OrmStrategies.drainTempTables.walk(main), List(
+      main -> "select * from temp_Person",
+      employer -> "select * from temp_Employer",
+      address -> "select * from temp_Address",
+      phone -> "select * from temp_Phone",
+      email -> "select * from temp_ContactEmail"
+    ))
+  }
 
   it should "make create table sql" in {
     checkStrategy("createTable", OrmStrategies.createTables.walk(main), List(
@@ -117,16 +121,6 @@ abstract class AbstractFastOrmSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSo
     ))
   }
 
-  it should "make dropTempTables sql" in {
-    checkStrategy("dropTempTable", OrmStrategies.dropTempTables.walk(main), List(
-      main -> "drop table if exists temp_Person",
-      employer -> "drop table if exists temp_Employer",
-      address -> "drop table if exists temp_Address",
-      phone -> "drop table if exists temp_Phone",
-      email -> "drop table if exists temp_ContactEmail"
-    ))
-  }
-
   it should "make createTempTables sql" in {
     checkStrategy("createTempTables", OrmStrategies.createTempTables(BatchDetails(1000, 3)).walk(main), List(
       main -> "create temporary table temp_Person as select P.name, P.employerid, P.pid from Person P limit 1000 offset 3000",
@@ -134,16 +128,6 @@ abstract class AbstractFastOrmSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSo
       address -> "create temporary table temp_Address as select A.add, A.aid, A.personid from temp_Person P,Address A where P.pid = A.personid",
       phone -> "create temporary table temp_Phone as select Ph.phoneNo, Ph.phid, Ph.personid from temp_Person P,Phone Ph where P.pid = Ph.personid",
       email -> "create temporary table temp_ContactEmail as select DISTINCT  E.email, E.eid from temp_Person P,ContactEmail E where P.pid = E.eid"
-    ))
-  }
-
-  it should "make drainTempTables sql" in {
-    checkStrategy("drainTempTables", OrmStrategies.drainTempTables.walk(main), List(
-      main -> "select * from temp_Person",
-      employer -> "select * from temp_Employer",
-      address -> "select * from temp_Address",
-      phone -> "select * from temp_Phone",
-      email -> "select * from temp_ContactEmail"
     ))
   }
 
@@ -173,39 +157,6 @@ abstract class AbstractFastOrmSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSo
     address.parentId.toKeysAndIndex(address) shouldBe KeysAndIndex(List((2, FieldType("personid:int"))))
   }
 
-  behavior of "get data"
-
-
-  behavior of classOf[FastReaderImpl[Person]].getSimpleName
-
-  it should "allow the items to be read through the FastReader" in {
-    val reader: FastReaderImpl[Person] = FastReader(OrmBatchConfig(ds, 2))
-    setupPerson(ds) {
-      reader(main)(0) shouldBe List(Person("Phil", Employer("Employer1"), List(Address("Phils first address"), Address("Phils second address")), List(), "philsEmail"),
-        Person("Bob", Employer("Employer2"), List(), List(), "bobsEmail"))
-      reader(main)(1) shouldBe List(Person("Jill", Employer("Employer1"), List(Address("Jills first address")), List(), "jillsEmail"))
-      reader(main)(2) shouldBe List()
-    }
-  }
-
-
-  it should "allow the items to be read as a stream" in {
-
-    setupPerson(ds) {
-      main.stream[Person](OrmBatchConfig(ds, 2)).toList shouldBe
-        List(Person("Phil", Employer("Employer1"), List(Address("Phils first address"), Address("Phils second address")), List(), "philsEmail"),
-          Person("Bob", Employer("Employer2"), List(), List(), "bobsEmail"),
-          Person("Jill", Employer("Employer1"), List(Address("Jills first address")), List(), "jillsEmail"))
-    }
-  }
-  behavior of "OrmMakerForJson"
-
-  it should "allow the items to be read as a stream of json" ignore {
-    //under development
-    setupPerson(ds) {
-      main.stream[JsonObject](OrmBatchConfig(ds, 2)).toList shouldBe ""
-    }
-  }
 
 }
 
