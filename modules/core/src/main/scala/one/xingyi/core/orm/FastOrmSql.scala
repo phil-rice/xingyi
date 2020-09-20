@@ -30,34 +30,34 @@ case class EntityStrategy[X](mainEntityFn: MainEntity => X, childFn: OrmEntity =
 trait FastOrmSql {
   import FieldType.nameAndTypeName
 
-  def dropTable(e: OrmEntity) = s"drop table if exists ${e.tableName}"
+  def dropTable(e: OrmEntity) = s"drop table if exists ${e.tableName.tableName}"
   def dropTempTable(e: OrmEntity) = s"drop table if exists ${tempTableName(e)}"
-  def tempTableName(e: OrmEntity): String = "temp_" + e.tableName
+  def tempTableName(e: OrmEntity): String = "temp_" + e.tableName.tableName
 
-  def createTable(e: OrmEntity): String = s"create table ${e.tableName} (${e.fieldsForCreate.asString(nameAndTypeName(_))})"
+  def createTable(e: OrmEntity): String = s"create table ${e.tableName.tableName} (${e.fieldsForCreate.asString(nameAndTypeName(_))})"
 
   def createMainTempTable(e: OrmEntity)(batchDetails: BatchDetails): String =
-    s"create temporary table ${tempTableName(e)} as select ${selectFields(e)} from ${e.tableName} ${e.alias} limit ${batchDetails.batchSize} offset ${batchDetails.offset}"
+    s"create temporary table ${tempTableName(e)} as select ${selectFields(e)} from ${e.tableName.tableName} ${e.alias} limit ${batchDetails.batchSize} offset ${batchDetails.offset}"
 
   def createOneToManyTempTable(e: OneToManyEntity)(parent: OrmEntity): String =
-    s"create temporary table temp_${e.tableName} as select ${selectFields(e)} " +
-      s"from ${tempTableName(parent)} ${parent.alias},${e.tableName} ${e.alias} " +
+    s"create temporary table temp_${e.tableName.tableName} as select ${selectFields(e)} " +
+      s"from ${tempTableName(parent)} ${parent.alias},${e.tableName.tableName} ${e.alias} " +
       s"where ${whereKey(parent.alias, parent.primaryKeyField, e.alias, e.parentId)}"
 
   def createManyToOneTempTable(e: ManyToOneEntity)(parent: OrmEntity): String =
-    s"create temporary table temp_${e.tableName} as select DISTINCT  ${selectFields(e)} " + //TODO Why do we have distinct here
-      s"from ${tempTableName(parent)} ${parent.alias},${e.tableName} ${e.alias} " +
+    s"create temporary table temp_${e.tableName.tableName} as select DISTINCT  ${selectFields(e)} " + //TODO Why do we have distinct here
+      s"from ${tempTableName(parent)} ${parent.alias},${e.tableName.tableName} ${e.alias} " +
       s"where ${whereKey(parent.alias, e.idInParent, e.alias, e.primaryKeyField)}"
 
   def createOneToZeroOneEntityTempTable(e: OneToZeroOneEntity)(parent: OrmEntity): String =
-    s"create temporary table temp_${e.tableName} as select DISTINCT  ${selectFields(e)} " +
-      s"from ${tempTableName(parent)} ${parent.alias},${e.tableName} ${e.alias} " +
+    s"create temporary table temp_${e.tableName.tableName} as select DISTINCT  ${selectFields(e)} " +
+      s"from ${tempTableName(parent)} ${parent.alias},${e.tableName.tableName} ${e.alias} " +
       s"where ${whereKey(parent.alias, e.idInParent, e.alias, e.primaryKeyField)} " +
       s"sort by ${parent.primaryKeyField.list.map { f => s"${parent.alias}.${f.name}" }.mkString(",")}"
 
   def createSameIdTempTable(e: SameIdEntity)(parent: OrmEntity): String =
-    s"create temporary table temp_${e.tableName} as select DISTINCT  ${selectFields(e)} " +
-      s"from ${tempTableName(parent)} ${parent.alias},${e.tableName} ${e.alias} " +
+    s"create temporary table temp_${e.tableName.tableName} as select DISTINCT  ${selectFields(e)} " +
+      s"from ${tempTableName(parent)} ${parent.alias},${e.tableName.tableName} ${e.alias} " +
       s"where ${whereKey(parent.alias, parent.primaryKeyField, e.alias, e.primaryKeyField)}"
 
 
@@ -68,7 +68,7 @@ trait FastOrmSql {
   def selectFields(e: OrmEntity): String = (e.fieldsForCreate).map(f => e.alias + "." + f.name).mkString(", ")
 
   def insertSql(e: OrmEntity) =
-    s"insert into ${e.tableName} (${e.fieldsForCreate.asString(_.name)}) values (${e.fieldsForCreate.asString(_ => "?")})"
+    s"insert into ${e.tableName.tableName} (${e.fieldsForCreate.asString(_.name)}) values (${e.fieldsForCreate.asString(_ => "?")})"
 
 }
 object FastOrmSql {

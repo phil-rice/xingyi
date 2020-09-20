@@ -7,7 +7,9 @@ import one.xingyi.core.jdbc.{DatabaseSourceFixture, Jdbc, JdbcOps}
 import one.xingyi.core.json.{JsonObject, JsonParser}
 import org.scalatest.Matchers
 
-trait OrmStrategyChecker extends Matchers {
+import scala.language.higherKinds
+
+trait SharedOrmFixture extends Matchers {
   def checkStrategy(name: String, block: List[(OrmEntity, String)], expected: List[(OrmEntity, String)]): Unit = {
     val actual = block
     val fullDescription = List(name, actual.map(t => t._1.tableName + "->" + '"' + t._2 + '"').mkString(",\n"), "\n")
@@ -21,17 +23,25 @@ trait OrmStrategyChecker extends Matchers {
     }
   }
 
+  val employerTable = TableName("Employer", "")
+  val addressTable = TableName("Address", "")
+  val phoneTable = TableName("Phone", "")
+  //each person has a contact email, and the id of the email is the same as the person
+  val emailTable = TableName("ContactEmail", "")
+  val personTable = TableName("Person", "")
+
+
 }
 
-abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends UtilsSpec  with DatabaseSourceFixture[DS]  with Jdbc {
+abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends UtilsSpec with DatabaseSourceFixture[DS] with Jdbc {
 
   def setupPerson(ds: DataSource)(block: => Unit)(implicit jdbcOps: JdbcOps[DataSource], closableM: ClosableM[M]): Unit
   def main: MainEntity
 
   implicit def maker: OrmMaker[Person]
-  behavior of getClass.getSimpleName +  " get data"
+  behavior of getClass.getSimpleName + " get data"
 
-  behavior of getClass.getSimpleName +  " "+  classOf[FastReaderImpl[Person]].getSimpleName
+  behavior of getClass.getSimpleName + " " + classOf[FastReaderImpl[Person]].getSimpleName
 
   it should "allow the items to be read through the FastReader" in {
     val reader: FastReaderImpl[Person] = FastReader[Person](OrmBatchConfig(ds, 2))
@@ -53,7 +63,7 @@ abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSou
           Person("Jill", Employer("Employer1"), List(Address("Jills first address")), List(), "jillsEmail"))
     }
   }
-  behavior of getClass.getSimpleName +  " "+"OrmMakerForJson"
+  behavior of getClass.getSimpleName + " " + "OrmMakerForJson"
 
   it should "allow the items to be read as a stream of json" ignore {
     //under development

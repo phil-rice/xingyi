@@ -10,21 +10,22 @@ import one.xingyi.core.json.JsonParser
 import one.xingyi.core.orm.FieldType.{int, string}
 
 import scala.language.{higherKinds, implicitConversions}
+
 case class Employer(name: String)
 case class Address(add: String)
 case class Phone(phoneNo: String)
 case class Person(name: String, employer: Employer, address: List[Address], phones: List[Phone], email: String)
 
 
-trait OrmFixture {
+trait OrmFixture extends SharedOrmFixture {
   implicit def fieldToKeys[T](f: FieldType[T]) = Keys(List(f))
 
-  val employer = ManyToOneEntity("Employer", "E", int("eid"), int("employerid"), List(string("name")), List())
-  val address = OneToManyEntity("Address", "A", int("aid"), int("personid"), List(string("add")), List())
-  val phone = OneToManyEntity("Phone", "Ph", int("phid"), int("personid"), List(string("phoneNo")), List())
+  val employer = ManyToOneEntity(employerTable, "E", int("eid"), int("employerid"), List(string("name")), List())
+  val address = OneToManyEntity(addressTable, "A", int("aid"), int("personid"), List(string("add")), List())
+  val phone = OneToManyEntity(phoneTable, "Ph", int("phid"), int("personid"), List(string("phoneNo")), List())
   //each person has a contact email, and the id of the email is the same as the person
-  val email = SameIdEntity("ContactEmail", "E", int("eid"), List(string("email")), List())
-  val main = MainEntity("Person", "P", int("pid"), List(string("name")), List(employer, address, phone, email))
+  val email = SameIdEntity(emailTable, "E", int("eid"), List(string("email")), List())
+  val main = MainEntity(personTable, "P", int("pid"), List(string("name")), List(employer, address, phone, email))
 
 
 }
@@ -76,8 +77,7 @@ trait FastOrmFixture[M[_]] extends OrmFixture {
 }
 
 
-
-abstract class AbstractFastOrmWithSingleLinkingKeysSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends SharedFastOrmTests[M, J, DS] with FastOrmFixture[M] with  OrmStrategyChecker {
+abstract class AbstractFastOrmWithSingleLinkingKeysSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends SharedFastOrmTests[M, J, DS] with FastOrmFixture[M] {
 
 
   behavior of "FastOrm"

@@ -14,10 +14,10 @@ case class FieldsWord[OrmEntity](nameAndTypes: Seq[String])(implicit validateAnd
   def noChildren: OrmEntity = validateAndBuild(dataFieldTypes, List())
 }
 
-abstract class ormDslTable[OrmEntity](tableName: String, primaryKeyDefn: String, aliasOverride: String = "") extends OrmDslClass {
-  require(tableName.nonEmpty)
+abstract class ormDslTable[OrmEntity](tableName: TableName, primaryKeyDefn: String, aliasOverride: String = "") extends OrmDslClass {
+  require(tableName.tableName.nonEmpty)
   protected val primaryKey: Keys = wrap(s"$tableName / primarykey")(Keys(primaryKeyDefn))
-  protected val alias: String = if (aliasOverride == "") tableName.take(1) else aliasOverride
+  protected val alias: String = if (aliasOverride == "") tableName.tableName.take(1) else aliasOverride
 
   protected def validate(childEntity: List[ChildEntity]): Unit = childEntity.foreach {
     case o: OneToManyEntity => o.parentId.checkCanLinkTo(primaryKey)
@@ -28,14 +28,14 @@ abstract class ormDslTable[OrmEntity](tableName: String, primaryKeyDefn: String,
 }
 
 
-case class orm(tableName: String, primaryKeyDefn: String, aliasOverride: String = "") extends ormDslTable[MainEntity](tableName, primaryKeyDefn, aliasOverride) {
+case class orm(tableName: TableName, primaryKeyDefn: String, aliasOverride: String = "") extends ormDslTable[MainEntity](tableName, primaryKeyDefn, aliasOverride) {
   private implicit val mainValidateAndBuild: BuildOrmEntity[MainEntity] = { (dataFields, children) =>
     validate(children);
     MainEntity(tableName, alias, primaryKey, dataFields, children)
   }
   def fields(nameAndTypes: String*): FieldsWord[MainEntity] = FieldsWord(nameAndTypes)
 }
-case class oneToMany(tableName: String, primaryKeyDefn: String, aliasOverride: String = "") extends ormDslTable[OneToManyEntity](tableName, primaryKeyDefn, aliasOverride) {
+case class oneToMany(tableName: TableName, primaryKeyDefn: String, aliasOverride: String = "") extends ormDslTable[OneToManyEntity](tableName, primaryKeyDefn, aliasOverride) {
   case class parentId(parentIdDefn: String) {
     private val parentId = Keys(parentIdDefn)
     implicit val oneToManyValidateAndBuild: BuildOrmEntity[OneToManyEntity] = { (dataFields, children) =>
@@ -45,7 +45,7 @@ case class oneToMany(tableName: String, primaryKeyDefn: String, aliasOverride: S
     def fields(nameAndTypes: String*): FieldsWord[OneToManyEntity] = FieldsWord(nameAndTypes)
   }
 }
-case class manyToOne(tableName: String, primaryKeyDefn: String, aliasOverride: String = "") extends ormDslTable[ManyToOneEntity](tableName, primaryKeyDefn, aliasOverride) {
+case class manyToOne(tableName: TableName, primaryKeyDefn: String, aliasOverride: String = "") extends ormDslTable[ManyToOneEntity](tableName, primaryKeyDefn, aliasOverride) {
   case class idInParent(idInParentDefn: String) {
     private val idInParent = Keys(idInParentDefn)
     private implicit val ManyToOneValidateAndBuild: BuildOrmEntity[ManyToOneEntity] = { (dataFields, children) =>
@@ -55,7 +55,7 @@ case class manyToOne(tableName: String, primaryKeyDefn: String, aliasOverride: S
     def fields(nameAndTypes: String*): FieldsWord[ManyToOneEntity] = FieldsWord(nameAndTypes)
   }
 }
-case class sameId(tableName: String, primaryKeyDefn: String, aliasOverride: String = "") extends ormDslTable[SameIdEntity](tableName, primaryKeyDefn, aliasOverride) {
+case class sameId(tableName: TableName, primaryKeyDefn: String, aliasOverride: String = "") extends ormDslTable[SameIdEntity](tableName, primaryKeyDefn, aliasOverride) {
   def fields(nameAndTypes: String*): FieldsWord[SameIdEntity] = {
     implicit val ManyToOneValidateAndBuild: BuildOrmEntity[SameIdEntity] = { (dataFields, children) =>
       validate(children);
