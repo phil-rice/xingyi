@@ -30,17 +30,17 @@ trait SharedOrmFixture extends NumericKeyFixture {
   val emailTable = TableName("ContactEmail", "")
   val personTable = TableName("Person", "")
 
-  val schemaForAddress = SchemaItemWithChildren("address", true, List[SchemaForTest](SchemaItem("Address:add")))
-  val schemaForPhone = SchemaItemWithChildren("phone", true, List[SchemaForTest](SchemaItem("Phone:phoneNo")))
+  val schemaForAddress = SchemaItemWithChildren("address", true, List[SchemaForTest](SchemaItem("Address/add")))
+  val schemaForPhone = SchemaItemWithChildren("phone", true, List[SchemaForTest](SchemaItem("Phone/phoneNo")))
 
   val schemaForPerson: List[SchemaForTest] = {
     implicit def stringToSchemaForTest(s: String): SchemaForTest = SchemaItem(s)
     List[SchemaForTest](
-      "Person:name",
-      SchemaItemWithChildren("employer", false, List[SchemaForTest]("Employer:name")),
+      "Person/name",
+      SchemaItemWithChildren("employer", false, List[SchemaForTest]("Employer/name")),
       schemaForAddress,
       schemaForPhone,
-      SchemaItemWithChildren("email", false, List[SchemaForTest]("ContactEmail:email"))
+      SchemaItemWithChildren("email", false, List[SchemaForTest]("ContactEmail/email"))
     )
   }
   val numericKeysForPerson: NumericKeys[SchemaForTest] = NumericKeys(schemaForPerson)
@@ -81,24 +81,24 @@ abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSou
 
   it should "checkAssumptions and structure" in {
     checkNumericKeys(numericKeysForPerson)(
-      """Person:name (),0 NoChildren
+      """Person/name (),0 NoChildren
         |employer (),1 OneChild
-        | Employer:name (1),0 NoChildren
+        | Employer/name (1),0 NoChildren
         |address (),2 ManyChildren
-        | Address:add (2),0 NoChildren
+        | Address/add (2),0 NoChildren
         |phone (),3 ManyChildren
-        | Phone:phoneNo (3),0 NoChildren
+        | Phone/phoneNo (3),0 NoChildren
         |email (),4 OneChild
-        | ContactEmail:email (4),0 NoChildren""".stripMargin)
+        | ContactEmail/email (4),0 NoChildren""".stripMargin)
     val ar = numericKeysForPerson.makeAndSetupArray
     checkArray(numericKeysForPerson, ar)(
-      """0  = null {Person:name}
+      """0  = null {Person/name}
         |1/OneChild
-        |1.0  = null {Employer:name}
+        |1.0  = null {Employer/name}
         |2/Many(0)
         |3/Many(0)
         |4/OneChild
-        |4.0  = null {ContactEmail:email}""".stripMargin)
+        |4.0  = null {ContactEmail/email}""".stripMargin)
 
     val tablesAndFieldsAndPaths: TablesAndFieldsAndPaths = EntityAndPath(numericKeysForPerson)
 
@@ -150,50 +150,50 @@ abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSou
       maker(mainEntityForKeys.entity)(data)
       val arrayForRow0 = mainEntityForKeys.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).toList
       checkArray(numericKeysForPerson, arrayForRow0(0))(
-        """0  = Phil {Person:name}
+        """0  = Phil {Person/name}
           |1/OneChild
-          |1.0  = Employer1 {Employer:name}
+          |1.0  = Employer1 {Employer/name}
           |2/Many(2)
-          |2[0].0  = Phils second address {Address:add}
-          |2[1].0  = Phils first address {Address:add}
+          |2[0].0  = Phils second address {Address/add}
+          |2[1].0  = Phils first address {Address/add}
           |3/Many(0)
           |4/OneChild
-          |4.0  = philsEmail {ContactEmail:email}
+          |4.0  = philsEmail {ContactEmail/email}
           |""".stripMargin)
       checkArray(numericKeysForPerson, arrayForRow0(1))(
-        """0  = Bob {Person:name}
+        """0  = Bob {Person/name}
           |1/OneChild
-          |1.0  = Employer2 {Employer:name}
+          |1.0  = Employer2 {Employer/name}
           |2/Many(0)
           |3/Many(0)
           |4/OneChild
-          |4.0  = bobsEmail {ContactEmail:email}""".stripMargin)
+          |4.0  = bobsEmail {ContactEmail/email}""".stripMargin)
       checkArray(numericKeysForPerson, arrayForRow0(2))(
-        """0  = Jill {Person:name}
+        """0  = Jill {Person/name}
           |1/OneChild
-          |1.0  = Employer1 {Employer:name}
+          |1.0  = Employer1 {Employer/name}
           |2/Many(1)
-          |2[0].0  = Jills first address {Address:add}
+          |2[0].0  = Jills first address {Address/add}
           |3/Many(0)
           |4/OneChild
-          |4.0  = jillsEmail {ContactEmail:email}""".stripMargin)
+          |4.0  = jillsEmail {ContactEmail/email}""".stripMargin)
       val stream = new ByteArrayOutputStream()
       mainEntityForKeys.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).foreach(numericKeysForPerson.putJson(_, stream))
       checkStrings(stream.toString(),
         """{
-          |  "Person:name": "Phil", "employer": {"Employer:name": "Employer1"}, "address": [
-          |  {"Address:add": "Phils first address"},
-          |  {"Address:add": "Phils second address"}
-          |], "phone"     : [], "email": {"ContactEmail:email": "philsEmail"}
+          |  "Person/name": "Phil", "employer": {"Employer/name": "Employer1"}, "address": [
+          |  {"Address/add": "Phils first address"},
+          |  {"Address/add": "Phils second address"}
+          |], "phone"     : [], "email": {"ContactEmail/email": "philsEmail"}
           |}
           |{
-          |  "Person:name": "Bob", "employer": {"Employer:name": "Employer2"}, "address": [], "phone": [],
-          |  "email"      : {"ContactEmail:email": "bobsEmail"}
+          |  "Person/name": "Bob", "employer": {"Employer/name": "Employer2"}, "address": [], "phone": [],
+          |  "email"      : {"ContactEmail/email": "bobsEmail"}
           |}
           |{
-          |  "Person:name": "Jill", "employer": {"Employer:name": "Employer1"}, "address": [
-          |  {"Address:add": "Jills first address"}
-          |], "phone"     : [], "email": {"ContactEmail:email": "jillsEmail"}
+          |  "Person/name": "Jill", "employer": {"Employer/name": "Employer1"}, "address": [
+          |  {"Address/add": "Jills first address"}
+          |], "phone"     : [], "email": {"ContactEmail/email": "jillsEmail"}
           |}""".stripMargin)
 
     }

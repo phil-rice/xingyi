@@ -16,12 +16,18 @@ trait NumericKeyFixture extends UtilsSpec {
   case class SchemaItemWithChildren(key: String, hasMany: Boolean, children: List[SchemaForTest]) extends SchemaForTest
 
   object SchemaForTest {
-    implicit val findKeys: FindOrmEntityAndField[SchemaForTest] = (item: SchemaForTest) => {
-      if (item.key.contains(":")) {
-        val (name, field) = Strings.splitInTwo(":")(item.key)
-        Some((TableName(name, ""), FieldType(field)))
-      } else None
+    def parse[T: OrmValueTransformer](s: String): List[OrmValueGetter[_]] = {
+      val mainSplitter = Strings.split(";")
+      val fieldsSplitter = Strings.split(",")
+      mainSplitter(s).flatMap { tf =>
+        if (tf.contains("/")) {
+          val (name, fields) = Strings.splitInTwo("/")(tf)
+          List(OrmValueGetter(TableName(name, ""), fieldsSplitter(fields).map(FieldType.apply)))
+        }
+        else List()
+      }
     }
+    implicit val findKeys: FindOrmEntityAndField[SchemaForTest] = { item: SchemaForTest => SchemaForTest.parse(item.key) }
 
     implicit def debugArray: AsDebugString[SchemaForTest] = (t: SchemaForTest) => "{" + t.key + "}"
     implicit object ObjectKeyMapForTest extends SchemaMapKey[SchemaForTest] {
@@ -44,8 +50,6 @@ trait NumericKeyFixture extends UtilsSpec {
 
 }
 trait NumericKeySpecFixture extends NumericKeyFixture {
-
-
   val itema: SchemaForTest = SchemaItem("a")
   val itemb: SchemaForTest = SchemaItem("b")
   val itemc: SchemaForTest = SchemaItem("c")

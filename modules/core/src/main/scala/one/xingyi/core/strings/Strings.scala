@@ -10,14 +10,13 @@ class ParseException(msg: String, e: Exception) extends RuntimeException(msg, e)
 }
 object Strings {
   def split(separator: String = "\\."): (String => List[String]) = s => s.split(separator).filter(_.nonEmpty).map(_.trim).toList
-  def splitInTwo(separator: String = ":"): (String => (String, String)) = {
-    s =>
-      s.split(separator).map(_.trim).filter(_.nonEmpty) match {
-        case Array(left, right) => (left, right)
-        case _ => throw new ParseException(s"Cannot split a string into two non empty parts using [$separator] string was [$s]")
-      }
-
-
+  def splitInTwoException(separator: String, s: String) = throw new ParseException(s"Cannot split a string into two non empty parts using [$separator] string was [$s]")
+  def splitInTwo(separator: String = ":", defaultRhs: (String, String) => String = splitInTwoException): (String => (String, String)) = { s =>
+    split(separator)(s) match {
+      case List(left) => (left, defaultRhs(separator, s))
+      case List(left, right) => (left, right)
+      case _ => throw new ParseException(s"Cannot split a string into two non empty parts using [$separator] string was [$s]")
+    }
   }
   def withoutStringBefore(beforeChar: Char)(s: String): String = s.dropWhile(_ != beforeChar).drop(1)
 

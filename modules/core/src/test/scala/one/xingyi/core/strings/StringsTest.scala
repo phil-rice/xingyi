@@ -81,7 +81,6 @@ class StringsTest extends UtilsWithLoggingSpec {
     splitter("one : int") shouldBe("one", "int")
     the[ParseException] thrownBy (splitter("one")) should have message ("Cannot split a string into two non empty parts using [:] string was [one]")
     the[ParseException] thrownBy (splitter("one:")) should have message ("Cannot split a string into two non empty parts using [:] string was [one:]")
-    the[ParseException] thrownBy (splitter("one: ")) should have message ("Cannot split a string into two non empty parts using [:] string was [one: ]")
     the[ParseException] thrownBy (splitter("one:abdc:a")) should have message ("Cannot split a string into two non empty parts using [:] string was [one:abdc:a]")
 
   }

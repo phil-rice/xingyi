@@ -66,17 +66,17 @@ case class Zero[T]() extends ChildrenInSchema[T](NoChildren) {def children: List
 case class AlwaysOne[T](children: List[T]) extends ChildrenInSchema[T](OneChild)
 case class ZeroOrMore[T](children: List[T]) extends ChildrenInSchema[T](ManyChildren)
 
-//THere is a schema of type T. T is not the data, is the structure of the data
-trait SchemaMapKey[T] {
-  def childKey(t: T): String // The main object might not have a key, but the children will
-  def children(t: T): ChildrenInSchema[T]
+//THere is a schema of type Schema. Schema is not the data, is the structure of the data
+trait SchemaMapKey[Schema] {
+  def childKey(t: Schema): String // The main object might not have a key, but the children will
+  def children(t: Schema): ChildrenInSchema[Schema]
 }
 
-case class NumericKeys[T](list: List[NumericKey[T]]) {
-  def allKeys: List[NumericKey[T]] = list.flatMap { key => key :: key.children.allKeys }
-  def findForT(t: T) = allKeys.find(_.t == t)
+case class NumericKeys[Schema](list: List[NumericKey[Schema]]) {
+  def allKeys: List[NumericKey[Schema]] = list.flatMap { key => key :: key.children.allKeys }
+  def findForT(t: Schema) = allKeys.find(_.t == t)
   def prettyPrint(indent: String) = list.map(_.prettyPrint(indent)).mkString("\n")
-  def printArray(prefix: String, a: Array[Any], strict: Boolean = true)(implicit asDebugString: AsDebugString[T]): List[String] = {
+  def printArray(prefix: String, a: Array[Any], strict: Boolean = true)(implicit asDebugString: AsDebugString[Schema]): List[String] = {
     require(!strict || a.length == size, s"Array size is ${a.length} keys size is $size")
     list.zip(a).flatMap { case (key, item) => key.printArray(prefix, item, strict) }
   }
@@ -203,7 +203,7 @@ case class NumericKeys[T](list: List[NumericKey[T]]) {
       pathIndex += 1
     }
   }
-  def findKeyForPath(path: Array[Int]): NumericKey[T] = {
+  def findKeyForPath(path: Array[Int]): NumericKey[Schema] = {
     var pathIndex = 0
     var keys = this
     while (pathIndex < path.length - 1) {
@@ -237,10 +237,10 @@ case class NumericKey[T](path: List[Int], index: Int, key: String, arity: ChildA
 }
 
 object NumericKeys {
-  def apply[T: SchemaMapKey](ts: List[T]): NumericKeys[T] = recurse(List(), ts)
-  def recurse[T](parents: List[Int], ts: List[T])(implicit schemaMapKey: SchemaMapKey[T]): NumericKeys[T] =
+  def apply[Schema: SchemaMapKey](ts: List[Schema]): NumericKeys[Schema] = recurse(List(), ts)
+  def recurse[Schema](parents: List[Int], ts: List[Schema])(implicit schemaMapKey: SchemaMapKey[Schema]): NumericKeys[Schema] =
     NumericKeys(ts.zipWithIndex.map { case (t, index) =>
-      val children: ChildrenInSchema[T] = schemaMapKey.children(t)
+      val children: ChildrenInSchema[Schema] = schemaMapKey.children(t)
       NumericKey(parents, index, schemaMapKey.childKey(t), children.arity, recurse(parents :+ index, children.children), t)
     })
 
