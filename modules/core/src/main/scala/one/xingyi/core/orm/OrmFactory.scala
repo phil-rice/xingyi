@@ -119,13 +119,14 @@ class OrmMakerForArrayAny[T](numericKeys: NumericKeys[T], tablesAndFieldsAndPath
     arrays.map(_._3).toStream
   }
   def populateArray(entity: OrmEntity, oneRow: List[AnyRef], ar: Array[Any]) = {
-    val fieldsAndPath = tablesAndFieldsAndPaths.map(entity.tableName)
+    val fieldsAndPath: FieldsAndPath = tablesAndFieldsAndPaths.map(entity.tableName)
+    val ormGetters = fieldsAndPath.ormValueGetters
     val paths = fieldsAndPath.path
     val indicies = fieldsAndPath.indicies
     var i = 0
     println(s"Entity: ${entity.tableName}")
     while (i < paths.size) {
-      val d = oneRow(i)
+      val d =  oneRow(i)
       println(s"   d $d  i $i  paths ${paths.map(_.toList).mkString(";")} ${indicies.mkString(",")}")
       println(s"   path: [${paths(i).mkString(",")}]  indicies: ${indicies(i)}")
       numericKeys.put(paths(i), indicies(i), ar, d)

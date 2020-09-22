@@ -195,10 +195,7 @@ abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSou
           |  {"Address/add": "Jills first address"}
           |], "phone"     : [], "email": {"ContactEmail/email": "jillsEmail"}
           |}""".stripMargin)
-
     }
-
-
   }
 
 }
