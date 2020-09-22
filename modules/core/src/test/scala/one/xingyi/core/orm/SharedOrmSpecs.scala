@@ -130,71 +130,49 @@ abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSou
   it should "allow the items to be read using the numeric keys" in {
     //under development
     setupPerson(ds) {
-      implicit val maker: OrmMaker[Array[Any]] = ormFactory.ormMaker(mapForNext)
+      implicit val maker: OrmMakerForArrayAny[SchemaForTest] = ormFactory.ormMaker(mapForNext).asInstanceOf[OrmMakerForArrayAny[SchemaForTest]]
+      maker.createdCount shouldBe 0
       val data = FastReader.getOneBlockOfDataFromDs(ds, mainEntityForKeys.entity, 2)(0)
-//      checkStrings(OrmMaker.prettyPrintData(data).mkString("\n"),
-//        """Person(size=2)
-//          |  0 name=Phil,  1 employerid=1,  2 pid=1
-//          |  0 name=Bob,  1 employerid=2,  2 pid=2
-//          |Phone(size=0)
-//          |Employer(size=2)
-//          |  0 name=Employer1,  1 eid=1
-//          |  0 name=Employer2,  1 eid=2
-//          |Address(size=2)
-//          |  0 add=Phils first address,  1 aid=2,  2 personid=1
-//          |  0 add=Phils second address,  1 aid=3,  2 personid=1
-//          |ContactEmail(size=2)
-//          |  0 email=bobsEmail,  1 eid=2
-//          |  0 email=philsEmail,  1 eid=1""".stripMargin)
-
       maker(mainEntityForKeys.entity)(data)
+      maker.createdCount shouldBe 1
       val arrayForRow0 = mainEntityForKeys.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).toList
+      maker.createdCount shouldBe 2
       checkArray(numericKeysForPerson, arrayForRow0(0))(
-        """0  = Phil {Person/name}
+        """0  = name:Phil {Person/name}
           |1/OneChild
-          |1.0  = Employer1 {Employer/name}
+          |1.0  = name:Employer1 {Employer/name}
           |2/Many(2)
-          |2[0].0  = Phils second address {Address/add}
-          |2[1].0  = Phils first address {Address/add}
+          |2[0].0  = add:Phils second address {Address/add}
+          |2[1].0  = add:Phils first address {Address/add}
           |3/Many(0)
           |4/OneChild
-          |4.0  = philsEmail {ContactEmail/email}
-          |""".stripMargin)
+          |4.0  = email:philsEmail {ContactEmail/email}""".stripMargin)
       checkArray(numericKeysForPerson, arrayForRow0(1))(
-        """0  = Bob {Person/name}
+        """0  = name:Bob {Person/name}
           |1/OneChild
-          |1.0  = Employer2 {Employer/name}
+          |1.0  = name:Employer2 {Employer/name}
           |2/Many(0)
           |3/Many(0)
           |4/OneChild
-          |4.0  = bobsEmail {ContactEmail/email}""".stripMargin)
+          |4.0  = email:bobsEmail {ContactEmail/email}""".stripMargin)
       checkArray(numericKeysForPerson, arrayForRow0(2))(
-        """0  = Jill {Person/name}
+        """0  = name:Jill {Person/name}
           |1/OneChild
-          |1.0  = Employer1 {Employer/name}
+          |1.0  = name:Employer1 {Employer/name}
           |2/Many(1)
-          |2[0].0  = Jills first address {Address/add}
+          |2[0].0  = add:Jills first address {Address/add}
           |3/Many(0)
           |4/OneChild
-          |4.0  = jillsEmail {ContactEmail/email}""".stripMargin)
+          |4.0  = email:jillsEmail {ContactEmail/email}""".stripMargin)
       val stream = new ByteArrayOutputStream()
+      maker.createdCount shouldBe 2
       mainEntityForKeys.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).foreach(numericKeysForPerson.putJson(_, stream))
+      maker.createdCount shouldBe 3
       checkStrings(stream.toString(),
-        """{
-          |  "Person/name": "Phil", "employer": {"Employer/name": "Employer1"}, "address": [
-          |  {"Address/add": "Phils first address"},
-          |  {"Address/add": "Phils second address"}
-          |], "phone"     : [], "email": {"ContactEmail/email": "philsEmail"}
-          |}
-          |{
-          |  "Person/name": "Bob", "employer": {"Employer/name": "Employer2"}, "address": [], "phone": [],
-          |  "email"      : {"ContactEmail/email": "bobsEmail"}
-          |}
-          |{
-          |  "Person/name": "Jill", "employer": {"Employer/name": "Employer1"}, "address": [
-          |  {"Address/add": "Jills first address"}
-          |], "phone"     : [], "email": {"ContactEmail/email": "jillsEmail"}
-          |}""".stripMargin)
+        """{"Person/name":"name:Phil","employer":{"Employer/name":"name:Employer1"},"address":[{"Address/add":"add:Phils first address"},{"Address/add":"add:Phils second address"}],"phone":[],"email":{"ContactEmail/email":"email:philsEmail"}}
+          |{"Person/name":"name:Bob","employer":{"Employer/name":"name:Employer2"},"address":[],"phone":[],"email":{"ContactEmail/email":"email:bobsEmail"}}
+          |{"Person/name":"name:Jill","employer":{"Employer/name":"name:Employer1"},"address":[{"Address/add":"add:Jills first address"}],"phone":[],"email":{"ContactEmail/email":"email:jillsEmail"}}""".stripMargin)
+      maker.createdCount shouldBe 3
     }
   }
 

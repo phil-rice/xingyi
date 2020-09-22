@@ -15,7 +15,7 @@ object OrmMaker {
     data.flatMap { case (entity, lists) =>
       s"${entity.tableName.tableName}(size=${lists.size})" :: lists.map { oneRow =>
         entity.fieldsForCreate.zipAll(oneRow, FieldType("missingName"), "missingValues").zipWithIndex.
-          map { case ((f, d),i) => s"  $i ${f.name}=$d" }.mkString(",")
+          map { case ((f, d), i) => s"  $i ${f.name}=$d" }.mkString(",")
       }
     }
   }
@@ -173,10 +173,12 @@ case class KeysAndIndex(list: List[(Int, FieldType[_])]) {
 }
 
 case class MainEntity(tableName: TableName, alias: String, primaryKeyField: Keys, dataFields: List[FieldType[_]], children: List[ChildEntity]) extends OrmEntity {
-  def stream[T](batchConfig: OrmBatchConfig)(implicit ormMaker: OrmMaker[T], fastReaderOps: FastReaderDal, sqlOps: FastOrmSql): Stream[T] = stream(FastReader(batchConfig), 0)
-  private def stream[T](fastReader: FastReader[T], n: Int): Stream[T] = {
-    val subStream: Stream[T] = fastReader(this)(n)
-    if (subStream.isEmpty) subStream else subStream #::: stream(fastReader, n + 1)
+  def stream[T](batchConfig: OrmBatchConfig)(implicit ormMaker: OrmMaker[T], fastReaderOps: FastReaderDal, sqlOps: FastOrmSql): Stream[T] =
+    stream(FastReader(batchConfig).apply(this), 0)
+
+  private def stream[T](fn: Int => Stream[T], n: Int): Stream[T] = {
+    val subStream: Stream[T] = fn(n)
+    if (subStream.isEmpty) subStream else subStream #::: stream(fn, n + 1)
   }
   override def prettyPrint(i: String) = s"${i}MainEntity(${tableName.tableName}, id=${primaryKeyFieldsAndIndex.prettyPrint}, $fieldsPrettyString)${childrenPrettyString(i)}"
   def createTempTable(implicit fastOrmSql: FastOrmSql): BatchDetails => String = fastOrmSql.createMainTempTable(this)

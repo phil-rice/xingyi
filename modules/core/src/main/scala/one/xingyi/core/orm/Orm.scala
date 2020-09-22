@@ -58,13 +58,15 @@ class FastReaderImpl[T](batchConfig: OrmBatchConfig)(implicit ormMaker: OrmMaker
 
 
   //TODO rewrite using closable
-  override def apply(main: MainEntity): Int => Stream[T] = { n: Int =>
-    val connection = batchConfig.dataSource.getConnection
-    try {
-      val map: Map[OrmEntity, List[List[AnyRef]]] = FastReader.getOneBlockOfData(connection, main, batchConfig, n)
-      ormMaker(main)(map)
-    } finally {
-      connection.close()
+  override def apply(main: MainEntity): Int => Stream[T] = {
+    val fn = ormMaker(main);
+    { n: Int =>
+      val connection = batchConfig.dataSource.getConnection
+      try {
+        fn(FastReader.getOneBlockOfData(connection, main, batchConfig, n))
+      } finally {
+        connection.close()
+      }
     }
   }
 }

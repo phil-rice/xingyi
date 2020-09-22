@@ -14,7 +14,14 @@ object ToFieldType {
   implicit def toFieldTypeForInt: ToFieldType[Int] = FieldType[Int](_, "integer")
 }
 
-case class FieldType[T](name: String, typeName: String)(implicit val writeToJson: WriteToJson[T], val getFromJson: GetFromJson[T], val classTag: ClassTag[T])
+case class FieldType[T](name: String, typeName: String)(implicit val writeToJson: WriteToJson[T], val getFromJson: GetFromJson[T], val classTag: ClassTag[T]) {
+  def withIndex(list: List[String]): FieldTypeAndIndex[T] = {
+    val i = list.indexOf(name)
+    if (i < 0) throw new RuntimeException(s"Cannot find index of $name in $list")
+    FieldTypeAndIndex(this, i)
+  }
+  def withIndex(index: Int): FieldTypeAndIndex[T] = FieldTypeAndIndex(this, index)
+}
 object FieldType {
   private val splitter = Strings.splitInTwo(":")
   def apply(s: String): FieldType[_] = if (s.contains(":")) splitter(s) match {

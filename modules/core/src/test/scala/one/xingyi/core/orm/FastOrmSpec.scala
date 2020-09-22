@@ -40,7 +40,6 @@ trait FastOrmFixture[M[_]] extends OrmFixture {
       val aMap = address.toOneToManyMap(data, main, implicit list => Address(str(0)))
       val phoneMap = phone.toOneToManyMap(data, main, implicit list => Phone(str(0)))
       val emailMap = email.toMap(data, implicit list => str(0))
-      println(s"amap $aMap")
       data(main).map { implicit oneRow =>
         Person(str(0),
           employer.getData(main, eMap, oneRow),

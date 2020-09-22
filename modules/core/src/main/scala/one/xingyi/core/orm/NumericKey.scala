@@ -215,7 +215,6 @@ case class NumericKeys[Schema](list: List[NumericKey[Schema]]) {
 
   }
   def next(path: Array[Int], array: Array[Any]): Unit = {
-    println(s"in next and path is [${path.mkString(",")}]")
     val lastArray = findLastArrayForList(path, array)
     val list = asList(lastArray(path(path.length - 1)), s"At end of the path $path")
     val ar = findKeyForPath(path).children.makeAndSetupArray
