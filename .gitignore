@@ -19,4 +19,7 @@ repositories
 modules/playSample/
 project/project/
 credentials.sbt
+example1.js
+example2.js
+example3.js
 
