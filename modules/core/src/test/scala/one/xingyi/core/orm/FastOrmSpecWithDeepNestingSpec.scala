@@ -16,7 +16,6 @@ abstract class AbtractFastOrmSpecWithDeepNestingSpec[M[_] : ClosableM, J: JsonPa
   val table3 = TableName("t3", "")
   val table4 = TableName("t4", "")
 
-
   def executeIt = { s: String => jdbcOps.executeSql(s) apply ds }
   def setupSchema(s1: Boolean, s2: Boolean, s3: Boolean, s4: Boolean)(fn: (NumericKeys[SchemaForTest], List[SchemaForTest], SchemaForTest, SchemaForTest, SchemaForTest) => Unit): Unit = {
     implicit def stringToSchemaForTest(s: String): (SchemaForTest) = SchemaItem(s)

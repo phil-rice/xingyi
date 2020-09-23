@@ -37,27 +37,37 @@ trait FastOrmSql {
   def createTable(e: OrmEntity): String = s"create table ${e.tableName.tableName} (${e.fieldsForCreate.asString(nameAndTypeName(_))})"
 
   def createMainTempTable(e: OrmEntity)(batchDetails: BatchDetails): String =
-    s"create temporary table ${tempTableName(e)} as select ${selectFields(e)} from ${e.tableName.tableName} ${e.alias} limit ${batchDetails.batchSize} offset ${batchDetails.offset}"
+    s"create temporary table ${tempTableName(e)} as " +
+      s"select ${selectFields(e)} from ${e.tableName.tableName} ${e.alias} " +
+      s"order by ${selectKey(e.alias, e.primaryKeyField)} " +
+      s"limit ${batchDetails.batchSize} offset ${batchDetails.offset}"
 
   def createOneToManyTempTable(e: OneToManyEntity)(parent: OrmEntity): String =
-    s"create temporary table temp_${e.tableName.tableName} as select ${selectFields(e)} " +
+    s"create temporary table temp_${e.tableName.tableName} as " +
+      s"select ${selectFields(e)} " +
       s"from ${tempTableName(parent)} ${parent.alias},${e.tableName.tableName} ${e.alias} " +
-      s"where ${whereKey(parent.alias, parent.primaryKeyField, e.alias, e.parentId)}"
+      s"where ${whereKey(parent.alias, parent.primaryKeyField, e.alias, e.parentId)} " +
+      s"order by ${selectKey(e.alias, e.parentId)},${selectKey(e.alias, e.primaryKeyField)} "
 
   def createManyToOneTempTable(e: ManyToOneEntity)(parent: OrmEntity): String =
-    s"create temporary table temp_${e.tableName.tableName} as select DISTINCT  ${selectFields(e)} " + //TODO Why do we have distinct here
-      s"from ${tempTableName(parent)} ${parent.alias},${e.tableName.tableName} ${e.alias} " +
-      s"where ${whereKey(parent.alias, e.idInParent, e.alias, e.primaryKeyField)}"
-
-  def createOneToZeroOneEntityTempTable(e: OneToZeroOneEntity)(parent: OrmEntity): String =
-    s"create temporary table temp_${e.tableName.tableName} as select DISTINCT  ${selectFields(e)} " +
+    s"create temporary table temp_${e.tableName.tableName} as " +
+      s"select ${selectFields(e)} " +
       s"from ${tempTableName(parent)} ${parent.alias},${e.tableName.tableName} ${e.alias} " +
       s"where ${whereKey(parent.alias, e.idInParent, e.alias, e.primaryKeyField)} " +
-      s"sort by ${parent.primaryKeyField.list.map { f => s"${parent.alias}.${f.name}" }.mkString(",")}"
+      s"order by ${selectKey(parent.alias, parent.primaryKeyField)} "
+
+  def createOneToZeroOneEntityTempTable(e: OneToZeroOneEntity)(parent: OrmEntity): String =
+    s"create temporary table temp_${e.tableName.tableName} as " +
+      s"select DISTINCT  ${selectFields(e)} " +
+      s"from ${tempTableName(parent)} ${parent.alias},${e.tableName.tableName} ${e.alias} " +
+      s"order by ${selectKey(parent.alias, parent.primaryKeyField)} " +
+      s"where ${whereKey(parent.alias, e.idInParent, e.alias, e.primaryKeyField)} "
 
   def createSameIdTempTable(e: SameIdEntity)(parent: OrmEntity): String =
-    s"create temporary table temp_${e.tableName.tableName} as select DISTINCT  ${selectFields(e)} " +
+    s"create temporary table temp_${e.tableName.tableName} as " +
+      s"select DISTINCT  ${selectFields(e)} " +
       s"from ${tempTableName(parent)} ${parent.alias},${e.tableName.tableName} ${e.alias} " +
+      s"order by ${selectKey(parent.alias, parent.primaryKeyField)} " +
       s"where ${whereKey(parent.alias, parent.primaryKeyField, e.alias, e.primaryKeyField)}"
 
 
