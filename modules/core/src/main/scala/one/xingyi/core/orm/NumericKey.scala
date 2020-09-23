@@ -149,7 +149,7 @@ case class NumericKeys[Schema](list: List[NumericKey[Schema]]) {
 
   def asArray(a: Any, msg: => String): Array[Any] = a match {
     case ar: Array[Any] => ar
-    case list: List[_] => list.head.asInstanceOf[Array[Any]]
+    case list: List[_] => list.headOption.getOrElse(throw new RuntimeException(s"Trying to access an empty list. Did you need to call 'next'?")).asInstanceOf[Array[Any]]
     case _ => throw new IllegalArgumentException(msg)
   }
   def asList(a: Any, msg: => String): List[Array[Any]] = a match {
