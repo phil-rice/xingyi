@@ -52,7 +52,7 @@ abstract class AbtractFastOrmSpecWithDeepNestingSpec[M[_] : ClosableM, J: JsonPa
       val entity2 = ormFactory.oneToManyEntity(table2, "a2", Keys("t2id:int"), Keys("parentId:int"), List(entity3))
       val mainEntity: EntityAndFieldsAndPath[MainEntity] = ormFactory.mainEntity(table1, "a1", Keys("t1id:int"), List(entity2))
 
-      implicit val maker: OrmMaker[Array[Any]] = ormFactory.ormMaker(Map(
+      implicit val maker: OrmMaker[Array[Any]] = ormFactory.ormDataMaker(Map(
         entity4.entity -> keysForT1.findForT(schema4).get,
         entity3.entity -> keysForT1.findForT(schema3).get,
         entity2.entity -> keysForT1.findForT(schema2).get))
@@ -65,7 +65,7 @@ abstract class AbtractFastOrmSpecWithDeepNestingSpec[M[_] : ClosableM, J: JsonPa
 
         val stream = new ByteArrayOutputStream()
         mainEntity.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).foreach(keysForT1.putJson(_, stream))
-        stream.toString shouldBe "asdasds"
+        stream.toString shouldBe """{"t1/f1":"f1:t1v1","t1/f2":"f2:t1v2","t2":[{"t2/g1":"g1:t2v1","t2/g2":"g2:t2v2","t3":[{"t3/h1":"h1:t3v1","t4":[{"t4/i1":"i1:t4v1"}]}]}]}"""
       }
     }
   }
@@ -82,7 +82,7 @@ abstract class AbtractFastOrmSpecWithDeepNestingSpec[M[_] : ClosableM, J: JsonPa
       val entity2 = ormFactory.manyToOneEntity(table2, "a2", Keys("t2id:int"), Keys("childId:int"), List(entity3))
       val mainEntity: EntityAndFieldsAndPath[MainEntity] = ormFactory.mainEntity(table1, "a1", Keys("t1id:int"), List(entity2))
 
-      implicit val maker: OrmMaker[Array[Any]] = ormFactory.ormMaker(Map())
+      implicit val maker: OrmMaker[Array[Any]] = ormFactory.ormDataMaker(Map())
 
       setup(ds, mainEntity.entity) {
         executeIt(s"""insert into  t1 (t1id, childId, f1,f2 )            values (1, 2, 't1v1','t1v2');""")
@@ -92,7 +92,7 @@ abstract class AbtractFastOrmSpecWithDeepNestingSpec[M[_] : ClosableM, J: JsonPa
 
         val stream = new ByteArrayOutputStream()
         mainEntity.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).foreach(keysForT1.putJson(_, stream))
-        stream.toString shouldBe "ddfsg"
+        stream.toString shouldBe """{"t1/f1":"f1:t1v1","t1/f2":"f2:t1v2","t2":{"t2/g1":"g1:t2v1","t2/g2":"g2:t2v2","t3":{"t3/h1":"h1:t3v1","t4":{"t4/i1":"i1:t4v1"}}}}"""
       }
     }
   }
@@ -110,7 +110,7 @@ abstract class AbtractFastOrmSpecWithDeepNestingSpec[M[_] : ClosableM, J: JsonPa
       val entity2 = ormFactory.oneToManyEntity(table2, "a2", Keys("t2id:int"), Keys("parentId:int"), List(entity3))
       val mainEntity: EntityAndFieldsAndPath[MainEntity] = ormFactory.mainEntity(table1, "a1", Keys("t1id:int"), List(entity2))
 
-      implicit val maker: OrmMaker[Array[Any]] = ormFactory.ormMaker(Map(
+      implicit val maker: OrmMaker[Array[Any]] = ormFactory.ormDataMaker(Map(
         entity4.entity -> keysForT1.findForT(schema4).get,
         entity2.entity -> keysForT1.findForT(schema2).get))
 
@@ -122,7 +122,7 @@ abstract class AbtractFastOrmSpecWithDeepNestingSpec[M[_] : ClosableM, J: JsonPa
 
         val stream = new ByteArrayOutputStream()
         mainEntity.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).foreach(keysForT1.putJson(_, stream))
-        stream.toString shouldBe "ddfsg"
+        stream.toString shouldBe """{"t1/f1":"f1:t1v1","t1/f2":"f2:t1v2","t2":[{"t2/g1":"g1:t2v1","t2/g2":"g2:t2v2","t3":{"t3/h1":"h1:t3v1","t4":[{"t4/i1":"i1:t4v1"}]}}]}"""
       }
     }
   }

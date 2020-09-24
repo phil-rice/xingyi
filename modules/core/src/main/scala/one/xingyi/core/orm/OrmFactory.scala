@@ -1,5 +1,6 @@
 package one.xingyi.core.orm
 
+import java.io.ByteArrayOutputStream
 import java.util.concurrent.atomic.AtomicInteger
 
 case class EntityAndPath[E <: OrmEntity](entity: E, paths: Array[List[Int]]) {
@@ -48,7 +49,8 @@ case class TablesAndFieldsAndPaths(map: Map[TableName, OrmGettersAndPath]) {
   def prettyPrint: List[String] = map.toList.sortBy(_._1.tableName).flatMap { case (table, OrmGettersAndPath(ormValueGetters, paths, indicies)) =>
     table.tableName :: ormValueGetters.toList.zip(paths).zip(indicies).zipWithIndex.map { case (((og, path), index), i) => s"   $i ${og.fieldTypes.map(_.name).mkString(",")} - (${path.mkString(",")}) - $index" }
   }
-  def ormFactory(keys: NumericKeys[_]): OrmFactory = new OrmFactoryImpl(keys, this)
+  def ormFactory[Schema](keys: NumericKeys[Schema])(implicit findOrmEntityAndField: FindOrmEntityAndField[Schema]): OrmFactory =
+    new OrmFactoryImpl[Schema](keys, this)
 }
 object EntityAndPath {
   def apply[T](keys: NumericKeys[T])(implicit findOrmEntityAndField: FindOrmEntityAndField[T]): TablesAndFieldsAndPaths =
@@ -61,13 +63,14 @@ object EntityAndPath {
 case class EntityAndFieldsAndPath[E <: OrmEntity](entity: E, fieldsAndPath: OrmGettersAndPath)
 trait OrmFactory {
   def ormMaker(map: Map[OneToManyEntity, NumericKey[_]]): OrmMaker[Array[Any]]
+  def ormDataMaker(map: Map[OneToManyEntity, NumericKey[_]]): OrmMaker[Array[Any]]
 
   def mainEntity(tableName: TableName, alias: String, primaryKey: Keys, children: List[EntityAndFieldsAndPath[_ <: ChildEntity]]): EntityAndFieldsAndPath[MainEntity]
   def manyToOneEntity(tableName: TableName, alias: String, primaryKey: Keys, idInParent: Keys, children: List[EntityAndFieldsAndPath[_ <: ChildEntity]]): EntityAndFieldsAndPath[ManyToOneEntity]
   def sameIdEntity(tableName: TableName, alias: String, primaryKey: Keys, children: List[EntityAndFieldsAndPath[_ <: ChildEntity]]): EntityAndFieldsAndPath[SameIdEntity]
   def oneToManyEntity(tableName: TableName, alias: String, primaryKey: Keys, parentId: Keys, children: List[EntityAndFieldsAndPath[_ <: ChildEntity]]): EntityAndFieldsAndPath[OneToManyEntity]
 }
-class OrmFactoryImpl(keys: NumericKeys[_], tablesAndFieldsAndPaths: TablesAndFieldsAndPaths) extends OrmFactory {
+class OrmFactoryImpl[Schema](keys: NumericKeys[Schema], tablesAndFieldsAndPaths: TablesAndFieldsAndPaths)(implicit findOrmEntityAndField: FindOrmEntityAndField[Schema]) extends OrmFactory {
   override def mainEntity(tableName: TableName, alias: String, primaryKey: Keys, children: List[EntityAndFieldsAndPath[_ <: ChildEntity]]): EntityAndFieldsAndPath[MainEntity] = {
     val fieldsAndPath: OrmGettersAndPath = tablesAndFieldsAndPaths.getOrmGettersAndPath(tableName)
     val entity = MainEntity(tableName, alias, primaryKey, fieldsAndPath.fieldTypes.toList, children.map(_.entity))
@@ -90,11 +93,9 @@ class OrmFactoryImpl(keys: NumericKeys[_], tablesAndFieldsAndPaths: TablesAndFie
   }
   override def ormMaker(map: Map[OneToManyEntity, NumericKey[_]]): OrmMaker[Array[Any]] =
     new OrmMakerForArrayAny(keys, tablesAndFieldsAndPaths, map.map { case (k, v) => (k, (v.path :+ v.index).toArray) })
+  override def ormDataMaker(map: Map[OneToManyEntity, NumericKey[_]]): OrmMaker[Array[Any]] =
+    new OrmMakerForArrayAnyUsingOrmData[Schema](keys, tablesAndFieldsAndPaths, map)
 }
-
-
-
-
 
 
 class StreamArrayAnyForOneEntity[T](numericKeys: NumericKeys[T], mainEntity: MainEntity, tablesAndFieldsAndPaths: TablesAndFieldsAndPaths, oneToManyPathMap: Map[OneToManyEntity, Array[Int]])
@@ -235,5 +236,21 @@ class OrmMakerForArrayAny[Schema](numericKeys: NumericKeys[Schema], tablesAndFie
   override def apply(mainEntity: MainEntity): Map[OrmEntity, List[List[AnyRef]]] => Stream[Array[Any]] = {
     created.incrementAndGet()
     new StreamArrayAnyForOneEntity[Schema](numericKeys, mainEntity, tablesAndFieldsAndPaths, oneToManyPathMap)
+  }
+}
+
+class OrmMakerForArrayAnyUsingOrmData[Schema](numericKeys: NumericKeys[Schema], tablesAndFieldsAndPaths: TablesAndFieldsAndPaths, oneToManyPathMap: Map[OneToManyEntity, NumericKey[_]])
+                                             (implicit findOrmEntityAndField: FindOrmEntityAndField[Schema]) extends OrmMaker[Array[Any]] {
+
+  val factory = new OrmDataFactoryForMainEntity()
+  private val createdCounter = new AtomicInteger()
+  def createdCount = createdCounter.get
+  override def apply(entity: MainEntity): Map[OrmEntity, List[List[Any]]] => Stream[Array[Any]] = {
+    val populateFn = new NumericKeyPopulator[Schema](numericKeys, tablesAndFieldsAndPaths, entity, oneToManyPathMap);
+    createdCounter.incrementAndGet();
+    { data: Map[OrmEntity, List[List[Any]]] =>
+      val ormData = factory(entity, () => numericKeys.makeAndSetupArray, data.map { case (k, v) => k -> v.toArray }, populateFn)
+      ormData.applyAll()
+    }
   }
 }

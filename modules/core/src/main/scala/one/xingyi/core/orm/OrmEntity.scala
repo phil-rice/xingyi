@@ -98,6 +98,7 @@ trait OrmEntity {
   def primaryKeyFieldsAndIndex: KeysAndIndex = primaryKeyField.toKeysAndIndex(this)
   def dataFields: List[FieldType[_]]
   def children: List[ChildEntity]
+  def descendents: List[ChildEntity] = children ::: children.flatMap(_.descendents)
   def fieldsForCreate: List[FieldType[_]] = (dataFields ::: fieldsAddedByChildren ::: primaryKeyField.list).distinct
 
   def fieldsAddedByChildren: List[FieldType[_]] = children.flatMap(_.parentFields)
@@ -161,9 +162,9 @@ object Keys {
 }
 
 
-class GetKey(indexes: List[Int]) extends Function1[List[Any], Any]{
-    override def apply(oneRow: List[Any]): Any = if (indexes.size == 0) oneRow(indexes.head) else indexes.map(oneRow)
-    override def toString(): String = s"GetKey(${indexes.mkString(",")})"
+class GetKey(indexes: List[Int]) extends Function1[List[Any], Any] {
+  override def apply(oneRow: List[Any]): Any = if (indexes.size == 0) oneRow(indexes.head) else indexes.map(oneRow)
+  override def toString(): String = s"GetKey(${indexes.mkString(",")})"
 }
 case class KeysAndIndex(list: List[(Int, FieldType[_])]) {
   list.foreach { case (int, ft) => require(int >= 0, s"Have $this") }

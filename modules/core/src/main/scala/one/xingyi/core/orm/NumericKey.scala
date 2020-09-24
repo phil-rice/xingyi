@@ -242,7 +242,30 @@ object NumericKeys {
       val children: ChildrenInSchema[Schema] = schemaMapKey.children(t)
       NumericKey(parents, index, schemaMapKey.childKey(t), children.arity, recurse(parents :+ index, children.children), t)
     })
-
 }
 
+class NumericKeyPopulator[T](numericKeys: NumericKeys[T], tablesAndFieldsAndPaths: TablesAndFieldsAndPaths,mainEntity: MainEntity, map: Map[OneToManyEntity, NumericKey[_]])(implicit findOrmEntityAndField: FindOrmEntityAndField[T])
+  extends ((Array[Any], OrmEntity, List[Any]) => Array[Any]) {
+  val nextMap = map.map { case (k, v) => (k.alias, (v.path :+ v.index).toArray) }
 
+//  val tablesAndFieldsAndPaths: TablesAndFieldsAndPaths = EntityAndPath(numericKeys)
+  val aliasToOrmGetters: Map[String, OrmGettersForThisRowAndPath] = (mainEntity :: mainEntity. descendents).map { entity =>
+    (entity.alias, tablesAndFieldsAndPaths.getOrmGettersAndPath(entity.tableName).toForThisRow(entity.fieldsForCreate.map(_.name)))
+  }.toMap
+
+  def apply(ar: Array[Any], entity: OrmEntity, oneRow: List[Any]): Array[Any] = {
+    nextMap.get(entity.alias).foreach(path => numericKeys.next(path, ar))
+    val fieldsAndPath = aliasToOrmGetters(entity.alias)
+    val ormGetters: Array[OrmValueGetterForARow[_]] = fieldsAndPath.ormValueGetters
+    val paths = fieldsAndPath.path
+    val indicies = fieldsAndPath.indicies
+    var i = 0
+    while (i < ormGetters.length) {
+      val d = ormGetters(i) apply (oneRow.toArray)
+      numericKeys.put(paths(i), indicies(i), ar, d)
+      i += 1
+    }
+    ar
+  }
+
+}

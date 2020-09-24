@@ -1,6 +1,7 @@
 /** Copyright (c) 2020, Phil Rice. Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS AS IS AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 package one.xingyi.core.orm
 
+import java.io.ByteArrayOutputStream
 import java.sql.ResultSet
 
 import javax.sql.DataSource
@@ -192,5 +193,44 @@ abstract class AbstractFastOrmWithSingleLinkingKeysSpec[M[_] : ClosableM, J: Jso
 
   }
 
+  it should "populate data: integration test" in {
+    val factory = new OrmDataFactoryForMainEntity()
+    setupPerson(ds) {
+      val data: Map[OrmEntity, Array[List[Any]]] = FastReader.getOneBlockOfDataFromDs(ds, mainEntityForKeys.entity, 2)(0).map { case (e, list) => (e -> list.toArray[List[Any]]) }
+      val populateFn = new NumericKeyPopulator[SchemaForTest](numericKeysForPerson, tablesAndFieldsAndPaths,mainEntityForKeys.entity, mapForNext)
+      val mainOrmData: MainOrmData[Array[Any], MainEntity] = factory(mainEntityForKeys.entity, () => numericKeysForPerson.makeAndSetupArray, data, populateFn)
+      val List(philArray, bobArray) = mainOrmData.applyAll().toList
+      checkArray(numericKeysForPerson, philArray)(
+        """0  = name:Phil {Person/name}
+          |1/OneChild
+          |1.0  = name:Employer1 {Employer/name}
+          |2/Many(2)
+          |2[0].0  = add:Phils second address {Address/add}
+          |2[1].0  = add:Phils first address {Address/add}
+          |3/Many(0)
+          |4/OneChild
+          |4.0  = email:philsEmail {ContactEmail/email}""".stripMargin)
+      checkArray(numericKeysForPerson, bobArray)(
+        """0  = name:Bob {Person/name}
+          |1/OneChild
+          |1.0  = name:Employer2 {Employer/name}
+          |2/Many(0)
+          |3/Many(0)
+          |4/OneChild
+          |4.0  = email:bobsEmail {ContactEmail/email}""".stripMargin)
+    }
+  }
+  it should "stream json data using ormData" in {
+    val factory = new OrmDataFactoryForMainEntity()
+    setupPerson(ds) {
+      val data: Map[OrmEntity, Array[List[Any]]] = FastReader.getOneBlockOfDataFromDs(ds, mainEntityForKeys.entity, 2)(0).map { case (e, list) => (e -> list.toArray[List[Any]]) }
+      val populateFn = new NumericKeyPopulator[SchemaForTest](numericKeysForPerson, tablesAndFieldsAndPaths,mainEntityForKeys.entity, mapForNext)
+      val mainOrmData: MainOrmData[Array[Any], MainEntity] = factory(mainEntityForKeys.entity, () => numericKeysForPerson.makeAndSetupArray, data, populateFn)
+      val stream = new ByteArrayOutputStream()
+      mainOrmData.applyAll().foreach(numericKeysForPerson.putJson(_, stream))
+      checkStrings(stream.toString(),
+        """{"Person/name":"name:Phil","employer":{"Employer/name":"name:Employer1"},"address":[{"Address/add":"add:Phils first address"},{"Address/add":"add:Phils second address"}],"phone":[],"email":{"ContactEmail/email":"email:philsEmail"}}
+          |{"Person/name":"name:Bob","employer":{"Employer/name":"name:Employer2"},"address":[],"phone":[],"email":{"ContactEmail/email":"email:bobsEmail"}}""".stripMargin)
+    }
+  }
 }
-

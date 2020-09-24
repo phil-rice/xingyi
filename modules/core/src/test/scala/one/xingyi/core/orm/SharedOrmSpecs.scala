@@ -176,6 +176,55 @@ abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSou
     }
   }
 
+  it should "allow the items to be read using the numeric keys with the ormData" in {
+    //under development
+    setupPerson(ds) {
+      implicit val maker: OrmMakerForArrayAnyUsingOrmData[SchemaForTest] = ormFactory.ormDataMaker(mapForNext).asInstanceOf[OrmMakerForArrayAnyUsingOrmData[SchemaForTest]]
+      maker.createdCount shouldBe 0
+      val data = FastReader.getOneBlockOfDataFromDs(ds, mainEntityForKeys.entity, 2)(0)
+      maker(mainEntityForKeys.entity)(data)
+      maker.createdCount shouldBe 1
+      val arrayForRow0 = mainEntityForKeys.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).toList
+      maker.createdCount shouldBe 2
+      checkArray(numericKeysForPerson, arrayForRow0(0))(
+        """0  = name:Phil {Person/name}
+          |1/OneChild
+          |1.0  = name:Employer1 {Employer/name}
+          |2/Many(2)
+          |2[0].0  = add:Phils second address {Address/add}
+          |2[1].0  = add:Phils first address {Address/add}
+          |3/Many(0)
+          |4/OneChild
+          |4.0  = email:philsEmail {ContactEmail/email}""".stripMargin)
+      checkArray(numericKeysForPerson, arrayForRow0(1))(
+        """0  = name:Bob {Person/name}
+          |1/OneChild
+          |1.0  = name:Employer2 {Employer/name}
+          |2/Many(0)
+          |3/Many(0)
+          |4/OneChild
+          |4.0  = email:bobsEmail {ContactEmail/email}""".stripMargin)
+      checkArray(numericKeysForPerson, arrayForRow0(2))(
+        """0  = name:Jill {Person/name}
+          |1/OneChild
+          |1.0  = name:Employer1 {Employer/name}
+          |2/Many(1)
+          |2[0].0  = add:Jills first address {Address/add}
+          |3/Many(0)
+          |4/OneChild
+          |4.0  = email:jillsEmail {ContactEmail/email}""".stripMargin)
+      val stream = new ByteArrayOutputStream()
+      maker.createdCount shouldBe 2
+      mainEntityForKeys.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).foreach(numericKeysForPerson.putJson(_, stream))
+      maker.createdCount shouldBe 3
+      checkStrings(stream.toString(),
+        """{"Person/name":"name:Phil","employer":{"Employer/name":"name:Employer1"},"address":[{"Address/add":"add:Phils first address"},{"Address/add":"add:Phils second address"}],"phone":[],"email":{"ContactEmail/email":"email:philsEmail"}}
+          |{"Person/name":"name:Bob","employer":{"Employer/name":"name:Employer2"},"address":[],"phone":[],"email":{"ContactEmail/email":"email:bobsEmail"}}
+          |{"Person/name":"name:Jill","employer":{"Employer/name":"name:Employer1"},"address":[{"Address/add":"add:Jills first address"}],"phone":[],"email":{"ContactEmail/email":"email:jillsEmail"}}""".stripMargin)
+      maker.createdCount shouldBe 3
+    }
+  }
+
 
 
 }
