@@ -1,13 +1,13 @@
 package one.xingyi.core.orm
 
 trait OrmDataFactory[MainT, T] {
-  def apply(e: MainT, data: Map[T, Array[List[Any]]], fn: (T, List[Any]) => Unit): MainOrmData[MainT]
+  def apply[Context](e: MainT, contextMaker: () => Context, data: Map[T, Array[List[Any]]], fn: (Context, T, List[Any]) => Context): MainOrmData[Context, MainT]
 }
 
 
 class OrmDataFactoryForMainEntity extends OrmDataFactory[MainEntity, OrmEntity] {
-  def childOrmData(p: OrmEntity, data: Map[OrmEntity, Array[List[Any]]], fn: (OrmEntity, List[Any]) => Unit)(e: ChildEntity): OrmData = {
-    def children(c: ChildEntity): List[OrmData] = c.children.map(childOrmData(e, data, fn))
+  def childOrmData[Context](p: OrmEntity, data: Map[OrmEntity, Array[List[Any]]], fn: (Context, OrmEntity, List[Any]) => Context)(e: ChildEntity): OrmData[Context] = {
+    def children(c: ChildEntity): List[OrmData[Context]] = c.children.map(childOrmData(e, data, fn))
     e match {
       case o: OneToManyEntity => FanoutOrmData(o, o.tableName.tableName, FlyweightKey(p.primaryKeyFieldsAndIndex, o.parentIdsAndIndex), fn, data(o), children(o))
       case o: OneToZeroOneEntity => FanoutOrmData(o, o.tableName.tableName, FlyweightKey(p.primaryKeyFieldsAndIndex, o.primaryKeyFieldsAndIndex), fn, data(o), children(o))
@@ -16,7 +16,8 @@ class OrmDataFactoryForMainEntity extends OrmDataFactory[MainEntity, OrmEntity] 
     }
   }
 
-  override def apply(e: MainEntity, data: Map[OrmEntity, Array[List[Any]]], fn: (OrmEntity, List[Any]) => Unit): MainOrmData[MainEntity] =
-    MainOrmData(e, e.tableName.tableName, fn, data(e), e.children.map(childOrmData(e, data, fn)))
+
+  override def apply[Context](e: MainEntity, contextMaker: () => Context, data: Map[OrmEntity, Array[List[Any]]], fn: (Context, OrmEntity, List[Any]) => Context): MainOrmData[Context, MainEntity] =
+    MainOrmData(e, e.tableName.tableName, contextMaker, fn, data(e), e.children.map(childOrmData(e, data, fn)))
 
 }

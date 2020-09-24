@@ -8,7 +8,7 @@ class OrmDataFactoryForMainEntityTest extends UtilsSpec {
   behavior of classOf[OrmDataFactoryForMainEntityTest].getSimpleName
 
   val factory = new OrmDataFactoryForMainEntity
-  val fn = mock[(OrmEntity, List[Any]) => Unit]
+  val fn = mock[(Int, OrmEntity, List[Any]) => Int]
 
   val childTable = TableName("child", "")
   val mainTable = TableName("table", "description")
@@ -16,22 +16,22 @@ class OrmDataFactoryForMainEntityTest extends UtilsSpec {
 
   def makeEntity(child: ChildEntity): MainEntity = MainEntity(mainTable, "a", Keys("pk"), List(FieldType("data")), List(child))
 
-  def setUpFanOut[E <: ChildEntity](child: E, array: Array[List[Any]])(block: (MainEntity, FanoutOrmData[E]) => Unit): Unit = {
+  def setUpFanOut[E <: ChildEntity](child: E, array: Array[List[Any]])(block: (MainEntity, FanoutOrmData[Int, E]) => Unit): Unit = {
     val main = makeEntity(child)
     val data = mock[Map[OrmEntity, Array[List[Any]]]]
     Mockito.when(data.apply(child)).thenReturn(array)
-    val childData = factory.childOrmData(main, data, fn)(child).asInstanceOf[FanoutOrmData[E]]
+    val childData = factory.childOrmData(main, data, fn)(child).asInstanceOf[FanoutOrmData[Int, E]]
     childData.t shouldBe child
     childData.ar shouldBe array
     childData.executeWhenMatch shouldBe fn
     block(main, childData)
   }
 
-  def setupFanIn[E <: ChildEntity](child: E, array: Array[List[Any]])(block: (MainEntity, FanInOrmData[E]) => Unit): Unit = {
+  def setupFanIn[E <: ChildEntity](child: E, array: Array[List[Any]])(block: (MainEntity, FanInOrmData[Int, E]) => Unit): Unit = {
     val main = makeEntity(child)
     val data = mock[Map[OrmEntity, Array[List[Any]]]]
     Mockito.when(data.apply(child)).thenReturn(array)
-    val childData = factory.childOrmData(main, data, fn)(child).asInstanceOf[FanInOrmData[E]]
+    val childData = factory.childOrmData(main, data, fn)(child).asInstanceOf[FanInOrmData[Int, E]]
     childData.t shouldBe child
     childData.data shouldBe array
     childData.executeWhenMatch shouldBe fn

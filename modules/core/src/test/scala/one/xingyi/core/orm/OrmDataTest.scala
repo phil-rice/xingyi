@@ -41,16 +41,16 @@ class OrmDataTest extends UtilsSpec {
 
   implicit def intToData(i: Int) = List(i)
 
-  def setup(fn: (((String, List[Any]) => Unit)) => Unit): List[String] = {
+  def setup(fn: (((Int, String, List[Any]) => Int)) => Unit): List[String] = {
     val result = new AtomicReference(List[String]())
-    def remember(name: String, row: List[Any]) = result.updateAndGet(old => old :+ name + row.mkString("(", ",", ")"))
+    def remember(count: Int, name: String, row: List[Any]) = {result.updateAndGet(old => old :+ count + "/" + name + row.mkString("(", ",", ")")); count + 1 }
     fn(remember)
     result.get
   }
   it should "process the data in it's array in a manner similar to a merge sort - only zero or one value in child per parent" in {
     setup { (remember) =>
       val child = FanoutOrmData("child", "child", FlyweightKey("parentKey".ki(0), "childKey".ki(0)), remember, Array[List[Any]](3, 6), List())
-      val parent = MainOrmData("parent", "parent", remember, Array[List[Any]](1, 2, 3, 4, 5, 6), List(child))
+      val parent = MainOrmData("parent", "parent",  () => 0,remember, Array[List[Any]](1, 2, 3, 4, 5, 6), List(child))
       checkStrings(parent.prettyString,
         """MainOrmData(parent
           | List(1)
@@ -70,7 +70,7 @@ class OrmDataTest extends UtilsSpec {
 
     setup { (remember) =>
       val child = FanoutOrmData("child", "child", FlyweightKey("parentKey".ki(0), "childKey".ki(0)), remember, Array[List[Any]](1, 5), List())
-      val parent = MainOrmData("parent", "parent", remember, Array[List[Any]](1, 2, 3, 4, 5, 6), List(child))
+      val parent = MainOrmData("parent", "parent", () => 0,remember, Array[List[Any]](1, 2, 3, 4, 5, 6), List(child))
       checkStrings(parent.prettyString,
         """MainOrmData(parent
           | List(1)
@@ -92,7 +92,7 @@ class OrmDataTest extends UtilsSpec {
     setup { (remember) =>
       val grandchild = FanoutOrmData("grandchild", "grandchild", FlyweightKey("parentKey".ki(1), "childKey".ki(0)), remember, Array[List[Any]](1, 2), List())
       val child = FanoutOrmData("child", "child", FlyweightKey("parentKey".ki(0), "childKey".ki(0)), remember, Array[List[Any]](List(3, 1), List(6, 2)), List(grandchild))
-      val parent = MainOrmData("parent", "parent", remember, Array[List[Any]](1, 2, 3, 4, 5, 6), List(child))
+      val parent = MainOrmData("parent", "parent",  () => 0,remember, Array[List[Any]](1, 2, 3, 4, 5, 6), List(child))
       checkStrings(parent.prettyString,
         """MainOrmData(parent
           | List(1)
@@ -119,7 +119,7 @@ class OrmDataTest extends UtilsSpec {
     setup { (remember) =>
       val grandchild = FanoutOrmData("grandchild", "grandchild", FlyweightKey("parentKey".ki(1), "childKey".ki(0)), remember, Array[List[Any]](1, 2, 3), List())
       val child = FanoutOrmData("child", "child", FlyweightKey("parentKey".ki(0), "childKey".ki(0)), remember, Array[List[Any]](List(3, 1), List(3, 2), List(3, 3)), List(grandchild))
-      val parent = MainOrmData("parent", "parent", remember, Array[List[Any]](1, 2, 3, 4, 5, 6), List(child))
+      val parent = MainOrmData("parent", "parent",  () => 0,remember, Array[List[Any]](1, 2, 3, 4, 5, 6), List(child))
       checkStrings(parent.prettyString,
         """MainOrmData(parent
           | List(1)
@@ -150,7 +150,7 @@ class OrmDataTest extends UtilsSpec {
     setup { (remember) =>
       val grandchild = FanoutOrmData("grandchild", "grandchild", FlyweightKey("parentKey".ki(0), "childKey".ki(0)), remember, Array[List[Any]](1, 2, 4), List())
       val fanIn = FanInOrmData("child", "child", idInParentData = new GetKey(List(1)), idForChild = new GetKey(List(0)), remember, Array(1, 2, 4), List(grandchild))
-      val parent = MainOrmData("parent", "parent", remember, Array[List[Any]](List(1, 0), List(2, 0), List(3, 1), List(4, 0), List(5, 2), List(6, 4)), List(fanIn))
+      val parent = MainOrmData("parent", "parent",  () => 0,remember, Array[List[Any]](List(1, 0), List(2, 0), List(3, 1), List(4, 0), List(5, 2), List(6, 4)), List(fanIn))
       checkStrings(parent.prettyString,
         """MainOrmData(parent
           | List(1, 0)

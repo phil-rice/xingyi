@@ -161,8 +161,8 @@ abstract class AbstractFastOrmWithSingleLinkingKeysSpec[M[_] : ClosableM, J: Jso
     setupPerson(ds) {
       val data: Map[OrmEntity, Array[List[Any]]] = FastReader.getOneBlockOfDataFromDs(ds, mainEntityForKeys.entity, 2)(0).map { case (e, list) => (e -> list.toArray[List[Any]]) }
       var result = List[String]()
-      def remember(e: OrmEntity, list: List[Any]) = result = result :+ e.tableName.tableName + ":" + list.mkString(",")
-      val mainOrmData: MainOrmData[MainEntity] = factory(mainEntityForKeys.entity, data, remember)
+      def remember(count: Int, e: OrmEntity, list: List[Any]) = {result = result :+ count + "/" + e.tableName.tableName + ":" + list.mkString(","); count + 1 }
+      val mainOrmData: MainOrmData[Int, MainEntity] = factory(mainEntityForKeys.entity, () => 0, data, remember)
       checkStrings(mainOrmData.prettyString,
         """MainOrmData(Person
           | List(Phil, 1, 1)
@@ -184,9 +184,10 @@ abstract class AbstractFastOrmWithSingleLinkingKeysSpec[M[_] : ClosableM, J: Jso
           |  List(bobsEmail, 2) ))
           |)""".stripMargin)
       result shouldBe List()
-      mainOrmData.applyAll()
-      result shouldBe List("Person:Phil,1,1", "Employer:Employer1,1", "Address:Phils first address,2,1", "Address:Phils second address,3,1", "ContactEmail:philsEmail,1", "Person:Bob,2,2", "Employer:Employer2,2", "ContactEmail:bobsEmail,2")
-
+      mainOrmData.applyAll().toList shouldBe List(4, 3) //toList because need to iterate through the stream
+      result shouldBe List(
+        "0/Person:Phil,1,1", "1/Employer:Employer1,1", "2/Address:Phils first address,2,1", "2/Address:Phils second address,3,1", "3/ContactEmail:philsEmail,1",
+        "0/Person:Bob,2,2", "1/Employer:Employer2,2", "2/ContactEmail:bobsEmail,2")
     }
 
   }

@@ -28,21 +28,23 @@ case class Key2(key1: FlyweightKey, key2: FlyweightKey) extends FlyweightKey {
     }
   }
 }
-trait OrmData {
-  def fromParent(parent: List[Any])
+trait OrmData[Context] {
+  def fromParent(context: Context, parent: List[Any]): Context
   def prettyString(indent: String): String
 }
 object OrmData {
   def arrayToString(indent: String, a: Array[List[Any]]) = a.map(indent + _).mkString("\n")
-  def childrenToPrintString(indent: String, children: List[OrmData]) = if (children.isEmpty) "" else s"\n${indent}children(\n${children.map(_.prettyString(indent)).mkString("\n")})\n"
+  def childrenToPrintString[Context](indent: String, children: List[OrmData[Context]]) = if (children.isEmpty) "" else s"\n${indent}children(\n${children.map(_.prettyString(indent)).mkString("\n")})\n"
+
+
 }
 
-case class MainOrmData[T](t: T, name: String, executeWhenMatch: (T, List[Any]) => Unit, ar: Array[List[Any]], children: List[OrmData]) {
+case class MainOrmData[Context, T](t: T, name: String, contextMaker: () => Context, executeWhenMatch: (Context, T, List[Any]) => Context, ar: Array[List[Any]], children: List[OrmData[Context]]) {
   def prettyString = s"MainOrmData($name\n${arrayToString(" ", ar)}\n${childrenToPrintString(" ", children)})\n"
-  def applyAll(): Unit = {
-    ar.foreach { oneRow =>
-      executeWhenMatch(t, oneRow)
-      children.foreach(_.fromParent(oneRow))
+  def applyAll(): Stream[Context] = {
+    ar.toStream.map { oneRow =>
+      val c1 = executeWhenMatch(contextMaker(), t, oneRow)
+      children.foldLeft(c1)((context, child) => child.fromParent(context, oneRow))
     }
   }
 }
@@ -59,11 +61,12 @@ case class MainOrmData[T](t: T, name: String, executeWhenMatch: (T, List[Any]) =
  * suppose we have Keys1(a), Keys2(a,b), Keys3(a,b,c)... ah do we actually need the id or can we go flyweight?
  * */
 
-case class FanoutOrmData[T](t: T, name: String, flyweightKey: FlyweightKey, executeWhenMatch: (T, List[Any]) => Unit, ar: Array[List[Any]], children: List[OrmData]) extends OrmData {
+case class FanoutOrmData[Context, T](t: T, name: String, flyweightKey: FlyweightKey, executeWhenMatch: (Context, T, List[Any]) => Context, ar: Array[List[Any]], children: List[OrmData[Context]]) extends OrmData[Context] {
   def prettyString(indent: String) = s"${indent}Fanout($name,$flyweightKey\n${arrayToString(indent + " ", ar)}${childrenToPrintString(indent + " ", children)}$indent)"
   var i = 0
-  def fromParent(parent: List[Any]) {
+  override def fromParent(context: Context, parent: List[Any]): Context = {
     var cont = true
+    var thisContext = context
     while (i < ar.length && cont) {
       val thisRow = ar(i)
       val comparison = flyweightKey.compare(parent, thisRow)
@@ -71,23 +74,24 @@ case class FanoutOrmData[T](t: T, name: String, flyweightKey: FlyweightKey, exec
       comparison match {
         case x if x < 0 => cont = false //we are waiting for the parent to catch up
         case 0 =>
-          executeWhenMatch(t, thisRow);
-          children.foreach(_.fromParent(thisRow))
+          thisContext = executeWhenMatch(context, t, thisRow);
+          thisContext = children.foldLeft(thisContext)((context, child) => child.fromParent(context, thisRow))
           i += 1
         case _ => throw new IllegalStateException(s"Not sure how this happened. $t $i\nParent:  $parent\nthisRow: $thisRow")
       }
     }
+    thisContext
   }
 }
 
-case class FanInOrmData[T](t: T, name: String, idInParentData: GetKey, idForChild: GetKey, executeWhenMatch: (T, List[Any]) => Unit, data: Array[List[Any]], children: List[OrmData]) extends OrmData {
+case class FanInOrmData[Context, T](t: T, name: String, idInParentData: GetKey, idForChild: GetKey, executeWhenMatch: (Context, T, List[Any]) => Context, data: Array[List[Any]], children: List[OrmData[Context]]) extends OrmData[Context] {
   def prettyString(indent: String) =
     s"${indent}Fanout($name,idInParent=${idInParentData}, idForChild=${idForChild}\n${arrayToString(indent + " ", data)}\n${childrenToPrintString(indent + " ", children)}\n$indent)"
   val map: Map[Any, List[Any]] = data.foldLeft(Map[Any, List[Any]]())((acc, oneRow) => acc + (idForChild(oneRow) -> oneRow))
-  override def fromParent(parentRow: List[Any]): Unit = {
-    map.get(idInParentData(parentRow)) foreach { oneRow =>
-      (executeWhenMatch(t, oneRow))
-      children.foreach(_.fromParent(oneRow))
+  override def fromParent(context: Context, parentRow: List[Any]): Context = {
+    map.get(idInParentData(parentRow)).foldLeft(context) { (context, oneRow) =>
+      val c1 = (executeWhenMatch(context, t, oneRow))
+      children.foldLeft(c1)((context, child) => child.fromParent(context, oneRow))
     }
   }
 }
