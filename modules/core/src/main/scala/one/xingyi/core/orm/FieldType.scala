@@ -10,11 +10,11 @@ trait ToFieldType[T] {
   def apply(name: String): FieldType[T]
 }
 object ToFieldType {
-  implicit def toFieldTypeForString: ToFieldType[String] = FieldType[String](_, "varchar(255)")
-  implicit def toFieldTypeForInt: ToFieldType[Int] = FieldType[Int](_, "integer")
+  implicit def toFieldTypeForString: ToFieldType[String] = FieldType[String](_, "varchar(255)", false)
+  implicit def toFieldTypeForInt: ToFieldType[Int] = FieldType[Int](_, "integer", true)
 }
 
-case class FieldType[T](name: String, typeName: String)(implicit val writeToJson: WriteToJson[T], val getFromJson: GetFromJson[T], val classTag: ClassTag[T]) {
+case class FieldType[T](name: String, typeName: String, numericSort: Boolean)(implicit val writeToJson: WriteToJson[T], val getFromJson: GetFromJson[T], val classTag: ClassTag[T]) {
   def withIndex(list: List[String]): FieldTypeAndIndex[T] = {
     val i = list.indexOf(name)
     if (i < 0) throw new RuntimeException(s"Cannot find index of $name in $list")

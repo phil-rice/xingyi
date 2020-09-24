@@ -142,11 +142,11 @@ case class Keys(val list: List[FieldType[_]]) {
     }
   }
   var map = Map[OrmEntity, KeysAndIndex]()
-  def addToMap(entity: OrmEntity) = {
+  def addToMap(entity: OrmEntity) = try {
     val result: KeysAndIndex = KeysAndIndex(list.map(l => (entity.fieldsForCreate.indexOf(l), l)))
     map = map + (entity -> result)
     result
-  }
+  } catch {case e: Exception => throw new RuntimeException(s"Error creating index. Entity was ${entity.tableName.tableName}/${entity.alias}", e)}
   def toKeysAndIndex(entity: OrmEntity): KeysAndIndex = map.getOrElse(entity, addToMap(entity))
 }
 
@@ -161,6 +161,7 @@ object Keys {
 }
 
 case class KeysAndIndex(list: List[(Int, FieldType[_])]) {
+  list.foreach { case (int, ft) => require(int >= 0, s"Have $this") }
   val indexes = list.map(_._1)
   def prettyPrint = s"KeysAndIndex(${list.map { case (i, f) => s"$i,${f.name}" }.mkString(",")})"
   def getKey(oneRow: List[Any]): Any = if (indexes.size == 0) oneRow(indexes.head) else indexes.map(oneRow)
