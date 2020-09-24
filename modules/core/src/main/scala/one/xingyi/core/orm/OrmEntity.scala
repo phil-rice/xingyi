@@ -160,11 +160,16 @@ object Keys {
   }
 }
 
+
+class GetKey(indexes: List[Int]) extends Function1[List[Any], Any]{
+    override def apply(oneRow: List[Any]): Any = if (indexes.size == 0) oneRow(indexes.head) else indexes.map(oneRow)
+    override def toString(): String = s"GetKey(${indexes.mkString(",")})"
+}
 case class KeysAndIndex(list: List[(Int, FieldType[_])]) {
   list.foreach { case (int, ft) => require(int >= 0, s"Have $this") }
   val indexes = list.map(_._1)
   def prettyPrint = s"KeysAndIndex(${list.map { case (i, f) => s"$i,${f.name}" }.mkString(",")})"
-  def getKey(oneRow: List[Any]): Any = if (indexes.size == 0) oneRow(indexes.head) else indexes.map(oneRow)
+  val getKey = new GetKey(indexes)
   def asPrimaryKeyAddTo[V](map: Map[Any, V], oneRow: List[Any], data: V): Map[Any, V] = map + (getKey(oneRow) -> data)
   def getFrom[V](map: Map[Any, V], oneRow: List[Any], default: (KeysAndIndex, Map[Any, V], Any) => V): V = {
     val key = getKey(oneRow)

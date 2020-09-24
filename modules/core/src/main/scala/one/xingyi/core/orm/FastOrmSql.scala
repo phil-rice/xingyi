@@ -60,15 +60,15 @@ trait FastOrmSql {
     s"create temporary table temp_${e.tableName.tableName} as " +
       s"select DISTINCT  ${selectFields(e)} " +
       s"from ${tempTableName(parent)} ${parent.alias},${e.tableName.tableName} ${e.alias} " +
-      s"order by ${selectKey(parent.alias, parent.primaryKeyField)} " +
-      s"where ${whereKey(parent.alias, e.idInParent, e.alias, e.primaryKeyField)} "
+      s"where ${whereKey(parent.alias, e.idInParent, e.alias, e.primaryKeyField)} " +
+      s"order by ${selectKey(parent.alias, parent.primaryKeyField)} "
 
   def createSameIdTempTable(e: SameIdEntity)(parent: OrmEntity): String =
     s"create temporary table temp_${e.tableName.tableName} as " +
       s"select DISTINCT  ${selectFields(e)} " +
       s"from ${tempTableName(parent)} ${parent.alias},${e.tableName.tableName} ${e.alias} " +
-      s"order by ${selectKey(parent.alias, parent.primaryKeyField)} " +
-      s"where ${whereKey(parent.alias, parent.primaryKeyField, e.alias, e.primaryKeyField)}"
+      s"where ${whereKey(parent.alias, parent.primaryKeyField, e.alias, e.primaryKeyField)} " +
+      s"order by ${selectKey(e.alias, e.primaryKeyField)} "
 
 
   def drainSql(e: OrmEntity): String = s"select * from ${tempTableName(e)}"

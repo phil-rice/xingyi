@@ -28,7 +28,6 @@ trait OrmFixture extends SharedOrmFixture {
   val main = MainEntity(personTable, "P", int("pid"), List(string("name")), List(employer, address, phone, email))
 
 
-
 }
 
 trait FastOrmFixture[M[_]] extends OrmFixture {
@@ -123,11 +122,11 @@ abstract class AbstractFastOrmWithSingleLinkingKeysSpec[M[_] : ClosableM, J: Jso
 
   it should "make createTempTables sql" in {
     checkStrategy("createTempTables", OrmStrategies.createTempTables(BatchDetails(1000, 3)).walk(main), List(
-      main -> "create temporary table temp_Person as select P.name, P.employerid, P.pid from Person P limit 1000 offset 3000",
-      employer -> "create temporary table temp_Employer as select DISTINCT  E.name, E.eid from temp_Person P,Employer E where P.employerid = E.eid",
-      address -> "create temporary table temp_Address as select A.add, A.aid, A.personid from temp_Person P,Address A where P.pid = A.personid",
-      phone -> "create temporary table temp_Phone as select Ph.phoneNo, Ph.phid, Ph.personid from temp_Person P,Phone Ph where P.pid = Ph.personid",
-      email -> "create temporary table temp_ContactEmail as select DISTINCT  E.email, E.eid from temp_Person P,ContactEmail E where P.pid = E.eid"
+      main -> "create temporary table temp_Person as select P.name, P.employerid, P.pid from Person P order by P.pid limit 1000 offset 3000",
+      employer -> "create temporary table temp_Employer as select E.name, E.eid from temp_Person P,Employer E where P.employerid = E.eid order by P.pid ",
+      address -> "create temporary table temp_Address as select A.add, A.aid, A.personid from temp_Person P,Address A where P.pid = A.personid order by A.personid,A.aid ",
+      phone -> "create temporary table temp_Phone as select Ph.phoneNo, Ph.phid, Ph.personid from temp_Person P,Phone Ph where P.pid = Ph.personid order by Ph.personid,Ph.phid ",
+      email -> "create temporary table temp_ContactEmail as select DISTINCT  E.email, E.eid from temp_Person P,ContactEmail E where P.pid = E.eid order by E.eid "
     ))
   }
 
@@ -155,8 +154,42 @@ abstract class AbstractFastOrmWithSingleLinkingKeysSpec[M[_] : ClosableM, J: Jso
     employer.idInParent.toKeysAndIndex(main) shouldBe KeysAndIndex(List((1, FieldType("employerid:int"))))
     phone.parentId.toKeysAndIndex(phone) shouldBe KeysAndIndex(List((2, FieldType("personid:int"))))
     address.parentId.toKeysAndIndex(address) shouldBe KeysAndIndex(List((2, FieldType("personid:int"))))
-  }
 
+  }
+  it should "create an ormdata: integration test" in {
+    val factory = new OrmDataFactoryForMainEntity()
+    setupPerson(ds) {
+      val data: Map[OrmEntity, Array[List[Any]]] = FastReader.getOneBlockOfDataFromDs(ds, mainEntityForKeys.entity, 2)(0).map { case (e, list) => (e -> list.toArray[List[Any]]) }
+      var result = List[String]()
+      def remember(e: OrmEntity, list: List[Any]) = result = result :+ e.tableName.tableName + ":" + list.mkString(",")
+      val mainOrmData: MainOrmData[MainEntity] = factory(mainEntityForKeys.entity, data, remember)
+      checkStrings(mainOrmData.prettyString,
+        """MainOrmData(Person
+          | List(Phil, 1, 1)
+          | List(Bob, 2, 2)
+          |
+          | children(
+          | Fanout(Employer,idInParent=GetKey(1), idForChild=GetKey(1)
+          |  List(Employer1, 1)
+          |  List(Employer2, 2)
+          |
+          | )
+          | Fanout(Address,KeyInt(2,2)
+          |  List(Phils first address, 2, 1)
+          |  List(Phils second address, 3, 1) )
+          | Fanout(Phone,KeyInt(2,2)
+          | )
+          | Fanout(ContactEmail,KeyInt(2,1)
+          |  List(philsEmail, 1)
+          |  List(bobsEmail, 2) ))
+          |)""".stripMargin)
+      result shouldBe List()
+      mainOrmData.applyAll()
+      result shouldBe List("Person:Phil,1,1", "Employer:Employer1,1", "Address:Phils first address,2,1", "Address:Phils second address,3,1", "ContactEmail:philsEmail,1", "Person:Bob,2,2", "Employer:Employer2,2", "ContactEmail:bobsEmail,2")
+
+    }
+
+  }
 
 }
 
