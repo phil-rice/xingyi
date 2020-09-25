@@ -52,7 +52,7 @@ class OrmDataFactoryForMainEntityTest extends UtilsSpec {
   }
   it should "create OrmData for the " + classOf[OneToManyEntity].getSimpleName in {
     val childEntity = OneToManyEntity(childTable, "c", Keys("cid"), Keys("parent"), List(FieldType("childData1"), FieldType("childData2")), List())
-    setUpFanOut(childEntity, Array()) { (main, fanout) => fanout.flyweightKey shouldBe KeyString(1, 2) }
+    setUpFanOut(childEntity, Array()) { (main, fanout) => fanout.flyweightKey shouldBe KeyString(1, 3) }
   }
   it should "create OrmData for the " + classOf[ManyToOneEntity].getSimpleName in {
     val childEntity = ManyToOneEntity(childTable, "c", Keys("cid"), Keys("childId"), List(FieldType("childData1"), FieldType("childData2")), List())

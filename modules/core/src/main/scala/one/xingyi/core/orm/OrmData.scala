@@ -34,7 +34,7 @@ trait OrmData[Context] {
 }
 object OrmData {
   def arrayToString(indent: String, a: Array[List[Any]]) = a.map(indent + _).mkString("\n")
-  def childrenToPrintString[Context](indent: String, children: List[OrmData[Context]]) = if (children.isEmpty) "" else s"\n${indent}children(\n${children.map(_.prettyString(indent)).mkString("\n")})\n"
+  def childrenToPrintString[Context](indent: String, children: List[OrmData[Context]]) = if (children.isEmpty) "" else s"${indent}children:\n${children.map(_.prettyString(indent)).mkString("\n")}"
 
 
 }

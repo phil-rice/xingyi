@@ -168,8 +168,7 @@ abstract class AbstractFastOrmWithSingleLinkingKeysSpec[M[_] : ClosableM, J: Jso
         """MainOrmData(Person
           | List(Phil, 1, 1)
           | List(Bob, 2, 2)
-          |
-          | children(
+          | children:
           | Fanout(Employer,idInParent=GetKey(1), idForChild=GetKey(1)
           |  List(Employer1, 1)
           |  List(Employer2, 2)
@@ -182,8 +181,7 @@ abstract class AbstractFastOrmWithSingleLinkingKeysSpec[M[_] : ClosableM, J: Jso
           | )
           | Fanout(ContactEmail,KeyInt(2,1)
           |  List(philsEmail, 1)
-          |  List(bobsEmail, 2) ))
-          |)""".stripMargin)
+          |  List(bobsEmail, 2) ))""".stripMargin)
       result shouldBe List()
       mainOrmData.applyAll().toList shouldBe List(4, 3) //toList because need to iterate through the stream
       result shouldBe List(

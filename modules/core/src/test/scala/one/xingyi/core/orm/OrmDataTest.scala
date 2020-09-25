@@ -4,6 +4,8 @@ import java.util.concurrent.atomic.AtomicReference
 
 import one.xingyi.core.UtilsSpec
 
+import scala.language.implicitConversions
+
 class OrmDataTest extends UtilsSpec {
 
 
@@ -50,7 +52,7 @@ class OrmDataTest extends UtilsSpec {
   it should "process the data in it's array in a manner similar to a merge sort - only zero or one value in child per parent" in {
     setup { (remember) =>
       val child = FanoutOrmData("child", "child", FlyweightKey("parentKey".ki(0), "childKey".ki(0)), remember, Array[List[Any]](3, 6), List())
-      val parent = MainOrmData("parent", "parent",  () => 0,remember, Array[List[Any]](1, 2, 3, 4, 5, 6), List(child))
+      val parent = MainOrmData("parent", "parent", () => 0, remember, Array[List[Any]](1, 2, 3, 4, 5, 6), List(child))
       checkStrings(parent.prettyString,
         """MainOrmData(parent
           | List(1)
@@ -63,14 +65,13 @@ class OrmDataTest extends UtilsSpec {
           | Fanout(child,KeyString(0,0)
           |  List(3)
           |  List(6)
-          | children:
           |))""".stripMargin)
-      parent.applyAll()
-    } shouldBe List("parent(1)", "parent(2)", "parent(3)", "child(3)", "parent(4)", "parent(5)", "parent(6)", "child(6)")
+      parent.applyAll().toList
+    } shouldBe List("0/parent(1)", "0/parent(2)", "0/parent(3)", "1/child(3)", "0/parent(4)", "0/parent(5)", "0/parent(6)", "1/child(6)")
 
     setup { (remember) =>
       val child = FanoutOrmData("child", "child", FlyweightKey("parentKey".ki(0), "childKey".ki(0)), remember, Array[List[Any]](1, 5), List())
-      val parent = MainOrmData("parent", "parent", () => 0,remember, Array[List[Any]](1, 2, 3, 4, 5, 6), List(child))
+      val parent = MainOrmData("parent", "parent", () => 0, remember, Array[List[Any]](1, 2, 3, 4, 5, 6), List(child))
       checkStrings(parent.prettyString,
         """MainOrmData(parent
           | List(1)
@@ -83,16 +84,15 @@ class OrmDataTest extends UtilsSpec {
           | Fanout(child,KeyString(0,0)
           |  List(1)
           |  List(5)
-          | children:
           |))""".stripMargin)
-      parent.applyAll()
-    } shouldBe List("parent(1)", "child(1)", "parent(2)", "parent(3)", "parent(4)", "parent(5)", "child(5)", "parent(6)")
+      parent.applyAll().toList
+    } shouldBe List("0/parent(1)", "1/child(1)", "0/parent(2)", "0/parent(3)", "0/parent(4)", "0/parent(5)", "1/child(5)", "0/parent(6)")
   }
   it should "process the data in it's array in a manner similar to a merge sort - deeper" in {
     setup { (remember) =>
       val grandchild = FanoutOrmData("grandchild", "grandchild", FlyweightKey("parentKey".ki(1), "childKey".ki(0)), remember, Array[List[Any]](1, 2), List())
       val child = FanoutOrmData("child", "child", FlyweightKey("parentKey".ki(0), "childKey".ki(0)), remember, Array[List[Any]](List(3, 1), List(6, 2)), List(grandchild))
-      val parent = MainOrmData("parent", "parent",  () => 0,remember, Array[List[Any]](1, 2, 3, 4, 5, 6), List(child))
+      val parent = MainOrmData("parent", "parent", () => 0, remember, Array[List[Any]](1, 2, 3, 4, 5, 6), List(child))
       checkStrings(parent.prettyString,
         """MainOrmData(parent
           | List(1)
@@ -109,17 +109,16 @@ class OrmDataTest extends UtilsSpec {
           |  Fanout(grandchild,KeyString(1,0)
           |   List(1)
           |   List(2)
-          |  children:
           |)))""".stripMargin)
-      parent.applyAll()
-    } shouldBe List("parent(1)", "parent(2)", "parent(3)", "child(3,1)", "grandchild(1)", "parent(4)", "parent(5)", "parent(6)", "child(6,2)", "grandchild(2)")
+      parent.applyAll().toList
+    } shouldBe List("0/parent(1)", "0/parent(2)", "0/parent(3)", "1/child(3,1)", "2/grandchild(1)", "0/parent(4)", "0/parent(5)", "0/parent(6)", "1/child(6,2)", "2/grandchild(2)")
 
   }
   it should "process the data in it's array in a manner similar to a merge sort - multiple children" in {
     setup { (remember) =>
       val grandchild = FanoutOrmData("grandchild", "grandchild", FlyweightKey("parentKey".ki(1), "childKey".ki(0)), remember, Array[List[Any]](1, 2, 3), List())
       val child = FanoutOrmData("child", "child", FlyweightKey("parentKey".ki(0), "childKey".ki(0)), remember, Array[List[Any]](List(3, 1), List(3, 2), List(3, 3)), List(grandchild))
-      val parent = MainOrmData("parent", "parent",  () => 0,remember, Array[List[Any]](1, 2, 3, 4, 5, 6), List(child))
+      val parent = MainOrmData("parent", "parent", () => 0, remember, Array[List[Any]](1, 2, 3, 4, 5, 6), List(child))
       checkStrings(parent.prettyString,
         """MainOrmData(parent
           | List(1)
@@ -138,10 +137,9 @@ class OrmDataTest extends UtilsSpec {
           |   List(1)
           |   List(2)
           |   List(3)
-          |  children:
           |)))""".stripMargin)
-      parent.applyAll()
-    } shouldBe List("parent(1)", "parent(2)", "parent(3)", "child(3,1)", "grandchild(1)", "child(3,2)", "grandchild(2)", "child(3,3)", "grandchild(3)", "parent(4)", "parent(5)", "parent(6)")
+      parent.applyAll().toList
+    } shouldBe List("0/parent(1)", "0/parent(2)", "0/parent(3)", "1/child(3,1)", "2/grandchild(1)", "1/child(3,2)", "2/grandchild(2)", "1/child(3,3)", "2/grandchild(3)", "0/parent(4)", "0/parent(5)", "0/parent(6)")
   }
 
   behavior of FanInOrmData.getClass.getSimpleName
@@ -150,7 +148,7 @@ class OrmDataTest extends UtilsSpec {
     setup { (remember) =>
       val grandchild = FanoutOrmData("grandchild", "grandchild", FlyweightKey("parentKey".ki(0), "childKey".ki(0)), remember, Array[List[Any]](1, 2, 4), List())
       val fanIn = FanInOrmData("child", "child", idInParentData = new GetKey(List(1)), idForChild = new GetKey(List(0)), remember, Array(1, 2, 4), List(grandchild))
-      val parent = MainOrmData("parent", "parent",  () => 0,remember, Array[List[Any]](List(1, 0), List(2, 0), List(3, 1), List(4, 0), List(5, 2), List(6, 4)), List(fanIn))
+      val parent = MainOrmData("parent", "parent", () => 0, remember, Array[List[Any]](List(1, 0), List(2, 0), List(3, 1), List(4, 0), List(5, 2), List(6, 4)), List(fanIn))
       checkStrings(parent.prettyString,
         """MainOrmData(parent
           | List(1, 0)
@@ -169,9 +167,8 @@ class OrmDataTest extends UtilsSpec {
           |   List(1)
           |   List(2)
           |   List(4)
-          |  children:
           |)))""".stripMargin)
-      parent.applyAll()
-    } shouldBe List("parent(1,0)", "parent(2,0)", "parent(3,1)", "child(1)", "grandchild(1)", "parent(4,0)", "parent(5,2)", "child(2)", "grandchild(2)", "parent(6,4)", "child(4)", "grandchild(4)")
+      parent.applyAll().toList
+    } shouldBe List("0/parent(1,0)", "0/parent(2,0)", "0/parent(3,1)", "1/child(1)", "2/grandchild(1)", "0/parent(4,0)", "0/parent(5,2)", "1/child(2)", "2/grandchild(2)", "0/parent(6,4)", "1/child(4)", "2/grandchild(4)")
   }
 }
