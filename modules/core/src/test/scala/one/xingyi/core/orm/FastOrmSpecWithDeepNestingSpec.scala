@@ -107,7 +107,6 @@ abstract class AbtractFastOrmSpecWithDeepNestingSpec[M[_] : ClosableM, J: JsonPa
         executeIt(s"""insert into  t3 (t3id,                    h1 )       values (3,           't3v1');""")
         executeIt(s"""insert into  t4 (t4id, parentId,          i1 )       values (4, 3,        't4v1');""")
 
-
         mainEntity.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).map(keysForT1.toJson) shouldBe
           List("""{"t1/f1":"f1:t1v1","t1/f2":"f2:t1v2","t2":[{"t2/g1":"g1:t2v1","t2/g2":"g2:t2v2","t3":{"t3/h1":"h1:t3v1","t4":[{"t4/i1":"i1:t4v1"}]}}]}""")
       }

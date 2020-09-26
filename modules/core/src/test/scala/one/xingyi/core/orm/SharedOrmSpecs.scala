@@ -43,7 +43,7 @@ trait SetupDatabaseForOrmFixture[DS <: DataSource] {
 
 }
 
-trait SharedOrmFixture extends NumericKeyFixture {
+trait SharedOrmFixture extends OrmKeyFixture {
 
   val employerTable = TableName("Employer", "")
   val addressTable = TableName("Address", "")
@@ -68,7 +68,7 @@ trait SharedOrmFixture extends NumericKeyFixture {
   val numericKeysForPerson: OrmKeys[SchemaForTest] = OrmKeys(schemaForPerson)
 }
 
-abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends SharedOrmFixture with NumericKeyFixture with DatabaseSourceFixture[DS] with Jdbc {
+abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends SharedOrmFixture with OrmKeyFixture with DatabaseSourceFixture[DS] with Jdbc {
 
   def setupPerson(ds: DataSource)(block: => Unit)(implicit jdbcOps: JdbcOps[DataSource], closableM: ClosableM[M]): Unit
   def main: MainEntity
@@ -144,7 +144,7 @@ abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSou
   def phoneEntity: EntityAndFieldsAndPath[OneToManyEntity]
   lazy val ormFactory = tablesAndFieldsAndPaths.ormFactory(numericKeysForPerson)
 
-  def mapForNext: Map[OneToManyEntity, NumericKey[_]] = Map(
+  def mapForNext: Map[OneToManyEntity, OrmKey[_]] = Map(
     addressEntity.entity -> numericKeysForPerson.findForT(schemaForAddress).get,
     phoneEntity.entity -> numericKeysForPerson.findForT(schemaForPhone).get)
 

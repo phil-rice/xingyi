@@ -3,7 +3,7 @@ package one.xingyi.core.orm
 import one.xingyi.core.UtilsSpec
 import one.xingyi.core.strings.Strings
 
-class EntityAndPathTest extends UtilsSpec with NumericKeySpecFixture {
+class EntityAndPathTest extends UtilsSpec with OrmKeySpecFixture {
 
   val t1a: SchemaForTest = "t1/a"
 

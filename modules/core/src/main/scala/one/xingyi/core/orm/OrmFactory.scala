@@ -62,8 +62,8 @@ object EntityAndPath {
 
 case class EntityAndFieldsAndPath[E <: OrmEntity](entity: E, fieldsAndPath: OrmGettersAndPath)
 trait OrmFactory {
-  def ormMaker(map: Map[OneToManyEntity, NumericKey[_]]): OrmMaker[Array[Any]]
-  def ormDataMaker(map: Map[OneToManyEntity, NumericKey[_]]): OrmMaker[Array[Any]]
+  def ormMaker(map: Map[OneToManyEntity, OrmKey[_]]): OrmMaker[Array[Any]]
+  def ormDataMaker(map: Map[OneToManyEntity, OrmKey[_]]): OrmMaker[Array[Any]]
 
   def mainEntity(tableName: TableName, alias: String, primaryKey: Keys, children: List[EntityAndFieldsAndPath[_ <: ChildEntity]]): EntityAndFieldsAndPath[MainEntity]
   def manyToOneEntity(tableName: TableName, alias: String, primaryKey: Keys, idInParent: Keys, children: List[EntityAndFieldsAndPath[_ <: ChildEntity]]): EntityAndFieldsAndPath[ManyToOneEntity]
@@ -91,9 +91,9 @@ class OrmFactoryImpl[Schema](keys: OrmKeys[Schema], tablesAndFieldsAndPaths: Tab
     val entity = OneToManyEntity(tableName, alias, primaryKey, parentId, fieldsAndPath.fieldTypes.toList, children.map(_.entity))
     EntityAndFieldsAndPath(entity, fieldsAndPath)
   }
-  override def ormMaker(map: Map[OneToManyEntity, NumericKey[_]]): OrmMaker[Array[Any]] =
+  override def ormMaker(map: Map[OneToManyEntity, OrmKey[_]]): OrmMaker[Array[Any]] =
     new OrmMakerForArrayAny(keys, tablesAndFieldsAndPaths, map.map { case (k, v) => (k, (v.path :+ v.index).toArray) })
-  override def ormDataMaker(map: Map[OneToManyEntity, NumericKey[_]]): OrmMaker[Array[Any]] =
+  override def ormDataMaker(map: Map[OneToManyEntity, OrmKey[_]]): OrmMaker[Array[Any]] =
     new OrmMakerForArrayAnyUsingOrmData[Schema](keys, tablesAndFieldsAndPaths, map)
 }
 
@@ -239,7 +239,7 @@ class OrmMakerForArrayAny[Schema](numericKeys: OrmKeys[Schema], tablesAndFieldsA
   }
 }
 
-class OrmMakerForArrayAnyUsingOrmData[Schema](numericKeys: OrmKeys[Schema], tablesAndFieldsAndPaths: TablesAndFieldsAndPaths, oneToManyPathMap: Map[OneToManyEntity, NumericKey[_]])
+class OrmMakerForArrayAnyUsingOrmData[Schema](numericKeys: OrmKeys[Schema], tablesAndFieldsAndPaths: TablesAndFieldsAndPaths, oneToManyPathMap: Map[OneToManyEntity, OrmKey[_]])
                                              (implicit findOrmEntityAndField: FindOrmEntityAndField[Schema]) extends OrmMaker[Array[Any]] {
 
   val factory = new OrmDataFactoryForMainEntity()

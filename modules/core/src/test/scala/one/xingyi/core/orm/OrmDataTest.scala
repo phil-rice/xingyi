@@ -37,9 +37,7 @@ class OrmDataTest extends UtilsSpec {
     KeyString(1, 2).compare(List(0, 9, 3), List(9, 9, 7)) > 0 shouldBe true
   }
 
-
   behavior of FanoutOrmData.getClass.getSimpleName
-
 
   implicit def intToData(i: Int) = List(i)
 
