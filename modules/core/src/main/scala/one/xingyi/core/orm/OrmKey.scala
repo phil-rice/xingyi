@@ -80,6 +80,64 @@ object SchemaMapKey {
   }
 }
 
+trait OrmKeyToJson[Schema] {
+  def putJson(keys: OrmKeys[Schema], ar: Array[Any], outputStream: OutputStream)
+}
+object OrmKeyToJson {
+  implicit def ormKeyToJson[Schema]: OrmKeyToJson[Schema] =
+    (keys: OrmKeys[Schema], ar: Array[Any], outputStream: OutputStream) => {
+      def putRawString(s: String) {
+        var i = 0
+        def escape(c: Char): Unit = {outputStream.write('\\'); outputStream.write(c) }
+        while (i < s.length) {
+          s.charAt(i) match {
+            case ('\\') => escape('\\')
+            case ('\b') => escape('b')
+            case ('\f') => escape('f')
+            case ('\n') => escape('n')
+            case ('\r') => escape('r')
+            case ('\t') => escape('t')
+            case ('"') => escape('"')
+            case c => outputStream.write(c)
+          }
+          i += 1
+        }
+      }
+      def putString(s: String): Unit = {
+        outputStream.write('"')
+        putRawString(s)
+        outputStream.write('"')
+
+      }
+      var i = 0
+      outputStream.write('{')
+      while (i < ar.length) {
+        if (i != 0) outputStream.write(',')
+        putString(keys.list(i).key)
+        outputStream.write(':')
+        ar(i) match {
+          case s: String => putString(s)
+          case i: Integer => putRawString(i.toString)
+          case d: Double => putRawString(d.toString)
+          case a: Array[Any] => keys.list(i).children.putJson(a, outputStream)
+          case (head: Array[Any]) :: tail =>
+            outputStream.write('[')
+            tail.reverse.foreach { case a: Array[Any] =>
+              keys.list(i).children.putJson(a, outputStream)
+              outputStream.write(',')
+            }
+            keys.list(i).children.putJson(head, outputStream)
+            outputStream.write(']')
+          case Nil => outputStream.write('['); outputStream.write(']')
+          case null => putRawString("null")
+        }
+        i += 1
+      }
+      outputStream.write('}')
+    }
+
+}
+
 /** The data in the database is based on tables
  * The data we want in our json or objects is based on an objectgraph
  * There has to be a mapping between the data in the database and the object graph: this is it
@@ -117,64 +175,11 @@ case class OrmKeys[Schema](list: List[OrmKey[Schema]]) {
     putJson(ar, stream)
     stream.toString()
   }
-  def putJson(ar: Array[Any], outputStream: OutputStream) {
-    def putRawString(s: String) = {
-      var i = 0
-      def escape(c: Char): Unit = {outputStream.write('\\'); outputStream.write(c) }
-      while (i < s.length) {
-        s.charAt(i) match {
-          case ('\\') => escape('\\')
-          case ('\b') => escape('b')
-          case ('\f') => escape('f')
-          case ('\n') => escape('n')
-          case ('\r') => escape('r')
-          case ('\t') => escape('t')
-          case ('"') => escape('"')
-          case c => outputStream.write(c)
-        }
-        i += 1
-      }
-    }
-    def putString(s: String): Unit = {
-      outputStream.write('"')
-      putRawString(s)
-      outputStream.write('"')
-
-    }
-    var i = 0
-    outputStream.write('{')
-    while (i < ar.length) {
-      if (i != 0) outputStream.write(',')
-      putString(list(i).key)
-      outputStream.write(':')
-      ar(i) match {
-        case s: String => putString(s)
-        case i: Integer => putRawString(i.toString)
-        case d: Double => putRawString(d.toString)
-        case a: Array[Any] => list(i).children.putJson(a, outputStream)
-        case (head: Array[Any]) :: tail =>
-          outputStream.write('[')
-          tail.reverse.foreach { case a: Array[Any] =>
-            list(i).children.putJson(a, outputStream)
-            outputStream.write(',')
-          }
-          list(i).children.putJson(head, outputStream)
-          outputStream.write(']')
-        case Nil => outputStream.write('['); outputStream.write(']')
-        case null => putRawString("null")
-      }
-      i += 1
-    }
-    outputStream.write('}')
-  }
+  def putJson(ar: Array[Any], outputStream: OutputStream)(implicit ormKeyToJson: OrmKeyToJson[Schema]) = ormKeyToJson.putJson(this, ar, outputStream)
 
   val size: Int = list.size
-  def makeAndSetupArray: Array[Any] = {
-    val a = new Array[Any](size)
-    setup(a)
-    a
-  }
-  def setup(array: Array[Any]) {
+  def makeAndSetupArray: Array[Any] = setup(new Array[Any](size))
+  def setup(array: Array[Any]): Array[Any] = {
     var i = 0
     while (i < size) {
       val thisKey = list(i)
@@ -182,6 +187,7 @@ case class OrmKeys[Schema](list: List[OrmKey[Schema]]) {
       if (a != null) thisKey.children.setup(a)
       i = i + 1
     }
+    array
   }
 
   def asArray(a: Any, msg: => String): Array[Any] = a match {
