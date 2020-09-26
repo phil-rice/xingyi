@@ -21,7 +21,7 @@ class EntityAndPathTest extends UtilsSpec with NumericKeySpecFixture {
   }
 
   it should "turn a schema into a list of tables and names" in {
-    val keys: NumericKeys[SchemaForTest] = NumericKeys(s1)
+    val keys: OrmKeys[SchemaForTest] = OrmKeys(s1)
     checkNumericKeys(keys)(
       """main (),0 OneChild
         | t1/a (0),0 NoChildren
@@ -49,7 +49,7 @@ class EntityAndPathTest extends UtilsSpec with NumericKeySpecFixture {
   behavior of "OrmFactory"
 
   lazy val ormFactory = {
-    val keys: NumericKeys[SchemaForTest] = NumericKeys(s1)
+    val keys: OrmKeys[SchemaForTest] = OrmKeys(s1)
     val entityAndPaths: TablesAndFieldsAndPaths = EntityAndPath(keys)
     entityAndPaths.ormFactory(keys)
   }

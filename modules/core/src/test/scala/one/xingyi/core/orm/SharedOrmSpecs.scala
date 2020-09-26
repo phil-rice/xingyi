@@ -65,7 +65,7 @@ trait SharedOrmFixture extends NumericKeyFixture {
       SchemaItemWithChildren("email", false, List[SchemaForTest]("ContactEmail/email"))
     )
   }
-  val numericKeysForPerson: NumericKeys[SchemaForTest] = NumericKeys(schemaForPerson)
+  val numericKeysForPerson: OrmKeys[SchemaForTest] = OrmKeys(schemaForPerson)
 }
 
 abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends SharedOrmFixture with NumericKeyFixture with DatabaseSourceFixture[DS] with Jdbc {
@@ -188,7 +188,7 @@ abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSou
           |4.0  = email:jillsEmail {ContactEmail/email}""".stripMargin)
       val stream = new ByteArrayOutputStream()
       maker.createdCount shouldBe 2
-      mainEntityForKeys.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).foreach(numericKeysForPerson.putJson(_, stream))
+      mainEntityForKeys.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).foreach((ar: Array[Any]) => numericKeysForPerson.putJson(ar, stream))
       maker.createdCount shouldBe 3
       checkStrings(stream.toString(),
         """{"Person/name":"name:Phil","employer":{"Employer/name":"name:Employer1"},"address":[{"Address/add":"add:Phils first address"},{"Address/add":"add:Phils second address"}],"phone":[],"email":{"ContactEmail/email":"email:philsEmail"}}
@@ -237,7 +237,7 @@ abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSou
           |4.0  = email:jillsEmail {ContactEmail/email}""".stripMargin)
       val stream = new ByteArrayOutputStream()
       maker.createdCount shouldBe 2
-      mainEntityForKeys.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).foreach(numericKeysForPerson.putJson(_, stream))
+      mainEntityForKeys.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).foreach((ar: Array[Any]) => numericKeysForPerson.putJson(ar, stream))
       maker.createdCount shouldBe 3
       checkStrings(stream.toString(),
         """{"Person/name":"name:Phil","employer":{"Employer/name":"name:Employer1"},"address":[{"Address/add":"add:Phils first address"},{"Address/add":"add:Phils second address"}],"phone":[],"email":{"ContactEmail/email":"email:philsEmail"}}

@@ -1,7 +1,8 @@
 package one.xingyi.core.orm
 
-import java.io.OutputStream
+import java.io.{ByteArrayOutputStream, OutputStream}
 
+import one.xingyi.core.orm.SchemaMapKey._
 import one.xingyi.core.strings.Strings
 
 import scala.language.higherKinds
@@ -72,7 +73,38 @@ trait SchemaMapKey[Schema] {
   def children(t: Schema): ChildrenInSchema[Schema]
 }
 
-case class NumericKeys[Schema](list: List[NumericKey[Schema]]) {
+object SchemaMapKey {
+  implicit class SchemaMapKeyOps[S](s: S)(implicit k: SchemaMapKey[S]) {
+    def key: String = k.childKey(s)
+    def children: ChildrenInSchema[S] = k.children(s)
+  }
+}
+
+/** The data in the database is based on tables
+ * The data we want in our json or objects is based on an objectgraph
+ * There has to be a mapping between the data in the database and the object graph: this is it
+ *
+ * Example: We have a schema:
+ * main:
+ * key1  table1/field1
+ * key2  table2/field1
+ * child:
+ * childKey1 table1/field2
+ * As can be seen there isn't a simple mapping
+ *
+ * This heavily uses type classes, so you can use your own (perhaps existing) schema object.
+ * SchemaMapKey[Schema] -> This is how we know what keys exist and what children exist.
+ *
+ * Utility
+ * putJson: Very useful if you are using APIs because it writes to an outputstream and is much less garbage/memory intensive than turning to a string first
+ * toJson: Nicer interface than putJson
+ *
+ * Debugging:
+ * prettyPrint is really helpful for understanding the schema. It is intended for use in tests
+ * printArray prints the array of data retrieved from FastOrm in a way helpful for tests
+ *
+ * */
+case class OrmKeys[Schema](list: List[NumericKey[Schema]]) {
   def allKeys: List[NumericKey[Schema]] = list.flatMap { key => key :: key.children.allKeys }
   def findForT(t: Schema) = allKeys.find(_.t == t)
   def prettyPrint(indent: String) = list.map(_.prettyPrint(indent)).mkString("\n")
@@ -80,7 +112,12 @@ case class NumericKeys[Schema](list: List[NumericKey[Schema]]) {
     require(!strict || a.length == size, s"Array size is ${a.length} keys size is $size")
     list.zip(a).flatMap { case (key, item) => key.printArray(prefix, item, strict) }
   }
-  def putJson(ar: Array[Any], outputStream: OutputStream, charSet: String = "UTF-8") {
+  def toJson(ar: Array[Any]): String = {
+    val stream = new ByteArrayOutputStream()
+    putJson(ar, stream)
+    stream.toString()
+  }
+  def putJson(ar: Array[Any], outputStream: OutputStream) {
     def putRawString(s: String) = {
       var i = 0
       def escape(c: Char): Unit = {outputStream.write('\\'); outputStream.write(c) }
@@ -114,14 +151,14 @@ case class NumericKeys[Schema](list: List[NumericKey[Schema]]) {
         case s: String => putString(s)
         case i: Integer => putRawString(i.toString)
         case d: Double => putRawString(d.toString)
-        case a: Array[Any] => list(i).children.putJson(a, outputStream, charSet)
+        case a: Array[Any] => list(i).children.putJson(a, outputStream)
         case (head: Array[Any]) :: tail =>
           outputStream.write('[')
           tail.reverse.foreach { case a: Array[Any] =>
-            list(i).children.putJson(a, outputStream, charSet)
+            list(i).children.putJson(a, outputStream)
             outputStream.write(',')
           }
-          list(i).children.putJson(head, outputStream, charSet)
+          list(i).children.putJson(head, outputStream)
           outputStream.write(']')
         case Nil => outputStream.write('['); outputStream.write(']')
         case null => putRawString("null")
@@ -221,7 +258,7 @@ case class NumericKeys[Schema](list: List[NumericKey[Schema]]) {
     lastArray(path(path.length - 1)) = ar :: list
   }
 }
-case class NumericKey[T](path: List[Int], index: Int, key: String, arity: ChildArity, children: NumericKeys[T], t: T) {
+case class NumericKey[T](path: List[Int], index: Int, key: String, arity: ChildArity, children: OrmKeys[T], t: T) {
   def printArray(prefix: String, item: Any, strict: Boolean)(implicit asDebugString: AsDebugString[T]): List[String] = {
     val newPrefix = if (prefix.isEmpty) index.toString else prefix + "." + index
     arity.prettyPrintArray(newPrefix, this, item, strict)
@@ -235,16 +272,17 @@ case class NumericKey[T](path: List[Int], index: Int, key: String, arity: ChildA
   def size = children.size
 }
 
-object NumericKeys {
-  def apply[Schema: SchemaMapKey](ts: List[Schema]): NumericKeys[Schema] = recurse(List(), ts)
-  def recurse[Schema](parents: List[Int], ts: List[Schema])(implicit schemaMapKey: SchemaMapKey[Schema]): NumericKeys[Schema] =
-    NumericKeys(ts.zipWithIndex.map { case (t, index) =>
+object OrmKeys {
+  def apply[Schema: SchemaMapKey](t: Schema): OrmKeys[Schema] = recurse(List(), t.children.children)
+  def apply[Schema: SchemaMapKey](ts: List[Schema]): OrmKeys[Schema] = recurse(List(), ts)
+  def recurse[Schema](parents: List[Int], ts: List[Schema])(implicit schemaMapKey: SchemaMapKey[Schema]): OrmKeys[Schema] =
+    OrmKeys(ts.zipWithIndex.map { case (t, index) =>
       val children: ChildrenInSchema[Schema] = schemaMapKey.children(t)
       NumericKey(parents, index, schemaMapKey.childKey(t), children.arity, recurse(parents :+ index, children.children), t)
     })
 }
 
-class NumericKeyPopulator[T](numericKeys: NumericKeys[T], tablesAndFieldsAndPaths: TablesAndFieldsAndPaths, mainEntity: MainEntity, map: Map[OneToManyEntity, NumericKey[_]])(implicit findOrmEntityAndField: FindOrmEntityAndField[T])
+class NumericKeyPopulator[T](numericKeys: OrmKeys[T], tablesAndFieldsAndPaths: TablesAndFieldsAndPaths, mainEntity: MainEntity, map: Map[OneToManyEntity, NumericKey[_]])(implicit findOrmEntityAndField: FindOrmEntityAndField[T])
   extends ((Array[Any], OrmEntity, List[Any]) => Array[Any]) {
   val nextMap = map.map { case (k, v) => (k.alias, (v.path :+ v.index).toArray) }
 

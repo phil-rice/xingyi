@@ -40,10 +40,10 @@ trait NumericKeyFixture extends UtilsSpec {
       }
     }
   }
-  def checkNumericKeys[T](n: NumericKeys[T])(expected: String) =
+  def checkNumericKeys[T](n: OrmKeys[T])(expected: String) =
     checkStrings(n.prettyPrint(""), expected)
 
-  def checkArray[T: AsDebugString](key: NumericKeys[T], a: Array[Any])(expected: String) = {
+  def checkArray[T: AsDebugString](key: OrmKeys[T], a: Array[Any])(expected: String) = {
     require(key != null)
     require(a != null)
     checkStrings(key.printArray("", a).mkString("\n"), expected)
@@ -54,12 +54,12 @@ trait NumericKeySpecFixture extends NumericKeyFixture {
   val itema: SchemaForTest = SchemaItem("a")
   val itemb: SchemaForTest = SchemaItem("b")
   val itemc: SchemaForTest = SchemaItem("c")
-  val emptyNumbericKeys: NumericKeys[SchemaForTest] = NumericKeys(List())
-  val emptySkeleton: NumericKeys[SchemaForTest] = emptyNumbericKeys
+  val emptyNumbericKeys: OrmKeys[SchemaForTest] = OrmKeys(List())
+  val emptySkeleton: OrmKeys[SchemaForTest] = emptyNumbericKeys
   val bcAsSingleton: SchemaForTest = SchemaItemWithChildren("bc", false, List(itemb, itemc))
   val bcAsMany: SchemaForTest = SchemaItemWithChildren("bc", true, List(itemb, itemc))
 
-  def numericKeysForBc(path: List[Int]): NumericKeys[SchemaForTest] = NumericKeys(List(
+  def numericKeysForBc(path: List[Int]): OrmKeys[SchemaForTest] = OrmKeys(List(
     NumericKey(path, 0, "b", NoChildren, emptySkeleton, itemb),
     NumericKey(path, 1, "c", NoChildren, emptySkeleton, itemc)))
 
@@ -94,34 +94,34 @@ class NumericKeyTest extends NumericKeySpecFixture {
   behavior of "NumericKeys with Map[String,Any]"
 
   it should "turn the empty list into a blank skeleton" in {
-    NumericKeys.apply(List()) shouldBe emptySkeleton
+    OrmKeys.apply(List()) shouldBe emptySkeleton
   }
 
   it should "turn a one item list into a simple skeleton" in {
-    NumericKeys(List(itema)) shouldBe NumericKeys(List(NumericKey(List(), 0, "a", NoChildren, emptySkeleton, itema)))
+    OrmKeys(List(itema)) shouldBe OrmKeys(List(NumericKey(List(), 0, "a", NoChildren, emptySkeleton, itema)))
   }
   it should "turn a two item list into a simple skeleton" in {
-    NumericKeys(List(itemb, itemc)) shouldBe numericKeysForBc(List())
+    OrmKeys(List(itemb, itemc)) shouldBe numericKeysForBc(List())
   }
   it should "turn a two item list with children into a simple skeleton" in {
-    NumericKeys(List(itema, bcAsSingleton)) shouldBe NumericKeys(List(
+    OrmKeys(List(itema, bcAsSingleton)) shouldBe OrmKeys(List(
       NumericKey(List(), 0, "a", NoChildren, emptySkeleton, itema),
       NumericKey(List(), 1, "bc", OneChild, numericKeysForBc(List(1)), bcAsSingleton)))
-    checkNumericKeys(NumericKeys(List(itema, bcAsSingleton))) {
+    checkNumericKeys(OrmKeys(List(itema, bcAsSingleton))) {
       """a (),0 NoChildren
         |bc (),1 OneChild
         | b (1),0 NoChildren
         | c (1),1 NoChildren""".stripMargin
     }
 
-    NumericKeys(List(bcAsMany, itema)) shouldBe NumericKeys(List(
+    OrmKeys(List(bcAsMany, itema)) shouldBe OrmKeys(List(
       NumericKey(List(), 0, "bc", ManyChildren, numericKeysForBc(List(0)), bcAsMany),
       NumericKey(List(), 1, "a", NoChildren, emptySkeleton, itema)))
 
   }
 
   it should "turn a complicated schema into a skeleton" in {
-    checkNumericKeys(NumericKeys(complex))(
+    checkNumericKeys(OrmKeys(complex))(
       """a (),0 NoChildren
         |b (),1 OneChild
         | 1 (1),0 NoChildren
@@ -136,14 +136,14 @@ class NumericKeyTest extends NumericKeySpecFixture {
 
   it should "make an array for simple things" in {
     emptyNumbericKeys.makeAndSetupArray.toList shouldBe List()
-    val bc = NumericKeys(List(itemb, itemc))
+    val bc = OrmKeys(List(itemb, itemc))
     val a = bc.makeAndSetupArray
     checkArray(bc, a)(
       """0  = null {b}
         |1  = null {c}""".stripMargin)
   }
   it should "make an array for things with singleton children" in {
-    val keys = NumericKeys(List(itema, bcAsSingleton))
+    val keys = OrmKeys(List(itema, bcAsSingleton))
     val array = keys.makeAndSetupArray
     checkArray(keys, array)(
       """0  = null {a}
@@ -152,7 +152,7 @@ class NumericKeyTest extends NumericKeySpecFixture {
         |1.1  = null {c}""".stripMargin)
   }
   it should "make an list for things with many children" in {
-    val keys = NumericKeys(List(itema, bcAsMany))
+    val keys = OrmKeys(List(itema, bcAsMany))
     val array = keys.makeAndSetupArray
     checkArray(keys, array)(
       """0  = null {a}
@@ -162,7 +162,7 @@ class NumericKeyTest extends NumericKeySpecFixture {
   behavior of "NumericKeys/put"
 
   it should "put an item into a simple array" in {
-    val keys = NumericKeys(List(itema, itemb))
+    val keys = OrmKeys(List(itema, itemb))
     val array = keys.makeAndSetupArray
     keys.put(Array(), 0, array, "someData")
     checkArray(keys, array)(
@@ -175,7 +175,7 @@ class NumericKeyTest extends NumericKeySpecFixture {
 
   }
   it should "put an item into an array with a singleton child" in {
-    val keys = NumericKeys(List(itema, bcAsSingleton))
+    val keys = OrmKeys(List(itema, bcAsSingleton))
     val array = keys.makeAndSetupArray
     keys.put(Array(1), 0, array, "someData")
     checkArray(keys, array)(
@@ -186,7 +186,7 @@ class NumericKeyTest extends NumericKeySpecFixture {
 
   }
   it should "put an item into an array with a many child" in {
-    val keys = NumericKeys(List(itema, bcAsMany))
+    val keys = OrmKeys(List(itema, bcAsMany))
     val array = keys.makeAndSetupArray
     keys.next(Array(1), array)
     keys.put(Array(1), 0, array, "someData")
@@ -199,7 +199,7 @@ class NumericKeyTest extends NumericKeySpecFixture {
   }
 
   it should "put an item into a complex array" in {
-    val keys = NumericKeys(complex)
+    val keys = OrmKeys(complex)
     val array = keys.makeAndSetupArray
     keys.put(Array(1), 0, array, "someData")
     checkArray(keys, array)(
@@ -238,7 +238,7 @@ class NumericKeyTest extends NumericKeySpecFixture {
         fail
       } catch {case e: IllegalStateException =>}
     }
-    val keys = NumericKeys(complex)
+    val keys = OrmKeys(complex)
     val array = keys.makeAndSetupArray
     checkException(keys.put(Array(), 1, array, "someData"))
     checkException(keys.put(Array(1), 2, array, "someData"))
@@ -247,7 +247,7 @@ class NumericKeyTest extends NumericKeySpecFixture {
   behavior of "findKey"
 
   it should "find the key for the index" in {
-    val keys = NumericKeys(complex)
+    val keys = OrmKeys(complex)
     def check(path: Array[Int], expectedPath: List[Int], expectedIndex: Int, expectedKey: String) {
       val key = keys.findKeyForPath(path)
       key.path shouldBe expectedPath
@@ -265,7 +265,7 @@ class NumericKeyTest extends NumericKeySpecFixture {
   behavior of "next"
 
   it should "add new arrays" in {
-    val keys = NumericKeys(complex)
+    val keys = OrmKeys(complex)
     val array = keys.makeAndSetupArray
     keys.next(Array(1, 2), array)
     checkArray(keys, array)(
@@ -304,7 +304,7 @@ class NumericKeyTest extends NumericKeySpecFixture {
 
   }
   it should "not allow next to be called if the path isn't a many child" in {
-    val keys = NumericKeys(complex)
+    val keys = OrmKeys(complex)
     val array = keys.makeAndSetupArray
     def check(path: Int*) = try {
       keys.next(path.toArray, array)
@@ -319,13 +319,13 @@ class NumericKeyTest extends NumericKeySpecFixture {
 
   behavior of "NumericKeys/Json"
 
-  def checkJson[T](keys: NumericKeys[T], array: Array[Any], expected: String): Unit = {
+  def checkJson[T](keys: OrmKeys[T], array: Array[Any], expected: String): Unit = {
     val stream = new ByteArrayOutputStream()
     keys.putJson(array, stream)
     checkStrings(stream.toString(), expected)
   }
   it should "turn an array into json" in {
-    val keys = NumericKeys(List(itema, itemb, itemc))
+    val keys = OrmKeys(List(itema, itemb, itemc))
     val array = keys.makeAndSetupArray
     keys.put(Array(), 0, array, "someData")
     keys.put(Array(), 1, array, 123)
@@ -338,7 +338,7 @@ class NumericKeyTest extends NumericKeySpecFixture {
   }
 
   it should "handle nulls" in {
-    val keys = NumericKeys(List(itema, itemb, itemc))
+    val keys = OrmKeys(List(itema, itemb, itemc))
     val array = keys.makeAndSetupArray
     checkArray(keys, array)(
       """0  = null {a}
@@ -348,7 +348,7 @@ class NumericKeyTest extends NumericKeySpecFixture {
   }
 
   it should "escape characters" in {
-    val keys = NumericKeys(List(itema))
+    val keys = OrmKeys(List(itema))
     val array = keys.makeAndSetupArray
     keys.put(Array(), 0, array, "so\\me \b \f \n  \r  \t  va\"lue")
     checkArray(keys, array)("""0  = so\\me \b \f \n  \r  \t  va\"lue {a}""".stripMargin)
@@ -364,7 +364,7 @@ class NumericKeyTest extends NumericKeySpecFixture {
 
 
   it should "turn an array with child objects into json" in {
-    val keys = NumericKeys(List(itema, bcAsSingleton))
+    val keys = OrmKeys(List(itema, bcAsSingleton))
     val array = keys.makeAndSetupArray
     keys.put(Array(), 0, array, "av")
     keys.put(Array(1), 0, array, "bv")
@@ -378,7 +378,7 @@ class NumericKeyTest extends NumericKeySpecFixture {
   }
 
   it should "turn an array with child arrays into json" in {
-    val keys = NumericKeys(List(itema, bcAsMany))
+    val keys = OrmKeys(List(itema, bcAsMany))
     val array = keys.makeAndSetupArray
     keys.put(Array(), 0, array, "av")
     checkArray(keys, array)(
