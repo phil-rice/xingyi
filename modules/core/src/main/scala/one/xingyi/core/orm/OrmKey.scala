@@ -90,61 +90,140 @@ object SchemaMapKey {
   }
 }
 
-trait OrmKeyToJson[Schema[_]] {
+
+trait JsonToStream[T] {
+  //TODO consider if we could deal with the multiple data in a sql query: reducing this a one/one mapping which is just going to be faster
+  //i.e, when have multiple date fields (four fields representing a date) the sql engine can merge them
+
+  /** Given an item from a database this returns how to put a value representing that item to json
+   *
+   * Please note that the result is any. This is because the item that will be sent to the json stream is not a T it is some
+   * underlying representation (probably a string)
+   *
+   * Example if we have a Schema[LinkUrl], then we might want to output {"{key}":{"href":"/some/url/{value}"}} and the underlying value is a string
+   *
+   * */
+
+  def put(t: Any, stream: OutputStream)
+}
+object JsonToStream {
+  def putUnescaped(outputStream: OutputStream, s: String) {outputStream.write(s.getBytes) }
+  def putEscaped(s: String, stream: OutputStream) {
+    var i = 0
+    def escape(c: Char): Unit = {stream.write('\\'); stream.write(c) }
+    while (i < s.length) {
+      s.charAt(i) match {
+        case ('\\') => escape('\\')
+        case ('\b') => escape('b')
+        case ('\f') => escape('f')
+        case ('\n') => escape('n')
+        case ('\r') => escape('r')
+        case ('\t') => escape('t')
+        case ('"') => escape('"')
+        case c => stream.write(c)
+      }
+      i += 1
+    }
+  }
+  def putEscapedWithQuotes(s: String, stream: OutputStream) {
+    stream.write('"')
+    putEscaped(s, stream)
+    stream.write('"')
+  }
+
+  def asStringWithQuotes[T]: JsonToStream[T] = (s: Any, stream: OutputStream) => putEscapedWithQuotes(s.toString, stream)
+
+  implicit val StringJsonToStream: JsonToStream[String] = asStringWithQuotes //(s: Any, stream: OutputStream) => putEscapedWithQuotes(s.toString, stream)
+  implicit val IntJsonToStream: JsonToStream[Int] = (t: Any, stream: OutputStream) => putUnescaped(stream, t.toString)
+  implicit val DoubleJsonToStream: JsonToStream[Double] = (t: Any, stream: OutputStream) => putUnescaped(stream, t.toString)
+  implicit val PlaceholderJsonToStream: JsonToStream[Placeholder] = (t: Any, stream: OutputStream) => throw new RuntimeException("Should not attempt to write a placeholder to the output stream")
+}
+
+trait OrmKeysToJson[Schema[_]] {
   def putJson(keys: OrmKeys[Schema], ar: Array[Any], outputStream: OutputStream)
 }
-object OrmKeyToJson {
-  implicit def ormKeyToJson[Schema[_]]: OrmKeyToJson[Schema] =
-    (keys: OrmKeys[Schema], ar: Array[Any], outputStream: OutputStream) => {
-      def putRawString(s: String) {
+trait JsonToStreamFor[Schema[_]] {
+  def putToJson[T](s: Schema[T]): JsonToStream[T]
+}
+object OrmKeysToJson {
+implicit   def ormKeysToJsonViaArrayFirst[Schema[_]](implicit jsonToStreamFor: JsonToStreamFor[Schema]): OrmKeysToJson[Schema] = {
+    new OrmKeysToJson[Schema] {
+      override def putJson(keys: OrmKeys[Schema], ar: Array[Any], stream: OutputStream): Unit = {
         var i = 0
-        def escape(c: Char): Unit = {outputStream.write('\\'); outputStream.write(c) }
-        while (i < s.length) {
-          s.charAt(i) match {
-            case ('\\') => escape('\\')
-            case ('\b') => escape('b')
-            case ('\f') => escape('f')
-            case ('\n') => escape('n')
-            case ('\r') => escape('r')
-            case ('\t') => escape('t')
-            case ('"') => escape('"')
-            case c => outputStream.write(c)
+        stream.write('{')
+        while (i < ar.length) {
+          if (i != 0) stream.write(',')
+          val ormKey = keys.list(i)
+          JsonToStream.putEscapedWithQuotes(ormKey.key, stream)
+          stream.write(':')
+          ar(i) match {
+            case a: Array[Any] => keys.list(i).children.putJson(a, stream)(ormKeysToJsonViaArrayFirst)
+            case (head: Array[Any]) :: tail =>
+              stream.write('[')
+              tail.reverse.foreach { case a: Array[Any] =>
+                keys.list(i).children.putJson(a, stream)(ormKeysToJsonViaArrayFirst)
+                stream.write(',')
+              }
+              keys.list(i).children.putJson(head, stream)(ormKeysToJsonViaArrayFirst)
+              stream.write(']')
+            case Nil => stream.write('['); stream.write(']')
+            case null => JsonToStream.putUnescaped(stream, "null")
+            case prim => jsonToStreamFor.putToJson(ormKey.t).put(prim, stream)
           }
           i += 1
         }
+        stream.write('}')
       }
-      def putString(s: String): Unit = {
-        outputStream.write('"')
-        putRawString(s)
-        outputStream.write('"')
-
-      }
-      var i = 0
-      outputStream.write('{')
-      while (i < ar.length) {
-        if (i != 0) outputStream.write(',')
-        putString(keys.list(i).key)
-        outputStream.write(':')
-        ar(i) match {
-          case s: String => putString(s)
-          case i: Integer => putRawString(i.toString)
-          case d: Double => putRawString(d.toString)
-          case a: Array[Any] => keys.list(i).children.putJson(a, outputStream)
-          case (head: Array[Any]) :: tail =>
-            outputStream.write('[')
-            tail.reverse.foreach { case a: Array[Any] =>
-              keys.list(i).children.putJson(a, outputStream)
-              outputStream.write(',')
-            }
-            keys.list(i).children.putJson(head, outputStream)
-            outputStream.write(']')
-          case Nil => outputStream.write('['); outputStream.write(']')
-          case null => putRawString("null")
-        }
-        i += 1
-      }
-      outputStream.write('}')
     }
+  }
+  //  implicit def ormKeysToJsonViaSchemaFirst[Schema[_]](implicit jsonToStreamFor: JsonToStreamFor[Schema]): OrmKeysToJson[Schema] = {
+  //    new OrmKeysToJson[Schema] {
+  //      override def putJson(ormKeys: OrmKeys[Schema], ar: Array[Any], stream: OutputStream): Unit = {
+  //
+  //      }
+  //      override def putJsonrecurse(ormKeys: OrmKeys[Schema], list: List[OrmKey[Schema, _]], ar: Array[Any], stream: OutputStream): Unit = {
+  //        var i = 0
+  //        val keys = list.toArray
+  //        stream.write('{')
+  //        while (i < keys.length) {
+  //          if (i != 0) stream.write(',')
+  //          val ormKey = keys(i)
+  //          JsonToStream.putEscapedWithQuotes(ormKey.key, stream)
+  //          stream.write(':')
+  //          ormKey.arity match {
+  //            case z: Zero[Schema] =>
+  //
+  //              val prim: Array[Any] = ormKey.paths.map(pi => ormKeys.findLastArray(pi.path, ar)(pi.index))
+  //              jsonToStreamFor.putToJson(ormKey.t).put(prim, stream)
+  //            case o: AlwaysOne[Schema] => putJsonrecurse(ormKeys, ormKey.children.list, ar, stream)
+  //            case o: ZeroOrMore[Schema] =>
+  //              //This is just plain difficult
+  //              //we need to know which list to recurse over.
+  //
+  //
+  //              putJsonrecurse(ormKeys, ormKey.children.list, ar, stream)
+  //}
+  //          ar(i) match {
+  //            case a: Array[Any] => keys.list(i).children.putJson(a, stream)(ormKeysToJson)
+  //            case (head: Array[Any]) :: tail =>
+  //              stream.write('[')
+  //              tail.reverse.foreach { case a: Array[Any] =>
+  //                keys.list(i).children.putJson(a, stream)(ormKeysToJson)
+  //                stream.write(',')
+  //              }
+  //              keys.list(i).children.putJson(head, stream)(ormKeysToJson)
+  //              stream.write(']')
+  //            case Nil => stream.write('['); stream.write(']')
+  //            case null => JsonToStream.putUnescaped(stream, "null")
+  //          }
+  //          i += 1
+  //        }
+  //        stream.write('}')
+  //      }
+  //    }
+  //
+  //  }
+
 
 }
 
@@ -180,12 +259,12 @@ case class OrmKeys[Schema[_]](list: List[OrmKey[Schema, _]]) {
     require(!strict || a.length == size, s"Array size is ${a.length} keys size is $size")
     list.zip(a).flatMap { case (key, item) => key.printArray(prefix, item, strict) }
   }
-  def toJson(ar: Array[Any]): String = {
+  def toJson(ar: Array[Any])(implicit ormKeyToJson: OrmKeysToJson[Schema]): String = {
     val stream = new ByteArrayOutputStream()
     putJson(ar, stream)
     stream.toString()
   }
-  def putJson(ar: Array[Any], outputStream: OutputStream)(implicit ormKeyToJson: OrmKeyToJson[Schema]) = ormKeyToJson.putJson(this, ar, outputStream)
+  def putJson(ar: Array[Any], outputStream: OutputStream)(implicit ormKeyToJson: OrmKeysToJson[Schema]) = ormKeyToJson.putJson(this, ar, outputStream)
 
   val size: Int = list.size
   def makeAndSetupArray: Array[Any] = setup(new Array[Any](size))
@@ -273,7 +352,7 @@ case class OrmKeys[Schema[_]](list: List[OrmKey[Schema, _]]) {
     lastArray(path(path.length - 1)) = ar :: list
   }
 }
-case class OrmKey[Schema[_], T](path: List[Int], index: Int, key: String, arity: ChildArity, children: OrmKeys[Schema], t: Schema[T]) {
+case class OrmKey[Schema[_], T](arity: ChildArity, key: String, t: Schema[T], path: List[Int], index: Int, children: OrmKeys[Schema]) {
   def printArray(prefix: String, item: Any, strict: Boolean)(implicit asDebugString: AsDebugString[Schema]): List[String] = {
     val newPrefix = if (prefix.isEmpty) index.toString else prefix + "." + index
     arity.prettyPrintArray(newPrefix, this, item, strict)
@@ -293,7 +372,7 @@ object OrmKeys {
   def recurse[Schema[_]](parents: List[Int], ts: List[Schema[_]])(implicit schemaMapKey: SchemaMapKey[Schema]): OrmKeys[Schema] =
     OrmKeys(ts.zipWithIndex.map { case (t, index) =>
       val children: ChildrenInSchema[Schema] = schemaMapKey.children(t)
-      OrmKey(parents, index, schemaMapKey.childKey(t), children.arity, recurse(parents :+ index, children.children), t)
+      OrmKey(children.arity, schemaMapKey.childKey(t), t, parents, index, recurse(parents :+ index, children.children))
     })
 }
 

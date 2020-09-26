@@ -1,6 +1,6 @@
 package one.xingyi.core.orm
 
-import java.io.ByteArrayOutputStream
+import java.io.{ByteArrayOutputStream, OutputStream}
 
 import one.xingyi.core.UtilsSpec
 import one.xingyi.core.strings.Strings
@@ -12,9 +12,12 @@ import scala.language.{higherKinds, implicitConversions}
 trait OrmKeyFixture extends UtilsSpec {
   implicit def multipleFieldTx[T]: OrmValueTransformer[T] = (ftis, data) => ftis.map(fti => fti.fieldType.name + ":" + data(fti.index)).mkString(",")
 
-  sealed trait SchemaForTest[T] {def key: String}
-  case class SchemaItem[T](key: String) extends SchemaForTest[T]
-  case class SchemaItemWithChildren(key: String, hasMany: Boolean, children: List[SchemaForTest[_]]) extends SchemaForTest[Placeholder]
+  sealed trait SchemaForTest[T] {
+    def key: String
+    def jsonToStream: JsonToStream[T]
+  }
+  case class SchemaItem[T](key: String)(implicit val jsonToStream: JsonToStream[T]) extends SchemaForTest[T]
+  case class SchemaItemWithChildren(key: String, hasMany: Boolean, children: List[SchemaForTest[_]])(implicit val jsonToStream: JsonToStream[Placeholder]) extends SchemaForTest[Placeholder]
 
   object SchemaForTest {
     def parse[T: OrmValueTransformer](s: String): List[OrmValueGetter[_]] = {
@@ -31,6 +34,10 @@ trait OrmKeyFixture extends UtilsSpec {
     implicit val findKeys: FindOrmEntityAndField[SchemaForTest] = new FindOrmEntityAndField[SchemaForTest] {
       override def apply[T](s: SchemaForTest[T]): List[OrmValueGetter[_]] = SchemaForTest.parse(s.key)
     }
+    implicit def JsonToStreamFor: JsonToStreamFor[SchemaForTest] = new JsonToStreamFor[SchemaForTest] {
+      override def putToJson[T](s: SchemaForTest[T]): JsonToStream[T] = s.jsonToStream
+    }
+
 
     implicit def debugArray: AsDebugString[SchemaForTest] = new AsDebugString[SchemaForTest] {
       override def apply[T](t: SchemaForTest[T]): String = "{" + t.key + "}"
@@ -56,16 +63,16 @@ trait OrmKeyFixture extends UtilsSpec {
 }
 trait OrmKeySpecFixture extends OrmKeyFixture {
   val itema: SchemaForTest[String] = SchemaItem("a")
-  val itemb: SchemaForTest[String] = SchemaItem("b")
-  val itemc: SchemaForTest[String] = SchemaItem("c")
+  val itemb: SchemaForTest[Int] = SchemaItem("b")
+  val itemc: SchemaForTest[Double] = SchemaItem("c")
   val emptyNumbericKeys: OrmKeys[SchemaForTest] = OrmKeys(List[SchemaForTest[_]]())
   val emptySkeleton: OrmKeys[SchemaForTest] = emptyNumbericKeys
   val bcAsSingleton: SchemaForTest[Placeholder] = SchemaItemWithChildren("bc", false, List(itemb, itemc))
   val bcAsMany: SchemaForTest[Placeholder] = SchemaItemWithChildren("bc", true, List(itemb, itemc))
 
   def numericKeysForBc(path: List[Int]): OrmKeys[SchemaForTest] = OrmKeys(List(
-    OrmKey(path, 0, "b", NoChildren, emptySkeleton, itemb),
-    OrmKey(path, 1, "c", NoChildren, emptySkeleton, itemc)))
+    OrmKey(NoChildren, "b", itemb, path, 0, emptySkeleton),
+    OrmKey(NoChildren, "c", itemc, path, 1, emptySkeleton)))
 
   implicit def stringToSchemaForTest(s: String): SchemaForTest[String] = SchemaItem(s)
 
@@ -102,15 +109,15 @@ class OrmKeyTest extends OrmKeySpecFixture {
   }
 
   it should "turn a one item list into a simple skeleton" in {
-    OrmKeys(List(itema)) shouldBe OrmKeys(List(OrmKey(List(), 0, "a", NoChildren, emptySkeleton, itema)))
+    OrmKeys(List(itema)) shouldBe OrmKeys(List(OrmKey(NoChildren, "a", itema, List(), 0, emptySkeleton)))
   }
   it should "turn a two item list into a simple skeleton" in {
     OrmKeys(List(itemb, itemc)) shouldBe numericKeysForBc(List())
   }
   it should "turn a two item list with children into a simple skeleton" in {
     OrmKeys(List(itema, bcAsSingleton)) shouldBe OrmKeys(List(
-      OrmKey(List(), 0, "a", NoChildren, emptySkeleton, itema),
-      OrmKey(List(), 1, "bc", OneChild, numericKeysForBc(List(1)), bcAsSingleton)))
+      OrmKey(NoChildren, "a", itema, List(), 0, emptySkeleton),
+      OrmKey(OneChild, "bc", bcAsSingleton, List(), 1, numericKeysForBc(List(1)))))
     checkNumericKeys(OrmKeys(List(itema, bcAsSingleton))) {
       """a (),0 NoChildren
         |bc (),1 OneChild
@@ -119,8 +126,8 @@ class OrmKeyTest extends OrmKeySpecFixture {
     }
 
     OrmKeys(List(bcAsMany, itema)) shouldBe OrmKeys(List(
-      OrmKey(List(), 0, "bc", ManyChildren, numericKeysForBc(List(0)), bcAsMany),
-      OrmKey(List(), 1, "a", NoChildren, emptySkeleton, itema)))
+      OrmKey(ManyChildren, "bc", bcAsMany, List(), 0, numericKeysForBc(List(0))),
+      OrmKey(NoChildren, "a", itema, List(), 1, emptySkeleton)))
 
   }
 
@@ -323,7 +330,7 @@ class OrmKeyTest extends OrmKeySpecFixture {
 
   behavior of "NumericKeys/Json"
 
-  def checkJson[Schema[_]](keys: OrmKeys[Schema], array: Array[Any], expected: String): Unit = {
+  def checkJson[Schema[_] : OrmKeysToJson](keys: OrmKeys[Schema], array: Array[Any], expected: String): Unit = {
     val stream = new ByteArrayOutputStream()
     keys.putJson(array, stream)
     checkStrings(stream.toString(), expected)
@@ -371,14 +378,14 @@ class OrmKeyTest extends OrmKeySpecFixture {
     val keys = OrmKeys(List(itema, bcAsSingleton))
     val array = keys.makeAndSetupArray
     keys.put(Array(), 0, array, "av")
-    keys.put(Array(1), 0, array, "bv")
-    keys.put(Array(1), 1, array, "cv")
+    keys.put(Array(1), 0, array, 123)
+    keys.put(Array(1), 1, array, 2.1)
     checkArray(keys, array)(
       """0  = av {a}
         |1/OneChild
-        |1.0  = bv {b}
-        |1.1  = cv {c}""".stripMargin)
-    checkJson(keys, array, """{"a":"av","bc":{"b":"bv","c":"cv"}}""")
+        |1.0  = 123 {b}
+        |1.1  = 2.1 {c}""".stripMargin)
+    checkJson(keys, array, """{"a":"av","bc":{"b":123,"c":2.1}}""")
   }
 
   it should "turn an array with child arrays into json" in {
@@ -391,21 +398,21 @@ class OrmKeyTest extends OrmKeySpecFixture {
     checkJson(keys, array, """{"a":"av","bc":[]}""")
 
     keys.next(Array(1), array)
-    keys.put(Array(1), 0, array, "bv1")
-    keys.put(Array(1), 1, array, "cv1")
-    checkJson(keys, array, """{"a":"av","bc":[{"b":"bv1","c":"cv1"}]}""")
+    keys.put(Array(1), 0, array, 123)
+    keys.put(Array(1), 1, array, 2.3)
+    checkJson(keys, array, """{"a":"av","bc":[{"b":123,"c":2.3}]}""")
 
     keys.next(Array(1), array)
-    keys.put(Array(1), 0, array, "bv2")
-    keys.put(Array(1), 1, array, "cv2")
+    keys.put(Array(1), 0, array, 234)
+    keys.put(Array(1), 1, array, 3.4)
 
     checkArray(keys, array)(
       """0  = av {a}
         |1/Many(2)
-        |1[0].0  = bv2 {b}
-        |1[0].1  = cv2 {c}
-        |1[1].0  = bv1 {b}
-        |1[1].1  = cv1 {c}""".stripMargin)
-    checkJson(keys, array, """{"a":"av","bc":[{"b":"bv1","c":"cv1"},{"b":"bv2","c":"cv2"}]}""")
+        |1[0].0  = 234 {b}
+        |1[0].1  = 3.4 {c}
+        |1[1].0  = 123 {b}
+        |1[1].1  = 2.3 {c}""".stripMargin)
+    checkJson(keys, array, """{"a":"av","bc":[{"b":123,"c":2.3},{"b":234,"c":3.4}]}""")
   }
 }

@@ -52,11 +52,11 @@ trait SharedOrmFixture extends OrmKeyFixture {
   val emailTable = TableName("ContactEmail", "")
   val personTable = TableName("Person", "")
 
-  val schemaForAddress = SchemaItemWithChildren("address", true, List[SchemaForTest[_]](SchemaItem("Address/add")))
-  val schemaForPhone = SchemaItemWithChildren("phone", true, List[SchemaForTest[_]](SchemaItem("Phone/phoneNo")))
+  val schemaForAddress = SchemaItemWithChildren("address", true, List[SchemaForTest[_]](SchemaItem[String]("Address/add")))
+  val schemaForPhone = SchemaItemWithChildren("phone", true, List[SchemaForTest[_]](SchemaItem[String]("Phone/phoneNo")))
 
   val schemaForPerson: List[SchemaForTest[_]] = {
-    implicit def stringToSchemaForTest(s: String): SchemaForTest[_] = SchemaItem(s)
+    implicit def stringToSchemaForTest(s: String): SchemaForTest[_] = SchemaItem[String](s)
     List[SchemaForTest[_]](
       "Person/name",
       SchemaItemWithChildren("employer", false, List[SchemaForTest[_]]("Employer/name")),
