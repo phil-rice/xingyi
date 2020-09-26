@@ -99,6 +99,7 @@ trait OrmEntity {
   def dataFields: List[FieldType[_]]
   def children: List[ChildEntity]
   def descendents: List[ChildEntity] = children ::: children.flatMap(_.descendents)
+  //TODO This distinct ... what do I do about fieldtypes with same name/different types.... need to fix that
   def fieldsForCreate: List[FieldType[_]] = (dataFields ::: fieldsAddedByChildren ::: primaryKeyField.list).distinct
 
   def fieldsAddedByChildren: List[FieldType[_]] = children.flatMap(_.parentFields)

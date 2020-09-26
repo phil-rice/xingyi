@@ -9,7 +9,7 @@ import one.xingyi.core.json.JsonParser
 
 import scala.language.{higherKinds, implicitConversions}
 
-abstract class AbtractFastOrmSpecWithDeepNestingSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSource](implicit jdbcOps: JdbcOps[DataSource]) extends SharedOrmFixture with DatabaseSourceFixture[DS] {
+abstract class AbtractFastOrmSpecWithDeepNestingSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSource](implicit jdbcOps: JdbcOps[DataSource]) extends SharedOrmFixture with SetupDatabaseForOrmFixture[DS] with DatabaseSourceFixture[DS] {
 
   val table1 = TableName("t1", "")
   val table2 = TableName("t2", "")
@@ -25,18 +25,6 @@ abstract class AbtractFastOrmSpecWithDeepNestingSpec[M[_] : ClosableM, J: JsonPa
     val schemaListFort1: List[SchemaForTest] = List[SchemaForTest]("t1/f1", "t1/f2", schema2)
     val keysForT1: NumericKeys[SchemaForTest] = NumericKeys(schemaListFort1)
     fn(keysForT1, schemaListFort1, schema2, schema3, schema4)
-  }
-
-  def setup(ds: DataSource, main: MainEntity)(block: => Unit): Unit = {
-    OrmStrategies.dropTables.map(executeIt).walk(main)
-    OrmStrategies.createTables.map(executeIt).walk(main)
-    OrmStrategies.dropTempTables.map(executeIt).walk(main)
-    try {
-      block
-    } finally {
-      OrmStrategies.dropTempTables.map(executeIt).walk(main)
-      OrmStrategies.dropTables.map(executeIt).walk(main)
-    }
   }
 
   behavior of "deeply nested one to many"

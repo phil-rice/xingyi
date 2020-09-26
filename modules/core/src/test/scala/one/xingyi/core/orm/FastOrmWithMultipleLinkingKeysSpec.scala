@@ -68,7 +68,7 @@ trait FastWithMultipleKeysOrmFixture[M[_]] extends OrmWithMultipleKeysFixture {
   }
 }
 
-abstract class AbstractWithMultipleKeysFastOrmSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends SharedFastOrmTests[M, J, DS] with FastWithMultipleKeysOrmFixture[M] {
+abstract class AbstractWithMultipleKeysFastOrmSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends SharedFastOrmTests[M, J, DS] with CheckStrategyFixture with  FastWithMultipleKeysOrmFixture[M] {
 
 
   behavior of "FastOrm"

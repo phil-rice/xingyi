@@ -77,7 +77,7 @@ trait FastOrmFixture[M[_]] extends OrmFixture {
 }
 
 
-abstract class AbstractFastOrmWithSingleLinkingKeysSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends SharedFastOrmTests[M, J, DS] with FastOrmFixture[M] {
+abstract class AbstractFastOrmWithSingleLinkingKeysSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends SharedFastOrmTests[M, J, DS] with FastOrmFixture[M] with CheckStrategyFixture {
 
 
   behavior of "FastOrm"

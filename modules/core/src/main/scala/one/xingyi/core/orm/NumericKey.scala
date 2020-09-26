@@ -244,12 +244,12 @@ object NumericKeys {
     })
 }
 
-class NumericKeyPopulator[T](numericKeys: NumericKeys[T], tablesAndFieldsAndPaths: TablesAndFieldsAndPaths,mainEntity: MainEntity, map: Map[OneToManyEntity, NumericKey[_]])(implicit findOrmEntityAndField: FindOrmEntityAndField[T])
+class NumericKeyPopulator[T](numericKeys: NumericKeys[T], tablesAndFieldsAndPaths: TablesAndFieldsAndPaths, mainEntity: MainEntity, map: Map[OneToManyEntity, NumericKey[_]])(implicit findOrmEntityAndField: FindOrmEntityAndField[T])
   extends ((Array[Any], OrmEntity, List[Any]) => Array[Any]) {
   val nextMap = map.map { case (k, v) => (k.alias, (v.path :+ v.index).toArray) }
 
-//  val tablesAndFieldsAndPaths: TablesAndFieldsAndPaths = EntityAndPath(numericKeys)
-  val aliasToOrmGetters: Map[String, OrmGettersForThisRowAndPath] = (mainEntity :: mainEntity. descendents).map { entity =>
+  //  val tablesAndFieldsAndPaths: TablesAndFieldsAndPaths = EntityAndPath(numericKeys)
+  val aliasToOrmGetters: Map[String, OrmGettersForThisRowAndPath] = (mainEntity :: mainEntity.descendents).map { entity =>
     (entity.alias, tablesAndFieldsAndPaths.getOrmGettersAndPath(entity.tableName).toForThisRow(entity.fieldsForCreate.map(_.name)))
   }.toMap
 

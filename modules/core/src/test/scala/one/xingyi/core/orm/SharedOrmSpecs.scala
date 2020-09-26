@@ -5,11 +5,12 @@ import java.io.ByteArrayOutputStream
 import javax.sql.DataSource
 import one.xingyi.core.closable.ClosableM
 import one.xingyi.core.jdbc.{DatabaseSourceFixture, Jdbc, JdbcOps}
-import one.xingyi.core.json.{JsonObject, JsonParser}
+import one.xingyi.core.json.JsonParser
+import org.scalatest.Matchers
 
 import scala.language.{higherKinds, implicitConversions}
 
-trait SharedOrmFixture extends NumericKeyFixture {
+trait CheckStrategyFixture extends Matchers {
   def checkStrategy(name: String, block: List[(OrmEntity, String)], expected: List[(OrmEntity, String)]): Unit = {
     val actual = block
     val fullDescription = List(name, actual.map(t => t._1.tableName.tableName + "->" + '"' + t._2 + '"').mkString(",\n"), "\n")
@@ -22,6 +23,27 @@ trait SharedOrmFixture extends NumericKeyFixture {
       actual shouldBe expected
     }
   }
+}
+
+trait SetupDatabaseForOrmFixture[DS <: DataSource] {
+  def ds: DS
+  def setup[M[_] : ClosableM](ds: DS, main: MainEntity)(block: => Unit)(implicit jdbcOps: JdbcOps[DataSource]): Unit = {
+    def executeIt(implicit jdbcOps: JdbcOps[DataSource]): String => Boolean = { s: String => jdbcOps.executeSql(s) apply ds }
+
+    OrmStrategies.dropTables.map(executeIt).walk(main)
+    OrmStrategies.createTables.map(executeIt).walk(main)
+    OrmStrategies.dropTempTables.map(executeIt).walk(main)
+    try {
+      block
+    } finally {
+      OrmStrategies.dropTempTables.map(executeIt).walk(main)
+      OrmStrategies.dropTables.map(executeIt).walk(main)
+    }
+  }
+
+}
+
+trait SharedOrmFixture extends NumericKeyFixture {
 
   val employerTable = TableName("Employer", "")
   val addressTable = TableName("Address", "")
@@ -224,7 +246,6 @@ abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSou
       maker.createdCount shouldBe 3
     }
   }
-
 
 
 }
