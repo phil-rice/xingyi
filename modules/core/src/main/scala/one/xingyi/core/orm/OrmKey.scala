@@ -5,20 +5,22 @@ import java.io.{ByteArrayOutputStream, OutputStream}
 import one.xingyi.core.orm.SchemaMapKey._
 import one.xingyi.core.strings.Strings
 
+import scala.annotation.implicitNotFound
 import scala.language.higherKinds
 
 //OK This code is imperative, and mutable...
 // This is because it is about speed: this is about getting data out of the database, it's done a lot and we don't want a ton of garbage collection
 //At the moment we make all the items afresh, but they could easily (and probably should be) object pooled as we try for more speed
 
-trait AsDebugString[T] {def apply(t: T): String}
+@implicitNotFound("This is something that you should write for the schema. If you want to use a simple one there is an example in the object AsDebugString")
+trait AsDebugString[Schema[_]] {def apply[T](t: Schema[T]): String}
 object AsDebugString {
-  implicit def asDebugString[T]: AsDebugString[T] = new AsDebugString[T] {
-    override def apply(t: T): String = t.toString
+  def asDebugString[Schema[_]]: AsDebugString[Schema] = new AsDebugString[Schema] {
+    override def apply[T](t: Schema[T]): String = t.toString
   }
 }
 object ChildArity {
-  def prettyPrintOneArrayItem[T](prefix: String, key: OrmKey[T], item: Any)(implicit asDebugString: AsDebugString[T]) = {
+  def prettyPrintOneArrayItem[Schema[_], T](prefix: String, key: OrmKey[Schema, T], item: Any)(implicit asDebugString: AsDebugString[Schema]) = {
     //    println(s"got to print print and the key is $key")
     //    println(s"   key .t is ${key.t}")
     //    println(s"   asDebugString is $asDebugString")
@@ -27,13 +29,13 @@ object ChildArity {
   }
 }
 sealed trait ChildArity {
-  def prettyPrintArray[T: AsDebugString](prefix: String, key: OrmKey[T], item: Any, strict: Boolean): List[String]
+  def prettyPrintArray[Schema[_] : AsDebugString, T](prefix: String, key: OrmKey[Schema, T], item: Any, strict: Boolean): List[String]
   protected[orm] def optionallyCreateArray(a: Array[Any], i: Int, size: Int): Array[Any]
 }
 case object NoChildren extends ChildArity {
   override protected[orm] def optionallyCreateArray(a: Array[Any], i: Int, size: Int) = null //ouch. This is actually needed to get rid of lots of garbage collection. But *sigh*
   //  override protected[objectMap] def put[T](key: NumericKey[T], a: Array[Any], i: Int, data: Any): Unit = a(i) = data
-  override def prettyPrintArray[T: AsDebugString](prefix: String, key: OrmKey[T], item: Any, strict: Boolean): List[String] =
+  override def prettyPrintArray[Schema[_] : AsDebugString, T](prefix: String, key: OrmKey[Schema, T], item: Any, strict: Boolean): List[String] =
     List(ChildArity.prettyPrintOneArrayItem(prefix, key, item))
 }
 case object OneChild extends ChildArity {
@@ -42,7 +44,7 @@ case object OneChild extends ChildArity {
     a(i) = result;
     result
   }
-  override def prettyPrintArray[T: AsDebugString](prefix: String, key: OrmKey[T], item: Any, strict: Boolean): List[String] = {
+  override def prettyPrintArray[Schema[_] : AsDebugString, T](prefix: String, key: OrmKey[Schema, T], item: Any, strict: Boolean): List[String] = {
     require(item.isInstanceOf[Array[_]], s"expected array but was $item")
     prefix + "/OneChild" :: key.children.printArray(prefix, item.asInstanceOf[Array[Any]], strict)
   }
@@ -52,7 +54,7 @@ case object ManyChildren extends ChildArity {
     a(i) = List()
     null
   }
-  override def prettyPrintArray[T: AsDebugString](prefix: String, key: OrmKey[T], item: Any, strict: Boolean): List[String] = {
+  override def prettyPrintArray[Schema[_] : AsDebugString, T](prefix: String, key: OrmKey[Schema, T], item: Any, strict: Boolean): List[String] = {
     require(item.isInstanceOf[List[_]])
     val list = item.asInstanceOf[List[Array[Any]]]
     s"$prefix/Many(${list.size})" :: list.zipWithIndex.flatMap { case (a, index) =>
@@ -62,29 +64,37 @@ case object ManyChildren extends ChildArity {
   }
 }
 
-sealed abstract class ChildrenInSchema[T](val arity: ChildArity) {def children: List[T]}
-case class Zero[T]() extends ChildrenInSchema[T](NoChildren) {def children: List[T] = Nil}
-case class AlwaysOne[T](children: List[T]) extends ChildrenInSchema[T](OneChild)
-case class ZeroOrMore[T](children: List[T]) extends ChildrenInSchema[T](ManyChildren)
+sealed abstract class ChildrenInSchema[Schema[_]](val arity: ChildArity) {def children: List[Schema[_]]}
+case class Zero[Schema[_]]() extends ChildrenInSchema[Schema](NoChildren) {def children: List[Schema[_]] = Nil}
+case class AlwaysOne[Schema[_]](children: List[Schema[_]]) extends ChildrenInSchema[Schema](OneChild)
+case class ZeroOrMore[Schema[_]](children: List[Schema[_]]) extends ChildrenInSchema[Schema](ManyChildren)
 
-//THere is a schema of type Schema. Schema is not the data, is the structure of the data
-trait SchemaMapKey[Schema] {
-  def childKey(t: Schema): String // The main object might not have a key, but the children will
-  def children(t: Schema): ChildrenInSchema[Schema]
+trait Placeholder
+
+/** THere is a schema of type Schema. Schema is not the data, is the structure of the data
+ *
+ * The type parameter is the type of the data in the field that the schema is pointing to.
+ * This is used for things like 'getting from database' and 'putting in json'.
+ *
+ * Because schemas hold other schemas, and I am not sure how to handle the schema object itself from a [T] perspective
+ * there is a fake T called Placeholder. */
+trait SchemaMapKey[Schema[_]] {
+  def childKey[T](t: Schema[T]): String // The main object might not have a key, but the children will
+  def children[T](t: Schema[T]): ChildrenInSchema[Schema]
 }
 
 object SchemaMapKey {
-  implicit class SchemaMapKeyOps[S](s: S)(implicit k: SchemaMapKey[S]) {
+  implicit class SchemaMapKeyOps[S[_], T](s: S[T])(implicit k: SchemaMapKey[S]) {
     def key: String = k.childKey(s)
     def children: ChildrenInSchema[S] = k.children(s)
   }
 }
 
-trait OrmKeyToJson[Schema] {
+trait OrmKeyToJson[Schema[_]] {
   def putJson(keys: OrmKeys[Schema], ar: Array[Any], outputStream: OutputStream)
 }
 object OrmKeyToJson {
-  implicit def ormKeyToJson[Schema]: OrmKeyToJson[Schema] =
+  implicit def ormKeyToJson[Schema[_]]: OrmKeyToJson[Schema] =
     (keys: OrmKeys[Schema], ar: Array[Any], outputStream: OutputStream) => {
       def putRawString(s: String) {
         var i = 0
@@ -162,9 +172,9 @@ object OrmKeyToJson {
  * printArray prints the array of data retrieved from FastOrm in a way helpful for tests
  *
  * */
-case class OrmKeys[Schema](list: List[OrmKey[Schema]]) {
-  def allKeys: List[OrmKey[Schema]] = list.flatMap { key => key :: key.children.allKeys }
-  def findForT(t: Schema) = allKeys.find(_.t == t)
+case class OrmKeys[Schema[_]](list: List[OrmKey[Schema, _]]) {
+  def allKeys: List[OrmKey[Schema, _]] = list.flatMap { key => key :: key.children.allKeys }
+  def findForT[T](t: Schema[T]) = allKeys.find(_.t == t)
   def prettyPrint(indent: String) = list.map(_.prettyPrint(indent)).mkString("\n")
   def printArray(prefix: String, a: Array[Any], strict: Boolean = true)(implicit asDebugString: AsDebugString[Schema]): List[String] = {
     require(!strict || a.length == size, s"Array size is ${a.length} keys size is $size")
@@ -246,7 +256,7 @@ case class OrmKeys[Schema](list: List[OrmKey[Schema]]) {
       pathIndex += 1
     }
   }
-  def findKeyForPath(path: Array[Int]): OrmKey[Schema] = {
+  def findKeyForPath[T](path: Array[Int]): OrmKey[Schema, _] = {
     var pathIndex = 0
     var keys = this
     while (pathIndex < path.length - 1) {
@@ -255,7 +265,6 @@ case class OrmKeys[Schema](list: List[OrmKey[Schema]]) {
       pathIndex += 1
     }
     keys.list(path(path.length - 1))
-
   }
   def next(path: Array[Int], array: Array[Any]): Unit = {
     val lastArray = findLastArrayForList(path, array)
@@ -264,8 +273,8 @@ case class OrmKeys[Schema](list: List[OrmKey[Schema]]) {
     lastArray(path(path.length - 1)) = ar :: list
   }
 }
-case class OrmKey[T](path: List[Int], index: Int, key: String, arity: ChildArity, children: OrmKeys[T], t: T) {
-  def printArray(prefix: String, item: Any, strict: Boolean)(implicit asDebugString: AsDebugString[T]): List[String] = {
+case class OrmKey[Schema[_], T](path: List[Int], index: Int, key: String, arity: ChildArity, children: OrmKeys[Schema], t: Schema[T]) {
+  def printArray(prefix: String, item: Any, strict: Boolean)(implicit asDebugString: AsDebugString[Schema]): List[String] = {
     val newPrefix = if (prefix.isEmpty) index.toString else prefix + "." + index
     arity.prettyPrintArray(newPrefix, this, item, strict)
   }
@@ -279,26 +288,28 @@ case class OrmKey[T](path: List[Int], index: Int, key: String, arity: ChildArity
 }
 
 object OrmKeys {
-  def apply[Schema: SchemaMapKey](t: Schema): OrmKeys[Schema] = recurse(List(), t.children.children)
-  def apply[Schema: SchemaMapKey](ts: List[Schema]): OrmKeys[Schema] = recurse(List(), ts)
-  def recurse[Schema](parents: List[Int], ts: List[Schema])(implicit schemaMapKey: SchemaMapKey[Schema]): OrmKeys[Schema] =
+  def apply[Schema[_] : SchemaMapKey](t: Schema[_]): OrmKeys[Schema] = recurse(List(), t.children.children)
+  def apply[Schema[_] : SchemaMapKey](ts: List[Schema[_]]): OrmKeys[Schema] = recurse(List(), ts)
+  def recurse[Schema[_]](parents: List[Int], ts: List[Schema[_]])(implicit schemaMapKey: SchemaMapKey[Schema]): OrmKeys[Schema] =
     OrmKeys(ts.zipWithIndex.map { case (t, index) =>
       val children: ChildrenInSchema[Schema] = schemaMapKey.children(t)
       OrmKey(parents, index, schemaMapKey.childKey(t), children.arity, recurse(parents :+ index, children.children), t)
     })
 }
 
-class NumericKeyPopulator[T](numericKeys: OrmKeys[T], tablesAndFieldsAndPaths: TablesAndFieldsAndPaths, mainEntity: MainEntity, map: Map[OneToManyEntity, OrmKey[_]])(implicit findOrmEntityAndField: FindOrmEntityAndField[T])
+class NumericKeyPopulator[Schema[_]](ormKeys: OrmKeys[Schema],
+                                     tablesAndFieldsAndPaths: TablesAndFieldsAndPaths,
+                                     mainEntity: MainEntity,
+                                     map: Map[OneToManyEntity, OrmKey[Schema, _]])
+                                    (implicit findOrmEntityAndField: FindOrmEntityAndField[Schema])
   extends ((Array[Any], OrmEntity, List[Any]) => Array[Any]) {
   val nextMap = map.map { case (k, v) => (k.alias, (v.path :+ v.index).toArray) }
-
-  //  val tablesAndFieldsAndPaths: TablesAndFieldsAndPaths = EntityAndPath(numericKeys)
   val aliasToOrmGetters: Map[String, OrmGettersForThisRowAndPath] = (mainEntity :: mainEntity.descendents).map { entity =>
     (entity.alias, tablesAndFieldsAndPaths.getOrmGettersAndPath(entity.tableName).toForThisRow(entity.fieldsForCreate.map(_.name)))
   }.toMap
 
   def apply(ar: Array[Any], entity: OrmEntity, oneRow: List[Any]): Array[Any] = {
-    nextMap.get(entity.alias).foreach(path => numericKeys.next(path, ar))
+    nextMap.get(entity.alias).foreach(path => ormKeys.next(path, ar))
     val fieldsAndPath = aliasToOrmGetters(entity.alias)
     val ormGetters: Array[OrmValueGetterForARow[_]] = fieldsAndPath.ormValueGetters
     val paths = fieldsAndPath.path
@@ -306,7 +317,7 @@ class NumericKeyPopulator[T](numericKeys: OrmKeys[T], tablesAndFieldsAndPaths: T
     var i = 0
     while (i < ormGetters.length) {
       val d = ormGetters(i) apply (oneRow.toArray)
-      numericKeys.put(paths(i), indicies(i), ar, d)
+      ormKeys.put(paths(i), indicies(i), ar, d)
       i += 1
     }
     ar

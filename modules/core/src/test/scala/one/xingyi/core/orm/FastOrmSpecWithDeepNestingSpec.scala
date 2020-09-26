@@ -17,18 +17,17 @@ abstract class AbtractFastOrmSpecWithDeepNestingSpec[M[_] : ClosableM, J: JsonPa
   val table4 = TableName("t4", "")
 
   def executeIt = { s: String => jdbcOps.executeSql(s) apply ds }
-  def setupSchema(s1: Boolean, s2: Boolean, s3: Boolean, s4: Boolean)(fn: (OrmKeys[SchemaForTest], List[SchemaForTest], SchemaForTest, SchemaForTest, SchemaForTest) => Unit): Unit = {
-    implicit def stringToSchemaForTest(s: String): (SchemaForTest) = SchemaItem(s)
-    val schema4 = SchemaItemWithChildren("t4", s4, List[SchemaForTest]("t4/i1"))
-    val schema3 = SchemaItemWithChildren("t3", s3, List[SchemaForTest]("t3/h1", schema4))
+  def setupSchema(s1: Boolean, s2: Boolean, s3: Boolean, s4: Boolean)(fn: (OrmKeys[SchemaForTest], List[SchemaForTest[_]], SchemaForTest[_], SchemaForTest[_], SchemaForTest[_]) => Unit): Unit = {
+    implicit def stringToSchemaForTest(s: String): (SchemaForTest[String]) = SchemaItem(s)
+    val schema4 = SchemaItemWithChildren("t4", s4, List[SchemaForTest[_]]("t4/i1"))
+    val schema3 = SchemaItemWithChildren("t3", s3, List[SchemaForTest[_]]("t3/h1", schema4))
     val schema2 = SchemaItemWithChildren("t2", s2, List("t2/g1", "t2/g2", schema3))
-    val schemaListFort1: List[SchemaForTest] = List[SchemaForTest]("t1/f1", "t1/f2", schema2)
+    val schemaListFort1: List[SchemaForTest[_]] = List[SchemaForTest[_]]("t1/f1", "t1/f2", schema2)
     val keysForT1: OrmKeys[SchemaForTest] = OrmKeys(schemaListFort1)
     fn(keysForT1, schemaListFort1, schema2, schema3, schema4)
   }
 
   behavior of "deeply nested one to many"
-
 
   it should "be loadable" in {
     setupSchema(true, true, true, true) { (keysForT1, schemaListFort1, schema2, schema3, schema4) =>

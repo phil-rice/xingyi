@@ -52,17 +52,17 @@ trait SharedOrmFixture extends OrmKeyFixture {
   val emailTable = TableName("ContactEmail", "")
   val personTable = TableName("Person", "")
 
-  val schemaForAddress = SchemaItemWithChildren("address", true, List[SchemaForTest](SchemaItem("Address/add")))
-  val schemaForPhone = SchemaItemWithChildren("phone", true, List[SchemaForTest](SchemaItem("Phone/phoneNo")))
+  val schemaForAddress = SchemaItemWithChildren("address", true, List[SchemaForTest[_]](SchemaItem("Address/add")))
+  val schemaForPhone = SchemaItemWithChildren("phone", true, List[SchemaForTest[_]](SchemaItem("Phone/phoneNo")))
 
-  val schemaForPerson: List[SchemaForTest] = {
-    implicit def stringToSchemaForTest(s: String): SchemaForTest = SchemaItem(s)
-    List[SchemaForTest](
+  val schemaForPerson: List[SchemaForTest[_]] = {
+    implicit def stringToSchemaForTest(s: String): SchemaForTest[_] = SchemaItem(s)
+    List[SchemaForTest[_]](
       "Person/name",
-      SchemaItemWithChildren("employer", false, List[SchemaForTest]("Employer/name")),
+      SchemaItemWithChildren("employer", false, List[SchemaForTest[_]]("Employer/name")),
       schemaForAddress,
       schemaForPhone,
-      SchemaItemWithChildren("email", false, List[SchemaForTest]("ContactEmail/email"))
+      SchemaItemWithChildren("email", false, List[SchemaForTest[_]]("ContactEmail/email"))
     )
   }
   val numericKeysForPerson: OrmKeys[SchemaForTest] = OrmKeys(schemaForPerson)
@@ -144,7 +144,7 @@ abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSou
   def phoneEntity: EntityAndFieldsAndPath[OneToManyEntity]
   lazy val ormFactory = tablesAndFieldsAndPaths.ormFactory(numericKeysForPerson)
 
-  def mapForNext: Map[OneToManyEntity, OrmKey[_]] = Map(
+  def mapForNext: Map[OneToManyEntity, OrmKey[SchemaForTest, _]] = Map(
     addressEntity.entity -> numericKeysForPerson.findForT(schemaForAddress).get,
     phoneEntity.entity -> numericKeysForPerson.findForT(schemaForPhone).get)
 

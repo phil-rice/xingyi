@@ -6,15 +6,15 @@ import one.xingyi.core.UtilsSpec
 import one.xingyi.core.strings.Strings
 import org.scalatest.Matchers
 
-import scala.language.implicitConversions
+import scala.language.{higherKinds, implicitConversions}
 
 
 trait OrmKeyFixture extends UtilsSpec {
   implicit def multipleFieldTx[T]: OrmValueTransformer[T] = (ftis, data) => ftis.map(fti => fti.fieldType.name + ":" + data(fti.index)).mkString(",")
 
-  sealed trait SchemaForTest {def key: String}
-  case class SchemaItem(key: String) extends SchemaForTest
-  case class SchemaItemWithChildren(key: String, hasMany: Boolean, children: List[SchemaForTest]) extends SchemaForTest
+  sealed trait SchemaForTest[T] {def key: String}
+  case class SchemaItem[T](key: String) extends SchemaForTest[T]
+  case class SchemaItemWithChildren(key: String, hasMany: Boolean, children: List[SchemaForTest[_]]) extends SchemaForTest[Placeholder]
 
   object SchemaForTest {
     def parse[T: OrmValueTransformer](s: String): List[OrmValueGetter[_]] = {
@@ -28,22 +28,26 @@ trait OrmKeyFixture extends UtilsSpec {
         else List()
       }
     }
-    implicit val findKeys: FindOrmEntityAndField[SchemaForTest] = { item: SchemaForTest => SchemaForTest.parse(item.key) }
+    implicit val findKeys: FindOrmEntityAndField[SchemaForTest] = new FindOrmEntityAndField[SchemaForTest] {
+      override def apply[T](s: SchemaForTest[T]): List[OrmValueGetter[_]] = SchemaForTest.parse(s.key)
+    }
 
-    implicit def debugArray: AsDebugString[SchemaForTest] = (t: SchemaForTest) => "{" + t.key + "}"
+    implicit def debugArray: AsDebugString[SchemaForTest] = new AsDebugString[SchemaForTest] {
+      override def apply[T](t: SchemaForTest[T]): String = "{" + t.key + "}"
+    }
     implicit object ObjectKeyMapForTest extends SchemaMapKey[SchemaForTest] {
-      override def childKey(t: SchemaForTest): String = t.key
-      override def children(t: SchemaForTest): ChildrenInSchema[SchemaForTest] = t match {
-        case item: SchemaItem => Zero()
+      override def childKey[T](t: SchemaForTest[T]): String = t.key
+      override def children[T](t: SchemaForTest[T]): ChildrenInSchema[SchemaForTest] = t match {
+        case item: SchemaItem[_] => Zero()
         case SchemaItemWithChildren(_, true, children) => ZeroOrMore(children)
         case SchemaItemWithChildren(_, false, children) => AlwaysOne(children)
       }
     }
   }
-  def checkNumericKeys[T](n: OrmKeys[T])(expected: String) =
+  def checkNumericKeys[Schema[_]](n: OrmKeys[Schema])(expected: String) =
     checkStrings(n.prettyPrint(""), expected)
 
-  def checkArray[T: AsDebugString](key: OrmKeys[T], a: Array[Any])(expected: String) = {
+  def checkArray[Schema[_] : AsDebugString](key: OrmKeys[Schema], a: Array[Any])(expected: String) = {
     require(key != null)
     require(a != null)
     checkStrings(key.printArray("", a).mkString("\n"), expected)
@@ -51,24 +55,24 @@ trait OrmKeyFixture extends UtilsSpec {
 
 }
 trait OrmKeySpecFixture extends OrmKeyFixture {
-  val itema: SchemaForTest = SchemaItem("a")
-  val itemb: SchemaForTest = SchemaItem("b")
-  val itemc: SchemaForTest = SchemaItem("c")
-  val emptyNumbericKeys: OrmKeys[SchemaForTest] = OrmKeys(List())
+  val itema: SchemaForTest[String] = SchemaItem("a")
+  val itemb: SchemaForTest[String] = SchemaItem("b")
+  val itemc: SchemaForTest[String] = SchemaItem("c")
+  val emptyNumbericKeys: OrmKeys[SchemaForTest] = OrmKeys(List[SchemaForTest[_]]())
   val emptySkeleton: OrmKeys[SchemaForTest] = emptyNumbericKeys
-  val bcAsSingleton: SchemaForTest = SchemaItemWithChildren("bc", false, List(itemb, itemc))
-  val bcAsMany: SchemaForTest = SchemaItemWithChildren("bc", true, List(itemb, itemc))
+  val bcAsSingleton: SchemaForTest[Placeholder] = SchemaItemWithChildren("bc", false, List(itemb, itemc))
+  val bcAsMany: SchemaForTest[Placeholder] = SchemaItemWithChildren("bc", true, List(itemb, itemc))
 
   def numericKeysForBc(path: List[Int]): OrmKeys[SchemaForTest] = OrmKeys(List(
     OrmKey(path, 0, "b", NoChildren, emptySkeleton, itemb),
     OrmKey(path, 1, "c", NoChildren, emptySkeleton, itemc)))
 
-  implicit def stringToSchemaForTest(s: String): SchemaForTest = SchemaItem(s)
+  implicit def stringToSchemaForTest(s: String): SchemaForTest[String] = SchemaItem(s)
 
   val ab3m: SchemaItemWithChildren = SchemaItemWithChildren("m", false, List("10"))
-  val ab3: SchemaItemWithChildren = SchemaItemWithChildren("3", true, List[SchemaForTest]("n", ab3m))
-  val ab: SchemaItemWithChildren = SchemaItemWithChildren("b", false, List[SchemaForTest]("1", "2", ab3))
-  val complex = List[SchemaForTest]("a", ab)
+  val ab3: SchemaItemWithChildren = SchemaItemWithChildren("3", true, List[SchemaForTest[_]]("n", ab3m))
+  val ab: SchemaItemWithChildren = SchemaItemWithChildren("b", false, List[SchemaForTest[_]]("1", "2", ab3))
+  val complex = List[SchemaForTest[_]]("a", ab)
 
 
 }
@@ -94,7 +98,7 @@ class OrmKeyTest extends OrmKeySpecFixture {
   behavior of "NumericKeys with Map[String,Any]"
 
   it should "turn the empty list into a blank skeleton" in {
-    OrmKeys.apply(List()) shouldBe emptySkeleton
+    OrmKeys.apply(List[SchemaForTest[_]]()) shouldBe emptySkeleton
   }
 
   it should "turn a one item list into a simple skeleton" in {
@@ -319,7 +323,7 @@ class OrmKeyTest extends OrmKeySpecFixture {
 
   behavior of "NumericKeys/Json"
 
-  def checkJson[T](keys: OrmKeys[T], array: Array[Any], expected: String): Unit = {
+  def checkJson[Schema[_]](keys: OrmKeys[Schema], array: Array[Any], expected: String): Unit = {
     val stream = new ByteArrayOutputStream()
     keys.putJson(array, stream)
     checkStrings(stream.toString(), expected)

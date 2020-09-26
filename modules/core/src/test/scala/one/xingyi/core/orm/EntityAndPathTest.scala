@@ -5,11 +5,11 @@ import one.xingyi.core.strings.Strings
 
 class EntityAndPathTest extends UtilsSpec with OrmKeySpecFixture {
 
-  val t1a: SchemaForTest = "t1/a"
+  val t1a: SchemaForTest[String] = "t1/a"
 
-  val s1: List[SchemaForTest] = List(SchemaItemWithChildren("main", false, List[SchemaForTest](
+  val s1: List[SchemaForTest[_]] = List(SchemaItemWithChildren("main", false, List[SchemaForTest[_]](
     "t1/a", "t2/b", "t1/c", "t2/d",
-    SchemaItemWithChildren("child1", true, List[SchemaForTest](
+    SchemaItemWithChildren("child1", true, List[SchemaForTest[_]](
       "t3/x", "t3/y"
     )))))
 
