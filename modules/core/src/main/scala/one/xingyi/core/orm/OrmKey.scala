@@ -13,10 +13,14 @@ import scala.language.higherKinds
 //At the moment we make all the items afresh, but they could easily (and probably should be) object pooled as we try for more speed
 
 @implicitNotFound("This is something that you should write for the schema. If you want to use a simple one there is an example in the object AsDebugString")
-trait AsDebugString[Schema[_]] {def apply[T](t: Schema[T]): String}
+trait AsDebugString[Schema[_]] {
+  def apply[T](t: Schema[T]): String
+  def data(t: Any): String
+}
 object AsDebugString {
   def asDebugString[Schema[_]]: AsDebugString[Schema] = new AsDebugString[Schema] {
     override def apply[T](t: Schema[T]): String = t.toString
+    override def data(t: Any): String = t.toString
   }
 }
 object ChildArity {
@@ -24,7 +28,7 @@ object ChildArity {
     //    println(s"got to print print and the key is $key")
     //    println(s"   key .t is ${key.t}")
     //    println(s"   asDebugString is $asDebugString")
-    val itemString = if (item == null) "null" else Strings.escapeJson(item.toString)
+    val itemString = if (item == null) "null" else Strings.escapeJson(asDebugString.data(item))
     s"$prefix  = $itemString ${asDebugString(key.t)}"
   }
 }
@@ -92,18 +96,6 @@ object SchemaMapKey {
 
 
 trait JsonToStream[T] {
-  //TODO consider if we could deal with the multiple data in a sql query: reducing this a one/one mapping which is just going to be faster
-  //i.e, when have multiple date fields (four fields representing a date) the sql engine can merge them
-
-  /** Given an item from a database this returns how to put a value representing that item to json
-   *
-   * Please note that the result is any. This is because the item that will be sent to the json stream is not a T it is some
-   * underlying representation (probably a string)
-   *
-   * Example if we have a Schema[LinkUrl], then we might want to output {"{key}":{"href":"/some/url/{value}"}} and the underlying value is a string
-   *
-   * */
-
   def put(t: Any, stream: OutputStream)
 }
 object JsonToStream {
@@ -132,6 +124,7 @@ object JsonToStream {
   }
 
   def asStringWithQuotes[T]: JsonToStream[T] = (s: Any, stream: OutputStream) => putEscapedWithQuotes(s.toString, stream)
+  def asStringFnWithQuotes[T](fn: Any => String): JsonToStream[T] = (s: Any, stream: OutputStream) => putEscapedWithQuotes(fn(s), stream)
 
   implicit val StringJsonToStream: JsonToStream[String] = asStringWithQuotes //(s: Any, stream: OutputStream) => putEscapedWithQuotes(s.toString, stream)
   implicit val IntJsonToStream: JsonToStream[Int] = (t: Any, stream: OutputStream) => putUnescaped(stream, t.toString)
@@ -146,7 +139,7 @@ trait JsonToStreamFor[Schema[_]] {
   def putToJson[T](s: Schema[T]): JsonToStream[T]
 }
 object OrmKeysToJson {
-implicit   def ormKeysToJsonViaArrayFirst[Schema[_]](implicit jsonToStreamFor: JsonToStreamFor[Schema]): OrmKeysToJson[Schema] = {
+  implicit def ormKeysToJsonViaArrayFirst[Schema[_]](implicit jsonToStreamFor: JsonToStreamFor[Schema]): OrmKeysToJson[Schema] = {
     new OrmKeysToJson[Schema] {
       override def putJson(keys: OrmKeys[Schema], ar: Array[Any], stream: OutputStream): Unit = {
         var i = 0
@@ -380,7 +373,6 @@ class NumericKeyPopulator[Schema[_]](ormKeys: OrmKeys[Schema],
                                      tablesAndFieldsAndPaths: TablesAndFieldsAndPaths,
                                      mainEntity: MainEntity,
                                      map: Map[OneToManyEntity, OrmKey[Schema, _]])
-                                    (implicit findOrmEntityAndField: FindOrmEntityAndField[Schema])
   extends ((Array[Any], OrmEntity, List[Any]) => Array[Any]) {
   val nextMap = map.map { case (k, v) => (k.alias, (v.path :+ v.index).toArray) }
   val aliasToOrmGetters: Map[String, OrmGettersForThisRowAndPath] = (mainEntity :: mainEntity.descendents).map { entity =>

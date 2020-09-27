@@ -13,3 +13,4 @@
 0.5.15 Fast Orm entities can now have composite keys
 0.5.17 And the composite keys work much better
 0.5.18 Numeric keys and reading from ORM to json
+0.5.20 Better json with ORM

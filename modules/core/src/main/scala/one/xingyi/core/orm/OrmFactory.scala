@@ -1,9 +1,12 @@
 package one.xingyi.core.orm
 
 import java.io.ByteArrayOutputStream
+import java.util.Date
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.language.higherKinds
+import scala.reflect.ClassTag
+
 
 case class EntityAndPath[E <: OrmEntity](entity: E, paths: Array[List[Int]]) {
   require(entity.fieldsForCreate.size == paths.size, s"Should have same number of paths as have fieldsForCreate. In entity ${entity.fieldsForCreate.size} in paths: ${paths.size}")
@@ -11,27 +14,37 @@ case class EntityAndPath[E <: OrmEntity](entity: E, paths: Array[List[Int]]) {
 
 case class FieldTypeAndIndex[T](fieldType: FieldType[T], index: Int)
 
-trait OrmValueTransformer[T] extends ((Array[FieldTypeAndIndex[_]], Array[Any]) => Any)
+trait OrmValueTransformer[T] extends ((Array[FieldTypeAndIndex[_]], Array[Any]) => T)
 object OrmValueTransformer {
-  implicit def defaultOrmValueTransformer[T]: OrmValueTransformer[T] = new OrmValueTransformer[T] {
-    override def apply(v1: Array[FieldTypeAndIndex[_]], v2: Array[Any]): Any = {
-      require(v1.size == 1, s"Cannot transform using defaultValueTransformer if more than one value in ${v1}")
-      val result = v2(v1.head.index)
-      println(s"tx(${v1.head.fieldType}) = $result")
-      result
+   def defaultOrmValueTransformer[T](implicit classTag: ClassTag[T]): OrmValueTransformer[T] = new OrmValueTransformer[T] {
+    override def apply(v1: Array[FieldTypeAndIndex[_]], v2: Array[Any]): T = {
+      require(v1.size == 1, s"Cannot transform into a ${classTag.runtimeClass.getSimpleName} using defaultValueTransformer if more than one value in ${v1}")
+      v2(v1.head.index) match {
+        case t: T => t
+        case res => throw new RuntimeException(s"expected a ${classTag.runtimeClass.getSimpleName} has a ${res.getClass.getSimpleName} which is $res")
+      }
     }
   }
+  implicit val ormValueTransformerForString = defaultOrmValueTransformer[String]
+  implicit val ormValueTransformerForInt = defaultOrmValueTransformer[Int]
+  implicit val ormValueTransformerForDouble = defaultOrmValueTransformer[Double]
+  implicit val ormValueTransformerForDate = defaultOrmValueTransformer[Date]
+  implicit val ormValueTransformerForPlaceHolder: OrmValueTransformer[Placeholder]= (v1: Array[FieldTypeAndIndex[_]], v2: Array[Any]) => throw new RuntimeException("Should not be called")
 }
 
 case class OrmValueGetter[T](tableName: TableName, fieldTypes: List[FieldType[_]])(implicit val tx: OrmValueTransformer[T]) {
-  def ormValueGetterForARow(list: List[String]) = OrmValueGetterForARow(tableName, fieldTypes.map(_.withIndex(list)).toArray, tx)
+  def ormValueGetterForARow(list: List[String]): OrmValueGetterForARow[T] = OrmValueGetterForARow(tableName, fieldTypes.map(_.withIndex(list)).toArray, tx)
 }
 case class OrmValueGetterForARow[T](tableName: TableName, fieldTypes: Array[FieldTypeAndIndex[_]], tx: OrmValueTransformer[T]) {
   def apply(oneRow: Array[Any]) = tx(fieldTypes, oneRow)
 }
 
 
-/** For example a single item in the schema might be in several places in the database (a key/a foreign key). That item might be represented by multiple fields (e.g. a composite string, or a date where the date is stored in multiple fields_ */
+/** Asingle item in the schema might be in several places in the database (a key/a foreign key).
+ * That item might be represented by multiple fields (e.g. a composite string, or a date where the date is stored in multiple fields
+ *
+ * here the list reflects the multiple places (keys/foreign keys) and the value getter itself understands about getting values
+ * */
 trait FindOrmEntityAndField[Schema[_]] {
   def apply[T](s: Schema[T]): List[OrmValueGetter[_]]
 }
@@ -51,7 +64,8 @@ case class OrmGettersForThisRowAndPath(ormValueGetters: Array[OrmValueGetterForA
 case class TablesAndFieldsAndPaths(map: Map[TableName, OrmGettersAndPath]) {
   def getOrmGettersAndPath(tableName: TableName): OrmGettersAndPath = map.getOrElse(tableName, throw new RuntimeException(s"Cannot find the table ${tableName.tableName} in the known tables: [${map.keys.map(_.tableName).mkString(",")}]"))
   def prettyPrint: List[String] = map.toList.sortBy(_._1.tableName).flatMap { case (table, OrmGettersAndPath(ormValueGetters, paths, indicies)) =>
-    table.tableName :: ormValueGetters.toList.zip(paths).zip(indicies).zipWithIndex.map { case (((og, path), index), i) => s"   $i ${og.fieldTypes.map(_.name).mkString(",")} - (${path.mkString(",")}) - $index" }
+    table.tableName :: ormValueGetters.toList.zip(paths).zip(indicies).zipWithIndex.map {
+      case (((og, path), index), i) => s"   $i ${og.fieldTypes.map(_.prettyPrint).mkString(",")} - (${path.mkString(",")}) - $index" }
   }
   def ormFactory[Schema[_]](keys: OrmKeys[Schema])(implicit findOrmEntityAndField: FindOrmEntityAndField[Schema]): OrmFactory[Schema] =
     new OrmFactoryImpl[Schema](keys, this)
@@ -64,7 +78,9 @@ object EntityAndPath {
     })
 }
 
-case class EntityAndFieldsAndPath[E <: OrmEntity](entity: E, fieldsAndPath: OrmGettersAndPath)
+case class EntityAndFieldsAndPath[E <: OrmEntity](entity: E, fieldsAndPath: OrmGettersAndPath){
+  entity.validate
+}
 trait OrmFactory[Schema[_]] {
   def ormMaker(map: Map[OneToManyEntity, OrmKey[Schema, _]]): OrmMaker[Array[Any]]
   def ormDataMaker(map: Map[OneToManyEntity, OrmKey[Schema, _]]): OrmMaker[Array[Any]]
@@ -243,8 +259,8 @@ class OrmMakerForArrayAny[Schema[_]](numericKeys: OrmKeys[Schema], tablesAndFiel
   }
 }
 
-class OrmMakerForArrayAnyUsingOrmData[Schema[_]](numericKeys: OrmKeys[Schema], tablesAndFieldsAndPaths: TablesAndFieldsAndPaths, oneToManyPathMap: Map[OneToManyEntity, OrmKey[Schema,_]])
-                                             (implicit findOrmEntityAndField: FindOrmEntityAndField[Schema]) extends OrmMaker[Array[Any]] {
+class OrmMakerForArrayAnyUsingOrmData[Schema[_]](numericKeys: OrmKeys[Schema], tablesAndFieldsAndPaths: TablesAndFieldsAndPaths, oneToManyPathMap: Map[OneToManyEntity, OrmKey[Schema, _]])
+                                                (implicit findOrmEntityAndField: FindOrmEntityAndField[Schema]) extends OrmMaker[Array[Any]] {
 
   val factory = new OrmDataFactoryForMainEntity()
   private val createdCounter = new AtomicInteger()

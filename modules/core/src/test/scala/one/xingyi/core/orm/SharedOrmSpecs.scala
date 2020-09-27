@@ -126,16 +126,15 @@ abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSou
 
     checkStrings(tablesAndFieldsAndPaths.prettyPrint.mkString("\n"),
       """Address
-        |   0 add - (2) - 0
+        |   0 add/varchar(255) - (2) - 0
         |ContactEmail
-        |   0 email - (4) - 0
+        |   0 email/varchar(255) - (4) - 0
         |Employer
-        |   0 name - (1) - 0
+        |   0 name/varchar(255) - (1) - 0
         |Person
-        |   0 name - () - 0
+        |   0 name/varchar(255) - () - 0
         |Phone
-        |   0 phoneNo - (3) - 0
-        |""".stripMargin)
+        |   0 phoneNo/varchar(255) - (3) - 0""".stripMargin)
   }
 
   lazy val tablesAndFieldsAndPaths: TablesAndFieldsAndPaths = EntityAndPath(numericKeysForPerson)

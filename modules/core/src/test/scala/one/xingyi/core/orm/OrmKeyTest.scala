@@ -10,7 +10,7 @@ import scala.language.{higherKinds, implicitConversions}
 
 
 trait OrmKeyFixture extends UtilsSpec {
-  implicit def multipleFieldTx[T]: OrmValueTransformer[T] = (ftis, data) => ftis.map(fti => fti.fieldType.name + ":" + data(fti.index)).mkString(",")
+  implicit def multipleFieldTx: OrmValueTransformer[String] = (ftis, data) => ftis.map(fti => fti.fieldType.name + ":" + data(fti.index)).mkString(",")
 
   sealed trait SchemaForTest[T] {
     def key: String
@@ -26,7 +26,7 @@ trait OrmKeyFixture extends UtilsSpec {
       mainSplitter(s).flatMap { tf =>
         if (tf.contains("/")) {
           val (name, fields) = Strings.splitInTwo("/")(tf)
-          List(OrmValueGetter(TableName(name, ""), fieldsSplitter(fields).map(FieldType.apply)))
+          List(OrmValueGetter[String](TableName(name, ""), fieldsSplitter(fields).map(FieldType.apply)))
         }
         else List()
       }
@@ -41,6 +41,7 @@ trait OrmKeyFixture extends UtilsSpec {
 
     implicit def debugArray: AsDebugString[SchemaForTest] = new AsDebugString[SchemaForTest] {
       override def apply[T](t: SchemaForTest[T]): String = "{" + t.key + "}"
+      override def data(t: Any): String = t.toString
     }
     implicit object ObjectKeyMapForTest extends SchemaMapKey[SchemaForTest] {
       override def childKey[T](t: SchemaForTest[T]): String = t.key
@@ -89,16 +90,15 @@ class OrmKeyTest extends OrmKeySpecFixture {
   val t1 = TableName("t1", "")
   val t2 = TableName("t2", "")
   it should "turn a string into tables/field list" in {
-    type NotImportant = Any
     SchemaForTest.parse("") shouldBe List()
     SchemaForTest.parse("justAstring") shouldBe List()
     SchemaForTest.parse("one;two;three") shouldBe List()
-    SchemaForTest.parse("t1/f1:int") shouldBe List(OrmValueGetter[NotImportant](t1, List(FieldType("f1:int"))))
-    SchemaForTest.parse("t1/f1:int,f2") shouldBe List(OrmValueGetter[NotImportant](t1, List(FieldType("f1:int"), FieldType("f2"))))
-    SchemaForTest.parse("t1/f1:int,f2,f3") shouldBe List(OrmValueGetter[NotImportant](t1, List(FieldType("f1:int"), FieldType("f2"), FieldType("f3"))))
+    SchemaForTest.parse("t1/f1:int") shouldBe List(OrmValueGetter[String](t1, List(FieldType("f1:int"))))
+    SchemaForTest.parse("t1/f1:int,f2") shouldBe List(OrmValueGetter[String](t1, List(FieldType("f1:int"), FieldType("f2"))))
+    SchemaForTest.parse("t1/f1:int,f2,f3") shouldBe List(OrmValueGetter[String](t1, List(FieldType("f1:int"), FieldType("f2"), FieldType("f3"))))
     SchemaForTest.parse("t1/f1:int,f2;t2/f3,f4:int") shouldBe List(
-      OrmValueGetter[NotImportant](t1, List(FieldType("f1:int"), FieldType("f2"))),
-      OrmValueGetter[NotImportant](t2, List(FieldType("f3"), FieldType("f4:int"))))
+      OrmValueGetter[String](t1, List(FieldType("f1:int"), FieldType("f2"))),
+      OrmValueGetter[String  ](t2, List(FieldType("f3"), FieldType("f4:int"))))
   }
 
 

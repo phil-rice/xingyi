@@ -116,6 +116,11 @@ trait OrmEntity {
   def dropTempTable(implicit fastOrmSql: FastOrmSql) = fastOrmSql.dropTempTable(this)
   def drainSql(implicit fastOrmSql: FastOrmSql): String = fastOrmSql.drainSql(this)
   def insertSql(implicit fastOrmSql: FastOrmSql): String = fastOrmSql.drainSql(this)
+  def validate {
+    val names = fieldsForCreate.map(_.name)
+    if (names.toSet.size != names.size)
+      throw new RuntimeException(s"You have the same name twice with a different type in ${tableName} ${alias}: " + fieldsForCreate.groupBy(x => x.name).filter(_._2.size != 1))
+  }
 
 }
 
@@ -192,7 +197,7 @@ case class MainEntity(tableName: TableName, alias: String, primaryKeyField: Keys
   def createTempTable(implicit fastOrmSql: FastOrmSql): BatchDetails => String = fastOrmSql.createMainTempTable(this)
 }
 case class OneToManyEntity(tableName: TableName, alias: String, primaryKeyField: Keys, parentId: Keys, dataFields: List[FieldType[_]], children: List[ChildEntity]) extends ChildEntity {
-  override val fieldsForCreate: List[FieldType[_]] = (super.fieldsForCreate ::: parentId.list).distinct
+  override lazy val fieldsForCreate: List[FieldType[_]] = (super.fieldsForCreate ::: parentId.list).distinct
   val parentIdsAndIndex = parentId.toKeysAndIndex(this)
   override def parentFields: List[FieldType[_]] = List()
   override def prettyPrint(i: String) = s"${i}OneToMany(${tableName.tableName}, id=${primaryKeyFieldsAndIndex.prettyPrint}, parent=${parentId.nameString} $fieldsPrettyString)${childrenPrettyString(i)}"

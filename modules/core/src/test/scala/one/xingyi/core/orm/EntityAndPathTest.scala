@@ -35,15 +35,15 @@ class EntityAndPathTest extends UtilsSpec with OrmKeySpecFixture {
     println(s"Entity and paths: $entityAndPaths")
     //    println(entityAndPaths.prettyPrint.mkString("\n"))
     checkEntityAndPath(entityAndPaths)(
-      """|t1
-         |   0 a - (0) - 0
-         |   1 c - (0) - 2
-         |t2
-         |   0 b - (0) - 1
-         |   1 d - (0) - 3
-         |t3
-         |   0 x - (0,4) - 0
-         |   1 y - (0,4) - 1""".stripMargin)
+      """t1
+        |   0 a/varchar(255) - (0) - 0
+        |   1 c/varchar(255) - (0) - 2
+        |t2
+        |   0 b/varchar(255) - (0) - 1
+        |   1 d/varchar(255) - (0) - 3
+        |t3
+        |   0 x/varchar(255) - (0,4) - 0
+        |   1 y/varchar(255) - (0,4) - 1""".stripMargin)
   }
 
   behavior of "OrmFactory"

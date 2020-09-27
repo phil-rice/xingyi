@@ -21,14 +21,15 @@ case class FieldType[T](name: String, typeName: String, numericSort: Boolean)(im
     FieldTypeAndIndex(this, i)
   }
   def withIndex(index: Int): FieldTypeAndIndex[T] = FieldTypeAndIndex(this, index)
+  def prettyPrint = s"$name/$typeName"
 }
 object FieldType {
   private val splitter = Strings.splitInTwo(":")
-  def apply(s: String): FieldType[_] = if (s.contains(":")) splitter(s) match {
-    case (l, "int") => int(l)
-    case (l, "string") => string(l)
+  def apply[T](s: String): FieldType[T] = if (s.contains(":")) splitter(s) match {
+    case (l, "int") => int(l).asInstanceOf[FieldType[T]]
+    case (l, "string") => string(l).asInstanceOf[FieldType[T]]
     case (l, r) => throw new ParseException(s"Cannot work out what type of field ${l} is. Its type is [$r] and not int or string")
-  } else string(s)
+  } else string(s).asInstanceOf[FieldType[T]]
 
   def nameAndTypeName[T](ft: FieldType[T]): String = ft.name + " " + ft.typeName
   def string(name: String)(implicit toFieldType: ToFieldType[String]) = toFieldType(name)
