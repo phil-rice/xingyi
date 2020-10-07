@@ -4,13 +4,12 @@ package one.xingyi.core.databaseService
 import java.sql.{CallableStatement, ResultSet}
 
 import javax.sql.DataSource
+import one.xingyi.core.UtilsSpec
 import one.xingyi.core.monad.IdentityMonad
 import org.mockito
 import org.mockito.{ArgumentCaptor, Mockito}
-import org.scalatest.{FlatSpec, Matchers}
-import org.scalatestplus.mockito.MockitoSugar
 
-class KlesliTest extends FlatSpec with Matchers with MockitoSugar {
+class KlesliTest extends UtilsSpec {
 
   val nameToSql: Map[String, SqlAndParams] = Map()
 

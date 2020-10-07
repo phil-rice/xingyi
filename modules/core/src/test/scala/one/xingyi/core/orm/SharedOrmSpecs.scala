@@ -6,7 +6,7 @@ import javax.sql.DataSource
 import one.xingyi.core.closable.ClosableM
 import one.xingyi.core.jdbc.{DatabaseSourceFixture, Jdbc, JdbcOps}
 import one.xingyi.core.json.JsonParser
-import org.scalatest.Matchers
+import org.scalatest.matchers.should.Matchers
 
 import scala.language.{higherKinds, implicitConversions}
 

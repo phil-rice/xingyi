@@ -2,7 +2,6 @@ package one.xingyi.core.orm
 
 import one.xingyi.core.UtilsSpec
 import one.xingyi.core.orm.FieldType.{int, string}
-import org.scalatest.FlatSpec
 
 class KeysTest extends UtilsSpec {
 

@@ -43,7 +43,7 @@ object Zero {
 trait Monoid[T] {
   def zero: T
   def add(t1: T, t2: T): T
-  def addAll(seq: Seq[T]) = if (seq.size < 1000) seq.foldLeft(zero)(add) else add(seq.toParArray.reduce(add), zero)
+  def addAll(seq: Seq[T]) = seq.foldLeft(zero)(add)
 }
 
 object Monoid {

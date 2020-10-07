@@ -14,13 +14,14 @@ import org.json4s.JValue
 import scala.language.higherKinds
 
 trait BasicDataSourceFixture extends DatabaseSourceFixture[BasicDataSource] {
+
   def makeDataSource(): BasicDataSource = {
     val bds = new BasicDataSource
     bds.setDriverClassName("org.h2.Driver")
     bds.setUrl("jdbc:h2:~/test")
     bds.setUsername("sa")
     bds.setPassword("")
-    bds.setMaxConnLifetimeMillis(4000)
+    bds.setMaxConnLifetimeMillis(maxConnLifetimeMillis)
     bds
   }
 
@@ -93,6 +94,6 @@ class FastOrmWithMultipleKeysSpec extends AbstractWithMultipleKeysFastOrmSpec[Si
     ormFactory.sameIdEntity(emailTable, "em", Keys("eid1:int,eid2:int"), List())))
 
 }
-class FastOrmSpecWithDeepNestingSpec extends AbtractFastOrmSpecWithDeepNestingSpec[SimpleClosable, JValue,BasicDataSource] with BasicDataSourceFixture
+class FastOrmSpecWithDeepNestingSpec extends AbtractFastOrmSpecWithDeepNestingSpec[SimpleClosable, JValue, BasicDataSource] with BasicDataSourceFixture
 
 class JdbcIntegrationSpec extends AbstractJdbcIntegrationSpec[SimpleClosable]

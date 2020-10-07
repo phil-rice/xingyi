@@ -49,9 +49,9 @@ class AtomicRefDataManips[K, V] extends ThreadSafeDataManips[AtomicReference, K,
 }
 
 /** This is used for things like thread safe caches. This is thread safe. You can get a value or change a value.
-  *
-  * The initial value if the item isn't in, is not specified here: it's specified in the implementing class
-  */
+ *
+ * The initial value if the item isn't in, is not specified here: it's specified in the implementing class
+ */
 trait SafeMap[K, V] {
   def apply(k: K)(fn: V => V): V
 
@@ -64,7 +64,7 @@ trait SafeMap[K, V] {
 
 object SafeMap {
   def apply[K, V](default: => V, mapSizeStrategy: MapSizeStrategy = NoMapSizeStrategy, reportMapSizeReduction: ReportMapSizeReduction = NoReportMapSizeReduction) =
-    new LowLevelSafeMap[AtomicReference, K, V](new AtomicRefDataManips, default, mapSizeStrategy,reportMapSizeReduction)
+    new LowLevelSafeMap[AtomicReference, K, V](new AtomicRefDataManips, default, mapSizeStrategy, reportMapSizeReduction)
 }
 
 class LowLevelSafeMap[M[_], K, V](threadSafeDataManips: ThreadSafeDataManips[M, K, V], default: => V, mapSizeStrategy: MapSizeStrategy, reportMapSizeReduction: ReportMapSizeReduction) extends SafeMap[K, V] {
@@ -72,11 +72,11 @@ class LowLevelSafeMap[M[_], K, V](threadSafeDataManips: ThreadSafeDataManips[M, 
   import threadSafeDataManips._
 
   private val initialValueLock = new DoubleCheckLock
-   var _map = empty()
+  var _map = empty()
 
-  def clear = initialValueLock(true)(_map = empty())
+  def clear = initialValueLock(true)(this._map = empty())
 
-//  def copyOfMap: Map[K, M[V]] = _map
+  //  def copyOfMap: Map[K, M[V]] = _map
 
 
   private def makeSureKExists(k: K) = {

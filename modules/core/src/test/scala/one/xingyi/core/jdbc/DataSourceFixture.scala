@@ -6,6 +6,7 @@ import one.xingyi.core.UtilsSpec
 import org.scalatest.BeforeAndAfterAll
 
 trait DatabaseSourceFixture[DS <: DataSource] extends UtilsSpec with BeforeAndAfterAll {
+  def maxConnLifetimeMillis = 10000
   def makeDataSource(): DS
   def closeDataSource(ds: DS)
   val ds: DS = makeDataSource()

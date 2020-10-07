@@ -7,7 +7,7 @@ import one.xingyi.core.language.Language._
 import one.xingyi.core.monad.AsyncForScalaFuture.ImplicitsForTest._
 import one.xingyi.core.monad.AsyncForScalaFuture._
 import one.xingyi.core.monad.{Liftable, MonadCanFail}
-import org.scalatest.Matchers
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.Future
 import scala.language.higherKinds

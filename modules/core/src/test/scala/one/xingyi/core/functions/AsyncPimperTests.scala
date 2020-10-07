@@ -3,13 +3,14 @@ package one.xingyi.core.functions
 
 import java.util.concurrent.atomic.AtomicReference
 
+import one.xingyi.core.language.Language._
+//import one.xingyi.core.language.MonadFunctionLanguage._
+import one.xingyi.core.monad.{Async, MonadWithException}
 import one.xingyi.core.{UtilsWithLoggingSpec, _}
 
 import scala.concurrent.Future
 import scala.language.higherKinds
 import scala.util.{Failure, Success, Try}
-import one.xingyi.core.language.Language._
-import one.xingyi.core.monad.{Async, MonadWithException}
 
 abstract class AbstractAsyncPimperTests[M[_] : Async : MonadWithException] extends UtilsWithLoggingSpec with FunctionFixture {
 
@@ -19,31 +20,31 @@ abstract class AbstractAsyncPimperTests[M[_] : Async : MonadWithException] exten
   behavior of "FunctorPimper"
 
   it should "pimp a functor with .map" in {
-    1.liftM[M].map(_ + 1).await() shouldBe 2
+    (new FunctorPimper(1.liftM[M]).map(_ + 1)).await() shouldBe 2
   }
   it should "pimp a functor with |=>" in {
-    1.liftM[M].|=>(_ + 1).await() shouldBe 2
+    (1.liftM[M].|=>(_ + 1)).await() shouldBe 2
   }
   it should "pimp a functor with |+> that passes the parameter twice " in {
-    1.liftM[M].|+>(x => y => x + y).await() shouldBe 2
+    (1.liftM[M].|+>(x => y => x + y)).await() shouldBe 2
   }
 
 
   behavior of "MonadPimper"
 
   it should "pimp a monad with .flatMap" in {
-    1.liftM[M].flatMap(x => (x + 1).liftM[M]).await() shouldBe 2
+    (1.liftM[M].flatMap(x => (x + 1).liftM[M])).await() shouldBe 2
   }
 
   it should "pimp a monad with |==> which does flatMap" in {
-    1.liftM[M].flatMap(x => (x + 1).liftM[M]).await() shouldBe 2
+    (1.liftM[M].flatMap(x => (x + 1).liftM[M])).await() shouldBe 2
   }
 
   it should "pimp a monad with m: M[A] |=*> (f: A => Seq[M[B]]) returning M[Seq[B]] " in {
-    1.liftM[M] |=*> fn(1, Seq(1.liftM, 2.liftM)) await() shouldBe List(1, 2)
+    (1.liftM[M] |=*> fn(1, Seq(1.liftM, 2.liftM))).await() shouldBe List(1, 2)
   }
   it should "pimp a monad with m: M[A] |=+> (f: A => A => M[B]) returning M[B] " in {
-    1.liftM[M] |=+> fn2Curried(1, 1, "result".liftM[M]) await() shouldBe "result"
+    (1.liftM[M] |=+> fn2Curried(1, 1, "result".liftM[M])).await() shouldBe "result"
   }
 
   behavior of "MonadWithExceptionPimper"

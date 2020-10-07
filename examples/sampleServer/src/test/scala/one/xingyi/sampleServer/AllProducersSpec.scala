@@ -25,8 +25,10 @@ class AllProducersSpec extends UtilsSpec with AllProducersSetup {
 
   it should "have a smoke test that just creates it and checks it doesn't throw an exception" in {
     val setup = new AllProducers[Future, JValue, Throwable](1000)
-    capturePrintln(setup.logReqAndResult.apply[ServiceRequest, ServiceResponse](this, "somePrefix") apply(serviceRequest, Success(Right(serviceResponse))))._2.trim shouldBe
-    "[DEBUG] success.success:ServiceRequest(Get,None,Path(/someUri),WrappedArray(),List(),Some(Body(theBody))),ServiceRequest(Get,None,Path(/someUri),WrappedArray(),List(),Some(Body(theBody))),ServiceResponse(Status(200),Body(response: theBody),List(ContentType(text/html))),ServiceResponse(Status(200),Body(response: theBody),List(ContentType(text/html)))"
+    val actual = capturePrintln(setup.logReqAndResult.apply[ServiceRequest, ServiceResponse](this, "somePrefix") apply(serviceRequest, Success(Right(serviceResponse))))._2.trim
+    val actualForCrossVersions = actual. replace("WrappedArray()", "List()")
+    actualForCrossVersions shouldBe
+    "[DEBUG] success.success:ServiceRequest(Get,None,Path(/someUri),List(),List(),Some(Body(theBody))),ServiceRequest(Get,None,Path(/someUri),List(),List(),Some(Body(theBody))),ServiceResponse(Status(200),Body(response: theBody),List(ContentType(text/html))),ServiceResponse(Status(200),Body(response: theBody),List(ContentType(text/html)))"
 
     await(setup.httpFactory.apply(ServiceName("unused"))(serviceRequest)) shouldBe serviceResponse
 

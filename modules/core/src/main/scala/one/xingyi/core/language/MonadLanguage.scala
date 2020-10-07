@@ -7,6 +7,7 @@ import one.xingyi.core.monad._
 import scala.language.higherKinds
 import scala.util.{Failure, Success, Try}
 
+object FunctorLanguage extends FunctorLanguage
 trait FunctorLanguage {
 
   implicit class FunctorPimper[M[_], T](m: M[T])(implicit functor: Functor[M]) {

@@ -12,7 +12,7 @@ trait Javascript extends CodeFragment {
 object Javascript extends Javascript {
   implicit def lensCodeMaker: LensCodeMaker[Javascript] = new JsMaker
 
-  implicit def header: Header[Javascript] = name => Source.fromInputStream(getClass.getClassLoader.getResourceAsStream("header.js")).mkString
+  implicit def header: Header[Javascript] = name => Source.fromResource("header.js").mkString
 
   implicit def renderer: Renderer[Javascript] = _ => ""
 

@@ -1,10 +1,9 @@
 package one.xingyi.core.orm
 
-import java.io.{ByteArrayOutputStream, OutputStream}
+import java.io.ByteArrayOutputStream
 
 import one.xingyi.core.UtilsSpec
 import one.xingyi.core.strings.Strings
-import org.scalatest.Matchers
 
 import scala.language.{higherKinds, implicitConversions}
 

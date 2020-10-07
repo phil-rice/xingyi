@@ -14,3 +14,5 @@
 0.5.17 And the composite keys work much better
 0.5.18 Numeric keys and reading from ORM to json
 0.5.20 Better json with ORM
+0.6.0  Cross compilation to 2.12/2.13, removed finatra from this code base to another
+0.6.2 Mustache now can be used with scala 2_13

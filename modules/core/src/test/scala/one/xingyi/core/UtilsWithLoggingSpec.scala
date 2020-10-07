@@ -7,7 +7,8 @@ import one.xingyi.core.logging.NullLoggingAdapter
 import one.xingyi.core.strings.Strings
 import org.mockito.{ArgumentCaptor, Mockito}
 import org.scalatest.concurrent.Eventually
-import org.scalatest.{FlatSpec, FlatSpecLike, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
@@ -18,7 +19,7 @@ trait MockitoSugar {
   def mock[T: ClassTag]: T = Mockito.mock((implicitly[ClassTag[T]]).runtimeClass).asInstanceOf[T]
 }
 
-trait CoreSpec extends FlatSpec with Matchers with Eventually {}
+trait CoreSpec extends AnyFlatSpec with Matchers with Eventually {}
 
 trait UtilsSpec extends CoreSpec with Eventually with MockitoSugar {
 

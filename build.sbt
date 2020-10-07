@@ -2,11 +2,13 @@ import sbt.url
 import sbtpgp._
 
 
-val versions = new {
+lazy val versions = new {
   //  val scala = "2.13.2"
-  val scala = "2.12.11"
+  val scala12 = "2.12.12"
+  val scala13 = "2.13.3"
+  val scala = scala12
   val finatra = "20.4.1"
-  val scalatest = "3.0.8"
+  val scalatest = "3.2.2"
   val seleniumTestSelenium = "1.0.0-M2"
   val selenium = "2.45.0"
   val mockito = "1.10.19"
@@ -14,12 +16,14 @@ val versions = new {
   val play = "2.5.12"
   val scalapact = "2.3.17"
   val junit = "4.12"
-  val json4s = "3.5.3"
-  val mustache = "0.9.5"
+  val json4s = "3.6.10"
+  val mustache = "0.9.6"
+  val supportedScalaVersions = List(scala12, scala13)
 }
 
 lazy val commonSettings = Seq(
-  version := "0.5.20" ,
+  version := "0.6.3-SNAPSHOT",
+  resolvers += Resolver.sonatypeRepo("snapshots"), //for mustache
   organization := "one.xingyi",
   publishMavenStyle := true,
   scalaVersion := versions.scala,
@@ -56,35 +60,8 @@ lazy val publishSettings = commonSettings ++ Seq(
       Some("releases" at nexus + "service/local/staging/deploy/maven2")
   })
 
-lazy val finatraSettings = publishSettings ++ Seq(
-  // https://mvnrepository.com/artifact/org.apache.thrift/libthrift
-  //  libraryDependencies += "org.apache.thrift" % "libthrift" % "0.5.0-1",
-
-  libraryDependencies += "com.twitter" %% "finatra-http" % versions.finatra,
-  libraryDependencies += "com.twitter" %% "finatra-http" % versions.finatra % "test",
-  libraryDependencies += "com.twitter" %% "inject-server" % versions.finatra % "test",
-  libraryDependencies += "com.twitter" %% "inject-app" % versions.finatra % "test",
-  libraryDependencies += "com.twitter" %% "inject-core" % versions.finatra % "test",
-  libraryDependencies += "com.twitter" %% "inject-modules" % versions.finatra % "test",
-  libraryDependencies += "com.google.inject.extensions" % "guice-testlib" % versions.guice % "test",
-  libraryDependencies += "com.twitter" %% "finatra-jackson" % versions.finatra % "test",
-  libraryDependencies += "com.sun.activation" % "javax.activation" % "1.2.0",
-
-  libraryDependencies += "com.twitter" %% "finatra-http" % versions.finatra % "test" classifier "tests",
-  libraryDependencies += "com.twitter" %% "inject-server" % versions.finatra % "test" classifier "tests",
-  libraryDependencies += "com.twitter" %% "inject-app" % versions.finatra % "test" classifier "tests",
-  libraryDependencies += "com.twitter" %% "inject-core" % versions.finatra % "test" classifier "tests",
-  libraryDependencies += "com.twitter" %% "inject-modules" % versions.finatra % "test" classifier "tests",
-  libraryDependencies += "com.google.inject.extensions" % "guice-testlib" % versions.guice % "test" classifier "tests",
-  libraryDependencies += "com.twitter" %% "finatra-jackson" % versions.finatra % "test" classifier "tests"
-)
-
-//lazy val playSettings = publishSettings ++ Seq(
-//  libraryDependencies ++= Seq(jdbc, ehcache, ws, guice)
-//
-//)
 lazy val mustacheSettings = publishSettings ++ Seq(
-  libraryDependencies += "com.github.spullara.mustache.java" % "scala-extensions-2.11" % versions.mustache
+  libraryDependencies += "com.github.spullara.mustache.java" % "compiler" % versions.mustache
 )
 lazy val pactSettings = publishSettings ++ Seq(
   libraryDependencies += "com.itv" %% "scalapact-scalatest" % versions.scalapact % "test",
@@ -109,32 +86,49 @@ lazy val scalatestSettings = publishSettings ++ Seq(
   libraryDependencies += "org.scalatest" %% "scalatest" % versions.scalatest
 )
 
-lazy val seleniumSettings = publishSettings ++ Seq(
+lazy val xmlSettings = publishSettings ++ Seq(
+  libraryDependencies += {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, 12)) => "org.scala-lang.modules" %% "scala-xml" % "1.0.6"
+      case _ => "org.scala-lang.modules" %% "scala-xml" % "1.3.0"
+    }
+  })
+
+lazy val seleniumSettings = xmlSettings ++ Seq(
   libraryDependencies += "org.seleniumhq.selenium" % "selenium-java" % versions.selenium % "test",
   libraryDependencies += "org.scalatestplus" %% "scalatestplus-selenium" % versions.seleniumTestSelenium % "test",
   libraryDependencies += "org.seleniumhq.selenium" % "selenium-chrome-driver" % versions.selenium % "test",
-  libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.3.0" % "test"
 )
+
+
+lazy val normalCrossScala = Seq(crossScalaVersions := versions.supportedScalaVersions)
+lazy val justScala12 = Seq(crossScalaVersions := List(versions.scala12))
+
 lazy val core = (project in file("modules/core")).
+  settings(normalCrossScala: _*).
   settings(publishSettings: _*).
   settings(Test / publishArtifact := true)
 
 
 val apachejdbc = (project in file("modules/apachejdbc")).
   dependsOn(core % "test->test;compile->compile").
+  settings(normalCrossScala: _*).
   settings(apacheDbcp2Settings)
+
 val scientist = (project in file("modules/scientist")).
   dependsOn(core % "test->test;compile->compile").
+  settings(normalCrossScala: _*).
   settings(apacheDbcp2Settings)
 
 
-val javaServer = (project in file("modules/javaserver")).settings(publishSettings)
-
-
+val javaServer = (project in file("modules/javaserver")).
+  settings(normalCrossScala: _*).
+  settings(publishSettings)
 
 lazy val test = (project in file("modules/test")).
+  settings(normalCrossScala: _*).
   settings(publishSettings: _*).
-  settings(parallelExecution in Test := false).
+  settings(publishArtifact := false, parallelExecution in Test := false).
   dependsOn(core % "test->test;compile->compile").
   dependsOn(apachejdbc % "test->test;compile->compile").
   dependsOn(json4s % "test->test;compile->compile").
@@ -142,6 +136,7 @@ lazy val test = (project in file("modules/test")).
   aggregate(core)
 
 lazy val sampleServer = (project in file("examples/sampleServer")).
+  settings(normalCrossScala: _*).
   settings(publishSettings: _*).
   settings(publishArtifact := false).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
@@ -150,25 +145,26 @@ lazy val sampleServer = (project in file("examples/sampleServer")).
   dependsOn(json4s)
 
 lazy val mustache = (project in file("modules/mustache")).
+  settings(normalCrossScala: _*).
   settings(mustacheSettings).
-  dependsOn(core % "test->test;compile->compile").aggregate(core)
-
-lazy val finatra = (project in file("modules/finatra")).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
-  settings(finatraSettings: _*)
+  dependsOn(json4s % "test->test").aggregate(core)
 
 lazy val json4s = (project in file("modules/json4s")).
+  settings(normalCrossScala: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   settings(json4sSettings: _*)
 
 lazy val sample = (project in file("examples/sample")).
+  settings(normalCrossScala: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
-  settings(publishArtifact := false).
+  //  settings(publishArtifact := false).
   settings(pactSettings: _*)
 
 
 lazy val scriptModel1 = (project in file("examples/scriptModel1")).
+  settings(normalCrossScala: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(json4s % "test->test;compile->compile").
   //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
@@ -176,6 +172,7 @@ lazy val scriptModel1 = (project in file("examples/scriptModel1")).
   settings(pactSettings: _*)
 
 lazy val scriptModel2 = (project in file("examples/scriptModel2")).
+  settings(normalCrossScala: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(json4s % "test->test;compile->compile").
   //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
@@ -183,6 +180,7 @@ lazy val scriptModel2 = (project in file("examples/scriptModel2")).
   settings(pactSettings: _*)
 
 lazy val scriptModel3 = (project in file("examples/scriptModel3")).
+  settings(normalCrossScala: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(json4s % "test->test;compile->compile").
   //  dependsOn(tagless % "test->test;compile->compile").aggregate(tagless).
@@ -190,6 +188,7 @@ lazy val scriptModel3 = (project in file("examples/scriptModel3")).
   settings(pactSettings: _*)
 
 lazy val scriptBackendShared = (project in file("examples/scriptBackendShared")).
+  settings(justScala12).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(scriptModel1 % "test->test;compile->compile").aggregate(scriptModel1).
   dependsOn(json4s % "test->test;compile->compile").
@@ -198,6 +197,7 @@ lazy val scriptBackendShared = (project in file("examples/scriptBackendShared"))
   settings(pactSettings: _*)
 
 lazy val scriptBackend1 = (project in file("examples/scriptBackend1")).
+  settings(justScala12).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(scriptBackendShared % "test->test;compile->compile").aggregate(scriptBackendShared).
   dependsOn(scriptModel1 % "test->test;compile->compile").aggregate(scriptModel1).
@@ -207,6 +207,7 @@ lazy val scriptBackend1 = (project in file("examples/scriptBackend1")).
   settings(pactSettings: _*)
 
 lazy val scriptBackend2 = (project in file("examples/scriptBackend2")).
+  settings(justScala12).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(scriptBackendShared % "test->test;compile->compile").aggregate(scriptBackendShared).
   dependsOn(scriptModel2 % "test->test;compile->compile").aggregate(scriptModel2).
@@ -216,6 +217,7 @@ lazy val scriptBackend2 = (project in file("examples/scriptBackend2")).
   settings(pactSettings: _*)
 
 lazy val scriptBackend3 = (project in file("examples/scriptBackend3")).
+  settings(justScala12).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(scriptBackendShared % "test->test;compile->compile").aggregate(scriptBackendShared).
   dependsOn(scriptModel3 % "test->test;compile->compile").aggregate(scriptModel3).
@@ -225,6 +227,7 @@ lazy val scriptBackend3 = (project in file("examples/scriptBackend3")).
   settings(pactSettings: _*)
 
 lazy val scriptWebsite = (project in file("examples/scriptWebsite")).
+  settings(justScala12).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(json4s % "test->test;compile->compile").
   dependsOn(mustache % "test->test;compile->compile").
@@ -234,6 +237,7 @@ lazy val scriptWebsite = (project in file("examples/scriptWebsite")).
   settings(pactSettings: _*)
 
 lazy val scriptTest = (project in file("examples/scriptTest")).
+  settings(normalCrossScala: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core).
   dependsOn(scriptBackend1 % "test->test;compile->compile").aggregate(scriptBackend1).
   dependsOn(scriptBackend2 % "test->test;compile->compile").aggregate(scriptBackend2).
@@ -244,13 +248,19 @@ lazy val scriptTest = (project in file("examples/scriptTest")).
   settings(seleniumSettings: _*).
   settings(publishSettings: _*)
 
-lazy val finatraSample = (project in file("examples/finatraSample")).
-  dependsOn(core % "test->test;compile->compile").aggregate(core).
-  dependsOn(finatra % "test->test;compile->compile").aggregate(finatra).
-  dependsOn(sample % "test->test;compile->compile").aggregate(sample).
-  dependsOn(json4s).
-  settings(publishArtifact := false).
-  settings(publishSettings: _*)
+//lazy val finatra = (project in file("modules/finatra")).
+//  settings(justFinatraCrossScala: _*).
+//  dependsOn(core % "test->test;compile->compile").aggregate(core).
+//  settings(finatraSettings: _*)
+//
+//lazy val finatraSample = (project in file("examples/finatraSample")).
+//  settings(justFinatraCrossScala: _*).
+//  dependsOn(core % "test->test;compile->compile").aggregate(core).
+//  dependsOn(finatra % "test->test;compile->compile").aggregate(finatra).
+//  dependsOn(sample % "test->test;compile->compile").aggregate(sample).
+//  dependsOn(json4s).
+//  settings(publishArtifact := false).
+//  settings(publishSettings: _*)
 
 //val experimental = (project in file("modules/experimental")).
 //  settings(publishSettings).
@@ -260,19 +270,20 @@ lazy val finatraSample = (project in file("examples/finatraSample")).
 //  )
 
 lazy val scripts = (project in file("modules/scripts")).
+  settings(normalCrossScala: _*).
   settings(publishSettings: _*).
   dependsOn(core % "test->test;compile->compile").aggregate(core)
 
 
 val xingYi = (project in file(".")).
   settings(publishSettings).
-  settings(publishArtifact := false).
+  settings(publishArtifact := false, crossScalaVersions := Nil).
   aggregate(
     apachejdbc, //
     core, //
-    finatra, //
+    //    finatra, //
     mustache, //
-    finatraSample,
+    //    finatraSample,
     scriptBackend1,
     scriptBackend2,
     scriptBackend3,

@@ -3,6 +3,8 @@ package one.xingyi.core.map
 
 import one.xingyi.core.builder.HasId
 
+import scala.collection.mutable
+
 object Maps {
 
   def addTo[K, V](map: Map[K, Seq[V]], k: K, v: V) = (map + (k -> map.get(k).fold(Seq(v))(seq => seq ++ Seq(v))))
@@ -32,4 +34,21 @@ object Maps {
     def toMapOfLists: Map[K, List[V]] = list.foldLeft[Map[K, List[V]]](Map()) { case (acc, kv) => acc.addToList(kv) }
   }
 
+  def toJavaRecursively(a: Any): AnyRef = a match {
+    case v: Map[_, _] => toJavaMapRecursively(v)
+    case v: List[_] => toJavaListRecursively(v)
+    case _ => a.asInstanceOf[AnyRef]
+  }
+
+  def toJavaListRecursively(list: List[_]): java.util.List[AnyRef] = {
+    val result = new java.util.ArrayList[Object](list.size)
+    list.foreach(a => result.add(toJavaRecursively(a)))
+    result
+  }
+
+  def toJavaMapRecursively(map: Map[_, _]): java.util.Map[String, Object] = {
+    val result = new java.util.HashMap[String, Object](map.size)
+    map.foreach(kv => result.put(kv._1.toString, toJavaRecursively(kv._2)))
+    result
+  }
 }

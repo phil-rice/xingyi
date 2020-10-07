@@ -2,14 +2,14 @@
 package one.xingyi.core.databaseService
 
 import javax.sql.DataSource
+import one.xingyi.core.UtilsSpec
 import one.xingyi.core.monad.{IdentityMonad, Monad}
 import org.apache.commons.dbcp2.BasicDataSource
-import org.scalatest.{FlatSpec, Matchers}
 
 import scala.language.{higherKinds, implicitConversions}
 import scala.util.Success
 
-class KleisliToDatabaseIntegrationTest extends FlatSpec with Matchers {
+class KleisliToDatabaseIntegrationTest extends UtilsSpec {
   lazy val dataSource: DataSource = {
     val bds = new BasicDataSource
     bds.setDriverClassName("org.h2.Driver")

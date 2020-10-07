@@ -1,0 +1,6 @@
+Mustache:
+The chosen library doesn't work with scala 2-13
+
+
+FastOrm
+The NumericKeys approach doesn't work that well when the json doesn't match to the database well

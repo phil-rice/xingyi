@@ -7,7 +7,7 @@ import one.xingyi.core.json.{JsonMaps, JsonObject, JsonWriter}
 abstract class AbstractMustacheSpec[J: JsonWriter] extends UtilsSpec {
 
   case class TestForMustache(one: String, two: Int)
-  val jsonMap = JsonMaps(JsonObject("one" -> "111", "two" -> "map"))
+  val jsonMap: JsonMaps[J] = JsonMaps(JsonObject("one" -> "111", "two" -> "map"))
   behavior of "RawMustache"
 
   it should "allow access to a template with a scala object" in {

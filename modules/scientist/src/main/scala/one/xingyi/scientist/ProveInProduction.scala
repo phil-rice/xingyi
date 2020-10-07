@@ -50,7 +50,7 @@ object ProveInProduction {
     ProveInProduction[M, Fail, Req, Res]
 }
 
-case class ProveInProduction[M[_], Fail, Req, Res](implicit monad: MonadCanFail[M, Fail], failer: TwoServiceFailer[M, Fail], resultComparator: ResultComparator[Req, Res], cleanResultForDisplay: CleanResultForDisplay[Res]) extends TwoServiceProcessor[M, Fail, Req, Res] {
+case class ProveInProduction[M[_], Fail, Req, Res]()(implicit monad: MonadCanFail[M, Fail], failer: TwoServiceFailer[M, Fail], resultComparator: ResultComparator[Req, Res], cleanResultForDisplay: CleanResultForDisplay[Res]) extends TwoServiceProcessor[M, Fail, Req, Res] {
   override def selectAndTransformRequests: Req => M[(Option[Req], Option[Req])] = { req: Req =>
     val some: Option[Req] = Some(req)
     (some, some).liftM

@@ -6,7 +6,7 @@ import one.xingyi.core.optics.Lens
 import one.xingyi.core.script.{Domain,DomainMaker, IXingYi,ServerDomain}
 
 object Model1Defn extends ServerDomain{
-  def lens=List("lens_person_name_string","lens_person_telephonenumber_telephonenumber","lens_person_line2_string","lens_person_line1_string","lens_telephonenumber_number_string")
+  def lens=List("lens_person_name_string","lens_person_telephonenumber_telephonenumber","lens_person_line1_string","lens_person_line2_string","lens_telephonenumber_number_string")
 }
 
 case class TelephoneNumber (mirror: Object) extends Domain with one.xingyi.scriptModel1.ITelephoneNumber
@@ -40,11 +40,11 @@ class PersonTelephoneOps(implicit val xingYi: IXingYi) extends IPersonTelephoneO
 }
 
 object PersonLine12Ops {
-   implicit def hasHeader: IXingYiHeaderFor[PersonLine12Ops] =  () => List("lens_person_line2_string","lens_person_line1_string")
+   implicit def hasHeader: IXingYiHeaderFor[PersonLine12Ops] =  () => List("lens_person_line1_string","lens_person_line2_string")
 }
 class PersonLine12Ops(implicit val xingYi: IXingYi) extends IPersonLine12Ops[Lens, Person] {
-   def line2Lens = xingYi.stringLens[Person]("lens_person_line2_string")
    def line1Lens = xingYi.stringLens[Person]("lens_person_line1_string")
+   def line2Lens = xingYi.stringLens[Person]("lens_person_line2_string")
 }
 
 object TelephoneNumberOps {
