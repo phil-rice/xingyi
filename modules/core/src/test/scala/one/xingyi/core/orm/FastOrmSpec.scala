@@ -195,40 +195,40 @@ abstract class AbstractFastOrmWithSingleLinkingKeysSpec[M[_] : ClosableM, J: Jso
     val factory = new OrmDataFactoryForMainEntity()
     setupPerson(ds) {
       val data: Map[OrmEntity, Array[List[Any]]] = FastReader.getOneBlockOfDataFromDs(ds, mainEntityForKeys.entity, 2)(0).map { case (e, list) => (e -> list.toArray[List[Any]]) }
-      val populateFn = new NumericKeyPopulator[SchemaForTest](numericKeysForPerson, tablesAndFieldsAndPaths,mainEntityForKeys.entity, mapForNext)
+      val populateFn = new NumericKeyPopulator[SchemaForTest](numericKeysForPerson, tablesAndFieldsAndPaths, mainEntityForKeys.entity, mapForNext)
       val mainOrmData: MainOrmData[Array[Any], MainEntity] = factory(mainEntityForKeys.entity, () => numericKeysForPerson.makeAndSetupArray, data, populateFn)
       val List(philArray, bobArray) = mainOrmData.applyAll().toList
       checkArray(numericKeysForPerson, philArray)(
-        """0  = name:Phil {Person/name}
-          |1/OneChild
-          |1.0  = name:Employer1 {Employer/name}
-          |2/Many(2)
-          |2[0].0  = add:Phils second address {Address/add}
-          |2[1].0  = add:Phils first address {Address/add}
-          |3/Many(0)
-          |4/OneChild
-          |4.0  = email:philsEmail {ContactEmail/email}""".stripMargin)
-      checkArray(numericKeysForPerson, bobArray)(
-        """0  = name:Bob {Person/name}
-          |1/OneChild
-          |1.0  = name:Employer2 {Employer/name}
+        """0/OneChild
+          |0.0  = name:Employer1 {Employer/name}
+          |1/Many(2)
+          |1[0].0  = add:Phils second address {Address/add}
+          |1[1].0  = add:Phils first address {Address/add}
           |2/Many(0)
-          |3/Many(0)
-          |4/OneChild
-          |4.0  = email:bobsEmail {ContactEmail/email}""".stripMargin)
+          |3/OneChild
+          |3.0  = email:philsEmail {ContactEmail/email}
+          |4  = name:Phil {Person/name}""".stripMargin)
+      checkArray(numericKeysForPerson, bobArray)(
+        """0/OneChild
+          |0.0  = name:Employer2 {Employer/name}
+          |1/Many(0)
+          |2/Many(0)
+          |3/OneChild
+          |3.0  = email:bobsEmail {ContactEmail/email}
+          |4  = name:Bob {Person/name}""".stripMargin)
     }
   }
   it should "stream json data using ormData" in {
     val factory = new OrmDataFactoryForMainEntity()
     setupPerson(ds) {
       val data: Map[OrmEntity, Array[List[Any]]] = FastReader.getOneBlockOfDataFromDs(ds, mainEntityForKeys.entity, 2)(0).map { case (e, list) => (e -> list.toArray[List[Any]]) }
-      val populateFn = new NumericKeyPopulator[SchemaForTest](numericKeysForPerson, tablesAndFieldsAndPaths,mainEntityForKeys.entity, mapForNext)
+      val populateFn = new NumericKeyPopulator[SchemaForTest](numericKeysForPerson, tablesAndFieldsAndPaths, mainEntityForKeys.entity, mapForNext)
       val mainOrmData: MainOrmData[Array[Any], MainEntity] = factory(mainEntityForKeys.entity, () => numericKeysForPerson.makeAndSetupArray, data, populateFn)
       val stream = new ByteArrayOutputStream()
       mainOrmData.applyAll().foreach((ar: Array[Any]) => numericKeysForPerson.putJson(ar, stream))
       checkStrings(stream.toString(),
-        """{"Person/name":"name:Phil","employer":{"Employer/name":"name:Employer1"},"address":[{"Address/add":"add:Phils first address"},{"Address/add":"add:Phils second address"}],"phone":[],"email":{"ContactEmail/email":"email:philsEmail"}}
-          |{"Person/name":"name:Bob","employer":{"Employer/name":"name:Employer2"},"address":[],"phone":[],"email":{"ContactEmail/email":"email:bobsEmail"}}""".stripMargin)
+        """{"employer":{"Employer/name":"name:Employer1"},"address":[{"Address/add":"add:Phils first address"},{"Address/add":"add:Phils second address"}],"phone":[],"email":{"ContactEmail/email":"email:philsEmail"},"Person/name":"name:Phil"}
+          |{"employer":{"Employer/name":"name:Employer2"},"address":[],"phone":[],"email":{"ContactEmail/email":"email:bobsEmail"},"Person/name":"name:Bob"}""".stripMargin)
     }
   }
 }

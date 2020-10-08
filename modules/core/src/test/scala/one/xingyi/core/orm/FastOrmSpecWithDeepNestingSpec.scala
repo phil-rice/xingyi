@@ -23,7 +23,7 @@ abstract class AbtractFastOrmSpecWithDeepNestingSpec[M[_] : ClosableM, J: JsonPa
     val schema3 = SchemaItemWithChildren("t3", s3, List[SchemaForTest[_]]("t3/h1", schema4))
     val schema2 = SchemaItemWithChildren("t2", s2, List("t2/g1", "t2/g2", schema3))
     val schemaListFort1: List[SchemaForTest[_]] = List[SchemaForTest[_]]("t1/f1", "t1/f2", schema2)
-    val keysForT1: OrmKeys[SchemaForTest] = OrmKeys(schemaListFort1)
+    val keysForT1: OrmKeys[SchemaForTest] = OrmKeys.fromList(schemaListFort1)
     fn(keysForT1, schemaListFort1, schema2, schema3, schema4)
   }
 
@@ -52,7 +52,8 @@ abstract class AbtractFastOrmSpecWithDeepNestingSpec[M[_] : ClosableM, J: JsonPa
 
         val stream = new ByteArrayOutputStream()
         mainEntity.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).foreach((ar: Array[Any]) => keysForT1.putJson(ar, stream))
-        stream.toString shouldBe """{"t1/f1":"f1:t1v1","t1/f2":"f2:t1v2","t2":[{"t2/g1":"g1:t2v1","t2/g2":"g2:t2v2","t3":[{"t3/h1":"h1:t3v1","t4":[{"t4/i1":"i1:t4v1"}]}]}]}"""
+        checkStrings(stream.toString,
+          """{"t2":[{"t3":[{"t4":[{"t4/i1":"i1:t4v1"}],"t3/h1":"h1:t3v1"}],"t2/g1":"g1:t2v1","t2/g2":"g2:t2v2"}],"t1/f1":"f1:t1v1","t1/f2":"f2:t1v2"}""".stripMargin)
       }
     }
   }
@@ -77,8 +78,8 @@ abstract class AbtractFastOrmSpecWithDeepNestingSpec[M[_] : ClosableM, J: JsonPa
         executeIt(s"""insert into  t3 (t3id, childId, h1 )               values (3, 4, 't3v1');""")
         executeIt(s"""insert into  t4 (t4id, i1 )                        values (4,    't4v1');""")
 
-        mainEntity.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).map(keysForT1.toJson) shouldBe
-          List("""{"t1/f1":"f1:t1v1","t1/f2":"f2:t1v2","t2":{"t2/g1":"g1:t2v1","t2/g2":"g2:t2v2","t3":{"t3/h1":"h1:t3v1","t4":{"t4/i1":"i1:t4v1"}}}}""")
+        checkStrings(mainEntity.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).map(keysForT1.toJson).head,
+          """{"t2":{"t3":{"t4":{"t4/i1":"i1:t4v1"},"t3/h1":"h1:t3v1"},"t2/g1":"g1:t2v1","t2/g2":"g2:t2v2"},"t1/f1":"f1:t1v1","t1/f2":"f2:t1v2"}""")
       }
     }
   }
@@ -106,8 +107,8 @@ abstract class AbtractFastOrmSpecWithDeepNestingSpec[M[_] : ClosableM, J: JsonPa
         executeIt(s"""insert into  t3 (t3id,                    h1 )       values (3,           't3v1');""")
         executeIt(s"""insert into  t4 (t4id, parentId,          i1 )       values (4, 3,        't4v1');""")
 
-        mainEntity.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).map(keysForT1.toJson) shouldBe
-          List("""{"t1/f1":"f1:t1v1","t1/f2":"f2:t1v2","t2":[{"t2/g1":"g1:t2v1","t2/g2":"g2:t2v2","t3":{"t3/h1":"h1:t3v1","t4":[{"t4/i1":"i1:t4v1"}]}}]}""")
+        checkStrings(mainEntity.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).map(keysForT1.toJson).head,
+          """{"t2":[{"t3":{"t4":[{"t4/i1":"i1:t4v1"}],"t3/h1":"h1:t3v1"},"t2/g1":"g1:t2v1","t2/g2":"g2:t2v2"}],"t1/f1":"f1:t1v1","t1/f2":"f2:t1v2"}""")
       }
     }
   }

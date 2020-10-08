@@ -65,7 +65,7 @@ trait SharedOrmFixture extends OrmKeyFixture {
       SchemaItemWithChildren("email", false, List[SchemaForTest[_]]("ContactEmail/email"))
     )
   }
-  val numericKeysForPerson: OrmKeys[SchemaForTest] = OrmKeys(schemaForPerson)
+  val numericKeysForPerson: OrmKeys[SchemaForTest] = OrmKeys.fromList(schemaForPerson)
 }
 
 abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends SharedOrmFixture with OrmKeyFixture with DatabaseSourceFixture[DS] with Jdbc {
@@ -102,39 +102,39 @@ abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSou
   behavior of getClass.getSimpleName + " with ormFactory"
 
   it should "checkAssumptions and structure" in {
-    checkNumericKeys(numericKeysForPerson)(
-      """Person/name (),0 NoChildren
-        |employer (),1 OneChild
-        | Employer/name (1),0 NoChildren
-        |address (),2 ManyChildren
-        | Address/add (2),0 NoChildren
-        |phone (),3 ManyChildren
-        | Phone/phoneNo (3),0 NoChildren
-        |email (),4 OneChild
-        | ContactEmail/email (4),0 NoChildren""".stripMargin)
+    checkKeys(numericKeysForPerson)(
+      """employer:O(),0 OneChild
+        | Employer/name:S(0),0 NoChildren
+        |address:O(),1 ManyChildren
+        | Address/add:S(1),0 NoChildren
+        |phone:O(),2 ManyChildren
+        | Phone/phoneNo:S(2),0 NoChildren
+        |email:O(),3 OneChild
+        | ContactEmail/email:S(3),0 NoChildren
+        |Person/name:S(),4 NoChildren""".stripMargin)
     val ar = numericKeysForPerson.makeAndSetupArray
     checkArray(numericKeysForPerson, ar)(
-      """0  = null {Person/name}
-        |1/OneChild
-        |1.0  = null {Employer/name}
+      """0/OneChild
+        |0.0  = null {Employer/name}
+        |1/Many(0)
         |2/Many(0)
-        |3/Many(0)
-        |4/OneChild
-        |4.0  = null {ContactEmail/email}""".stripMargin)
+        |3/OneChild
+        |3.0  = null {ContactEmail/email}
+        |4  = null {Person/name}""".stripMargin)
 
     val tablesAndFieldsAndPaths: TablesAndFieldsAndPaths = EntityAndPath(numericKeysForPerson)
 
     checkStrings(tablesAndFieldsAndPaths.prettyPrint.mkString("\n"),
       """Address
-        |   0 add/varchar(255) - (2) - 0
+        |   0 add/varchar(255) - (1) - 0
         |ContactEmail
-        |   0 email/varchar(255) - (4) - 0
+        |   0 email/varchar(255) - (3) - 0
         |Employer
-        |   0 name/varchar(255) - (1) - 0
+        |   0 name/varchar(255) - (0) - 0
         |Person
-        |   0 name/varchar(255) - () - 0
+        |   0 name/varchar(255) - () - 4
         |Phone
-        |   0 phoneNo/varchar(255) - (3) - 0""".stripMargin)
+        |   0 phoneNo/varchar(255) - (2) - 0""".stripMargin)
   }
 
   lazy val tablesAndFieldsAndPaths: TablesAndFieldsAndPaths = EntityAndPath(numericKeysForPerson)
@@ -159,40 +159,40 @@ abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSou
       val arrayForRow0 = mainEntityForKeys.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).toList
       maker.createdCount shouldBe 2
       checkArray(numericKeysForPerson, arrayForRow0(0))(
-        """0  = name:Phil {Person/name}
-          |1/OneChild
-          |1.0  = name:Employer1 {Employer/name}
-          |2/Many(2)
-          |2[0].0  = add:Phils second address {Address/add}
-          |2[1].0  = add:Phils first address {Address/add}
-          |3/Many(0)
-          |4/OneChild
-          |4.0  = email:philsEmail {ContactEmail/email}""".stripMargin)
-      checkArray(numericKeysForPerson, arrayForRow0(1))(
-        """0  = name:Bob {Person/name}
-          |1/OneChild
-          |1.0  = name:Employer2 {Employer/name}
+        """0/OneChild
+          |0.0  = name:Employer1 {Employer/name}
+          |1/Many(2)
+          |1[0].0  = add:Phils second address {Address/add}
+          |1[1].0  = add:Phils first address {Address/add}
           |2/Many(0)
-          |3/Many(0)
-          |4/OneChild
-          |4.0  = email:bobsEmail {ContactEmail/email}""".stripMargin)
+          |3/OneChild
+          |3.0  = email:philsEmail {ContactEmail/email}
+          |4  = name:Phil {Person/name}""".stripMargin)
+      checkArray(numericKeysForPerson, arrayForRow0(1))(
+        """0/OneChild
+          |0.0  = name:Employer2 {Employer/name}
+          |1/Many(0)
+          |2/Many(0)
+          |3/OneChild
+          |3.0  = email:bobsEmail {ContactEmail/email}
+          |4  = name:Bob {Person/name}""".stripMargin)
       checkArray(numericKeysForPerson, arrayForRow0(2))(
-        """0  = name:Jill {Person/name}
-          |1/OneChild
-          |1.0  = name:Employer1 {Employer/name}
-          |2/Many(1)
-          |2[0].0  = add:Jills first address {Address/add}
-          |3/Many(0)
-          |4/OneChild
-          |4.0  = email:jillsEmail {ContactEmail/email}""".stripMargin)
+        """0/OneChild
+          |0.0  = name:Employer1 {Employer/name}
+          |1/Many(1)
+          |1[0].0  = add:Jills first address {Address/add}
+          |2/Many(0)
+          |3/OneChild
+          |3.0  = email:jillsEmail {ContactEmail/email}
+          |4  = name:Jill {Person/name}""".stripMargin)
       val stream = new ByteArrayOutputStream()
       maker.createdCount shouldBe 2
       mainEntityForKeys.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).foreach((ar: Array[Any]) => numericKeysForPerson.putJson(ar, stream))
       maker.createdCount shouldBe 3
       checkStrings(stream.toString(),
-        """{"Person/name":"name:Phil","employer":{"Employer/name":"name:Employer1"},"address":[{"Address/add":"add:Phils first address"},{"Address/add":"add:Phils second address"}],"phone":[],"email":{"ContactEmail/email":"email:philsEmail"}}
-          |{"Person/name":"name:Bob","employer":{"Employer/name":"name:Employer2"},"address":[],"phone":[],"email":{"ContactEmail/email":"email:bobsEmail"}}
-          |{"Person/name":"name:Jill","employer":{"Employer/name":"name:Employer1"},"address":[{"Address/add":"add:Jills first address"}],"phone":[],"email":{"ContactEmail/email":"email:jillsEmail"}}""".stripMargin)
+        """{"employer":{"Employer/name":"name:Employer1"},"address":[{"Address/add":"add:Phils first address"},{"Address/add":"add:Phils second address"}],"phone":[],"email":{"ContactEmail/email":"email:philsEmail"},"Person/name":"name:Phil"}
+                    {"employer":{"Employer/name":"name:Employer2"},"address":[],"phone":[],"email":{"ContactEmail/email":"email:bobsEmail"},"Person/name":"name:Bob"}
+                    {"employer":{"Employer/name":"name:Employer1"},"address":[{"Address/add":"add:Jills first address"}],"phone":[],"email":{"ContactEmail/email":"email:jillsEmail"},"Person/name":"name:Jill"}""")
       maker.createdCount shouldBe 3
     }
   }
@@ -208,40 +208,40 @@ abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSou
       val arrayForRow0 = mainEntityForKeys.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).toList
       maker.createdCount shouldBe 2
       checkArray(numericKeysForPerson, arrayForRow0(0))(
-        """0  = name:Phil {Person/name}
-          |1/OneChild
-          |1.0  = name:Employer1 {Employer/name}
-          |2/Many(2)
-          |2[0].0  = add:Phils second address {Address/add}
-          |2[1].0  = add:Phils first address {Address/add}
-          |3/Many(0)
-          |4/OneChild
-          |4.0  = email:philsEmail {ContactEmail/email}""".stripMargin)
-      checkArray(numericKeysForPerson, arrayForRow0(1))(
-        """0  = name:Bob {Person/name}
-          |1/OneChild
-          |1.0  = name:Employer2 {Employer/name}
+        """0/OneChild
+          |0.0  = name:Employer1 {Employer/name}
+          |1/Many(2)
+          |1[0].0  = add:Phils second address {Address/add}
+          |1[1].0  = add:Phils first address {Address/add}
           |2/Many(0)
-          |3/Many(0)
-          |4/OneChild
-          |4.0  = email:bobsEmail {ContactEmail/email}""".stripMargin)
+          |3/OneChild
+          |3.0  = email:philsEmail {ContactEmail/email}
+          |4  = name:Phil {Person/name}""".stripMargin)
+      checkArray(numericKeysForPerson, arrayForRow0(1))(
+        """0/OneChild
+          |0.0  = name:Employer2 {Employer/name}
+          |1/Many(0)
+          |2/Many(0)
+          |3/OneChild
+          |3.0  = email:bobsEmail {ContactEmail/email}
+          |4  = name:Bob {Person/name}""".stripMargin)
       checkArray(numericKeysForPerson, arrayForRow0(2))(
-        """0  = name:Jill {Person/name}
-          |1/OneChild
-          |1.0  = name:Employer1 {Employer/name}
-          |2/Many(1)
-          |2[0].0  = add:Jills first address {Address/add}
-          |3/Many(0)
-          |4/OneChild
-          |4.0  = email:jillsEmail {ContactEmail/email}""".stripMargin)
+        """0/OneChild
+          |0.0  = name:Employer1 {Employer/name}
+          |1/Many(1)
+          |1[0].0  = add:Jills first address {Address/add}
+          |2/Many(0)
+          |3/OneChild
+          |3.0  = email:jillsEmail {ContactEmail/email}
+          |4  = name:Jill {Person/name}""".stripMargin)
       val stream = new ByteArrayOutputStream()
       maker.createdCount shouldBe 2
       mainEntityForKeys.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).foreach((ar: Array[Any]) => numericKeysForPerson.putJson(ar, stream))
       maker.createdCount shouldBe 3
       checkStrings(stream.toString(),
-        """{"Person/name":"name:Phil","employer":{"Employer/name":"name:Employer1"},"address":[{"Address/add":"add:Phils first address"},{"Address/add":"add:Phils second address"}],"phone":[],"email":{"ContactEmail/email":"email:philsEmail"}}
-          |{"Person/name":"name:Bob","employer":{"Employer/name":"name:Employer2"},"address":[],"phone":[],"email":{"ContactEmail/email":"email:bobsEmail"}}
-          |{"Person/name":"name:Jill","employer":{"Employer/name":"name:Employer1"},"address":[{"Address/add":"add:Jills first address"}],"phone":[],"email":{"ContactEmail/email":"email:jillsEmail"}}""".stripMargin)
+        """{"employer":{"Employer/name":"name:Employer1"},"address":[{"Address/add":"add:Phils first address"},{"Address/add":"add:Phils second address"}],"phone":[],"email":{"ContactEmail/email":"email:philsEmail"},"Person/name":"name:Phil"}
+          |{"employer":{"Employer/name":"name:Employer2"},"address":[],"phone":[],"email":{"ContactEmail/email":"email:bobsEmail"},"Person/name":"name:Bob"}
+          |{"employer":{"Employer/name":"name:Employer1"},"address":[{"Address/add":"add:Jills first address"}],"phone":[],"email":{"ContactEmail/email":"email:jillsEmail"},"Person/name":"name:Jill"}""".stripMargin)
       maker.createdCount shouldBe 3
     }
   }

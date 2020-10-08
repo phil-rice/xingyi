@@ -2,10 +2,13 @@ package one.xingyi.core.orm
 
 import java.io.{ByteArrayOutputStream, OutputStream}
 
+import one.xingyi.core.aggregate.HasChildren
 import one.xingyi.core.orm.SchemaMapKey._
 import one.xingyi.core.strings.Strings
 
 import scala.annotation.implicitNotFound
+import scala.collection.generic.CanBuildFrom
+import scala.collection.immutable.List
 import scala.language.higherKinds
 
 //OK This code is imperative, and mutable...
@@ -147,6 +150,7 @@ object OrmKeysToJson {
         while (i < ar.length) {
           if (i != 0) stream.write(',')
           val ormKey = keys.list(i)
+
           JsonToStream.putEscapedWithQuotes(ormKey.key, stream)
           stream.write(':')
           ar(i) match {
@@ -169,53 +173,6 @@ object OrmKeysToJson {
       }
     }
   }
-  //  implicit def ormKeysToJsonViaSchemaFirst[Schema[_]](implicit jsonToStreamFor: JsonToStreamFor[Schema]): OrmKeysToJson[Schema] = {
-  //    new OrmKeysToJson[Schema] {
-  //      override def putJson(ormKeys: OrmKeys[Schema], ar: Array[Any], stream: OutputStream): Unit = {
-  //
-  //      }
-  //      override def putJsonrecurse(ormKeys: OrmKeys[Schema], list: List[OrmKey[Schema, _]], ar: Array[Any], stream: OutputStream): Unit = {
-  //        var i = 0
-  //        val keys = list.toArray
-  //        stream.write('{')
-  //        while (i < keys.length) {
-  //          if (i != 0) stream.write(',')
-  //          val ormKey = keys(i)
-  //          JsonToStream.putEscapedWithQuotes(ormKey.key, stream)
-  //          stream.write(':')
-  //          ormKey.arity match {
-  //            case z: Zero[Schema] =>
-  //
-  //              val prim: Array[Any] = ormKey.paths.map(pi => ormKeys.findLastArray(pi.path, ar)(pi.index))
-  //              jsonToStreamFor.putToJson(ormKey.t).put(prim, stream)
-  //            case o: AlwaysOne[Schema] => putJsonrecurse(ormKeys, ormKey.children.list, ar, stream)
-  //            case o: ZeroOrMore[Schema] =>
-  //              //This is just plain difficult
-  //              //we need to know which list to recurse over.
-  //
-  //
-  //              putJsonrecurse(ormKeys, ormKey.children.list, ar, stream)
-  //}
-  //          ar(i) match {
-  //            case a: Array[Any] => keys.list(i).children.putJson(a, stream)(ormKeysToJson)
-  //            case (head: Array[Any]) :: tail =>
-  //              stream.write('[')
-  //              tail.reverse.foreach { case a: Array[Any] =>
-  //                keys.list(i).children.putJson(a, stream)(ormKeysToJson)
-  //                stream.write(',')
-  //              }
-  //              keys.list(i).children.putJson(head, stream)(ormKeysToJson)
-  //              stream.write(']')
-  //            case Nil => stream.write('['); stream.write(']')
-  //            case null => JsonToStream.putUnescaped(stream, "null")
-  //          }
-  //          i += 1
-  //        }
-  //        stream.write('}')
-  //      }
-  //    }
-  //
-  //  }
 
 
 }
@@ -244,10 +201,15 @@ object OrmKeysToJson {
  * printArray prints the array of data retrieved from FastOrm in a way helpful for tests
  *
  * */
-case class OrmKeys[Schema[_]](list: List[OrmKey[Schema, _]]) {
+case class OrmKeys[Schema[_]](links: List[OrmKey[Schema, _]], objects: List[OrmKey[Schema, _]], simple: List[OrmKey[Schema, _]]) {
+  val list = links ::: objects ::: simple
+
   def allKeys: List[OrmKey[Schema, _]] = list.flatMap { key => key :: key.children.allKeys }
   def findForT[T](t: Schema[T]) = allKeys.find(_.t == t)
-  def prettyPrint(indent: String) = list.map(_.prettyPrint(indent)).mkString("\n")
+  def prettyPrint(indent: String) =
+    (links.map(_.prettyPrint(indent, "L")) :::
+      objects.map(_.prettyPrint(indent, "O")) :::
+      simple.map(_.prettyPrint(indent, "S"))).mkString("\n")
   def printArray(prefix: String, a: Array[Any], strict: Boolean = true)(implicit asDebugString: AsDebugString[Schema]): List[String] = {
     require(!strict || a.length == size, s"Array size is ${a.length} keys size is $size")
     list.zip(a).flatMap { case (key, item) => key.printArray(prefix, item, strict) }
@@ -351,22 +313,64 @@ case class OrmKey[Schema[_], T](arity: ChildArity, key: String, t: Schema[T], pa
     arity.prettyPrintArray(newPrefix, this, item, strict)
   }
 
-  def prettyPrint(indent: String): String = {
-    val prefix = s"${indent}$key (${path.mkString(",")}),$index $arity"
+  def prettyPrint(indent: String, typeSymbol: String): String = {
+    val prefix = s"${indent}$key:$typeSymbol(${path.mkString(",")}),$index $arity"
     if (children.size > 0) prefix + "\n" + children.prettyPrint(indent + " ") else prefix
   }
 
   def size = children.size
 }
 
+trait FieldFilter[F[_]] {
+  def apply[T](f: F[T]): Boolean
+  def filtered(it: Iterable[F[_]]): List[F[_]] = it.filter(apply(_)).toList
+}
+trait IsLinkFieldFilter[F[_]] extends FieldFilter[F]
+trait IsSimpleFieldFilter[F[_]] extends FieldFilter[F]
+
+trait IsObjectFieldFilter[F[_]] extends FieldFilter[F]
+object IsObjectFieldFilter {
+  implicit def isObject[F[_]](implicit hasChildren: HasChildren[F[_], F[_]]): IsObjectFieldFilter[F] = new IsObjectFieldFilter[F] {
+    override def apply[T](f: F[T]): Boolean = hasChildren(f).nonEmpty
+  }
+
+}
+object IsSimpleFieldFilter {
+  implicit def isSimple[F[_]](implicit isLink: IsLinkFieldFilter[F], isObject: IsObjectFieldFilter[F]): IsSimpleFieldFilter[F] = new IsSimpleFieldFilter[F] {
+    override def apply[T](f: F[T]): Boolean = !(isLink(f) || isObject(f))
+  }
+}
+object FieldFilter {
+  def partition[F[_], Res](ts: List[F[_]], builder: (List[F[_]], List[F[_]], List[F[_]]) => Res)
+                          (implicit isSimpleFieldFilter: IsSimpleFieldFilter[F], isLinkFieldFilter: IsLinkFieldFilter[F], isObjectFieldFilter: IsObjectFieldFilter[F]): Res = {
+    val links = isLinkFieldFilter.filtered(ts)
+    val objects = isObjectFieldFilter.filtered(ts)
+    val simple = isSimpleFieldFilter.filtered(ts)
+    val all = links ::: objects ::: simple
+    require(all.size == all.toSet.size,
+      s"""Duplicates. Is your link/object/simple strategy set up so that each item is only in one?\n
+         |${all.groupBy(x => x).collect { case (k, list) if list.size > 1 => s"count ${list.size} Item  $k" }.mkString("\n")}
+         |""".stripMargin)
+    builder(links, objects, simple)
+  }
+}
+
 object OrmKeys {
-  def apply[Schema[_] : SchemaMapKey](t: Schema[_]): OrmKeys[Schema] = recurse(List(), t.children.children)
-  def apply[Schema[_] : SchemaMapKey](ts: List[Schema[_]]): OrmKeys[Schema] = recurse(List(), ts)
-  def recurse[Schema[_]](parents: List[Int], ts: List[Schema[_]])(implicit schemaMapKey: SchemaMapKey[Schema]): OrmKeys[Schema] =
-    OrmKeys(ts.zipWithIndex.map { case (t, index) =>
-      val children: ChildrenInSchema[Schema] = schemaMapKey.children(t)
-      OrmKey(children.arity, schemaMapKey.childKey(t), t, parents, index, recurse(parents :+ index, children.children))
+  def fromSchema[Schema[_] : SchemaMapKey : IsLinkFieldFilter : IsObjectFieldFilter : IsSimpleFieldFilter](t: Schema[_]): OrmKeys[Schema] = recurse(List(), t.children.children)
+  def fromList[Schema[_] : SchemaMapKey : IsLinkFieldFilter : IsObjectFieldFilter : IsSimpleFieldFilter](ts: List[Schema[_]]): OrmKeys[Schema] = recurse(List(), ts)
+  protected def recurse[Schema[_] : IsLinkFieldFilter : IsObjectFieldFilter : IsSimpleFieldFilter]
+  (parents: List[Int], ts: List[Schema[_]])
+  (implicit schemaMapKey: SchemaMapKey[Schema]): OrmKeys[Schema] = {
+    def toOrmKeys(ts: List[Schema[_]], offset: Int) =
+      ts.zipWithIndex.map { case (t, i) =>
+        val index = i + offset
+        val children: ChildrenInSchema[Schema] = schemaMapKey.children(t)
+        OrmKey(children.arity, schemaMapKey.childKey(t), t, parents, index, recurse(parents :+ index, children.children))
+      }
+    FieldFilter.partition[Schema, OrmKeys[Schema]](ts, { (links, objects, simple) =>
+      OrmKeys(links = toOrmKeys(links, 0), objects = toOrmKeys(objects, links.size), simple = toOrmKeys(simple, objects.size + links.size))
     })
+  }
 }
 
 class NumericKeyPopulator[Schema[_]](ormKeys: OrmKeys[Schema],
