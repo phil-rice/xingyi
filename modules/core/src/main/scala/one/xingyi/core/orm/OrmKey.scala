@@ -2,7 +2,8 @@ package one.xingyi.core.orm
 
 import java.io.{ByteArrayOutputStream, OutputStream}
 
-import one.xingyi.core.aggregate.HasChildren
+import one.xingyi.core.aggregate.{HasChildren, HasChildrenForHolder}
+import one.xingyi.core.logging.LoggingAdapter
 import one.xingyi.core.orm.SchemaMapKey._
 import one.xingyi.core.strings.Strings
 
@@ -98,8 +99,8 @@ object SchemaMapKey {
 }
 
 
-trait JsonToStream[T] {
-  def put(t: Any, stream: OutputStream)
+trait JsonToStream[Context, F[_], T] {
+  def put(c: Context, f: F[T], t: Any, stream: OutputStream)
 }
 object JsonToStream {
   def putUnescaped(outputStream: OutputStream, s: String) {outputStream.write(s.getBytes) }
@@ -126,55 +127,77 @@ object JsonToStream {
     stream.write('"')
   }
 
-  def asStringWithQuotes[T]: JsonToStream[T] = (s: Any, stream: OutputStream) => putEscapedWithQuotes(s.toString, stream)
-  def asStringFnWithQuotes[T](fn: Any => String): JsonToStream[T] = (s: Any, stream: OutputStream) => putEscapedWithQuotes(fn(s), stream)
+  def asStringWithQuotes[Context, F[_], T]: JsonToStream[Context, F, T] = (c: Context, f: F[T], s: Any, stream: OutputStream) => putEscapedWithQuotes(s.toString, stream)
+  def asStringFnWithQuotes[Context, F[_], T](fn: Any => String): JsonToStream[Context, F, T] = (c: Context, f: F[T], s: Any, stream: OutputStream) => putEscapedWithQuotes(fn(s), stream)
 
-  implicit val StringJsonToStream: JsonToStream[String] = asStringWithQuotes //(s: Any, stream: OutputStream) => putEscapedWithQuotes(s.toString, stream)
-  implicit val IntJsonToStream: JsonToStream[Int] = (t: Any, stream: OutputStream) => putUnescaped(stream, t.toString)
-  implicit val DoubleJsonToStream: JsonToStream[Double] = (t: Any, stream: OutputStream) => putUnescaped(stream, t.toString)
-  implicit val PlaceholderJsonToStream: JsonToStream[Placeholder] = (t: Any, stream: OutputStream) => throw new RuntimeException("Should not attempt to write a placeholder to the output stream")
+  implicit def StringJsonToStream[Context, F[_]]: JsonToStream[Context, F, String] = asStringWithQuotes //(s: Any, stream: OutputStream) => putEscapedWithQuotes(s.toString, stream)
+  implicit def IntJsonToStream[Context, F[_]]: JsonToStream[Context, F, Int] = (c: Context, f: F[Int], t: Any, stream: OutputStream) => putUnescaped(stream, t.toString)
+  implicit def DoubleJsonToStream[Context, F[_]]: JsonToStream[Context, F, Double] = (c: Context, f: F[Double], t: Any, stream: OutputStream) => putUnescaped(stream, t.toString)
+  implicit def PlaceholderJsonToStream[Context, F[_]]: JsonToStream[Context, F, Placeholder] = (c: Context, f: F[Placeholder], t: Any, stream: OutputStream) => throw new RuntimeException("Should not attempt to write a placeholder to the output stream")
 }
 
-trait OrmKeysToJson[Schema[_]] {
-  def putJson(keys: OrmKeys[Schema], ar: Array[Any], outputStream: OutputStream)
+trait OrmKeysToJson[Context, Schema[_]] {
+  def putJson(c: Context, keys: OrmKeys[Schema], ar: Array[Any], outputStream: OutputStream)
 }
-trait JsonToStreamFor[Schema[_]] {
-  def putToJson[T](s: Schema[T]): JsonToStream[T]
+trait JsonToStreamFor[Context, Schema[_]] {
+  def putToJson[T](c: Context, s: Schema[T]): JsonToStream[Context, Schema, T]
 }
+//trait JsonToStreamForLink[Schema[_]] extends SendJsonToStream[Schema]
+
 object OrmKeysToJson {
-  implicit def ormKeysToJsonViaArrayFirst[Schema[_]](implicit jsonToStreamFor: JsonToStreamFor[Schema]): OrmKeysToJson[Schema] = {
-    new OrmKeysToJson[Schema] {
-      override def putJson(keys: OrmKeys[Schema], ar: Array[Any], stream: OutputStream): Unit = {
-        var i = 0
-        stream.write('{')
-        while (i < ar.length) {
-          if (i != 0) stream.write(',')
-          val ormKey = keys.list(i)
-
-          JsonToStream.putEscapedWithQuotes(ormKey.key, stream)
-          stream.write(':')
-          ar(i) match {
-            case a: Array[Any] => keys.list(i).children.putJson(a, stream)(ormKeysToJsonViaArrayFirst)
-            case (head: Array[Any]) :: tail =>
-              stream.write('[')
-              tail.reverse.foreach { case a: Array[Any] =>
-                keys.list(i).children.putJson(a, stream)(ormKeysToJsonViaArrayFirst)
-                stream.write(',')
-              }
-              keys.list(i).children.putJson(head, stream)(ormKeysToJsonViaArrayFirst)
-              stream.write(']')
-            case Nil => stream.write('['); stream.write(']')
-            case null => JsonToStream.putUnescaped(stream, "null")
-            case prim => jsonToStreamFor.putToJson(ormKey.t).put(prim, stream)
-          }
-          i += 1
-        }
+  implicit def ormKeysToJsonViaArrayFirst[Context, Schema[_]](implicit jsonToStreamFor: JsonToStreamFor[Context, Schema]): OrmKeysToJson[Context, Schema] = new OrmKeysToJson[Context, Schema] {
+    override def putJson(c: Context, keys: OrmKeys[Schema], ar: Array[Any], stream: OutputStream): Unit = {
+      var i = 0
+      def write(ar: Array[Any], count: Int): Unit = while (i < count) {sendNameValue(this, c, ar, i, stream, keys.list(i)); i += 1 }
+      stream.write('{')
+      if (keys.links.nonEmpty) {
+        JsonToStream.putUnescaped(stream, """"_links":{""")
+        write(ar, keys.links.size)
         stream.write('}')
       }
+      write(ar, keys.list.size)
+      stream.write('}')
+    }
+  }
+  implicit def ormKeysToJsonViaArrayFirstWithDebug[Context, Schema[_]](implicit loggingAdapter: LoggingAdapter, jsonToStreamFor: JsonToStreamFor[Context, Schema]): OrmKeysToJson[Context, Schema] = new OrmKeysToJson[Context, Schema] {
+    override def putJson(c: Context, keys: OrmKeys[Schema], ar: Array[Any], stream: OutputStream): Unit = {
+      var i = 0
+      def write(ar: Array[Any], count: Int): Unit = while (i < count) {
+        val ormKey = keys.list(i)
+        loggingAdapter.info("OrmKeysToJson")(s"$i ${ormKey.key}  -----  ${ar(i)}")
+        sendNameValue(this, c, ar, i, stream, ormKey);
+        i += 1
+      }
+      stream.write('{')
+      if (keys.links.nonEmpty) {
+        JsonToStream.putUnescaped(stream, """"_links":{""")
+        write(ar, keys.links.size)
+        stream.write('}')
+      }
+      write(ar, keys.list.size)
+      stream.write('}')
     }
   }
 
-
+  private def sendNameValue[Context, Schema[_]](ormKeysToJson: OrmKeysToJson[Context, Schema], c: Context, ar: Array[Any], i: Int, stream: OutputStream, ormKey: OrmKey[Schema, _])(implicit jsonToStreamFor: JsonToStreamFor[Context, Schema]): Unit = {
+    if (i != 0) stream.write(',')
+    JsonToStream.putEscapedWithQuotes(ormKey.key, stream)
+    stream.write(':')
+    ar(i) match {
+      case a: Array[Any] => ormKey.children.writeJsonPrimitive(c, a, stream)(ormKeysToJson)
+      case (head: Array[Any]) :: tail =>
+        stream.write('[')
+        tail.reverse.foreach { case a: Array[Any] =>
+          ormKey.children.writeJsonPrimitive(c, a, stream)(ormKeysToJson)
+          stream.write(',')
+        }
+        ormKey.children.writeJsonPrimitive(c, head, stream)(ormKeysToJson)
+        stream.write(']')
+      case Nil => stream.write('['); stream.write(']')
+      case null => JsonToStream.putUnescaped(stream, "null")
+      case prim => ormKey.putToJson(stream, c, prim)
+    }
+  }
 }
 
 /** The data in the database is based on tables
@@ -206,20 +229,18 @@ case class OrmKeys[Schema[_]](links: List[OrmKey[Schema, _]], objects: List[OrmK
 
   def allKeys: List[OrmKey[Schema, _]] = list.flatMap { key => key :: key.children.allKeys }
   def findForT[T](t: Schema[T]) = allKeys.find(_.t == t)
-  def prettyPrint(indent: String) =
-    (links.map(_.prettyPrint(indent, "L")) :::
-      objects.map(_.prettyPrint(indent, "O")) :::
-      simple.map(_.prettyPrint(indent, "S"))).mkString("\n")
+  def prettyPrint(indent: String) = (links.map(_.prettyPrint(indent, "L")) ::: objects.map(_.prettyPrint(indent, "O")) ::: simple.map(_.prettyPrint(indent, "S"))).mkString("\n")
   def printArray(prefix: String, a: Array[Any], strict: Boolean = true)(implicit asDebugString: AsDebugString[Schema]): List[String] = {
     require(!strict || a.length == size, s"Array size is ${a.length} keys size is $size")
     list.zip(a).flatMap { case (key, item) => key.printArray(prefix, item, strict) }
   }
-  def toJson(ar: Array[Any])(implicit ormKeyToJson: OrmKeysToJson[Schema]): String = {
+  def toJson[Context](c: Context, ar: Array[Any])(implicit ormKeyToJson: OrmKeysToJson[Context, Schema]): String = {
     val stream = new ByteArrayOutputStream()
-    putJson(ar, stream)
+    writeJsonPrimitive(c, ar, stream)
     stream.toString()
   }
-  def putJson(ar: Array[Any], outputStream: OutputStream)(implicit ormKeyToJson: OrmKeysToJson[Schema]) = ormKeyToJson.putJson(this, ar, outputStream)
+  def writeJsonPrimitive[Context](c: Context, ar: Array[Any], outputStream: OutputStream)(implicit ormKeyToJson: OrmKeysToJson[Context, Schema]) =
+    ormKeyToJson.putJson(c, this, ar, outputStream)
 
   val size: Int = list.size
   def makeAndSetupArray: Array[Any] = setup(new Array[Any](size))
@@ -264,11 +285,11 @@ case class OrmKeys[Schema[_]](links: List[OrmKey[Schema, _]], objects: List[OrmK
     }
   }
 
-  def findLastArrayForList(path: Array[Int], array: Array[Any]) = {
-    require(path.size > 0)
+  def findLastArrayForList(path: Array[Int], array: Array[Any]): Array[Any] = {
+    require(path.length > 0)
     var a = array
     var pathIndex = 0
-    while (pathIndex < path.size - 1) {
+    while (pathIndex < path.length - 1) {
       val i = path(pathIndex)
       a = asArray(a(i), s"following path ${path.toList.mkString(",")} and ran out Index is $pathIndex index is $i and a is $a")
       pathIndex += 1
@@ -277,19 +298,23 @@ case class OrmKeys[Schema[_]](links: List[OrmKey[Schema, _]], objects: List[OrmK
   }
 
   def debugPrint(path: Array[Int], array: Array[Any]): Unit = {
-    def printMe(a: Any) = {if (a.isInstanceOf[Array[_]]) a.asInstanceOf[Array[_]].mkString(",") else "" + a }
+    def printMe(a: Any) = a match {
+      case value: Array[_] => value.mkString(",")
+      case _ => "" + a
+    }
     println("path: " + path.mkString(","))
     var pathIndex = 0
     var a = array
     while (pathIndex < path.length) {
       val i = path(pathIndex)
-      println(s"  array has length ${a.length} and this Path index is $i")
+      //      println(s"  array has length ${a.length} and this Path index is $i")
       val obj = a(i)
-      println(s"   item at $i is ${printMe(obj)}")
+      //      println(s"   item at $i is ${printMe(obj)}")
       a = asArray(obj, s"in debug item is $i path is ${path.mkString(",")} obj was $obj")
       pathIndex += 1
     }
   }
+
   def findKeyForPath[T](path: Array[Int]): OrmKey[Schema, _] = {
     var pathIndex = 0
     var keys = this
@@ -300,14 +325,17 @@ case class OrmKeys[Schema[_]](links: List[OrmKey[Schema, _]], objects: List[OrmK
     }
     keys.list(path(path.length - 1))
   }
+
   def next(path: Array[Int], array: Array[Any]): Unit = {
     val lastArray = findLastArrayForList(path, array)
-    val list = asList(lastArray(path(path.length - 1)), s"At end of the path $path")
+    val list = asList(lastArray(path(path.length - 1)), s"At end of the path ${path.toList}")
     val ar = findKeyForPath(path).children.makeAndSetupArray
     lastArray(path(path.length - 1)) = ar :: list
   }
 }
 case class OrmKey[Schema[_], T](arity: ChildArity, key: String, t: Schema[T], path: List[Int], index: Int, children: OrmKeys[Schema]) {
+  def putToJson[Context](stream: OutputStream, c: Context, prim: Any)(implicit jsonToStreamFor: JsonToStreamFor[Context, Schema]) =
+    jsonToStreamFor.putToJson(c, t).put(c, t, prim, stream)
   def printArray(prefix: String, item: Any, strict: Boolean)(implicit asDebugString: AsDebugString[Schema]): List[String] = {
     val newPrefix = if (prefix.isEmpty) index.toString else prefix + "." + index
     arity.prettyPrintArray(newPrefix, this, item, strict)
@@ -318,7 +346,7 @@ case class OrmKey[Schema[_], T](arity: ChildArity, key: String, t: Schema[T], pa
     if (children.size > 0) prefix + "\n" + children.prettyPrint(indent + " ") else prefix
   }
 
-  def size = children.size
+  def size: Int = children.size
 }
 
 trait FieldFilter[F[_]] {
@@ -326,15 +354,20 @@ trait FieldFilter[F[_]] {
   def filtered(it: Iterable[F[_]]): List[F[_]] = it.filter(apply(_)).toList
 }
 trait IsLinkFieldFilter[F[_]] extends FieldFilter[F]
+
+trait LinkBuilder[F[_], Data] {
+  def apply[T](f: F[T], lf: Data): String
+}
+
 trait IsSimpleFieldFilter[F[_]] extends FieldFilter[F]
 
 trait IsObjectFieldFilter[F[_]] extends FieldFilter[F]
 object IsObjectFieldFilter {
-  implicit def isObject[F[_]](implicit hasChildren: HasChildren[F[_], F[_]]): IsObjectFieldFilter[F] = new IsObjectFieldFilter[F] {
+  implicit def isObject[F[_]](implicit hasChildren: HasChildrenForHolder[F]): IsObjectFieldFilter[F] = new IsObjectFieldFilter[F] {
     override def apply[T](f: F[T]): Boolean = hasChildren(f).nonEmpty
   }
-
 }
+
 object IsSimpleFieldFilter {
   implicit def isSimple[F[_]](implicit isLink: IsLinkFieldFilter[F], isObject: IsObjectFieldFilter[F]): IsSimpleFieldFilter[F] = new IsSimpleFieldFilter[F] {
     override def apply[T](f: F[T]): Boolean = !(isLink(f) || isObject(f))

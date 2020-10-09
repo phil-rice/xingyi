@@ -1,9 +1,9 @@
 package one.xingyi.core.orm
 
-import java.io.ByteArrayOutputStream
+import java.io.{ByteArrayOutputStream, OutputStream}
 
 import one.xingyi.core.UtilsSpec
-import one.xingyi.core.aggregate.HasChildren
+import one.xingyi.core.aggregate.{HasChildren, HasChildrenForHolder}
 import one.xingyi.core.strings.Strings
 
 import scala.language.{higherKinds, implicitConversions}
@@ -14,10 +14,11 @@ trait OrmKeyFixture extends UtilsSpec {
 
   sealed trait SchemaForTest[T] {
     def key: String
-    def jsonToStream: JsonToStream[T]
+    def jsonToStream: JsonToStream[String, SchemaForTest, T]
   }
-  case class SchemaItem[T](key: String)(implicit val jsonToStream: JsonToStream[T]) extends SchemaForTest[T]
-  case class SchemaItemWithChildren(key: String, hasMany: Boolean, children: List[SchemaForTest[_]])(implicit val jsonToStream: JsonToStream[Placeholder]) extends SchemaForTest[Placeholder]
+  case class SchemaItem[T](key: String)(implicit val jsonToStream: JsonToStream[String, SchemaForTest, T]) extends SchemaForTest[T]
+  case class SchemaItemWithChildren(key: String, hasMany: Boolean, children: List[SchemaForTest[_]])
+                                   (implicit val jsonToStream: JsonToStream[String, SchemaForTest, Placeholder]) extends SchemaForTest[Placeholder]
 
   object SchemaForTest {
     def parse[T: OrmValueTransformer](s: String): List[OrmValueGetter[_]] = {
@@ -34,16 +35,19 @@ trait OrmKeyFixture extends UtilsSpec {
     implicit val findKeys: FindOrmEntityAndField[SchemaForTest] = new FindOrmEntityAndField[SchemaForTest] {
       override def apply[T](s: SchemaForTest[T]): List[OrmValueGetter[_]] = SchemaForTest.parse(s.key)
     }
-    implicit def JsonToStreamFor: JsonToStreamFor[SchemaForTest] = new JsonToStreamFor[SchemaForTest] {
-      override def putToJson[T](s: SchemaForTest[T]): JsonToStream[T] = s.jsonToStream
+    implicit def JsonToStreamFor: JsonToStreamFor[String, SchemaForTest] = new JsonToStreamFor[String, SchemaForTest] {
+      override def putToJson[T](context: String, s: SchemaForTest[T]): JsonToStream[String, SchemaForTest, T] = s.jsonToStream
     }
+
 
     implicit val isLink: IsLinkFieldFilter[SchemaForTest] = new IsLinkFieldFilter[SchemaForTest] {
       def apply[T](f: SchemaForTest[T]): Boolean = hasChildren(f).isEmpty && (f.key endsWith "c")
     }
-    implicit def hasChildren: HasChildren[SchemaForTest[_], SchemaForTest[_]] = {
-      case s: SchemaItemWithChildren => s.children
-      case _ => Nil
+    implicit def hasChildren: HasChildrenForHolder[SchemaForTest] = new HasChildrenForHolder[SchemaForTest] {
+      override def apply[T](f: SchemaForTest[T]): List[SchemaForTest[_]] = f match {
+        case s: SchemaItemWithChildren => s.children
+        case _ => Nil
+      }
     }
 
     implicit def debugArray: AsDebugString[SchemaForTest] = new AsDebugString[SchemaForTest] {
@@ -67,8 +71,8 @@ trait OrmKeyFixture extends UtilsSpec {
     require(a != null)
     checkStrings(key.printArray("", a).mkString("\n"), expected)
   }
-
 }
+
 trait OrmKeySpecFixture extends OrmKeyFixture {
   val itema: SchemaForTest[String] = SchemaItem("a")
   val itemb: SchemaForTest[Int] = SchemaItem("b")
@@ -405,22 +409,27 @@ class OrmKeyTest extends OrmKeySpecFixture {
 
   behavior of "NumericKeys/Json"
 
-  def checkJson[Schema[_] : OrmKeysToJson](keys: OrmKeys[Schema], array: Array[Any], expected: String): Unit = {
+  def checkJson[Context, Schema[_]](context: Context, keys: OrmKeys[Schema], array: Array[Any], expected: String)(implicit ormKeys: OrmKeysToJson[Context, Schema]): Unit = {
     val stream = new ByteArrayOutputStream()
-    keys.putJson(array, stream)
+    keys.writeJsonPrimitive(context, array, stream)
     checkStrings(stream.toString(), expected)
   }
   it should "turn an array into json" in {
     val keys = OrmKeys.fromList(List(itema, itemb, itemc))
+    checkKeys(keys)(
+      """c:L(),0 NoChildren
+        |a:S(),1 NoChildren
+        |b:S(),2 NoChildren""".stripMargin)
     val array = keys.makeAndSetupArray
-    keys.put(Array(), 0, array, "someData")
+    keys.put(Array(), 0, array, 1.2)
     keys.put(Array(), 1, array, 123)
-    keys.put(Array(), 2, array, 1.2)
+    keys.put(Array(), 2, array, "someData")
     checkArray(keys, array)(
-      """0  = someData {c}
+      """0  = 1.2 {c}
         |1  = 123 {a}
-        |2  = 1.2 {b}""".stripMargin)
-    checkJson(keys, array, """{"c":someData,"a":"123","b":1.2}""")
+        |2  = someData {b}""".stripMargin)
+
+    checkJson("someContext", keys, array, """{"_links":{"c":1.2},"a":"123","b":someData}""")
   }
 
   it should "handle nulls" in {
@@ -430,7 +439,7 @@ class OrmKeyTest extends OrmKeySpecFixture {
       """0  = null {c}
         |1  = null {a}
         |2  = null {b}""".stripMargin)
-    checkJson(keys, array, """{"c":null,"a":null,"b":null}""")
+    checkJson("someContext", keys, array, """{"_links":{"c":null},"a":null,"b":null}""")
   }
 
   it should "escape characters" in {
@@ -438,7 +447,7 @@ class OrmKeyTest extends OrmKeySpecFixture {
     val array = keys.makeAndSetupArray
     keys.put(Array(), 0, array, "so\\me \b \f \n  \r  \t  va\"lue")
     checkArray(keys, array)("""0  = so\\me \b \f \n  \r  \t  va\"lue {a}""".stripMargin)
-    checkJson(keys, array, """{"a":"so\\me \b \f \n  \r  \t  va\"lue"}""")
+    checkJson("someContext", keys, array, """{"a":"so\\me \b \f \n  \r  \t  va\"lue"}""")
     //    escaped = escaped.replace("\\", "\\\\")
     //    escaped = escaped.replace("\"", "\\\"")
     //    escaped = escaped.replace("\b", "\\b")
@@ -460,7 +469,7 @@ class OrmKeyTest extends OrmKeySpecFixture {
         |0.0  = 123 {c}
         |0.1  = 2.1 {b}
         |1  = av {a}""".stripMargin)
-    checkJson(keys, array, """{"bc":{"c":123,"b":2.1},"a":"av"}""")
+    checkJson("someContext", keys, array, """{"bc":{"_links":{"c":123},"b":2.1},"a":"av"}""")
   }
 
   it should "turn an array with child arrays into json" in {
@@ -475,12 +484,12 @@ class OrmKeyTest extends OrmKeySpecFixture {
     checkArray(keys, array)(
       """0/Many(0)
         |1  = av {a}""".stripMargin)
-    checkJson(keys, array, """{"bc":[],"a":"av"}""")
+    checkJson("someContext", keys, array, """{"bc":[],"a":"av"}""")
 
     keys.next(Array(0), array)
     keys.put(Array(0), 0, array, 123)
     keys.put(Array(0), 1, array, 2.3)
-    checkJson(keys, array, """{"bc":[{"c":123,"b":2.3}],"a":"av"}""")
+    checkJson("someContext", keys, array, """{"bc":[{"_links":{"c":123},"b":2.3}],"a":"av"}""")
 
     keys.next(Array(0), array)
     keys.put(Array(0), 0, array, 234)
@@ -493,6 +502,6 @@ class OrmKeyTest extends OrmKeySpecFixture {
         |0[1].0  = 123 {c}
         |0[1].1  = 2.3 {b}
         |1  = av {a}""".stripMargin)
-    checkJson(keys, array, """{"bc":[{"c":123,"b":2.3},{"c":234,"b":3.4}],"a":"av"}""")
+    checkJson("someContext", keys, array, """{"bc":[{"_links":{"c":123},"b":2.3},{"_links":{"c":234},"b":3.4}],"a":"av"}""")
   }
 }

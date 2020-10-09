@@ -187,7 +187,7 @@ abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSou
           |4  = name:Jill {Person/name}""".stripMargin)
       val stream = new ByteArrayOutputStream()
       maker.createdCount shouldBe 2
-      mainEntityForKeys.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).foreach((ar: Array[Any]) => numericKeysForPerson.putJson(ar, stream))
+      mainEntityForKeys.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).foreach((ar: Array[Any]) => numericKeysForPerson.writeJsonPrimitive("someContext", ar, stream))
       maker.createdCount shouldBe 3
       checkStrings(stream.toString(),
         """{"employer":{"Employer/name":"name:Employer1"},"address":[{"Address/add":"add:Phils first address"},{"Address/add":"add:Phils second address"}],"phone":[],"email":{"ContactEmail/email":"email:philsEmail"},"Person/name":"name:Phil"}
@@ -236,7 +236,7 @@ abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSou
           |4  = name:Jill {Person/name}""".stripMargin)
       val stream = new ByteArrayOutputStream()
       maker.createdCount shouldBe 2
-      mainEntityForKeys.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).foreach((ar: Array[Any]) => numericKeysForPerson.putJson(ar, stream))
+      mainEntityForKeys.entity.stream[Array[Any]](OrmBatchConfig(ds, 3)).foreach((ar: Array[Any]) => numericKeysForPerson.writeJsonPrimitive("someContext", ar, stream))
       maker.createdCount shouldBe 3
       checkStrings(stream.toString(),
         """{"employer":{"Employer/name":"name:Employer1"},"address":[{"Address/add":"add:Phils first address"},{"Address/add":"add:Phils second address"}],"phone":[],"email":{"ContactEmail/email":"email:philsEmail"},"Person/name":"name:Phil"}

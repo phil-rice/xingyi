@@ -8,6 +8,10 @@ import scala.reflect.ClassTag
 
 trait HasChildren[Main, Children] extends (Main => Seq[Children])
 
+trait HasChildrenForHolder[F[_]] {
+  def apply[T](f: F[T]): List[F[_]]
+  def descendants[T](f: F[T]): List[F[_]] = apply(f).flatMap(child => child :: descendants(child))
+}
 trait Enricher[Req, Parent, ChildId, Child, Res] extends ((Req, Parent, Seq[(ChildId, Child)]) => Res)
 
 trait EnrichForTaglessLanguage[Wrapper[_, _]] {

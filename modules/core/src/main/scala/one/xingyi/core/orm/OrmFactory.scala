@@ -23,14 +23,14 @@ object OrmValueTransformer {
         case t: T => t
         case res => try {fn(res) } catch {
           case e: Exception =>
-            throw new RuntimeException(s"expected a ${classTag.runtimeClass.getSimpleName} has a ${res.getClass.getSimpleName} which is $res for ${v1.head}", e)
+            throw new RuntimeException(s"expected a ${classTag.runtimeClass.getSimpleName} has a ${res.getClass.getSimpleName} which is [$res] for ${v1.head}", e)
         }
       }
     }
   }
   implicit val ormValueTransformerForString: OrmValueTransformer[String] = defaultOrmValueTransformer[String](_.toString)
-  implicit val ormValueTransformerForInt = defaultOrmValueTransformer[Int] { _.toString.toInt }
-  implicit val ormValueTransformerForDouble = defaultOrmValueTransformer[Double] { _.toString.toDouble }
+  implicit val ormValueTransformerForInt = defaultOrmValueTransformer[Int] { case s: String if s == "" => 0; case s => s.toString.toInt }
+  implicit val ormValueTransformerForDouble = defaultOrmValueTransformer[Double] { case s: String if s == "" => 0; case s => s.toString.toDouble }
   implicit val ormValueTransformerForPlaceHolder: OrmValueTransformer[Placeholder] = (v1: Array[FieldTypeAndIndex[_]], v2: Array[Any]) => throw new RuntimeException("Should not be called")
 }
 

@@ -225,7 +225,7 @@ abstract class AbstractFastOrmWithSingleLinkingKeysSpec[M[_] : ClosableM, J: Jso
       val populateFn = new NumericKeyPopulator[SchemaForTest](numericKeysForPerson, tablesAndFieldsAndPaths, mainEntityForKeys.entity, mapForNext)
       val mainOrmData: MainOrmData[Array[Any], MainEntity] = factory(mainEntityForKeys.entity, () => numericKeysForPerson.makeAndSetupArray, data, populateFn)
       val stream = new ByteArrayOutputStream()
-      mainOrmData.applyAll().foreach((ar: Array[Any]) => numericKeysForPerson.putJson(ar, stream))
+      mainOrmData.applyAll().foreach((ar: Array[Any]) => numericKeysForPerson.writeJsonPrimitive("someContext", ar, stream))
       checkStrings(stream.toString(),
         """{"employer":{"Employer/name":"name:Employer1"},"address":[{"Address/add":"add:Phils first address"},{"Address/add":"add:Phils second address"}],"phone":[],"email":{"ContactEmail/email":"email:philsEmail"},"Person/name":"name:Phil"}
           |{"employer":{"Employer/name":"name:Employer2"},"address":[],"phone":[],"email":{"ContactEmail/email":"email:bobsEmail"},"Person/name":"name:Bob"}""".stripMargin)
