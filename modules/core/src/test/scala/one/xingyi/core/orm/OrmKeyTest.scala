@@ -15,19 +15,23 @@ trait OrmKeyFixture extends UtilsSpec {
   sealed trait SchemaForTest[T] {
     def key: String
     def jsonToStream: JsonToStream[String, SchemaForTest, T]
+    val tx: ValueFromMultipleTableFields[String, T]
   }
-  case class SchemaItem[T](key: String)(implicit val jsonToStream: JsonToStream[String, SchemaForTest, T]) extends SchemaForTest[T]
+  case class SchemaItem[T](key: String)(implicit val jsonToStream: JsonToStream[String, SchemaForTest, T], val tx: ValueFromMultipleTableFields[String, T]) extends SchemaForTest[T]
   case class SchemaItemWithChildren(key: String, hasMany: Boolean, children: List[SchemaForTest[_]])
-                                   (implicit val jsonToStream: JsonToStream[String, SchemaForTest, Placeholder]) extends SchemaForTest[Placeholder]
+                                   (implicit val jsonToStream: JsonToStream[String, SchemaForTest, Placeholder], val tx: ValueFromMultipleTableFields[String, Placeholder]) extends SchemaForTest[Placeholder]
 
   object SchemaForTest {
-    def parse[T: OrmValueTransformer](s: String): List[OrmValueGetter[_]] = {
+    def parse[T](s: String)(implicit ormValueTransformer: OrmValueTransformer[T]): List[OrmValueGetter[_]] =
+      parseToTableNameAndFiles[T](s).map { case (tn, fields) => OrmValueGetter(tn, fields)(ormValueTransformer) }
+
+    def parseToTableNameAndFiles[T](s: String): List[(TableName, List[FieldType[_]])] = {
       val mainSplitter = Strings.split(";")
       val fieldsSplitter = Strings.split(",")
       mainSplitter(s).flatMap { tf =>
         if (tf.contains("/")) {
           val (name, fields) = Strings.splitInTwo("/")(tf)
-          List(OrmValueGetter[String](TableName(name, ""), fieldsSplitter(fields).map(FieldType.apply)))
+          List((TableName(name, ""), fieldsSplitter(fields).map(FieldType.apply)))
         }
         else List()
       }
@@ -35,8 +39,14 @@ trait OrmKeyFixture extends UtilsSpec {
     implicit val findKeys: FindOrmEntityAndField[SchemaForTest] = new FindOrmEntityAndField[SchemaForTest] {
       override def apply[T](s: SchemaForTest[T]): List[OrmValueGetter[_]] = SchemaForTest.parse(s.key)
     }
-    implicit def JsonToStreamFor: JsonToStreamFor[String, SchemaForTest] = new JsonToStreamFor[String, SchemaForTest] {
-      override def putToJson[T](context: String, s: SchemaForTest[T]): JsonToStream[String, SchemaForTest, T] = s.jsonToStream
+    type JContext=String
+    implicit def JsonToStreamFor: JsonToStreamFor[JContext, SchemaForTest] = new JsonToStreamFor[JContext, SchemaForTest] {
+      override def putToJson[T](context: JContext, s: SchemaForTest[T]): JsonToStream[String, SchemaForTest, T] = s.jsonToStream
+    }
+    implicit val toTableAndFieldTypes: ToTableAndFieldTypes[JContext, SchemaForTest] = new ToTableAndFieldTypes[JContext, SchemaForTest] {
+      override def apply[T](s: SchemaForTest[T]): List[TableAndFieldTypes[JContext, T]] =
+        parseToTableNameAndFiles(s.key).
+          map { case (tn, fields) => TableAndFieldTypes[String,T](tn, fields)(s.tx) }
     }
 
 
@@ -74,9 +84,9 @@ trait OrmKeyFixture extends UtilsSpec {
 }
 
 trait OrmKeySpecFixture extends OrmKeyFixture {
-  val itema: SchemaForTest[String] = SchemaItem("a")
-  val itemb: SchemaForTest[Int] = SchemaItem("b")
-  val itemc: SchemaForTest[Double] = SchemaItem("c")
+  val itema: SchemaForTest[String] = SchemaItem[String]("a")
+  val itemb: SchemaForTest[Int] = SchemaItem[Int]("b")
+  val itemc: SchemaForTest[Double] = SchemaItem[Double]("c")
   val emptyNumbericKeys: OrmKeys[SchemaForTest] = OrmKeys.fromList(List[SchemaForTest[_]]())
   val emptySkeleton: OrmKeys[SchemaForTest] = emptyNumbericKeys
   val bcAsSingleton: SchemaForTest[Placeholder] = SchemaItemWithChildren("bc", false, List(itemb, itemc))

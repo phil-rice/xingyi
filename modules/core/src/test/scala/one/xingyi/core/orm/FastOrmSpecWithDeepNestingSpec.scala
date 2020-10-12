@@ -6,6 +6,7 @@ import javax.sql.DataSource
 import one.xingyi.core.closable.ClosableM
 import one.xingyi.core.jdbc.{DatabaseSourceFixture, JdbcOps}
 import one.xingyi.core.json.JsonParser
+import one.xingyi.core.parserAndWriter.Parser
 
 import scala.language.{higherKinds, implicitConversions}
 
@@ -15,10 +16,12 @@ abstract class AbtractFastOrmSpecWithDeepNestingSpec[M[_] : ClosableM, J: JsonPa
   val table2 = TableName("t2", "")
   val table3 = TableName("t3", "")
   val table4 = TableName("t4", "")
+  type JContext=String
 
   def executeIt = { s: String => jdbcOps.executeSql(s) apply ds }
+  implicit val x = ValueFromMultipleTableFields.valueFromMultipleTableFieldsFor[JContext, String](Parser.ParserForString)
   def setupSchema(s1: Boolean, s2: Boolean, s3: Boolean, s4: Boolean)(fn: (OrmKeys[SchemaForTest], List[SchemaForTest[_]], SchemaForTest[_], SchemaForTest[_], SchemaForTest[_]) => Unit): Unit = {
-    implicit def stringToSchemaForTest(s: String): (SchemaForTest[String]) = SchemaItem(s)
+    implicit def stringToSchemaForTest(s: String): (SchemaForTest[String]) = SchemaItem[String](s)
     val schema4 = SchemaItemWithChildren("t4", s4, List[SchemaForTest[_]]("t4/i1"))
     val schema3 = SchemaItemWithChildren("t3", s3, List[SchemaForTest[_]]("t3/h1", schema4))
     val schema2 = SchemaItemWithChildren("t2", s2, List("t2/g1", "t2/g2", schema3))

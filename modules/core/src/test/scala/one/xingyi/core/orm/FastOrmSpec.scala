@@ -32,7 +32,7 @@ trait OrmFixture extends SharedOrmFixture {
 }
 
 trait FastOrmFixture[M[_]] extends OrmFixture {
-  implicit val maker: OrmMaker[Person] = { main =>
+  implicit val maker: OrmMaker[Person] = {main =>
     data: Map[OrmEntity, List[List[Any]]] =>
       import OrmMaker._
 

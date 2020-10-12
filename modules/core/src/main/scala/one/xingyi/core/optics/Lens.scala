@@ -20,6 +20,7 @@ trait Lens[A, B] {
   def andGet[C](fn: B => C) = get andThen fn
 }
 
+
 trait DelegateLens[A,B] extends Lens[A,B]{
   def lens: Lens[A,B]
   override def get: A => B = lens.get

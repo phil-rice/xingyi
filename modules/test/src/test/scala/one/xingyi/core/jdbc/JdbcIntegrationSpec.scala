@@ -7,7 +7,7 @@ import javax.sql.DataSource
 import one.xingyi.core.cddlegacy.{LegacyData, LegacyResult}
 import one.xingyi.core.closable.ClosableLanguage._
 import one.xingyi.core.closable.{ClosableM, SimpleClosable}
-import one.xingyi.core.orm.{AbstractFastOrmWithSingleLinkingKeysSpec, AbstractWithMultipleKeysFastOrmSpec, AbtractFastOrmSpecWithDeepNestingSpec, EntityAndFieldsAndPath, EntityAndPath, Keys, MainEntity, OrmKey, OneToManyEntity, OrmEntity, TablesAndFieldsAndPaths}
+import one.xingyi.core.orm.{AbstractFastOrmWithSingleLinkingKeysSpec, AbstractWithMultipleKeysFastOrmSpec, AbtractFastOrmSpecWithDeepNestingSpec, Keys}
 import org.apache.commons.dbcp2.BasicDataSource
 import org.json4s.JValue
 
@@ -97,3 +97,4 @@ class FastOrmWithMultipleKeysSpec extends AbstractWithMultipleKeysFastOrmSpec[Si
 class FastOrmSpecWithDeepNestingSpec extends AbtractFastOrmSpecWithDeepNestingSpec[SimpleClosable, JValue, BasicDataSource] with BasicDataSourceFixture
 
 class JdbcIntegrationSpec extends AbstractJdbcIntegrationSpec[SimpleClosable]
+

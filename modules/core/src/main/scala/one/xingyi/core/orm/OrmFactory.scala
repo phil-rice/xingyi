@@ -15,6 +15,7 @@ case class EntityAndPath[E <: OrmEntity](entity: E, paths: Array[List[Int]]) {
 case class FieldTypeAndIndex[T](fieldType: FieldType[T], index: Int)
 
 trait OrmValueTransformer[T] extends ((Array[FieldTypeAndIndex[_]], Array[Any]) => T)
+
 object OrmValueTransformer {
   def defaultOrmValueTransformer[T](fn: Any => T)(implicit classTag: ClassTag[T]): OrmValueTransformer[T] = new OrmValueTransformer[T] {
     override def apply(v1: Array[FieldTypeAndIndex[_]], v2: Array[Any]): T = {

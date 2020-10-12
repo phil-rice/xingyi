@@ -55,7 +55,7 @@ trait SharedOrmFixture extends OrmKeyFixture {
   val schemaForAddress = SchemaItemWithChildren("address", true, List[SchemaForTest[_]](SchemaItem[String]("Address/add")))
   val schemaForPhone = SchemaItemWithChildren("phone", true, List[SchemaForTest[_]](SchemaItem[String]("Phone/phoneNo")))
 
-  val schemaForPerson: List[SchemaForTest[_]] = {
+  val schemaListForPerson: List[SchemaForTest[_]] = {
     implicit def stringToSchemaForTest(s: String): SchemaForTest[_] = SchemaItem[String](s)
     List[SchemaForTest[_]](
       "Person/name",
@@ -65,7 +65,8 @@ trait SharedOrmFixture extends OrmKeyFixture {
       SchemaItemWithChildren("email", false, List[SchemaForTest[_]]("ContactEmail/email"))
     )
   }
-  val numericKeysForPerson: OrmKeys[SchemaForTest] = OrmKeys.fromList(schemaForPerson)
+  val schemaForPerson=SchemaItemWithChildren("person", true, schemaListForPerson)
+  val numericKeysForPerson: OrmKeys[SchemaForTest] = OrmKeys.fromList(schemaListForPerson)
 }
 
 abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends SharedOrmFixture with OrmKeyFixture with DatabaseSourceFixture[DS] with Jdbc {

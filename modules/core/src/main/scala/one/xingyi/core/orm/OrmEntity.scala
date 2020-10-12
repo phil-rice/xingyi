@@ -90,7 +90,11 @@ object OrmMaker {
 
 }
 
-trait OrmEntity {
+trait FieldTypeToIndex {
+  def fieldTypeToIndex[T](fieldType: FieldType[T]): Int
+}
+trait OrmEntity extends FieldTypeToIndex {
+  override def fieldTypeToIndex[T](fieldType: FieldType[T]): Int = fieldsForCreate.indexOf(fieldType)
   def tableName: TableName
   def alias: String
   def primaryKeyField: Keys

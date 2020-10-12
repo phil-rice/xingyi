@@ -359,7 +359,6 @@ trait LinkBuilder[F[_], Data] {
   def apply[T](f: F[T], lf: Data): String
 }
 
-trait IsSimpleFieldFilter[F[_]] extends FieldFilter[F]
 
 trait IsObjectFieldFilter[F[_]] extends FieldFilter[F]
 object IsObjectFieldFilter {
@@ -368,6 +367,11 @@ object IsObjectFieldFilter {
   }
 }
 
+trait TableNameForManySchema[Schema[_]] {
+  def apply[T](s: Schema[T]): Option[TableName]
+}
+
+trait  IsSimpleFieldFilter[F[_]] extends FieldFilter[F]
 object IsSimpleFieldFilter {
   implicit def isSimple[F[_]](implicit isLink: IsLinkFieldFilter[F], isObject: IsObjectFieldFilter[F]): IsSimpleFieldFilter[F] = new IsSimpleFieldFilter[F] {
     override def apply[T](f: F[T]): Boolean = !(isLink(f) || isObject(f))
