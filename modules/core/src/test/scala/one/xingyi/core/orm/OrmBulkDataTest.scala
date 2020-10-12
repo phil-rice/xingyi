@@ -9,13 +9,17 @@ import SimpleClosable._
 
 import scala.language.higherKinds
 
-class OrmBulkDataTest extends FastOrmFixture[SimpleClosable] {
-
+trait OrmBulkDataFixture[M[_]] extends FastOrmFixture [M]{
   val keysToTableNames = Map("address" -> address.tableName, "phone" -> phone.tableName)
 
   implicit val tableNameForManySchema: TableNameForManySchema[SchemaForTest] = new TableNameForManySchema[SchemaForTest] {
     override def apply[T](s: SchemaForTest[T]): Option[TableName] = keysToTableNames.get(s.key)
   }
+
+}
+
+class OrmBulkDataTest extends OrmBulkDataFixture[SimpleClosable]  {
+
 
   val entityToData: Map[OrmEntity, List[List[Any]]] = Map(
     address -> List(List("Phils first address", 3, 1), List("SomeOneElse address", 4, 2), List("Phils second address", 2, 1)),
@@ -139,4 +143,7 @@ class OrmBulkDataTest extends FastOrmFixture[SimpleClosable] {
         |"phone":[],
         |"Person/name":"Phil"}""".stripMargin)
   }
+
 }
+
+
