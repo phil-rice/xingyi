@@ -371,7 +371,13 @@ trait TableNameForManySchema[Schema[_]] {
   def apply[T](s: Schema[T]): Option[TableName]
 }
 
-trait  IsSimpleFieldFilter[F[_]] extends FieldFilter[F]
+object TableNameForManySchema {
+  def apply[S[_]](keysToTableNames: Map[String, TableName])(implicit schemaMapKey: SchemaMapKey[S]): TableNameForManySchema[S] = new TableNameForManySchema[S] {
+    override def apply[T](s: S[T]): Option[TableName] = keysToTableNames.get(s.key)
+  }
+}
+
+trait IsSimpleFieldFilter[F[_]] extends FieldFilter[F]
 object IsSimpleFieldFilter {
   implicit def isSimple[F[_]](implicit isLink: IsLinkFieldFilter[F], isObject: IsObjectFieldFilter[F]): IsSimpleFieldFilter[F] = new IsSimpleFieldFilter[F] {
     override def apply[T](f: F[T]): Boolean = !(isLink(f) || isObject(f))

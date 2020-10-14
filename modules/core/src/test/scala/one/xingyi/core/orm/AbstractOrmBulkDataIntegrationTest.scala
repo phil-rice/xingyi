@@ -26,12 +26,33 @@ abstract class AbstractOrmBulkDataIntegrationTest[M[_] : ClosableM, DS <: DataSo
           |"phone":[],
           |"Person/name":"Bob"}""".stripMargin)
       checkStrings(jill,
-        """{"employer":{"Employer/name":},
+        """{"employer":{"Employer/name":"Employer1"},
           |"email":{"ContactEmail/email":"jillsEmail"},
           |"address":[{"Address/add":"Jills first address"}],
           |"phone":[],
           |"Person/name":"Jill"}""".stripMargin)
     }
+  }
+
+  it should "stream json in response to a query" in {
+    implicit val ormMaker = OrmMaker("someContext", schemaForPerson)
+    setupPerson(ds) {
+      val List(phil) = main.stream[String](OrmBatchConfig(ds, 2, IDWhereForTable[Int](FieldType("pid:int"), 1))).toList
+      val List(bob) = main.stream[String](OrmBatchConfig(ds, 2, IDWhereForTable[Int](FieldType("pid:int"), 2))).toList
+      checkStrings(phil,
+        """{"employer":{"Employer/name":"Employer1"},
+          |"email":{"ContactEmail/email":"philsEmail"},
+          |"address":[{"Address/add":"Phils first address"},{"Address/add":"Phils second address"}],
+          |"phone":[],
+          |"Person/name":"Phil"}""".stripMargin)
+      checkStrings(bob,
+        """{"employer":{"Employer/name":"Employer2"},
+          |"email":{"ContactEmail/email":"bobsEmail"},
+          |"address":[],
+          |"phone":[],
+          |"Person/name":"Bob"}""".stripMargin)
+    }
+
   }
 
 }

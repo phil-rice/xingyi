@@ -14,12 +14,14 @@ trait OrmBulkData[E] {
   def data: List[List[Any]] = tableNameToData(tableName.tableName)
   def tableNameToData: Map[String, List[List[Any]]]
   def children: List[ChildOrmBulkData[_]]
+  def prettyPrint(map: Map[OrmEntity, List[List[Any]]]): List[String] =
+    s"${ormEntity.tableName.tableName}/${ormEntity.alias}" :: map(ormEntity).map(l => "  " + l) ::: children.flatMap(_.prettyPrint(map))
 }
 
 trait ChildOrmBulkData[E] extends OrmBulkData[E] {
-  def idsForPrettyPrint(parentId: Any): String
+  def idsForPrettyPrint(parentIndex: Int, parentId: Any): String
   //  def mapOfTableNameToIndexForParentId(parentId: Any, parentRow: List[Any]): List[(String, Int)]
-  def pointer(parentId: Any, n: Int): ChildBulkDataPointer
+  def pointer(parentIndex: Int, parentId: Any, n: Int): ChildBulkDataPointer
   def asNullBulkDataPointer: NullBulkDataPointer = NullBulkDataPointer(this, children.map(_.asNullBulkDataPointer))
 }
 
@@ -39,48 +41,52 @@ object MainBulkData {
 case class MainBulkData(ormEntity: MainEntity, tableNameToData: Map[String, List[List[Any]]], children: List[ChildOrmBulkData[_]]) extends OrmBulkData[MainEntity] {
   def pointer(n: Int): MainBulkDataPointer = {
     val id = ormEntity.primaryKeyFieldsAndIndex.getKey(data(n))
-    MainBulkDataPointer(n, this, children.map(_.pointer(id, 0)))
+    MainBulkDataPointer(n, this, children.map(_.pointer(n, id, 0)))
   }
+
 }
 case class OneToManyBulkData(parentEntity: OrmEntity, ormEntity: OneToManyEntity, tableNameToData: Map[String, List[List[Any]]], children: List[ChildOrmBulkData[_]]) extends ChildOrmBulkData[OneToManyEntity] {
   val parentIdToListOfIndexes: Map[Any, List[Int]] = data.zipWithIndex.map { case (row, i) => (ormEntity.parentIdsAndIndex.getKey(row), i) }.groupBy(_._1).map(kv => kv._1 -> kv._2.map(_._2))
 
-  override def pointer(parentId: Any, n: Int): ChildBulkDataPointer = {
+  override def pointer(parentIndex: Int, parentId: Any, n: Int): ChildBulkDataPointer = {
     parentIdToListOfIndexes.getOrElse(parentId, Nil) match {
       case list if n >= list.size => NullBulkDataPointer(this, children.map(_.asNullBulkDataPointer))
       case list =>
         val index = list(n)
         val row = data(index)
         val id = ormEntity.primaryKeyFieldsAndIndex.getKey(row)
-        FoundChildBulkDataPointer(n, index, parentId, this, children.map(child => child.pointer(id, 0)))
+        FoundChildBulkDataPointer(n, index, parentId, this, children.map(child => child.pointer(index, id, 0)))
     }
   }
-  override def idsForPrettyPrint(parentId: Any): String = parentIdToListOfIndexes(parentId).mkString(",")
+  override def idsForPrettyPrint(parentIndex: Int, parentId: Any): String = parentIdToListOfIndexes(parentId).mkString(",")
 }
 case class SameIdBulkData(ormEntity: SameIdEntity, tableNameToData: Map[String, List[List[Any]]], children: List[ChildOrmBulkData[_]]) extends ChildOrmBulkData[SameIdEntity] {
   val idToIndex: Map[Any, Int] = tableNameToData(ormEntity.tableName.tableName).zipWithIndex.map { case (row, i) => ormEntity.primaryKeyFieldsAndIndex.getKey(row) -> i }.toMap
-  override def pointer(parentId: Any, n: Int): ChildBulkDataPointer = {
+  override def pointer(parentIndex: Int, parentId: Any, n: Int): ChildBulkDataPointer = {
     require(n == 0, s"In SameIdBulkData and asked for a pointer with a non zero n ${n}")
     idToIndex.lift(parentId) match {
-      case Some(index) => FoundChildBulkDataPointer(n, index, parentId, this, children.map(_.pointer(parentId, 0)))
+      case Some(index) => FoundChildBulkDataPointer(n, index, parentId, this, children.map(_.pointer(index, parentId, 0)))
       case _ => NullBulkDataPointer(this, children.map(_.asNullBulkDataPointer))
     }
   }
-  override def idsForPrettyPrint(parentId: Any): String = idToIndex(parentId).toString
+  override def idsForPrettyPrint(parentIndex: Int, parentId: Any): String = idToIndex(parentId).toString
 }
 case class ManyToOneBulkData(parentEntity: OrmEntity, ormEntity: ManyToOneEntity, tableNameToData: Map[String, List[List[Any]]], children: List[ChildOrmBulkData[_]]) extends ChildOrmBulkData[ManyToOneEntity] {
   val idToIndex: Map[Any, Int] = tableNameToData(ormEntity.tableName.tableName).zipWithIndex.map { case (row, i) => ormEntity.primaryKeyFieldsAndIndex.getKey(row) -> i }.toMap
   val keysAndIndex = ormEntity.idInParent.toKeysAndIndex(parentEntity)
-  override def pointer(parentId: Any, n: Int): ChildBulkDataPointer = {
+  override def pointer(parentIndex: Int, parentId: Any, n: Int): ChildBulkDataPointer = {
     require(n == 0, s"In SameIdBulkData and asked for a pointer with a non zero n ${n}")
-    idToIndex.get(parentId) match {
+    val id: Any = myId(parentIndex)
+    idToIndex.get(id) match {
       case None => NullBulkDataPointer(this, children.map(_.asNullBulkDataPointer))
-      case Some(index) =>
-        val id = keysAndIndex.getKey(data(index))
-        FoundChildBulkDataPointer(n, index, parentId, this, children.map(_.pointer(id, 0)))
+      case Some(index) => FoundChildBulkDataPointer(n, index, parentId, this, children.map(_.pointer(index, id, 0)))
     }
   }
-  override def idsForPrettyPrint(parentId: Any): String = idToIndex(parentId).toString
+  def myId(parentIndex: Int): Any = {
+    val parentRow = tableNameToData(parentEntity.tableName.tableName)(parentIndex)
+    keysAndIndex.getKey(parentRow)
+  }
+  override def idsForPrettyPrint(parentIndex: Int, parentId: Any): String = idToIndex.get(myId(parentIndex)).toString
 }
 
 
@@ -112,9 +118,10 @@ trait ChildBulkDataPointer extends BulkDataPointer {
 }
 
 case class FoundChildBulkDataPointer(nth: Int, indexIntoBulkData: Int, parentId: Any, bulkData: ChildOrmBulkData[_], children: List[ChildBulkDataPointer]) extends ChildBulkDataPointer {
-  override def updatePointer(p: Int): ChildBulkDataPointer = bulkData.pointer(parentId, p)
+  override def updatePointer(p: Int): ChildBulkDataPointer = bulkData.pointer(indexIntoBulkData, parentId, p)
   override def updateNthChild(n: Int, child: ChildBulkDataPointer): ChildBulkDataPointer = copy(children = children.updated(n, child))
-  override def prettyPrint(indent: String): String = s"${indent}Found(n=$nth,index=$indexIntoBulkData,$parentId,row=${currentRow},bulkData=${bulkData.tableName.tableName}(${bulkData.idsForPrettyPrint(parentId)}),${prettyPrintChildren(indent)}"
+  override def prettyPrint(indent: String): String =
+    s"${indent}Found(n=$nth,index=$indexIntoBulkData,parentId=$parentId,row=${currentRow},bulkData=${bulkData.tableName.tableName}(${bulkData.idsForPrettyPrint(indexIntoBulkData, parentId)}),${prettyPrintChildren(indent)}"
 }
 
 case class NullBulkDataPointer(bulkData: ChildOrmBulkData[_], children: List[ChildBulkDataPointer]) extends ChildBulkDataPointer {
@@ -128,7 +135,7 @@ case class NullBulkDataPointer(bulkData: ChildOrmBulkData[_], children: List[Chi
 }
 
 case class MainBulkDataPointer(nth: Int, bulkData: OrmBulkData[_], children: List[ChildBulkDataPointer]) extends BulkDataPointer {
-  override def prettyPrint(indent: String): String = s"${indent}Found($nth, bulkData=${bulkData.tableName},row=${currentRow},${prettyPrintChildren(indent)}"
+  override def prettyPrint(indent: String): String = s"${indent}Found(nth=$nth, bulkData=${bulkData.tableName},row=${currentRow},${prettyPrintChildren(indent)}"
   def fail(msg: String) = throw new RuntimeException(s"$msg. Legal tableMames are ${map.keys.toList.sortBy(_.toString)}")
   lazy val map: Map[String, BulkDataPointer] = ((bulkData.tableName.tableName -> this) :: listOfTableNameToDataPoint).toMap
 
@@ -137,11 +144,19 @@ case class MainBulkDataPointer(nth: Int, bulkData: OrmBulkData[_], children: Lis
 
   def keyValues[Context, Schema[_], T](context: Context, schema: Schema[T])(implicit getKey: SchemaMapKey[Schema], toTableAndFieldTypes: ToTableAndFieldTypes[Context, Schema]): List[(String, T)] = {
     val key = getKey.childKey(schema)
-    toTableAndFieldTypes(schema).flatMap {
-      case t@TableAndFieldTypes(tableName, fieldTypes) =>
-        val bulkData = map(tableName.tableName).bulkData
-        currentRow(tableName).map(row => (key -> t.tx(context, bulkData.ormEntity, fieldTypes)(row)))
+    try {
+      toTableAndFieldTypes(schema).flatMap {
+        case t@TableAndFieldTypes(tableName, fieldTypes) =>
+          map.get(tableName.tableName) match {
+            case Some(pointer) => try {
+              val bulkData = pointer.bulkData
+              currentRow(tableName).map(row => (key -> t.tx(context, bulkData.ormEntity, fieldTypes)(row)))
+            } catch {case e: Exception => throw new RuntimeException(s"Error in keyValues($context,$key, $t", e)}
+            case None => Nil
+          }
+      }
     }
+    catch {case e: Exception => throw new RuntimeException(s"Error in keyValues($context,$key", e)}
   }
 
   def allPointers[Context](tableName: TableName): Seq[MainBulkDataPointer] = {
@@ -162,6 +177,7 @@ case class MainBulkDataPointer(nth: Int, bulkData: OrmBulkData[_], children: Lis
 
   def childWithTableLOrException(name: TableName): Lens[MainBulkDataPointer, ChildBulkDataPointer] =
     childWithTableL(name).getOrElse(fail(s"Cannot find the lens to the tablename ${name} "))
+
   /** Ths index into the data for the current item, can be -1 if not valid */
 }
 
@@ -182,13 +198,16 @@ class WriteToJsonForSchema[Schema[_], Context](context: Context, stream: OutputS
     printComma = true
   }
   def putValue[T](main: MainBulkDataPointer, schema: Schema[T]) =
-    main.keyValues(context, schema).headOption.foreach(kv => jsonToStreamFor.putToJson(context, schema).put(context, schema, kv._2, stream))
+    main.keyValues(context, schema).headOption match {
+      case Some(kv) => jsonToStreamFor.putToJson(context, schema).put(context, schema, kv._2, stream)
+      case _ => JsonToStream.putUnescaped(stream, "null")
+    }
 
   def toJsonforSimples(main: MainBulkDataPointer, simple: List[Schema[_]]): Unit = simple.foreach(putKeyValue(main, _))
 
   def toJsonforLinks(main: MainBulkDataPointer, links: List[Schema[_]]): Unit = {
     if (links.nonEmpty) {
-      JsonToStream.putEscapedWithQuotes(""""_links":{""", stream)
+      JsonToStream.putUnescaped(stream, """"_links":{""")
       links.foreach(putKeyValue(main, _))
       stream.write('}')
     }

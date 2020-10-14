@@ -19,7 +19,7 @@ trait OrmValueTransformer[T] extends ((Array[FieldTypeAndIndex[_]], Array[Any]) 
 object OrmValueTransformer {
   def defaultOrmValueTransformer[T](fn: Any => T)(implicit classTag: ClassTag[T]): OrmValueTransformer[T] = new OrmValueTransformer[T] {
     override def apply(v1: Array[FieldTypeAndIndex[_]], v2: Array[Any]): T = {
-      require(v1.size == 1, s"Cannot transform into a ${classTag.runtimeClass.getSimpleName} using defaultValueTransformer if more than one value in ${v1}")
+      require(v1.size == 1, s"Cannot transform into a ${classTag.runtimeClass.getSimpleName} using defaultValueTransformer if more than one value in ${v1.toList}")
       v2(v1.head.index) match {
         case t: T => t
         case res => try {fn(res) } catch {

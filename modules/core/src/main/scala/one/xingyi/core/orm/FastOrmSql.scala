@@ -39,6 +39,7 @@ trait FastOrmSql {
   def createMainTempTable(e: OrmEntity)(batchDetails: BatchDetails): String =
     s"create temporary table ${tempTableName(e)} as " +
       s"select ${selectFields(e)} from ${e.tableName.tableName} ${e.alias} " +
+      batchDetails.whereForTable.where(e.alias).fold("")(w => s"where $w ") +
       s"order by ${selectKey(e.alias, e.primaryKeyField)} " +
       s"limit ${batchDetails.batchSize} offset ${batchDetails.offset}"
 

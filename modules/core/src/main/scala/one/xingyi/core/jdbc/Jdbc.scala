@@ -19,7 +19,7 @@ trait Jdbc {
   def statement[M[_] : ClosableM] = { c: Connection => c.createStatement().liftClosable }
   def prepare[M[_] : ClosableM](sql: String) = { c: Connection => c.prepareStatement(sql).liftClosable }
   def execute(sql: String) = { s: Statement => s.execute(sql) }
-  def executePS = { s: PreparedStatement => s.execute }
+  def executePS(setParams: SetParams[PreparedStatement]) = { s: PreparedStatement => setParams.setParams(s); s.execute }
   def toResultSet[M[_] : ClosableM](sql: String) = { s: Statement => s.executeQuery(sql).liftClosable }
   def toSingleResultSet = { resultSet: ResultSet =>
     if (!resultSet.next) throw new IllegalStateException()
@@ -35,8 +35,9 @@ trait Jdbc {
 
 trait JdbcOps[Source] {
   def executeSql[M[_] : ClosableM](sql: String): Source => Boolean;
+  def executeSqlForPs[M[_] : ClosableM](sql: String, setParams: SetParams[PreparedStatement]): Source => Boolean;
   def getValue[M[_] : ClosableM, X](sql: String, fn: ResultSet => X): Source => X
-  def getList[M[_] : ClosableM, X](sql: String)( fn: ResultSet => X): Source => List[X]
+  def getList[M[_] : ClosableM, X](sql: String)(fn: ResultSet => X): Source => List[X]
   def process[M[_] : ClosableM, From, To](batchSize: Int)(readSql: String, readFn: ResultSet => From)(writeSql: String, preparer: To => List[Object])(fn: From => To): Source => M[Unit]
 }
 
@@ -44,8 +45,11 @@ object JdbcOps {
   //I could simplify these, but I tried and it didn't look better. This is nice because you can see what is going on
   implicit def FromConnection(implicit jdbc: Jdbc): JdbcOps[Connection] = new JdbcOps[Connection] {
     import jdbc._
+
     def executeSql[M[_] : ClosableM](sql: String): Connection => Boolean =
       statement |=> execute(sql) |===> result
+    override def executeSqlForPs[M[_] : ClosableM](sql: String, setParams: SetParams[PreparedStatement]): Connection => Boolean =
+      prepare(sql) |=> executePS(setParams) |===> result
     def getValue[M[_] : ClosableM, X](sql: String, fn: ResultSet => X): Connection => X =
       statement |==> toResultSet(sql) |=> toSingleResultSet |=> fn |===> result
     def getList[M[_] : ClosableM, X](sql: String)(fn: ResultSet => X): Connection => List[X] =
@@ -56,8 +60,11 @@ object JdbcOps {
 
   implicit def FromDataSource(implicit jdbc: Jdbc): JdbcOps[DataSource] = new JdbcOps[DataSource] {
     import jdbc._
+
     def executeSql[M[_] : ClosableM](sql: String): DataSource => Boolean =
       connection |==> statement |=> execute(sql) |===> result
+    override def executeSqlForPs[M[_] : ClosableM](sql: String, setParams: SetParams[PreparedStatement]): DataSource => Boolean =
+      connection |==> prepare(sql) |=> executePS(setParams) |===> result
     def getValue[M[_] : ClosableM, X](sql: String, fn: ResultSet => X): DataSource => X =
       connection |==> statement |==> toResultSet(sql) |=> toSingleResultSet |=> fn |===> result
     def getList[M[_] : ClosableM, X](sql: String)(fn: ResultSet => X): DataSource => List[X] =
@@ -67,10 +74,17 @@ object JdbcOps {
   }
 }
 
+object SetParams {
+  def nullSetParams[PS]: SetParams[PS] = (ps) => {}
+}
+trait SetParams[PS] {
+  def setParams(ps: PS)
+}
 
 case class BatchConfig[T](batchSize: Int, prepare: T => Unit, flush: () => Unit)
 class Batcher[T](batchConfig: BatchConfig[T], count: AtomicInteger = new AtomicInteger(0)) extends (T => Unit) with AutoCloseable {
   import batchConfig._
+
   override def apply(t: T): Unit = prepare(t) sideeffectTry (_ => count.tick(batchSize)(flush())) get
   def close = count ifNotZero flush()
 }

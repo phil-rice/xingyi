@@ -6,19 +6,17 @@ import javax.sql.DataSource
 import one.xingyi.core.closable.{ClosableM, SimpleClosable}
 import one.xingyi.core.jdbc.DatabaseSourceFixture
 import SimpleClosable._
+import one.xingyi.core.orm.FieldType.{int, string}
 
 import scala.language.higherKinds
+import scala.language.existentials
 
-trait OrmBulkDataFixture[M[_]] extends FastOrmFixture [M]{
-  val keysToTableNames = Map("address" -> address.tableName, "phone" -> phone.tableName)
-
-  implicit val tableNameForManySchema: TableNameForManySchema[SchemaForTest] = new TableNameForManySchema[SchemaForTest] {
-    override def apply[T](s: SchemaForTest[T]): Option[TableName] = keysToTableNames.get(s.key)
-  }
+trait OrmBulkDataFixture[M[_]] extends FastOrmFixture[M] {
+  implicit val tableNameForManySchema = TableNameForManySchema[SchemaForTest](Map("address" -> address.tableName, "phone" -> phone.tableName))
 
 }
 
-class OrmBulkDataTest extends OrmBulkDataFixture[SimpleClosable]  {
+class OrmBulkDataTest extends OrmBulkDataFixture[SimpleClosable] {
 
 
   val entityToData: Map[OrmEntity, List[List[Any]]] = Map(
@@ -92,11 +90,11 @@ class OrmBulkDataTest extends OrmBulkDataFixture[SimpleClosable]  {
     val pointer0 = mainBulkData.pointer(0)
 
     checkStrings(pointer0.prettyPrint(""),
-      """Found(0, bulkData=TableName(Person,),row=Some(List(Phil, 1, 1)),children=
-        |  Found(n=0,index=0,List(1),row=Some(List(Employer1, 1)),bulkData=Employer(0),noChildren
-        |  Found(n=0,index=0,List(1),row=Some(List(Phils first address, 3, 1)),bulkData=Address(0,2),noChildren
+      """Found(nth=0, bulkData=TableName(Person,),row=Some(List(Phil, 1, 1)),children=
+        |  Found(n=0,index=0,parentId=List(1),row=Some(List(Employer1, 1)),bulkData=Employer(Some(0)),noChildren
+        |  Found(n=0,index=0,parentId=List(1),row=Some(List(Phils first address, 3, 1)),bulkData=Address(0,2),noChildren
         |  Null()
-        |  Found(n=0,index=1,List(1),row=Some(List(philsEmail, 1)),bulkData=ContactEmail(1),noChildren""".stripMargin)
+        |  Found(n=0,index=1,parentId=List(1),row=Some(List(philsEmail, 1)),bulkData=ContactEmail(1),noChildren""".stripMargin)
   }
 
   it should "be able to iterate over children" in {
@@ -104,17 +102,17 @@ class OrmBulkDataTest extends OrmBulkDataFixture[SimpleClosable]  {
     println("size: " + pointer0.allPointers(addressTable).size)
     val Seq(firstAddress, secondAddress) = pointer0.allPointers(addressTable)
     checkStrings(firstAddress.prettyPrint(""),
-      """Found(0, bulkData=TableName(Person,),row=Some(List(Phil, 1, 1)),children=
-        |  Found(n=0,index=0,List(1),row=Some(List(Employer1, 1)),bulkData=Employer(0),noChildren
-        |  Found(n=0,index=0,List(1),row=Some(List(Phils first address, 3, 1)),bulkData=Address(0,2),noChildren
+      """Found(nth=0, bulkData=TableName(Person,),row=Some(List(Phil, 1, 1)),children=
+        |  Found(n=0,index=0,parentId=List(1),row=Some(List(Employer1, 1)),bulkData=Employer(Some(0)),noChildren
+        |  Found(n=0,index=0,parentId=List(1),row=Some(List(Phils first address, 3, 1)),bulkData=Address(0,2),noChildren
         |  Null()
-        |  Found(n=0,index=1,List(1),row=Some(List(philsEmail, 1)),bulkData=ContactEmail(1),noChildren""".stripMargin)
+        |  Found(n=0,index=1,parentId=List(1),row=Some(List(philsEmail, 1)),bulkData=ContactEmail(1),noChildren""".stripMargin)
     checkStrings(secondAddress.prettyPrint(""),
-      """Found(0, bulkData=TableName(Person,),row=Some(List(Phil, 1, 1)),children=
-        |  Found(n=0,index=0,List(1),row=Some(List(Employer1, 1)),bulkData=Employer(0),noChildren
-        |  Found(n=1,index=2,List(1),row=Some(List(Phils second address, 2, 1)),bulkData=Address(0,2),noChildren
+      """Found(nth=0, bulkData=TableName(Person,),row=Some(List(Phil, 1, 1)),children=
+        |  Found(n=0,index=0,parentId=List(1),row=Some(List(Employer1, 1)),bulkData=Employer(Some(0)),noChildren
+        |  Found(n=1,index=2,parentId=List(1),row=Some(List(Phils second address, 2, 1)),bulkData=Address(0,2),noChildren
         |  Null()
-        |  Found(n=0,index=1,List(1),row=Some(List(philsEmail, 1)),bulkData=ContactEmail(1),noChildren""".stripMargin)
+        |  Found(n=0,index=1,parentId=List(1),row=Some(List(philsEmail, 1)),bulkData=ContactEmail(1),noChildren""".stripMargin)
 
   }
 
@@ -142,6 +140,24 @@ class OrmBulkDataTest extends OrmBulkDataFixture[SimpleClosable]  {
         |"address":[{"Address/add":"Phils first address"},{"Address/add":"Phils second address"}],
         |"phone":[],
         |"Person/name":"Phil"}""".stripMargin)
+  }
+
+  it should "create json even if a table referenced by the schema isn't in the data" in {
+    val stream = new ByteArrayOutputStream()
+    val writer = new WriteToJsonForSchema[SchemaForTest, String]("someContext", stream)
+
+    val schemaWithTableNotFound = SchemaItemWithChildren("person", true, schemaListForPerson :+ SchemaItem[String]("NotIn/someField"))
+
+    writer.toJson(mainBulkData.pointer(0), PartitionedSchema("person", schemaWithTableNotFound))
+
+    checkStrings(stream.toString,
+      """{"employer":{"Employer/name":"Employer1"},
+        |"email":{"ContactEmail/email":"philsEmail"},
+        |"address":[{"Address/add":"Phils first address"},
+        |{"Address/add":"Phils second address"}],
+        |"phone":[],
+        |"Person/name":"Phil",
+        |"NotIn/someField":null}""".stripMargin)
   }
 
 }

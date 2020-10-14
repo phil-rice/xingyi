@@ -2,7 +2,8 @@
 package one.xingyi.core.orm
 
 import java.io.ByteArrayOutputStream
-import java.sql.ResultSet
+import java.sql.{PreparedStatement, ResultSet}
+import java.util.concurrent.atomic.AtomicInteger
 
 import javax.sql.DataSource
 import one.xingyi.core.closable.ClosableM
@@ -32,7 +33,7 @@ trait OrmFixture extends SharedOrmFixture {
 }
 
 trait FastOrmFixture[M[_]] extends OrmFixture {
-  implicit val maker: OrmMaker[Person] = {main =>
+  implicit val maker: OrmMaker[Person] = { main =>
     data: Map[OrmEntity, List[List[Any]]] =>
       import OrmMaker._
 
@@ -121,9 +122,11 @@ abstract class AbstractFastOrmWithSingleLinkingKeysSpec[M[_] : ClosableM, J: Jso
     ))
   }
 
+
   it should "make createTempTables sql" in {
-    checkStrategy("createTempTables", OrmStrategies.createTempTables(BatchDetails(1000, 3)).walk(main), List(
-      main -> "create temporary table temp_Person as select P.name, P.employerid, P.pid from Person P order by P.pid limit 1000 offset 3000",
+    val where = WhereForTableForTest("someWhere")
+    checkStrategy("createTempTables", OrmStrategies.createTempTables(BatchDetails(1000, 3, where)).walk(main), List(
+      main -> "create temporary table temp_Person as select P.name, P.employerid, P.pid from Person P where someWhere order by P.pid limit 1000 offset 3000",
       employer -> "create temporary table temp_Employer as select E.name, E.eid from temp_Person P,Employer E where P.employerid = E.eid order by P.pid ",
       address -> "create temporary table temp_Address as select A.add, A.aid, A.personid from temp_Person P,Address A where P.pid = A.personid order by A.personid,A.aid ",
       phone -> "create temporary table temp_Phone as select Ph.phoneNo, Ph.phid, Ph.personid from temp_Person P,Phone Ph where P.pid = Ph.personid order by Ph.personid,Ph.phid ",

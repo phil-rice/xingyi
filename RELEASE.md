@@ -17,3 +17,6 @@
 0.6.0  Cross compilation to 2.12/2.13, removed finatra from this code base to another
 0.6.2 Mustache now can be used with scala 2_13
 0.6.3 FastOrm now makes HAL Json
+0.6.5 Orm now much cleaner (if slower) and can FastOrm for 'where clauses'
+0.6.6 Orm with bulk now loads complicated structures successfully 
+0.6.7 removing println noise 

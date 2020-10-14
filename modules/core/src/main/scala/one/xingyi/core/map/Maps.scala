@@ -15,6 +15,7 @@ object Maps {
 
 
   implicit class MapOps[K, V](map: Map[K, V]) {
+    def addIf(b: Boolean, tuple: (K, V)) = if (b) map + tuple else map
     def optAdd(tuples: (K, Option[V])*) = tuples.foldLeft(map)((acc, tuple) => tuple._2.fold(acc)(v => acc + (tuple._1 -> v)))
     def add(v: V)(implicit hasId: HasId[V, K]) = map + (hasId(v) -> v)
   }

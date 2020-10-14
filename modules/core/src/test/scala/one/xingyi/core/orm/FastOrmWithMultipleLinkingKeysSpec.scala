@@ -68,7 +68,7 @@ trait FastWithMultipleKeysOrmFixture[M[_]] extends OrmWithMultipleKeysFixture {
   }
 }
 
-abstract class AbstractWithMultipleKeysFastOrmSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends SharedFastOrmTests[M, J, DS] with CheckStrategyFixture with  FastWithMultipleKeysOrmFixture[M] {
+abstract class AbstractWithMultipleKeysFastOrmSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends SharedFastOrmTests[M, J, DS] with CheckStrategyFixture with FastWithMultipleKeysOrmFixture[M] {
 
 
   behavior of "FastOrm"
@@ -106,16 +106,19 @@ abstract class AbstractWithMultipleKeysFastOrmSpec[M[_] : ClosableM, J: JsonPars
   }
 
   it should "make createTempTables sql" in {
-    val details = BatchDetails(1000, 3)
+    val where = WhereForTableForTest("someWhere")
+
+    val details = BatchDetails(1000, 3, where)
     //    OrmStrategies.createTempTables(details).walk(main).foreach(e => println(s"${e._1.tableName}  ${e._2}"))
 
     checkStrategy("createTempTables", OrmStrategies.createTempTables(details).walk(main), List(
-      main -> "create temporary table temp_Person as select P.name, P.employerid1, P.employerid2, P.pid1, P.pid2 from Person P order by P.pid1, P.pid2 limit 1000 offset 3000",
+      main -> "create temporary table temp_Person as select P.name, P.employerid1, P.employerid2, P.pid1, P.pid2 from Person P where someWhere order by P.pid1, P.pid2 limit 1000 offset 3000",
       employer -> "create temporary table temp_Employer as select E.name, E.eid1, E.eid2 from temp_Person P,Employer E where P.employerid1 = E.eid1 and P.employerid2 = E.eid2 order by P.pid1, P.pid2 ",
       address -> "create temporary table temp_Address as select A.add, A.aid1, A.aid2, A.personid1, A.personid2 from temp_Person P,Address A where P.pid1 = A.personid1 and P.pid2 = A.personid2 order by A.personid1, A.personid2,A.aid1, A.aid2 ",
       phone -> "create temporary table temp_Phone as select Ph.phoneNo, Ph.phid, Ph.personid1, Ph.personid2 from temp_Person P,Phone Ph where P.pid1 = Ph.personid1 and P.pid2 = Ph.personid2 order by Ph.personid1, Ph.personid2,Ph.phid ",
       email -> "create temporary table temp_ContactEmail as select DISTINCT  E.email, E.eid1, E.eid2 from temp_Person P,ContactEmail E where P.pid1 = E.eid1 and P.pid2 = E.eid2 order by E.eid1, E.eid2 ")
     )
+    where.count.get shouldBe 0
   }
 
   it should "make drainTempTables sql" in {
