@@ -45,6 +45,4 @@ object ValueFromMultipleTableFields {
   }
 }
 
-case class TableAndFieldTypes[Context, T](tableName: TableName, fieldType: List[FieldType[_]])(implicit val tx: ValueFromMultipleTableFields[Context, T]) {
-
-}
+case class TableAndFieldTypes[Context, T](tableName: TableName, fieldTypes: List[FieldType[_]])(implicit val tx: ValueFromMultipleTableFields[Context, T])

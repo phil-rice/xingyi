@@ -88,12 +88,17 @@ trait Placeholder
 trait SchemaMapKey[Schema[_]] {
   def childKey[T](t: Schema[T]): String // The main object might not have a key, but the children will
   def children[T](t: Schema[T]): ChildrenInSchema[Schema]
+  def descendants[T](t: Schema[T]): List[Schema[_]] = {
+    val c: List[Schema[_]] = children(t).children
+    c ::: c.flatMap(descendants(_))
+  }
 }
 
 object SchemaMapKey {
   implicit class SchemaMapKeyOps[S[_], T](s: S[T])(implicit k: SchemaMapKey[S]) {
     def key: String = k.childKey(s)
     def children: ChildrenInSchema[S] = k.children(s)
+    def descendants: List[S[_]] = k.descendants(s)
   }
 }
 

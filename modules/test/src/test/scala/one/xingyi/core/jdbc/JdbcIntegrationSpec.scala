@@ -78,7 +78,7 @@ import one.xingyi.json4s.Json4sParser._
 class FastOrmWithSingleLinkingKeysSpec extends AbstractFastOrmWithSingleLinkingKeysSpec[SimpleClosable, JValue, BasicDataSource] with BasicDataSourceFixture {
   lazy val addressEntity = ormFactory.oneToManyEntity(addressTable, "a", Keys("aid:int"), Keys("personid:int"), List())
   lazy val phoneEntity = ormFactory.oneToManyEntity(phoneTable, "ph", Keys("phid:int"), Keys("personid:int"), List())
-  lazy val mainEntityForKeys = ormFactory.mainEntity(personTable, "p", Keys("pid:int"), List(
+  lazy val mainEntity = ormFactory.mainEntity(personTable, "p", Keys("pid:int"), List(
     ormFactory.manyToOneEntity(employerTable, "e", Keys("eid:int"), Keys("employerid:int"), List()),
     addressEntity,
     phoneEntity,
@@ -87,7 +87,7 @@ class FastOrmWithSingleLinkingKeysSpec extends AbstractFastOrmWithSingleLinkingK
 class FastOrmWithMultipleKeysSpec extends AbstractWithMultipleKeysFastOrmSpec[SimpleClosable, JValue, BasicDataSource] with BasicDataSourceFixture {
   lazy val addressEntity = ormFactory.oneToManyEntity(addressTable, "a", Keys("aid1:int,aid2:int"), Keys("personid1:int,personid2:int"), List())
   lazy val phoneEntity = ormFactory.oneToManyEntity(phoneTable, "ph", Keys("phid:int"), Keys("personid1:int,personid2:int"), List())
-  lazy val mainEntityForKeys = ormFactory.mainEntity(personTable, "p", Keys("pid1:int,pid2:int"), List(
+  lazy val mainEntity = ormFactory.mainEntity(personTable, "p", Keys("pid1:int,pid2:int"), List(
     ormFactory.manyToOneEntity(employerTable, "e", Keys("eid1:int,eid2:int"), Keys("employerid1:int,employerid2:int"), List()),
     addressEntity,
     phoneEntity,

@@ -16,6 +16,7 @@ object ToFieldType {
   implicit def toFieldTypeForInt: ToFieldType[Int] = FieldType[Int](_, "integer", true)
   //  implicit def toFieldTypeForDate: ToFieldType[Date] = FieldType[Date](_, "date", true)
 }
+case class FieldTypeAndIndex[T](fieldType: FieldType[T], index: Int)
 
 case class FieldType[T](name: String, typeName: String, numericSort: Boolean)(implicit val writeToJson: WriteToJson[T], val getFromJson: GetFromJson[T], val classTag: ClassTag[T]) {
   def withIndex(list: List[String]): FieldTypeAndIndex[T] = {

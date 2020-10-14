@@ -2,9 +2,6 @@ package one.xingyi.core.orm
 
 import java.io.OutputStream
 
-import one.xingyi.core.optics.Lens
-import one.xingyi.core.orm.BulkDataPointer.{pointerToNthChildL, pointerToNthL}
-
 import scala.language.higherKinds
 
 
@@ -24,7 +21,6 @@ trait ChildOrmBulkData[E] extends OrmBulkData[E] {
   def pointer(parentIndex: Int, parentId: Any, n: Int): ChildBulkDataPointer
   def asNullBulkDataPointer: NullBulkDataPointer = NullBulkDataPointer(this, children.map(_.asNullBulkDataPointer))
 }
-
 
 object MainBulkData {
   def apply(main: MainEntity, data: Map[OrmEntity, List[List[Any]]]): MainBulkData = {
@@ -60,6 +56,7 @@ case class OneToManyBulkData(parentEntity: OrmEntity, ormEntity: OneToManyEntity
   }
   override def idsForPrettyPrint(parentIndex: Int, parentId: Any): String = parentIdToListOfIndexes(parentId).mkString(",")
 }
+
 case class SameIdBulkData(ormEntity: SameIdEntity, tableNameToData: Map[String, List[List[Any]]], children: List[ChildOrmBulkData[_]]) extends ChildOrmBulkData[SameIdEntity] {
   val idToIndex: Map[Any, Int] = tableNameToData(ormEntity.tableName.tableName).zipWithIndex.map { case (row, i) => ormEntity.primaryKeyFieldsAndIndex.getKey(row) -> i }.toMap
   override def pointer(parentIndex: Int, parentId: Any, n: Int): ChildBulkDataPointer = {
@@ -71,6 +68,7 @@ case class SameIdBulkData(ormEntity: SameIdEntity, tableNameToData: Map[String, 
   }
   override def idsForPrettyPrint(parentIndex: Int, parentId: Any): String = idToIndex(parentId).toString
 }
+
 case class ManyToOneBulkData(parentEntity: OrmEntity, ormEntity: ManyToOneEntity, tableNameToData: Map[String, List[List[Any]]], children: List[ChildOrmBulkData[_]]) extends ChildOrmBulkData[ManyToOneEntity] {
   val idToIndex: Map[Any, Int] = tableNameToData(ormEntity.tableName.tableName).zipWithIndex.map { case (row, i) => ormEntity.primaryKeyFieldsAndIndex.getKey(row) -> i }.toMap
   val keysAndIndex = ormEntity.idInParent.toKeysAndIndex(parentEntity)
@@ -88,10 +86,6 @@ case class ManyToOneBulkData(parentEntity: OrmEntity, ormEntity: ManyToOneEntity
   }
   override def idsForPrettyPrint(parentIndex: Int, parentId: Any): String = idToIndex.get(myId(parentIndex)).toString
 }
-
-
-
-
 
 class WriteToJsonForSchema[Schema[_], Context](context: Context, stream: OutputStream)
                                               (implicit toKey: SchemaMapKey[Schema], toTableAndFieldTypes: ToTableAndFieldTypes[Context, Schema], jsonToStreamFor: JsonToStreamFor[Context, Schema]) {

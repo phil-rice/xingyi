@@ -65,8 +65,7 @@ trait SharedOrmFixture extends OrmKeyFixture {
       SchemaItemWithChildren("email", false, List[SchemaForTest[_]]("ContactEmail/email"))
     )
   }
-  val schemaForPerson=SchemaItemWithChildren("person", true, schemaListForPerson)
-  val numericKeysForPerson: OrmKeys[SchemaForTest] = OrmKeys.fromList(schemaListForPerson)
+  val schemaForPerson = SchemaItemWithChildren("person", true, schemaListForPerson)
 }
 
 abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSource] extends SharedOrmFixture with OrmKeyFixture with DatabaseSourceFixture[DS] with Jdbc {
@@ -100,54 +99,13 @@ abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSou
           Person("Jill", Employer("Employer1"), List(Address("Jills first address")), List(), "jillsEmail"))
     }
   }
+
   behavior of getClass.getSimpleName + " with ormFactory"
 
-  it should "checkAssumptions and structure" in {
-    checkKeys(numericKeysForPerson)(
-      """employer:O(),0 OneChild
-        | Employer/name:S(0),0 NoChildren
-        |address:O(),1 ManyChildren
-        | Address/add:S(1),0 NoChildren
-        |phone:O(),2 ManyChildren
-        | Phone/phoneNo:S(2),0 NoChildren
-        |email:O(),3 OneChild
-        | ContactEmail/email:S(3),0 NoChildren
-        |Person/name:S(),4 NoChildren""".stripMargin)
-    val ar = numericKeysForPerson.makeAndSetupArray
-    checkArray(numericKeysForPerson, ar)(
-      """0/OneChild
-        |0.0  = null {Employer/name}
-        |1/Many(0)
-        |2/Many(0)
-        |3/OneChild
-        |3.0  = null {ContactEmail/email}
-        |4  = null {Person/name}""".stripMargin)
-
-    val tablesAndFieldsAndPaths: TablesAndFieldsAndPaths = EntityAndPath(numericKeysForPerson)
-
-    checkStrings(tablesAndFieldsAndPaths.prettyPrint.mkString("\n"),
-      """Address
-        |   0 add/varchar(255) - (1) - 0
-        |ContactEmail
-        |   0 email/varchar(255) - (3) - 0
-        |Employer
-        |   0 name/varchar(255) - (0) - 0
-        |Person
-        |   0 name/varchar(255) - () - 4
-        |Phone
-        |   0 phoneNo/varchar(255) - (2) - 0""".stripMargin)
-  }
-
-  lazy val tablesAndFieldsAndPaths: TablesAndFieldsAndPaths = EntityAndPath(numericKeysForPerson)
-  def mainEntityForKeys: EntityAndFieldsAndPath[MainEntity]
-  def addressEntity: EntityAndFieldsAndPath[OneToManyEntity]
-  def phoneEntity: EntityAndFieldsAndPath[OneToManyEntity]
-  lazy val ormFactory = tablesAndFieldsAndPaths.ormFactory(numericKeysForPerson)
-
-  def mapForNext: Map[OneToManyEntity, OrmKey[SchemaForTest, _]] = Map(
-    addressEntity.entity -> numericKeysForPerson.findForT(schemaForAddress).get,
-    phoneEntity.entity -> numericKeysForPerson.findForT(schemaForPhone).get)
-
+  def mainEntity: MainEntity
+  def addressEntity: OneToManyEntity
+  def phoneEntity: OneToManyEntity
+  lazy val ormFactory = new OrmFactoryImpl[String, SchemaForTest](schemaForPerson)
 
 
 }
