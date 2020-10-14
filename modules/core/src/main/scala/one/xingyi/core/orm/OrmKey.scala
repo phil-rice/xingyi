@@ -2,13 +2,12 @@ package one.xingyi.core.orm
 
 import java.io.{ByteArrayOutputStream, OutputStream}
 
-import one.xingyi.core.aggregate.{HasChildren, HasChildrenForHolder}
+import one.xingyi.core.aggregate.HasChildrenForHolder
 import one.xingyi.core.logging.LoggingAdapter
 import one.xingyi.core.orm.SchemaMapKey._
 import one.xingyi.core.strings.Strings
 
 import scala.annotation.implicitNotFound
-import scala.collection.generic.CanBuildFrom
 import scala.collection.immutable.List
 import scala.language.higherKinds
 
@@ -414,31 +413,4 @@ object OrmKeys {
       OrmKeys(links = toOrmKeys(links, 0), objects = toOrmKeys(objects, links.size), simple = toOrmKeys(simple, objects.size + links.size))
     })
   }
-}
-
-class NumericKeyPopulator[Schema[_]](ormKeys: OrmKeys[Schema],
-                                     tablesAndFieldsAndPaths: TablesAndFieldsAndPaths,
-                                     mainEntity: MainEntity,
-                                     map: Map[OneToManyEntity, OrmKey[Schema, _]])
-  extends ((Array[Any], OrmEntity, List[Any]) => Array[Any]) {
-  val nextMap = map.map { case (k, v) => (k.alias, (v.path :+ v.index).toArray) }
-  val aliasToOrmGetters: Map[String, OrmGettersForThisRowAndPath] = (mainEntity :: mainEntity.descendents).map { entity =>
-    (entity.alias, tablesAndFieldsAndPaths.getOrmGettersAndPath(entity.tableName).toForThisRow(entity.fieldsForCreate.map(_.name)))
-  }.toMap
-
-  def apply(ar: Array[Any], entity: OrmEntity, oneRow: List[Any]): Array[Any] = {
-    nextMap.get(entity.alias).foreach(path => ormKeys.next(path, ar))
-    val fieldsAndPath = aliasToOrmGetters(entity.alias)
-    val ormGetters: Array[OrmValueGetterForARow[_]] = fieldsAndPath.ormValueGetters
-    val paths = fieldsAndPath.path
-    val indicies = fieldsAndPath.indicies
-    var i = 0
-    while (i < ormGetters.length) {
-      val d = ormGetters(i) apply (oneRow.toArray)
-      ormKeys.put(paths(i), indicies(i), ar, d)
-      i += 1
-    }
-    ar
-  }
-
 }

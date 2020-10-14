@@ -1,9 +1,5 @@
 package one.xingyi.core.orm
 
-import java.io.ByteArrayOutputStream
-import java.util.Date
-import java.util.concurrent.atomic.AtomicInteger
-
 import scala.language.higherKinds
 import scala.reflect.ClassTag
 
@@ -55,14 +51,14 @@ trait FindOrmEntityAndField[Schema[_]] {
 /** the orm getter is 'given this data from the database table what is the result. Path and index and where to put the result when we get it */
 case class OrmGettersAndPath(ormValueGetters: Array[OrmValueGetter[_]], path: Array[Array[Int]], indicies: Array[Int]) {
   def fieldTypes: Array[FieldType[_]] = ormValueGetters.flatMap(_.fieldTypes)
-  def toForThisRow(list: List[String]): OrmGettersForThisRowAndPath = OrmGettersForThisRowAndPath(ormValueGetters.map(_.ormValueGetterForARow(list)), path, indicies)
+//  def toForThisRow(list: List[String]): OrmGettersForThisRowAndPath = OrmGettersForThisRowAndPath(ormValueGetters.map(_.ormValueGetterForARow(list)), path, indicies)
 }
 
-//Could flatten a little: this is all about one table...
-case class OrmGettersForThisRowAndPath(ormValueGetters: Array[OrmValueGetterForARow[_]], path: Array[Array[Int]], indicies: Array[Int]) {
-  def fieldTypeWithIndexs: Array[FieldTypeAndIndex[_]] = ormValueGetters.flatMap(_.fieldTypes)
-  def prettyString = {ormValueGetters.zip(path).zip(indicies).map { case ((g, p), i) => s"${g.fieldTypes.map(fti => s"(${fti.fieldType.name}:${fti.index}").mkString(",")},${p.mkString(",")},$i)" } }.mkString(",")
-}
+////Could flatten a little: this is all about one table...
+//case class OrmGettersForThisRowAndPath(ormValueGetters: Array[OrmValueGetterForARow[_]], path: Array[Array[Int]], indicies: Array[Int]) {
+//  def fieldTypeWithIndexs: Array[FieldTypeAndIndex[_]] = ormValueGetters.flatMap(_.fieldTypes)
+//  def prettyString = {ormValueGetters.zip(path).zip(indicies).map { case ((g, p), i) => s"${g.fieldTypes.map(fti => s"(${fti.fieldType.name}:${fti.index}").mkString(",")},${p.mkString(",")},$i)" } }.mkString(",")
+//}
 
 case class TablesAndFieldsAndPaths(map: Map[TableName, OrmGettersAndPath]) {
   def getOrmGettersAndPath(tableName: TableName): OrmGettersAndPath = map.getOrElse(tableName, throw new RuntimeException(s"Cannot find the table ${tableName.tableName} in the known tables: [${map.keys.map(_.tableName).mkString(",")}]"))
@@ -115,12 +111,4 @@ class OrmFactoryImpl[Schema[_]](keys: OrmKeys[Schema], tablesAndFieldsAndPaths: 
 }
 
 
-//class OrmMakerForArrayAny[Schema[_]](numericKeys: OrmKeys[Schema], tablesAndFieldsAndPaths: TablesAndFieldsAndPaths, oneToManyPathMap: Map[OneToManyEntity, Array[Int]]) extends OrmMaker[Array[Any]] {
-//  private val created = new AtomicInteger(0)
-//  def createdCount: Int = created.get
-//  override def apply(mainEntity: MainEntity): Map[OrmEntity, List[List[AnyRef]]] => Stream[Array[Any]] = {
-//    created.incrementAndGet()
-//    new StreamArrayAnyForOneEntity[Schema](numericKeys, mainEntity, tablesAndFieldsAndPaths, oneToManyPathMap)
-//  }
-//}
 

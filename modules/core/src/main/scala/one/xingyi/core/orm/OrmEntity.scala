@@ -1,18 +1,7 @@
 /** Copyright (c) 2020, Phil Rice. Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS AS IS AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 package one.xingyi.core.orm
 
-import java.io.ByteArrayOutputStream
-
-import one.xingyi.core.aggregate.HasChildrenForHolder
-import one.xingyi.core.json.{JsonObject, JsonParser, JsonValue}
-import one.xingyi.core.map.Maps._
-
 import scala.language.higherKinds
-
-
-
-
-
 
 trait FieldTypeToIndex {
   def fieldTypeToIndex[T](fieldType: FieldType[T]): Int
@@ -60,11 +49,6 @@ trait SingleChild extends ChildEntity {
 
   def toMap[X](data: Map[OrmEntity, List[List[Any]]], fn: List[Any] => X): Map[Any, X] =
     data(this).foldLeft[Map[Any, X]](Map())((acc, list) => primaryKeyFieldsAndIndex.asPrimaryKeyAddTo(acc, list, fn(list)))
-
-
-}
-
-object ChildEntity {
 }
 
 case class Keys(val list: List[FieldType[_]]) {
@@ -94,11 +78,11 @@ object Keys {
   }
 }
 
-
 class GetKey(indexes: List[Int]) extends Function1[List[Any], Any] {
   override def apply(oneRow: List[Any]): Any = if (indexes.size == 0) oneRow(indexes.head) else indexes.map(oneRow)
   override def toString(): String = s"GetKey(${indexes.mkString(",")})"
 }
+
 case class KeysAndIndex(list: List[(Int, FieldType[_])]) {
   list.foreach { case (int, ft) => require(int >= 0, s"Have $this") }
   val indexes = list.map(_._1)
@@ -123,6 +107,7 @@ case class MainEntity(tableName: TableName, alias: String, primaryKeyField: Keys
   override def prettyPrint(i: String) = s"${i}MainEntity(${tableName.tableName}, id=${primaryKeyFieldsAndIndex.prettyPrint}, $fieldsPrettyString)${childrenPrettyString(i)}"
   def createTempTable(implicit fastOrmSql: FastOrmSql): BatchDetails => String = fastOrmSql.createMainTempTable(this)
 }
+
 case class OneToManyEntity(tableName: TableName, alias: String, primaryKeyField: Keys, parentId: Keys, dataFields: List[FieldType[_]], children: List[ChildEntity]) extends ChildEntity {
   override lazy val fieldsForCreate: List[FieldType[_]] = (super.fieldsForCreate ::: parentId.list).distinct
   val parentIdsAndIndex = parentId.toKeysAndIndex(this)
@@ -156,6 +141,7 @@ case class ManyToOneEntity(tableName: TableName, alias: String, primaryKeyField:
     idsInParentAndIndex.getFrom[X](childsData, parentsData, default)
   }
 }
+
 case class SameIdEntity(tableName: TableName, alias: String, primaryKeyField: Keys, dataFields: List[FieldType[_]], children: List[ChildEntity]) extends SingleChild {
   override def parentFields: List[FieldType[_]] = List()
   override def prettyPrint(i: String) = s"${i}SameId(${tableName.tableName}, id=${primaryKeyField.nameString}, $fieldsPrettyString)${childrenPrettyString(i)}"
