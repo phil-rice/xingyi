@@ -3,6 +3,8 @@ package one.xingyi.core.orm
 import one.xingyi.core.optics.Lens
 import one.xingyi.core.orm.BulkDataPointer.{pointerToNthChildL, pointerToNthL}
 
+import scala.language.higherKinds
+
 object BulkDataPointer {
   val pointerToNthL: Lens[ChildBulkDataPointer, Int] = Lens(_.nth, (b, p) => b.updatePointer(p))
   def pointerToNthChildL(n: Int): Lens[ChildBulkDataPointer, ChildBulkDataPointer] = Lens(_.children(n), (b, child) => b.updateNthChild(n, child))

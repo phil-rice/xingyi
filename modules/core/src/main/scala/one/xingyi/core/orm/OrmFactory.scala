@@ -86,9 +86,6 @@ case class EntityAndFieldsAndPath[E <: OrmEntity](entity: E, fieldsAndPath: OrmG
   entity.validate
 }
 trait OrmFactory[Schema[_]] {
-  def ormMaker(map: Map[OneToManyEntity, OrmKey[Schema, _]]): OrmMaker[Array[Any]]
-  def ormDataMaker(map: Map[OneToManyEntity, OrmKey[Schema, _]]): OrmMaker[Array[Any]]
-
   def mainEntity(tableName: TableName, alias: String, primaryKey: Keys, children: List[EntityAndFieldsAndPath[_ <: ChildEntity]]): EntityAndFieldsAndPath[MainEntity]
   def manyToOneEntity(tableName: TableName, alias: String, primaryKey: Keys, idInParent: Keys, children: List[EntityAndFieldsAndPath[_ <: ChildEntity]]): EntityAndFieldsAndPath[ManyToOneEntity]
   def sameIdEntity(tableName: TableName, alias: String, primaryKey: Keys, children: List[EntityAndFieldsAndPath[_ <: ChildEntity]]): EntityAndFieldsAndPath[SameIdEntity]
@@ -115,166 +112,15 @@ class OrmFactoryImpl[Schema[_]](keys: OrmKeys[Schema], tablesAndFieldsAndPaths: 
     val entity = OneToManyEntity(tableName, alias, primaryKey, parentId, fieldsAndPath.fieldTypes.toList, children.map(_.entity))
     EntityAndFieldsAndPath(entity, fieldsAndPath)
   }
-  override def ormMaker(map: Map[OneToManyEntity, OrmKey[Schema, _]]): OrmMaker[Array[Any]] =
-    new OrmMakerForArrayAny(keys, tablesAndFieldsAndPaths, map.map { case (k, v) => (k, (v.path :+ v.index).toArray) })
-  override def ormDataMaker(map: Map[OneToManyEntity, OrmKey[Schema, _]]): OrmMaker[Array[Any]] =
-    new OrmMakerForArrayAnyUsingOrmData[Schema](keys, tablesAndFieldsAndPaths, map)
 }
 
 
-class StreamArrayAnyForOneEntity[Schema[_]](numericKeys: OrmKeys[Schema], mainEntity: MainEntity, tablesAndFieldsAndPaths: TablesAndFieldsAndPaths, oneToManyPathMap: Map[OneToManyEntity, Array[Int]])
-  extends (Map[OrmEntity, List[List[AnyRef]]] => Stream[Array[Any]]) {
-  val aliasToOrmGetters: Map[String, OrmGettersForThisRowAndPath] = (mainEntity :: mainEntity.children).map { entity =>
-    (entity.alias, tablesAndFieldsAndPaths.getOrmGettersAndPath(entity.tableName).toForThisRow(entity.fieldsForCreate.map(_.name)))
-  }.toMap
+//class OrmMakerForArrayAny[Schema[_]](numericKeys: OrmKeys[Schema], tablesAndFieldsAndPaths: TablesAndFieldsAndPaths, oneToManyPathMap: Map[OneToManyEntity, Array[Int]]) extends OrmMaker[Array[Any]] {
+//  private val created = new AtomicInteger(0)
+//  def createdCount: Int = created.get
+//  override def apply(mainEntity: MainEntity): Map[OrmEntity, List[List[AnyRef]]] => Stream[Array[Any]] = {
+//    created.incrementAndGet()
+//    new StreamArrayAnyForOneEntity[Schema](numericKeys, mainEntity, tablesAndFieldsAndPaths, oneToManyPathMap)
+//  }
+//}
 
-  //  println(s"StreamArrayForOneEntity(${mainEntity.tableName}\n${aliasToOrmGetters.map { case (a, getter) => s"$a,${getter.prettyString}" }.mkString("\n")}")
-
-
-  def apply(data: Map[OrmEntity, List[List[AnyRef]]]): Stream[Array[Any]] = {
-    val mainData = data(mainEntity)
-    val arrays: List[(Any, List[AnyRef], Array[Any])] = mainData.map { oneRow =>
-      val ar = numericKeys.makeAndSetupArray
-      populateArray(mainEntity, oneRow, ar)
-      (mainEntity.primaryKeyFieldsAndIndex.getKey(oneRow), oneRow, ar)
-    }
-    val arraysAsMap: Map[Any, Array[Any]] = arrays.map(t => (t._1, t._3)).toMap
-
-
-    mainEntity.children.collect { case e: ManyToOneEntity => e }.foreach(processAllDataForManyToOne(mainEntity, arrays, data))
-    mainEntity.children.collect { case e: OneToManyEntity => e }.foreach(processAllDataForOneToMany(mainEntity, arraysAsMap, data))
-    mainEntity.children.collect { case e: SameIdEntity => e }.foreach(processAllDataForSameIds(mainEntity, arraysAsMap, data))
-
-    arrays.map(_._3).toStream
-  }
-
-  def processAllDataForManyToOne(parent: OrmEntity, parentData: List[(Any, List[AnyRef], Array[Any])], data: Map[OrmEntity, List[List[AnyRef]]])(entity: ManyToOneEntity) {
-    val manyToOneData: Map[Any, List[AnyRef]] = data(entity).map(oneRow => entity.primaryKeyFieldsAndIndex.getKey(oneRow) -> oneRow).toMap
-    val parentIdsAndIndex = entity.idInParent.toKeysAndIndex(parent)
-    parentData.foreach { case (_, mainRow, ar) =>
-      val manyToOneRow = manyToOneData(parentIdsAndIndex.getKey(mainRow))
-      populateArray(entity, manyToOneRow, ar)
-    }
-  }
-
-  private def processAllDataForOneToMany(parent: OrmEntity, arrays: Map[Any, Array[Any]], data: Map[OrmEntity, List[List[AnyRef]]])(entity: OneToManyEntity) {
-    val nextPath = oneToManyPathMap(entity)
-    data(entity).foreach { oneRow =>
-      val parentsKey = entity.parentIdsAndIndex.getKey(oneRow)
-      val ar = arrays(parentsKey)
-      numericKeys.next(nextPath, ar)
-      populateArray(entity, oneRow, ar)
-    }
-  }
-
-  def populateArray(entity: OrmEntity, oneRow: List[AnyRef], ar: Array[Any]) {
-    val fieldsAndPath = aliasToOrmGetters(entity.alias)
-    val ormGetters: Array[OrmValueGetterForARow[_]] = fieldsAndPath.ormValueGetters
-    val paths = fieldsAndPath.path
-    val indicies = fieldsAndPath.indicies
-    var i = 0
-    while (i < ormGetters.length) {
-      val d = ormGetters(i) apply (oneRow.toArray)
-      numericKeys.put(paths(i), indicies(i), ar, d)
-      i += 1
-    }
-  }
-
-  //  private def makeIdArrayForManyToOne(parentEntity: OrmEntity, data: Map[OrmEntity, List[List[AnyRef]]])(entity: ManyToOneEntity) =
-  //    (entity, entity.idInParent.toKeysAndIndex(parentEntity), data(entity).map(oneRow => entity.primaryKeyFieldsAndIndex.getKey(oneRow) -> oneRow).toMap)
-
-  private def processAllDataForSameIds(parent: OrmEntity, arrays: Map[Any, Array[Any]], data: Map[OrmEntity, List[List[AnyRef]]])(entity: SameIdEntity) =
-    data(entity).foreach { oneRow => populateArray(entity, oneRow, arrays(entity.primaryKeyFieldsAndIndex.getKey(oneRow))) }
-
-}
-
-
-class StreamArrayAnyForOneEntity2[Schema[_]](numericKeys: OrmKeys[Schema], mainEntity: MainEntity, tablesAndFieldsAndPaths: TablesAndFieldsAndPaths, oneToManyPathMap: Map[OneToManyEntity, Array[Int]])
-  extends (Map[OrmEntity, List[List[AnyRef]]] => Stream[Array[Any]]) {
-  val aliasToOrmGetters: Map[String, OrmGettersForThisRowAndPath] = (mainEntity :: mainEntity.children).map { entity =>
-    (entity.alias, tablesAndFieldsAndPaths.getOrmGettersAndPath(entity.tableName).toForThisRow(entity.fieldsForCreate.map(_.name)))
-  }.toMap
-
-  //  println(s"StreamArrayForOneEntity(${mainEntity.tableName}\n${aliasToOrmGetters.map { case (a, getter) => s"$a,${getter.prettyString}" }.mkString("\n")}")
-
-  def apply(data: Map[OrmEntity, List[List[AnyRef]]]): Stream[Array[Any]] = {
-    val mainData = data(mainEntity)
-    val arrays: List[(Any, List[AnyRef], Array[Any])] = mainData.map { oneRow =>
-      val ar = numericKeys.makeAndSetupArray
-      populateArray(mainEntity, oneRow, ar)
-      (mainEntity.primaryKeyFieldsAndIndex.getKey(oneRow), oneRow, ar)
-    }
-    val arraysAsMap: Map[Any, Array[Any]] = arrays.map(t => (t._1, t._3)).toMap
-
-
-    mainEntity.children.collect { case e: ManyToOneEntity => e }.foreach(processAllDataForManyToOne(mainEntity, arrays, data))
-    mainEntity.children.collect { case e: OneToManyEntity => e }.foreach(processAllDataForOneToMany(mainEntity, arraysAsMap, data))
-    mainEntity.children.collect { case e: SameIdEntity => e }.foreach(processAllDataForSameIds(mainEntity, arraysAsMap, data))
-
-    arrays.map(_._3).toStream
-  }
-
-  def processAllDataForManyToOne(parent: OrmEntity, parentData: List[(Any, List[AnyRef], Array[Any])], data: Map[OrmEntity, List[List[AnyRef]]])(entity: ManyToOneEntity) {
-    val manyToOneData: Map[Any, List[AnyRef]] = data(entity).map(oneRow => entity.primaryKeyFieldsAndIndex.getKey(oneRow) -> oneRow).toMap
-    val parentIdsAndIndex = entity.idInParent.toKeysAndIndex(parent)
-    parentData.foreach { case (_, mainRow, ar) =>
-      val manyToOneRow = manyToOneData(parentIdsAndIndex.getKey(mainRow))
-      populateArray(entity, manyToOneRow, ar)
-    }
-  }
-
-  private def processAllDataForOneToMany(parent: OrmEntity, arrays: Map[Any, Array[Any]], data: Map[OrmEntity, List[List[AnyRef]]])(entity: OneToManyEntity) {
-    val nextPath = oneToManyPathMap(entity)
-    data(entity).foreach { oneRow =>
-      val parentsKey = entity.parentIdsAndIndex.getKey(oneRow)
-      val ar = arrays(parentsKey)
-      numericKeys.next(nextPath, ar)
-      populateArray(entity, oneRow, ar)
-    }
-  }
-
-  def populateArray(entity: OrmEntity, oneRow: List[AnyRef], ar: Array[Any]) {
-    val fieldsAndPath = aliasToOrmGetters(entity.alias)
-    val ormGetters: Array[OrmValueGetterForARow[_]] = fieldsAndPath.ormValueGetters
-    val paths = fieldsAndPath.path
-    val indicies = fieldsAndPath.indicies
-    var i = 0
-    while (i < ormGetters.length) {
-      val d = ormGetters(i) apply (oneRow.toArray)
-      numericKeys.put(paths(i), indicies(i), ar, d)
-      i += 1
-    }
-  }
-
-  //  private def makeIdArrayForManyToOne(parentEntity: OrmEntity, data: Map[OrmEntity, List[List[AnyRef]]])(entity: ManyToOneEntity) =
-  //    (entity, entity.idInParent.toKeysAndIndex(parentEntity), data(entity).map(oneRow => entity.primaryKeyFieldsAndIndex.getKey(oneRow) -> oneRow).toMap)
-
-  private def processAllDataForSameIds(parent: OrmEntity, arrays: Map[Any, Array[Any]], data: Map[OrmEntity, List[List[AnyRef]]])(entity: SameIdEntity) =
-    data(entity).foreach { oneRow => populateArray(entity, oneRow, arrays(entity.primaryKeyFieldsAndIndex.getKey(oneRow))) }
-
-}
-
-class OrmMakerForArrayAny[Schema[_]](numericKeys: OrmKeys[Schema], tablesAndFieldsAndPaths: TablesAndFieldsAndPaths, oneToManyPathMap: Map[OneToManyEntity, Array[Int]]) extends OrmMaker[Array[Any]] {
-  private val created = new AtomicInteger(0)
-  def createdCount: Int = created.get
-  override def apply(mainEntity: MainEntity): Map[OrmEntity, List[List[AnyRef]]] => Stream[Array[Any]] = {
-    created.incrementAndGet()
-    new StreamArrayAnyForOneEntity[Schema](numericKeys, mainEntity, tablesAndFieldsAndPaths, oneToManyPathMap)
-  }
-}
-
-class OrmMakerForArrayAnyUsingOrmData[Schema[_]](numericKeys: OrmKeys[Schema], tablesAndFieldsAndPaths: TablesAndFieldsAndPaths, oneToManyPathMap: Map[OneToManyEntity, OrmKey[Schema, _]])
-                                                (implicit findOrmEntityAndField: FindOrmEntityAndField[Schema]) extends OrmMaker[Array[Any]] {
-
-  val factory = new OrmDataFactoryForMainEntity()
-  private val createdCounter = new AtomicInteger()
-  def createdCount = createdCounter.get
-  override def apply(entity: MainEntity): Map[OrmEntity, List[List[Any]]] => Stream[Array[Any]] = {
-    val populateFn = new NumericKeyPopulator[Schema](numericKeys, tablesAndFieldsAndPaths, entity, oneToManyPathMap);
-    createdCounter.incrementAndGet();
-    { data: Map[OrmEntity, List[List[Any]]] =>
-      val ormData = factory(entity, () => numericKeys.makeAndSetupArray, data.map { case (k, v) => k -> v.toArray }, populateFn)
-      ormData.applyAll()
-    }
-  }
-}
