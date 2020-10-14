@@ -38,7 +38,7 @@ abstract class AbtractFastOrmBulkSpecWithDeepNestingSpec[M[_] : ClosableM, J: Js
       addIf(s4, "t4" -> new TableName("t4", "")))
 
     val maker: OrmMaker[String] = OrmMaker[String, SchemaForTest]("someContext", schema1)
-    lazy val ormFactory: OrmFactory[SchemaForTest] = new OrmFactoryImpl[String, SchemaForTest](schema1)
+    lazy val ormFactory: OrmFactory[SchemaForTest] = OrmFactory[String, SchemaForTest](schema1)
 
     fn(maker, ormFactory,  schema1, schema2, schema3, schema4)
   }

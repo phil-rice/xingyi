@@ -12,14 +12,13 @@ object TableAndFieldType {
 
   def apply(table: TableName, firstField: String, fields: Seq[String]): List[TableAndFieldType[_]] =
     (firstField :: fields.toList).map(f => TableAndFieldType(table, FieldType(f)))
-
-
 }
 
 case class TableName(tableName: String, description: String)
 case class TableAndFieldType[T](tableName: TableName, fieldType: FieldType[T]) {
   def fieldName = fieldType.name
 }
+case class TableAndFieldTypes[Context, T](tableName: TableName, fieldTypes: List[FieldType[_]])(implicit val tx: ValueFromMultipleTableFields[Context, T])
 trait ToTableAndFieldTypes[Context, Schema[_]] {
   def apply[T](s: Schema[T]): List[TableAndFieldTypes[Context, T]]
 }
@@ -44,5 +43,3 @@ object ValueFromMultipleTableFields {
     }
   }
 }
-
-case class TableAndFieldTypes[Context, T](tableName: TableName, fieldTypes: List[FieldType[_]])(implicit val tx: ValueFromMultipleTableFields[Context, T])

@@ -20,6 +20,3 @@ trait Write[T] {
     data.foreach { case (sql, data) => prepare(sql) |=> insert(data) }
 
 }
-class WriteOrm {
-
-}

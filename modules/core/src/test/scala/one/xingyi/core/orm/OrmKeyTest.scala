@@ -22,8 +22,6 @@ trait OrmKeyFixture extends UtilsSpec {
                                    (implicit val jsonToStream: JsonToStream[String, SchemaForTest, Placeholder], val tx: ValueFromMultipleTableFields[String, Placeholder]) extends SchemaForTest[Placeholder]
 
   object SchemaForTest {
-//    def parse[T](s: String)(implicit ormValueTransformer: OrmValueTransformer[T]): List[OrmValueGetter[_]] =
-//      parseToTableNameAndFiles[T](s).map { case (tn, fields) => OrmValueGetter(tn, fields)(ormValueTransformer) }
 
     def parseToTableNameAndFiles[T](s: String): List[(TableName, List[FieldType[_]])] = {
       val mainSplitter = Strings.split(";")
@@ -36,10 +34,8 @@ trait OrmKeyFixture extends UtilsSpec {
         else List()
       }
     }
-//    implicit val findKeys: FindOrmEntityAndField[SchemaForTest] = new FindOrmEntityAndField[SchemaForTest] {
-//      override def apply[T](s: SchemaForTest[T]): List[OrmValueGetter[_]] = SchemaForTest.parse(s.key)
-//    }
     type JContext=String
+
     implicit def JsonToStreamFor: JsonToStreamFor[JContext, SchemaForTest] = new JsonToStreamFor[JContext, SchemaForTest] {
       override def putToJson[T](context: JContext, s: SchemaForTest[T]): JsonToStream[String, SchemaForTest, T] = s.jsonToStream
     }
@@ -60,10 +56,6 @@ trait OrmKeyFixture extends UtilsSpec {
       }
     }
 
-    implicit def debugArray: AsDebugString[SchemaForTest] = new AsDebugString[SchemaForTest] {
-      override def apply[T](t: SchemaForTest[T]): String = "{" + t.key + "}"
-      override def data(t: Any): String = t.toString
-    }
     implicit object ObjectKeyMapForTest extends SchemaMapKey[SchemaForTest] {
       override def childKey[T](t: SchemaForTest[T]): String = t.key
       override def children[T](t: SchemaForTest[T]): ChildrenInSchema[SchemaForTest] = t match {
@@ -73,12 +65,5 @@ trait OrmKeyFixture extends UtilsSpec {
       }
     }
   }
-  def checkKeys[Schema[_]](n: OrmKeys[Schema])(expected: String) =
-    checkStrings(n.prettyPrint(""), expected)
 
-  def checkArray[Schema[_] : AsDebugString](key: OrmKeys[Schema], a: Array[Any])(expected: String) = {
-    require(key != null)
-    require(a != null)
-    checkStrings(key.printArray("", a).mkString("\n"), expected)
-  }
 }

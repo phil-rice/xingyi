@@ -105,7 +105,7 @@ abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSou
   def mainEntity: MainEntity
   def addressEntity: OneToManyEntity
   def phoneEntity: OneToManyEntity
-  lazy val ormFactory = new OrmFactoryImpl[String, SchemaForTest](schemaForPerson)
+  lazy val ormFactory = OrmFactory[String, SchemaForTest](schemaForPerson)
 
 
 }
