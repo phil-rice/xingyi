@@ -12,7 +12,7 @@ trait OrmBulkData[E] {
   def tableNameToData: Map[String, List[List[Any]]]
   def children: List[ChildOrmBulkData[_]]
   def prettyPrint(map: Map[OrmEntity, List[List[Any]]]): List[String] =
-    s"${ormEntity.tableName.tableName}/${ormEntity.alias}" :: map(ormEntity).map(l => "  " + l) ::: children.flatMap(_.prettyPrint(map))
+    s"${ormEntity.alias.prettyPrint}" :: map(ormEntity).map(l => "  " + l) ::: children.flatMap(_.prettyPrint(map))
 }
 
 trait ChildOrmBulkData[E] extends OrmBulkData[E] {

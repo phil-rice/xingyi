@@ -10,7 +10,6 @@ trait OrmEntity extends FieldTypeToIndex {
   override def fieldTypeToIndex[T](fieldType: FieldType[T]): Int = fieldsForCreate.indexOf(fieldType)
   def alias: Alias
   def tableName: TableName = alias.tableName
-  def alias1: String //TODO remove
   def primaryKeyField: Keys
   def primaryKeyFieldsAndIndex: KeysAndIndex = primaryKeyField.toKeysAndIndex(this)
   def dataFields: List[FieldType[_]]
@@ -53,8 +52,9 @@ trait SingleChild extends ChildEntity {
 }
 
 
-
-case class MainEntity(alias: Alias, alias1: String, primaryKeyField: Keys, dataFields: List[FieldType[_]], children: List[ChildEntity]) extends OrmEntity {
+case class MainEntity(alias: Alias, primaryKeyField: Keys, dataFields: List[FieldType[_]], children: List[ChildEntity]) extends OrmEntity {
+  private val allAliases = this.descendents.map(_.alias.alias)
+  require(allAliases.size == allAliases.toSet.size, s"Have duplicate alias in ${this.descendents.map(_.alias.prettyPrint)}")
   def stream[T](batchConfig: OrmBatchConfig)(implicit ormMaker: OrmMaker[T], fastReaderOps: FastReaderDal, sqlOps: FastOrmSql): Stream[T] =
     stream(FastReader(batchConfig).apply(this), 0)
 
@@ -62,11 +62,11 @@ case class MainEntity(alias: Alias, alias1: String, primaryKeyField: Keys, dataF
     val subStream: Stream[T] = fn(n)
     if (subStream.isEmpty) subStream else subStream #::: stream(fn, n + 1)
   }
-  override def prettyPrint(i: String) = s"${i}MainEntity(${alias.tableName}, id=${primaryKeyFieldsAndIndex.prettyPrint}, $fieldsPrettyString)${childrenPrettyString(i)}"
+  override def prettyPrint(i: String) = s"${i}MainEntity(${alias.prettyPrint}, id=${primaryKeyFieldsAndIndex.prettyPrint}, $fieldsPrettyString)${childrenPrettyString(i)}"
   def createTempTable(implicit fastOrmSql: FastOrmSql): BatchDetails => String = fastOrmSql.createMainTempTable(this)
 }
 
-case class OneToManyEntity(alias: Alias, alias1: String, primaryKeyField: Keys, parentId: Keys, dataFields: List[FieldType[_]], children: List[ChildEntity]) extends ChildEntity {
+case class OneToManyEntity(alias: Alias, primaryKeyField: Keys, parentId: Keys, dataFields: List[FieldType[_]], children: List[ChildEntity]) extends ChildEntity {
   override lazy val fieldsForCreate: List[FieldType[_]] = (super.fieldsForCreate ::: parentId.list).distinct
   val parentIdsAndIndex = parentId.toKeysAndIndex(this)
   override def parentFields: List[FieldType[_]] = List()
@@ -80,7 +80,7 @@ case class OneToManyEntity(alias: Alias, alias1: String, primaryKeyField: Keys, 
 }
 
 /** This will have zero or one entries for each item in the parent. It will be in 'step' with it... allowing cursors to advance together */
-case class OneToZeroOneEntity(alias: Alias, alias1: String, primaryKeyField: Keys, idInParent: Keys, dataFields: List[FieldType[_]], children: List[ChildEntity]) extends SingleChild {
+case class OneToZeroOneEntity(alias: Alias, primaryKeyField: Keys, idInParent: Keys, dataFields: List[FieldType[_]], children: List[ChildEntity]) extends SingleChild {
   override def parentFields: List[FieldType[_]] = idInParent.list
   override def prettyPrint(i: String) = s"${i}ManyToOne(${alias.tableName}, id=${primaryKeyField.nameString}, idInParent=${idInParent.nameString} $fieldsPrettyString)${childrenPrettyString(i)}"
   override def createTempTable(implicit fastOrmSql: FastOrmSql): OrmEntity => String = fastOrmSql.createOneToZeroOneEntityTempTable(this)
@@ -90,7 +90,7 @@ case class OneToZeroOneEntity(alias: Alias, alias1: String, primaryKeyField: Key
   }
 }
 /** this is typically a look up reference. It is very similar to 'oneToZeroOneEntity' except that many of the parent are likely to share the same value. Thus it won't be in sync */
-case class ManyToOneEntity(alias: Alias, alias1: String, primaryKeyField: Keys, idInParent: Keys, dataFields: List[FieldType[_]], children: List[ChildEntity]) extends SingleChild {
+case class ManyToOneEntity(alias: Alias, primaryKeyField: Keys, idInParent: Keys, dataFields: List[FieldType[_]], children: List[ChildEntity]) extends SingleChild {
   override def parentFields: List[FieldType[_]] = idInParent.list
   override def prettyPrint(i: String) = s"${i}ManyToOne(${alias.tableName}, id=${primaryKeyField.nameString}, idInParent=${idInParent.nameString} $fieldsPrettyString)${childrenPrettyString(i)}"
   override def createTempTable(implicit fastOrmSql: FastOrmSql): OrmEntity => String = fastOrmSql.createManyToOneTempTable(this)
@@ -100,7 +100,7 @@ case class ManyToOneEntity(alias: Alias, alias1: String, primaryKeyField: Keys, 
   }
 }
 
-case class SameIdEntity(alias: Alias, alias1: String, primaryKeyField: Keys, dataFields: List[FieldType[_]], children: List[ChildEntity]) extends SingleChild {
+case class SameIdEntity(alias: Alias, primaryKeyField: Keys, dataFields: List[FieldType[_]], children: List[ChildEntity]) extends SingleChild {
   override def parentFields: List[FieldType[_]] = List()
   override def prettyPrint(i: String) = s"${i}SameId(${alias.tableName}, id=${primaryKeyField.nameString}, $fieldsPrettyString)${childrenPrettyString(i)}"
   override def createTempTable(implicit fastOrmSql: FastOrmSql): OrmEntity => String = fastOrmSql.createSameIdTempTable(this)

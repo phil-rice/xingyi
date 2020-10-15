@@ -22,12 +22,12 @@ case class Person(name: String, employer: Employer, address: List[Address], phon
 trait OrmFixture extends SharedOrmFixture {
   implicit def fieldToKeys[T](f: FieldType[T]) = Keys(List(f))
 
-  val employer = ManyToOneEntity(employerAlias, "E", int("eid"), int("employerid"), List(string("name")), List())
-  val address = OneToManyEntity(addressAlias, "A", int("aid"), int("personid"), List(string("add")), List())
-  val phone = OneToManyEntity(phoneAlias, "Ph", int("phid"), int("personid"), List(string("phoneNo")), List())
+  val employer = ManyToOneEntity(employerAlias, int("eid"), int("employerid"), List(string("name")), List())
+  val address = OneToManyEntity(addressAlias, int("aid"), int("personid"), List(string("add")), List())
+  val phone = OneToManyEntity(phoneAlias, int("phid"), int("personid"), List(string("phoneNo")), List())
   //each person has a contact email, and the id of the email is the same as the person
-  val email = SameIdEntity(emailAlias, "E", int("eid"), List(string("email")), List())
-  val main = MainEntity(personAlias, "P", int("pid"), List(string("name")), List(employer, address, phone, email))
+  val email = SameIdEntity(emailAlias, int("eid"), List(string("email")), List())
+  val main = MainEntity(personAlias, int("pid"), List(string("name")), List(employer, address, phone, email))
 
 
 }
@@ -130,17 +130,17 @@ abstract class AbstractFastOrmWithSingleLinkingKeysSpec[M[_] : ClosableM, J: Jso
       employer -> "create temporary table temp_Employer as select E.name, E.eid from temp_Person P,Employer E where P.employerid = E.eid order by P.pid ",
       address -> "create temporary table temp_Address as select A.add, A.aid, A.personid from temp_Person P,Address A where P.pid = A.personid order by A.personid,A.aid ",
       phone -> "create temporary table temp_Phone as select Ph.phoneNo, Ph.phid, Ph.personid from temp_Person P,Phone Ph where P.pid = Ph.personid order by Ph.personid,Ph.phid ",
-      email -> "create temporary table temp_ContactEmail as select DISTINCT  E.email, E.eid from temp_Person P,ContactEmail E where P.pid = E.eid order by E.eid "
+      email -> "create temporary table temp_ContactEmail as select DISTINCT  CE.email, CE.eid from temp_Person P,ContactEmail CE where P.pid = CE.eid order by CE.eid "
     ))
   }
 
   it should "have a pretty print" in {
     checkStrings(main.prettyPrint(""),
-      """MainEntity(Person, id=KeysAndIndex(2,pid), childrenAdded=employerid, data=name){
-        |  ManyToOne(Employer, id=eid, idInParent=employerid data=name)
-        |  OneToMany(Address, id=KeysAndIndex(1,aid), parent=personid data=add)
-        |  OneToMany(Phone, id=KeysAndIndex(1,phid), parent=personid data=phoneNo)
-        |  SameId(ContactEmail, id=eid, data=email)
+      """MainEntity(Person/P, id=KeysAndIndex(2,pid), childrenAdded=employerid, data=name){
+        |  ManyToOne(TableName(Employer,), id=eid, idInParent=employerid data=name)
+        |  OneToMany(TableName(Address,), id=KeysAndIndex(1,aid), parent=personid data=add)
+        |  OneToMany(TableName(Phone,), id=KeysAndIndex(1,phid), parent=personid data=phoneNo)
+        |  SameId(TableName(ContactEmail,), id=eid, data=email)
         |}""".stripMargin)
   }
 

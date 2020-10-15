@@ -76,22 +76,22 @@ abstract class AbstractJdbcIntegrationSpec[M[_] : ClosableM] extends BasicDataSo
 import one.xingyi.json4s.Json4sParser._
 
 class FastOrmWithSingleLinkingKeysSpec extends AbstractFastOrmWithSingleLinkingKeysSpec[SimpleClosable, JValue, BasicDataSource] with BasicDataSourceFixture {
-  lazy val addressEntity = ormFactory.oneToManyEntity(addressAlias, "a", Keys("aid:int"), Keys("personid:int"), List())
-  lazy val phoneEntity = ormFactory.oneToManyEntity(phoneAlias, "ph", Keys("phid:int"), Keys("personid:int"), List())
-  lazy val mainEntity = ormFactory.mainEntity(personAlias, "p", Keys("pid:int"), List(
-      ormFactory.manyToOneEntity(employerAlias, "e", Keys("eid:int"), Keys("employerid:int"), List()),
-      addressEntity,
-      phoneEntity,
-      ormFactory.sameIdEntity(emailAlias, "em", Keys("eid:int"), List())))
+  lazy val addressEntity = ormFactory.oneToManyEntity(addressAlias, Keys("aid:int"), Keys("personid:int"), List())
+  lazy val phoneEntity = ormFactory.oneToManyEntity(phoneAlias, Keys("phid:int"), Keys("personid:int"), List())
+  lazy val mainEntity = ormFactory.mainEntity(personAlias, Keys("pid:int"), List(
+        ormFactory.manyToOneEntity(employerAlias, Keys("eid:int"), Keys("employerid:int"), List()),
+        addressEntity,
+        phoneEntity,
+        ormFactory.sameIdEntity(emailAlias, Keys("eid:int"), List())))
 }
 class FastOrmWithMultipleKeysSpec extends AbstractWithMultipleKeysFastOrmSpec[SimpleClosable, JValue, BasicDataSource] with BasicDataSourceFixture {
-  lazy val addressEntity = ormFactory.oneToManyEntity(addressAlias, "a", Keys("aid1:int,aid2:int"), Keys("personid1:int,personid2:int"), List())
-  lazy val phoneEntity = ormFactory.oneToManyEntity(phoneAlias, "ph", Keys("phid:int"), Keys("personid1:int,personid2:int"), List())
-  lazy val mainEntity = ormFactory.mainEntity(personAlias, "p", Keys("pid1:int,pid2:int"), List(
-      ormFactory.manyToOneEntity(employerAlias, "e", Keys("eid1:int,eid2:int"), Keys("employerid1:int,employerid2:int"), List()),
-      addressEntity,
-      phoneEntity,
-      ormFactory.sameIdEntity(emailAlias, "em", Keys("eid1:int,eid2:int"), List())))
+  lazy val addressEntity = ormFactory.oneToManyEntity(addressAlias, Keys("aid1:int,aid2:int"), Keys("personid1:int,personid2:int"), List())
+  lazy val phoneEntity = ormFactory.oneToManyEntity(phoneAlias, Keys("phid:int"), Keys("personid1:int,personid2:int"), List())
+  lazy val mainEntity = ormFactory.mainEntity(personAlias, Keys("pid1:int,pid2:int"), List(
+        ormFactory.manyToOneEntity(employerAlias, Keys("eid1:int,eid2:int"), Keys("employerid1:int,employerid2:int"), List()),
+        addressEntity,
+        phoneEntity,
+        ormFactory.sameIdEntity(emailAlias, Keys("eid1:int,eid2:int"), List())))
 
 }
 

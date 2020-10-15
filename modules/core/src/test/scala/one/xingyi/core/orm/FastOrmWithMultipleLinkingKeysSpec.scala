@@ -16,12 +16,12 @@ import scala.language.{higherKinds, implicitConversions}
 
 trait OrmWithMultipleKeysFixture extends SharedOrmFixture {
 
-  val employer = ManyToOneEntity(employerAlias, "E", Keys("eid1:int,eid2:int"), Keys("employerid1:int,employerid2:int"), List(string("name")), List())
-  val address = OneToManyEntity(addressAlias, "A", Keys("aid1:int,aid2:int"), Keys("personid1:int,personid2:int"), List(string("add")), List())
-  val phone = OneToManyEntity(phoneAlias, "Ph", Keys("phid:int"), Keys("personid1:int,personid2:int"), List(string("phoneNo")), List())
+  val employer = ManyToOneEntity(employerAlias, Keys("eid1:int,eid2:int"), Keys("employerid1:int,employerid2:int"), List(string("name")), List())
+  val address = OneToManyEntity(addressAlias, Keys("aid1:int,aid2:int"), Keys("personid1:int,personid2:int"), List(string("add")), List())
+  val phone = OneToManyEntity(phoneAlias, Keys("phid:int"), Keys("personid1:int,personid2:int"), List(string("phoneNo")), List())
   //each person has a contact email, and the id of the email is the same as the person
-  val email = SameIdEntity(emailAlias, "E", Keys("eid1:int,eid2:int"), List(string("email")), List())
-  val main = MainEntity(personAlias, "P", Keys("pid1:int,pid2:int"), List(string("name")), List(employer, address, phone, email))
+  val email = SameIdEntity(emailAlias, Keys("eid1:int,eid2:int"), List(string("email")), List())
+  val main = MainEntity(personAlias, Keys("pid1:int,pid2:int"), List(string("name")), List(employer, address, phone, email))
 
 }
 
@@ -116,7 +116,7 @@ abstract class AbstractWithMultipleKeysFastOrmSpec[M[_] : ClosableM, J: JsonPars
       employer -> "create temporary table temp_Employer as select E.name, E.eid1, E.eid2 from temp_Person P,Employer E where P.employerid1 = E.eid1 and P.employerid2 = E.eid2 order by P.pid1, P.pid2 ",
       address -> "create temporary table temp_Address as select A.add, A.aid1, A.aid2, A.personid1, A.personid2 from temp_Person P,Address A where P.pid1 = A.personid1 and P.pid2 = A.personid2 order by A.personid1, A.personid2,A.aid1, A.aid2 ",
       phone -> "create temporary table temp_Phone as select Ph.phoneNo, Ph.phid, Ph.personid1, Ph.personid2 from temp_Person P,Phone Ph where P.pid1 = Ph.personid1 and P.pid2 = Ph.personid2 order by Ph.personid1, Ph.personid2,Ph.phid ",
-      email -> "create temporary table temp_ContactEmail as select DISTINCT  E.email, E.eid1, E.eid2 from temp_Person P,ContactEmail E where P.pid1 = E.eid1 and P.pid2 = E.eid2 order by E.eid1, E.eid2 ")
+      email -> "create temporary table temp_ContactEmail as select DISTINCT  CE.email, CE.eid1, CE.eid2 from temp_Person P,ContactEmail CE where P.pid1 = CE.eid1 and P.pid2 = CE.eid2 order by CE.eid1, CE.eid2 ")
     )
     where.count.get shouldBe 0
   }
@@ -133,11 +133,11 @@ abstract class AbstractWithMultipleKeysFastOrmSpec[M[_] : ClosableM, J: JsonPars
 
   it should "have a pretty print" in {
     checkStrings(main.prettyPrint(""), (
-      """MainEntity(Person, id=KeysAndIndex(3,pid1,4,pid2), childrenAdded=employerid1,employerid2, data=name){
-        |  ManyToOne(Employer, id=eid1,eid2, idInParent=employerid1,employerid2 data=name)
-        |  OneToMany(Address, id=KeysAndIndex(1,aid1,2,aid2), parent=personid1,personid2 data=add)
-        |  OneToMany(Phone, id=KeysAndIndex(1,phid), parent=personid1,personid2 data=phoneNo)
-        |  SameId(ContactEmail, id=eid1,eid2, data=email)
+      """MainEntity(Person/P, id=KeysAndIndex(3,pid1,4,pid2), childrenAdded=employerid1,employerid2, data=name){
+        |  ManyToOne(TableName(Employer,), id=eid1,eid2, idInParent=employerid1,employerid2 data=name)
+        |  OneToMany(TableName(Address,), id=KeysAndIndex(1,aid1,2,aid2), parent=personid1,personid2 data=add)
+        |  OneToMany(TableName(Phone,), id=KeysAndIndex(1,phid), parent=personid1,personid2 data=phoneNo)
+        |  SameId(TableName(ContactEmail,), id=eid1,eid2, data=email)
         |}""".stripMargin))
   }
 

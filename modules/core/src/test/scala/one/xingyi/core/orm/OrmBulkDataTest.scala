@@ -89,7 +89,7 @@ class OrmBulkDataTest extends OrmBulkDataFixture[SimpleClosable] {
         |  Found(n=0,index=0,parentId=List(1),row=Some(List(Employer1, 1)),bulkData=Employer/E(Some(0)),noChildren
         |  Found(n=0,index=0,parentId=List(1),row=Some(List(Phils first address, 3, 1)),bulkData=Address/A(0,2),noChildren
         |  Null()
-        |  Found(n=0,index=1,parentId=List(1),row=Some(List(philsEmail, 1)),bulkData=ContactEmail/E(1),noChildren""".stripMargin)
+        |  Found(n=0,index=1,parentId=List(1),row=Some(List(philsEmail, 1)),bulkData=ContactEmail/CE(1),noChildren""".stripMargin)
   }
 
   it should "be able to iterate over children" in {
@@ -101,13 +101,13 @@ class OrmBulkDataTest extends OrmBulkDataFixture[SimpleClosable] {
         |  Found(n=0,index=0,parentId=List(1),row=Some(List(Employer1, 1)),bulkData=Employer/E(Some(0)),noChildren
         |  Found(n=0,index=0,parentId=List(1),row=Some(List(Phils first address, 3, 1)),bulkData=Address/A(0,2),noChildren
         |  Null()
-        |  Found(n=0,index=1,parentId=List(1),row=Some(List(philsEmail, 1)),bulkData=ContactEmail/E(1),noChildren""".stripMargin)
+        |  Found(n=0,index=1,parentId=List(1),row=Some(List(philsEmail, 1)),bulkData=ContactEmail/CE(1),noChildren""".stripMargin)
     checkStrings(secondAddress.prettyPrint(""),
       """Found(nth=0, bulkData=Person/P,row=Some(List(Phil, 1, 1)),children=
         |  Found(n=0,index=0,parentId=List(1),row=Some(List(Employer1, 1)),bulkData=Employer/E(Some(0)),noChildren
         |  Found(n=1,index=2,parentId=List(1),row=Some(List(Phils second address, 2, 1)),bulkData=Address/A(0,2),noChildren
         |  Null()
-        |  Found(n=0,index=1,parentId=List(1),row=Some(List(philsEmail, 1)),bulkData=ContactEmail/E(1),noChildren""".stripMargin)
+        |  Found(n=0,index=1,parentId=List(1),row=Some(List(philsEmail, 1)),bulkData=ContactEmail/CE(1),noChildren""".stripMargin)
 
   }
 

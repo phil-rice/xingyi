@@ -49,7 +49,7 @@ trait SharedOrmFixture extends OrmKeyFixture {
   val addressAlias = Alias("Address",  alias="A")
   val phoneAlias = Alias("Phone",  alias="Ph")
   //each person has a contact email, and the id of the email is the same as the person
-  val emailAlias = Alias("ContactEmail",  alias="E")
+  val emailAlias = Alias("ContactEmail",  alias="CE")
   val personAlias = Alias("Person",  alias="P")
 
   val schemaForAddress = SchemaItemWithChildren("address", true, List[SchemaForTest[_]](SchemaItem[String]("Address/add")))

@@ -50,10 +50,10 @@ abstract class AbtractFastOrmBulkSpecWithDeepNestingSpec[M[_] : ClosableM, J: Js
     setupSchema(true, true, true, true) { (maker, ormFactory, schema1, schema2, schema3, schema4) =>
       implicit val ormMaker = maker
 
-      val entity4: OneToManyEntity = ormFactory.oneToManyEntity(alias4, "a4", Keys("t4id:int"), Keys("parentId:int"), List())
-      val entity3 = ormFactory.oneToManyEntity(alias3, "a3", Keys("t3id:int"), Keys("parentId:int"), List(entity4))
-      val entity2 = ormFactory.oneToManyEntity(alias2, "a2", Keys("t2id:int"), Keys("parentId:int"), List(entity3))
-      val mainEntity = ormFactory.mainEntity(alias1, "a1", Keys("t1id:int"), List(entity2))
+      val entity4: OneToManyEntity = ormFactory.oneToManyEntity(alias4, Keys("t4id:int"), Keys("parentId:int"), List())
+      val entity3 = ormFactory.oneToManyEntity(alias3, Keys("t3id:int"), Keys("parentId:int"), List(entity4))
+      val entity2 = ormFactory.oneToManyEntity(alias2, Keys("t2id:int"), Keys("parentId:int"), List(entity3))
+      val mainEntity = ormFactory.mainEntity(alias1, Keys("t1id:int"), List(entity2))
 
       setup(ds, mainEntity) {
         executeIt(s"""insert into  t1 (t1id, f1,f2 )            values (1,    't1v1','t1v2');""")
@@ -73,10 +73,10 @@ abstract class AbtractFastOrmBulkSpecWithDeepNestingSpec[M[_] : ClosableM, J: Js
       implicit val arrayTableName = ArrayAliasFromMap[SchemaForTest](Map())
       implicit val maker: OrmMaker[String] = OrmMaker[String, SchemaForTest]("someContext", schema1)
 
-      val entity4 = ormFactory.manyToOneEntity(alias4, "a4", Keys("t4id:int"), Keys("childId:int"), List())
-      val entity3 = ormFactory.manyToOneEntity(alias3, "a3", Keys("t3id:int"), Keys("childId:int"), List(entity4))
-      val entity2 = ormFactory.manyToOneEntity(alias2, "a2", Keys("t2id:int"), Keys("childId:int"), List(entity3))
-      val mainEntity: MainEntity = ormFactory.mainEntity(alias1, "a1", Keys("t1id:int"), List(entity2))
+      val entity4 = ormFactory.manyToOneEntity(alias4, Keys("t4id:int"), Keys("childId:int"), List())
+      val entity3 = ormFactory.manyToOneEntity(alias3, Keys("t3id:int"), Keys("childId:int"), List(entity4))
+      val entity2 = ormFactory.manyToOneEntity(alias2, Keys("t2id:int"), Keys("childId:int"), List(entity3))
+      val mainEntity: MainEntity = ormFactory.mainEntity(alias1, Keys("t1id:int"), List(entity2))
 
       setup(ds, mainEntity) {
         executeIt(s"""insert into  t1 (t1id, childId, f1,f2 )            values (1, 2, 't1v1','t1v2');""")
@@ -95,23 +95,22 @@ abstract class AbtractFastOrmBulkSpecWithDeepNestingSpec[M[_] : ClosableM, J: Js
         lazy val mainBulkData = MainBulkData(mainEntity, data)
 
         checkStrings(mainBulkData.prettyPrint(data).mkString("\n"),
-          """t1/a1
+          """t1
             |  List(t1v1, t1v2, 2, 1)
-            |t2/a2
+            |t2
             |  List(t2v1, t2v2, 3, 2)
-            |t3/a3
+            |t3
             |  List(t3v1, 4, 3)
-            |t4/a4
+            |t4
             |  List(t4v1, 4)""".stripMargin)
 
         val pointer0 = mainBulkData.pointer(0)
 
         checkStrings(pointer0.prettyPrint(""),
-          """Found(nth=0, bulkData=TableName(t1,),row=Some(List(t1v1, t1v2, 2, 1)),children=
+          """Found(nth=0, bulkData=t1,row=Some(List(t1v1, t1v2, 2, 1)),children=
             |  Found(n=0,index=0,parentId=List(1),row=Some(List(t2v1, t2v2, 3, 2)),bulkData=t2(Some(0)),children=
             |    Found(n=0,index=0,parentId=List(2),row=Some(List(t3v1, 4, 3)),bulkData=t3(Some(0)),children=
-            |      Found(n=0,index=0,parentId=List(3),row=Some(List(t4v1, 4)),bulkData=t4(Some(0)),noChildren
-            |""".stripMargin)
+            |      Found(n=0,index=0,parentId=List(3),row=Some(List(t4v1, 4)),bulkData=t4(Some(0)),noChildren""".stripMargin)
 
     }
   }
@@ -130,10 +129,10 @@ abstract class AbtractFastOrmBulkSpecWithDeepNestingSpec[M[_] : ClosableM, J: Js
     setupSchema(false, true, false, true) { (maker, ormFactory, schema1, schema2, schema3, schema4) =>
       implicit val ormMaker = maker
 
-      val entity4 = ormFactory.oneToManyEntity(alias4, "a4", Keys("t4id:int"), Keys("parentId:int"), List())
-      val entity3 = ormFactory.manyToOneEntity(alias3, "a3", Keys("t3id:int"), Keys("childId:int"), List(entity4))
-      val entity2 = ormFactory.oneToManyEntity(alias2, "a2", Keys("t2id:int"), Keys("parentId:int"), List(entity3))
-      val mainEntity: MainEntity = ormFactory.mainEntity(alias1, "a1", Keys("t1id:int"), List(entity2))
+      val entity4 = ormFactory.oneToManyEntity(alias4, Keys("t4id:int"), Keys("parentId:int"), List())
+      val entity3 = ormFactory.manyToOneEntity(alias3, Keys("t3id:int"), Keys("childId:int"), List(entity4))
+      val entity2 = ormFactory.oneToManyEntity(alias2, Keys("t2id:int"), Keys("parentId:int"), List(entity3))
+      val mainEntity: MainEntity = ormFactory.mainEntity(alias1, Keys("t1id:int"), List(entity2))
 
       setup(ds, mainEntity) {
         executeIt(s"""insert into  t1 (t1id,                    f1,f2 )    values (1,           't1v1','t1v2');""")
