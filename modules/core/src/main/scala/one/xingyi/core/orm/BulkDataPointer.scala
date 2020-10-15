@@ -18,8 +18,8 @@ sealed trait BulkDataPointer {
   def children: List[ChildBulkDataPointer]
 
   def currentRow: Option[List[Any]]
-  def pointerOrException: Int = if (nth == -1) throw new RuntimeException(s"Cannot access bulk pointer for ${bulkData.tableName}") else nth
-  def listOfTableNameToDataPoint: List[(String, BulkDataPointer)] = (bulkData.tableName.tableName -> this) :: children.flatMap(_.listOfTableNameToDataPoint)
+  def pointerOrException: Int = if (nth == -1) throw new RuntimeException(s"Cannot access bulk pointer for ${bulkData.alias}") else nth
+  def listOfAliasToDataPoint: List[(String, BulkDataPointer)] = (bulkData.alias.tableName.tableName -> this) :: children.flatMap(_.listOfAliasToDataPoint)
 }
 
 
@@ -29,15 +29,15 @@ trait ChildBulkDataPointer extends BulkDataPointer {
   def updateNthChild(n: Int, child: ChildBulkDataPointer): ChildBulkDataPointer
 
   override def currentRow: Option[List[Any]] = bulkData.data.lift(indexIntoBulkData)
-  def lensToBulkDataPointerWithTable(name: TableName): Option[Lens[ChildBulkDataPointer, ChildBulkDataPointer]] =
-    if (name == bulkData.tableName) Some(Lens.identity) else children.zipWithIndex.flatMap { case (child, i) => child.lensToBulkDataPointerWithTable(name).map(pointerToNthChildL(i) andThen _) }.headOption
+  def lensToBulkDataPointerWithTable(alias: Alias): Option[Lens[ChildBulkDataPointer, ChildBulkDataPointer]] =
+    if (alias == bulkData.alias) Some(Lens.identity) else children.zipWithIndex.flatMap { case (child, i) => child.lensToBulkDataPointerWithTable(alias).map(pointerToNthChildL(i) andThen _) }.headOption
 }
 
 case class FoundChildBulkDataPointer(nth: Int, indexIntoBulkData: Int, parentId: Any, bulkData: ChildOrmBulkData[_], children: List[ChildBulkDataPointer]) extends ChildBulkDataPointer {
   override def updatePointer(p: Int): ChildBulkDataPointer = bulkData.pointer(indexIntoBulkData, parentId, p)
   override def updateNthChild(n: Int, child: ChildBulkDataPointer): ChildBulkDataPointer = copy(children = children.updated(n, child))
   override def prettyPrint(indent: String): String =
-    s"${indent}Found(n=$nth,index=$indexIntoBulkData,parentId=$parentId,row=${currentRow},bulkData=${bulkData.tableName.tableName}(${bulkData.idsForPrettyPrint(indexIntoBulkData, parentId)}),${prettyPrintChildren(indent)}"
+    s"${indent}Found(n=$nth,index=$indexIntoBulkData,parentId=$parentId,row=${currentRow},bulkData=${bulkData.alias.prettyPrint}(${bulkData.idsForPrettyPrint(indexIntoBulkData, parentId)}),${prettyPrintChildren(indent)}"
 }
 
 case class NullBulkDataPointer(bulkData: ChildOrmBulkData[_], children: List[ChildBulkDataPointer]) extends ChildBulkDataPointer {
@@ -51,22 +51,22 @@ case class NullBulkDataPointer(bulkData: ChildOrmBulkData[_], children: List[Chi
 }
 
 case class MainBulkDataPointer(nth: Int, bulkData: OrmBulkData[_], children: List[ChildBulkDataPointer]) extends BulkDataPointer {
-  override def prettyPrint(indent: String): String = s"${indent}Found(nth=$nth, bulkData=${bulkData.tableName},row=${currentRow},${prettyPrintChildren(indent)}"
+  override def prettyPrint(indent: String): String = s"${indent}Found(nth=$nth, bulkData=${bulkData.alias.prettyPrint},row=${currentRow},${prettyPrintChildren(indent)}"
   def fail(msg: String) = throw new RuntimeException(s"$msg. Legal tableMames are ${map.keys.toList.sortBy(_.toString)}")
-  lazy val map: Map[String, BulkDataPointer] = ((bulkData.tableName.tableName -> this) :: listOfTableNameToDataPoint).toMap
+  lazy val map: Map[String, BulkDataPointer] = ((bulkData.alias.tableName.tableName -> this) :: listOfAliasToDataPoint).toMap
 
-  def currentRow(tableName: TableName): Option[List[Any]] = map(tableName.tableName).currentRow
+  def currentRow(alias: Alias): Option[List[Any]] = map(alias.tableName.tableName).currentRow
   override def currentRow: Option[List[Any]] = bulkData.data.lift(nth)
 
-  def keyValues[Context, Schema[_], T](context: Context, schema: Schema[T])(implicit getKey: SchemaMapKey[Schema], toTableAndFieldTypes: ToTableAndFieldTypes[Context, Schema]): List[(String, T)] = {
+  def keyValues[Context, Schema[_], T](context: Context, schema: Schema[T])(implicit getKey: SchemaMapKey[Schema], toTableAndFieldTypes: ToAliasAndFieldTypes[Context, Schema]): List[(String, T)] = {
     val key = getKey.childKey(schema)
     try {
       toTableAndFieldTypes(schema).flatMap {
-        case t@TableAndFieldTypes(tableName, fieldTypes) =>
-          map.get(tableName.tableName) match {
+        case t@AliasAndFieldTypes(alias, fieldTypes) =>
+          map.get(alias.tableName.tableName) match {
             case Some(pointer) => try {
               val bulkData = pointer.bulkData
-              currentRow(tableName).map(row => (key -> t.tx(context, bulkData.ormEntity, fieldTypes)(row)))
+              currentRow(alias).map(row => (key -> t.tx(context, bulkData.ormEntity, fieldTypes)(row)))
             } catch {case e: Exception => throw new RuntimeException(s"Error in keyValues($context,$key, $t", e)}
             case None => Nil
           }
@@ -75,22 +75,22 @@ case class MainBulkDataPointer(nth: Int, bulkData: OrmBulkData[_], children: Lis
     catch {case e: Exception => throw new RuntimeException(s"Error in keyValues($context,$key", e)}
   }
 
-  def allPointers[Context](tableName: TableName): Seq[MainBulkDataPointer] = {
-    val tableL = childWithTableLOrException(tableName)
+  def allPointers[Context](alias: Alias): Seq[MainBulkDataPointer] = {
+    val tableL = childWithTableLOrException(alias)
     val childPointer = tableL(this)
     val childToPoints = tableL andThen pointerToNthL
     (childPointer, childPointer.bulkData) match {
       case (f: FoundChildBulkDataPointer, o: OneToManyBulkData) => (0 to o.parentIdToListOfIndexes(f.parentId).size - 1).map(i => childToPoints.set(this, i))
       case (f: NullBulkDataPointer, _) => List()
-      case (s, p) => throw new RuntimeException(s"Cannot iterate over table $tableName. The bulkdata is of type ${s.getClass}")
+      case (s, p) => throw new RuntimeException(s"Cannot iterate over table $alias. The bulkdata is of type ${s.getClass}")
     }
   }
 
   def pointerToNthChildForMainL(n: Int): Lens[MainBulkDataPointer, ChildBulkDataPointer] = Lens(_.children(n), (b, child) => b.copy(children = children.updated(n, child)))
 
-  def childWithTableL(name: TableName): Option[Lens[MainBulkDataPointer, ChildBulkDataPointer]] =
-    children.zipWithIndex.flatMap { case (child, i) => child.lensToBulkDataPointerWithTable(name).map(childLens => pointerToNthChildForMainL(i) andThen childLens) }.headOption
+  def childWithTableL(alias: Alias): Option[Lens[MainBulkDataPointer, ChildBulkDataPointer]] =
+    children.zipWithIndex.flatMap { case (child, i) => child.lensToBulkDataPointerWithTable(alias).map(childLens => pointerToNthChildForMainL(i) andThen childLens) }.headOption
 
-  def childWithTableLOrException(name: TableName): Lens[MainBulkDataPointer, ChildBulkDataPointer] =
-    childWithTableL(name).getOrElse(fail(s"Cannot find the lens to the tablename ${name} "))
+  def childWithTableLOrException(alias: Alias): Lens[MainBulkDataPointer, ChildBulkDataPointer] =
+    childWithTableL(alias).getOrElse(fail(s"Cannot find the lens to the tablename ${alias} "))
 }

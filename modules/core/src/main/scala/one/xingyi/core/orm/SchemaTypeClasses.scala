@@ -30,7 +30,7 @@ object SchemaMapKey {
   }
 }
 
-trait ToTableAndFieldTypes[Context, Schema[_]] {def apply[T](s: Schema[T]): List[TableAndFieldTypes[Context, T]]}
+trait ToAliasAndFieldTypes[Context, Schema[_]] {def apply[T](s: Schema[T]): List[AliasAndFieldTypes[Context, T]]}
 
 trait Placeholder
 
@@ -40,16 +40,16 @@ trait FieldFilter[F[_]] {
 }
 
 trait IsLinkFieldFilter[F[_]] extends FieldFilter[F]
-trait ArrayTableName[F[_]] {
-  def apply(f: F[_]): Option[TableName]
+trait ArrayAlias[F[_]] {
+  def apply(f: F[_]): Option[Alias]
 }
-case class ArrayTableNameFromMap[S[_] : SchemaMapKey](map: Map[String, TableName]) extends ArrayTableName[S] {
-  override def apply(f: S[_]): Option[TableName] = map.get(f.key)
+case class ArrayAliasFromMap[S[_] : SchemaMapKey](map: Map[String, Alias]) extends ArrayAlias[S] {
+  override def apply(f: S[_]): Option[Alias] = map.get(f.key)
 }
 
 trait IsObjectFieldFilter[F[_]] extends FieldFilter[F]
 object IsObjectFieldFilter {
-  implicit def isObject[F[_]](implicit hasChildren: HasChildrenForHolder[F], arrayFieldFilter: ArrayTableName[F]): IsObjectFieldFilter[F] =
+  implicit def isObject[F[_]](implicit hasChildren: HasChildrenForHolder[F], arrayFieldFilter: ArrayAlias[F]): IsObjectFieldFilter[F] =
     new IsObjectFieldFilter[F] {override def apply[T](f: F[T]): Boolean = hasChildren(f).nonEmpty && arrayFieldFilter(f).isEmpty}
 }
 

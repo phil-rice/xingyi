@@ -16,12 +16,12 @@ import scala.language.{higherKinds, implicitConversions}
 
 trait OrmWithMultipleKeysFixture extends SharedOrmFixture {
 
-  val employer = ManyToOneEntity(employerTable, "E", Keys("eid1:int,eid2:int"), Keys("employerid1:int,employerid2:int"), List(string("name")), List())
-  val address = OneToManyEntity(addressTable, "A", Keys("aid1:int,aid2:int"), Keys("personid1:int,personid2:int"), List(string("add")), List())
-  val phone = OneToManyEntity(phoneTable, "Ph", Keys("phid:int"), Keys("personid1:int,personid2:int"), List(string("phoneNo")), List())
+  val employer = ManyToOneEntity(employerAlias, "E", Keys("eid1:int,eid2:int"), Keys("employerid1:int,employerid2:int"), List(string("name")), List())
+  val address = OneToManyEntity(addressAlias, "A", Keys("aid1:int,aid2:int"), Keys("personid1:int,personid2:int"), List(string("add")), List())
+  val phone = OneToManyEntity(phoneAlias, "Ph", Keys("phid:int"), Keys("personid1:int,personid2:int"), List(string("phoneNo")), List())
   //each person has a contact email, and the id of the email is the same as the person
-  val email = SameIdEntity(emailTable, "E", Keys("eid1:int,eid2:int"), List(string("email")), List())
-  val main = MainEntity(personTable, "P", Keys("pid1:int,pid2:int"), List(string("name")), List(employer, address, phone, email))
+  val email = SameIdEntity(emailAlias, "E", Keys("eid1:int,eid2:int"), List(string("email")), List())
+  val main = MainEntity(personAlias, "P", Keys("pid1:int,pid2:int"), List(string("name")), List(employer, address, phone, email))
 
 }
 

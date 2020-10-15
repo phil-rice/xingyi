@@ -10,16 +10,17 @@ import scala.language.{higherKinds, implicitConversions}
 
 abstract class AbtractFastOrmBulkSpecWithDeepNestingSpec[M[_] : ClosableM, J: JsonParser, DS <: DataSource](implicit jdbcOps: JdbcOps[DataSource]) extends SharedOrmFixture with SetupDatabaseForOrmFixture[DS] with DatabaseSourceFixture[DS] {
 
-  val table1 = TableName("t1", "")
-  val table2 = TableName("t2", "")
-  val table3 = TableName("t3", "")
-  val table4 = TableName("t4", "")
+  val alias1 = Alias("t1")
+  val alias2 = Alias("t2")
+  val alias3 = Alias("t3")
+  val alias4 = Alias("t4")
+
   type JContext = String
 
   def executeIt = { s: String => jdbcOps.executeSql(s) apply ds }
-  implicit val x = ValueFromMultipleTableFields.valueFromMultipleTableFieldsFor[JContext, String](Parser.ParserForString)
+  implicit val x = ValueFromMultipleAliasFields.valueFromMultipleTableFieldsFor[JContext, String](Parser.ParserForString)
 
-  def setupSchema(s1: Boolean, s2: Boolean, s3: Boolean, s4: Boolean)(fn: (OrmMaker[String], OrmFactory[SchemaForTest],  SchemaForTest[_], SchemaForTest[_], SchemaForTest[_], SchemaForTest[_]) => Unit): Unit = {
+  def setupSchema(s1: Boolean, s2: Boolean, s3: Boolean, s4: Boolean)(fn: (OrmMaker[String], OrmFactory[SchemaForTest], SchemaForTest[_], SchemaForTest[_], SchemaForTest[_], SchemaForTest[_]) => Unit): Unit = {
     implicit def stringToSchemaForTest(s: String): (SchemaForTest[String]) = SchemaItem[String](s)
 
     val schema4 = SchemaItemWithChildren("t4", s4, List[SchemaForTest[_]]("t4/i1"))
@@ -32,27 +33,27 @@ abstract class AbtractFastOrmBulkSpecWithDeepNestingSpec[M[_] : ClosableM, J: Js
     implicit def toTableNameString(e: OrmEntity): String = e.tableName.tableName
 
     import one.xingyi.core.map.Maps._
-    implicit val arrayTableName = ArrayTableNameFromMap[SchemaForTest](Map[String, TableName]().
-      addIf(s2, "t2" -> new TableName("t2", "")).
-      addIf(s3, "t3" -> new TableName("t3", "")).
-      addIf(s4, "t4" -> new TableName("t4", "")))
+    implicit val arrayTableName = ArrayAliasFromMap[SchemaForTest](Map[String, Alias]().
+      addIf(s2, "t2" -> Alias("t2")).
+      addIf(s3, "t3" -> Alias("t3")).
+      addIf(s4, "t4" -> Alias("t4")))
 
     val maker: OrmMaker[String] = OrmMaker[String, SchemaForTest]("someContext", schema1)
     lazy val ormFactory: OrmFactory[SchemaForTest] = OrmFactory[String, SchemaForTest](schema1)
 
-    fn(maker, ormFactory,  schema1, schema2, schema3, schema4)
+    fn(maker, ormFactory, schema1, schema2, schema3, schema4)
   }
 
   behavior of "deeply nested one to many"
 
   it should "be loadable" in {
-    setupSchema(true, true, true, true) { (maker, ormFactory,  schema1, schema2, schema3, schema4) =>
+    setupSchema(true, true, true, true) { (maker, ormFactory, schema1, schema2, schema3, schema4) =>
       implicit val ormMaker = maker
 
-      val entity4: OneToManyEntity = ormFactory.oneToManyEntity(table4, "a4", Keys("t4id:int"), Keys("parentId:int"), List())
-      val entity3 = ormFactory.oneToManyEntity(table3, "a3", Keys("t3id:int"), Keys("parentId:int"), List(entity4))
-      val entity2 = ormFactory.oneToManyEntity(table2, "a2", Keys("t2id:int"), Keys("parentId:int"), List(entity3))
-      val mainEntity = ormFactory.mainEntity(table1, "a1", Keys("t1id:int"), List(entity2))
+      val entity4: OneToManyEntity = ormFactory.oneToManyEntity(alias4, "a4", Keys("t4id:int"), Keys("parentId:int"), List())
+      val entity3 = ormFactory.oneToManyEntity(alias3, "a3", Keys("t3id:int"), Keys("parentId:int"), List(entity4))
+      val entity2 = ormFactory.oneToManyEntity(alias2, "a2", Keys("t2id:int"), Keys("parentId:int"), List(entity3))
+      val mainEntity = ormFactory.mainEntity(alias1, "a1", Keys("t1id:int"), List(entity2))
 
       setup(ds, mainEntity) {
         executeIt(s"""insert into  t1 (t1id, f1,f2 )            values (1,    't1v1','t1v2');""")
@@ -68,14 +69,14 @@ abstract class AbtractFastOrmBulkSpecWithDeepNestingSpec[M[_] : ClosableM, J: Js
   behavior of "deeply nested many to one"
 
   def setupNestedManyToOne(fn: (MainEntity) => OrmMaker[String] => Unit): Unit = {
-    setupSchema(false, false, false, false) { (maker, ormFactory,  schema1, schema2, schema3, schema4) =>
-      implicit val arrayTableName = ArrayTableNameFromMap[SchemaForTest](Map())
+    setupSchema(false, false, false, false) { (maker, ormFactory, schema1, schema2, schema3, schema4) =>
+      implicit val arrayTableName = ArrayAliasFromMap[SchemaForTest](Map())
       implicit val maker: OrmMaker[String] = OrmMaker[String, SchemaForTest]("someContext", schema1)
 
-      val entity4 = ormFactory.manyToOneEntity(table4, "a4", Keys("t4id:int"), Keys("childId:int"), List())
-      val entity3 = ormFactory.manyToOneEntity(table3, "a3", Keys("t3id:int"), Keys("childId:int"), List(entity4))
-      val entity2 = ormFactory.manyToOneEntity(table2, "a2", Keys("t2id:int"), Keys("childId:int"), List(entity3))
-      val mainEntity: MainEntity = ormFactory.mainEntity(table1, "a1", Keys("t1id:int"), List(entity2))
+      val entity4 = ormFactory.manyToOneEntity(alias4, "a4", Keys("t4id:int"), Keys("childId:int"), List())
+      val entity3 = ormFactory.manyToOneEntity(alias3, "a3", Keys("t3id:int"), Keys("childId:int"), List(entity4))
+      val entity2 = ormFactory.manyToOneEntity(alias2, "a2", Keys("t2id:int"), Keys("childId:int"), List(entity3))
+      val mainEntity: MainEntity = ormFactory.mainEntity(alias1, "a1", Keys("t1id:int"), List(entity2))
 
       setup(ds, mainEntity) {
         executeIt(s"""insert into  t1 (t1id, childId, f1,f2 )            values (1, 2, 't1v1','t1v2');""")
@@ -126,13 +127,13 @@ abstract class AbtractFastOrmBulkSpecWithDeepNestingSpec[M[_] : ClosableM, J: Js
   behavior of "deeply nested one to many and many to one"
 
   it should "be loadable" in {
-    setupSchema(false, true, false, true) { (maker, ormFactory,  schema1, schema2, schema3, schema4) =>
+    setupSchema(false, true, false, true) { (maker, ormFactory, schema1, schema2, schema3, schema4) =>
       implicit val ormMaker = maker
 
-      val entity4 = ormFactory.oneToManyEntity(table4, "a4", Keys("t4id:int"), Keys("parentId:int"), List())
-      val entity3 = ormFactory.manyToOneEntity(table3, "a3", Keys("t3id:int"), Keys("childId:int"), List(entity4))
-      val entity2 = ormFactory.oneToManyEntity(table2, "a2", Keys("t2id:int"), Keys("parentId:int"), List(entity3))
-      val mainEntity: MainEntity = ormFactory.mainEntity(table1, "a1", Keys("t1id:int"), List(entity2))
+      val entity4 = ormFactory.oneToManyEntity(alias4, "a4", Keys("t4id:int"), Keys("parentId:int"), List())
+      val entity3 = ormFactory.manyToOneEntity(alias3, "a3", Keys("t3id:int"), Keys("childId:int"), List(entity4))
+      val entity2 = ormFactory.oneToManyEntity(alias2, "a2", Keys("t2id:int"), Keys("parentId:int"), List(entity3))
+      val mainEntity: MainEntity = ormFactory.mainEntity(alias1, "a1", Keys("t1id:int"), List(entity2))
 
       setup(ds, mainEntity) {
         executeIt(s"""insert into  t1 (t1id,                    f1,f2 )    values (1,           't1v1','t1v2');""")

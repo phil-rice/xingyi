@@ -26,36 +26,36 @@ trait EntityFixture {
   val telField = string("tel")
 
   implicit def fieldToKeys[T](f: FieldType[T]) = Keys(List(f))
-  val addressTable = TableName("address", "")
-  val phoneTable = TableName("phone", "")
-  val phoneDetailsTable = TableName("phonedetails", "")
-  val personTable = TableName("person", "")
+  val addressAlias = Alias("address",  alias="a")
+  val phoneAlias = Alias("phone", alias= "ph")
+  val phoneDetailsAlias = Alias("phonedetails", alias= "pd")
+  val personAlias = Alias("person", alias= "p")
 
-  val addressEntity = OneToManyEntity(addressTable, "a", addressIdField, addressPersonIdField, List(line1Field, line2Field), List())
-  val phoneDetailsEntity = OneToManyEntity(phoneDetailsTable, "pd", phoneDetailsIdField, phonePersonIdField, List(purposeField, telField), List())
-  val phoneEntity = OneToManyEntity(phoneTable, "ph", phoneIdField, phonePersonIdField, List(manufacturerField), List(phoneDetailsEntity))
-  val mainEntity = MainEntity(personTable, "p", personIdField, List(nameField), List(addressEntity, phoneEntity))
+  val addressEntity = OneToManyEntity(addressAlias, "a", addressIdField, addressPersonIdField, List(line1Field, line2Field), List())
+  val phoneDetailsEntity = OneToManyEntity(phoneDetailsAlias, "pd", phoneDetailsIdField, phonePersonIdField, List(purposeField, telField), List())
+  val phoneEntity = OneToManyEntity(phoneAlias, "ph", phoneIdField, phonePersonIdField, List(manufacturerField), List(phoneDetailsEntity))
+  val mainEntity = MainEntity(personAlias, "p", personIdField, List(nameField), List(addressEntity, phoneEntity))
 }
 
 abstract class AbstractEntityTest[E <: OrmEntity] extends UtilsSpec {
 
-  val someTable = TableName("sometable", "")
-  val otherTable = TableName("othertable", "")
+  val someAlias = Alias("sometable")
+  val otherAlias = Alias("othertable")
 
-  def entity(tableName: TableName, alias: String, primaryKey: Keys, otherKeys: Keys, dataFields: List[FieldType[_]], children: List[_ <: ChildEntity]): E
+  def entity(alias: Alias, alias1: String, primaryKey: Keys, otherKeys: Keys, dataFields: List[FieldType[_]], children: List[_ <: ChildEntity]): E
   //  def otherIds(keyToCopySize: Keys, prefix: String) = Keys(keyToCopySize.list.zipWithIndex.map { case (_, i) => FieldType(s"$prefix$i") })
 
   behavior of getClass.getSimpleName
 
   it should "have the primary key after the data fields in all fields: single key" in {
-    val e = entity(someTable, "someAlias", Keys("pk"), Keys("other"), List(FieldType("a"), FieldType("b"), FieldType("c")), List())
+    val e = entity(someAlias, "someAlias", Keys("pk"), Keys("other"), List(FieldType("a"), FieldType("b"), FieldType("c")), List())
     val fieldNames = e.fieldsForCreate.map(_.name)
     fieldNames.take(3) shouldBe List("a", "b", "c")
     fieldNames should contain("pk")
     fieldNames.toSet.size shouldBe fieldNames.size
   }
   it should "have the primary key after the data fields in all fields: multiple keys key" in {
-    val e = entity(someTable, "someAlias", Keys("pk1,pk2"), Keys("other"), List(FieldType("a"), FieldType("b"), FieldType("c")), List())
+    val e = entity(someAlias, "someAlias", Keys("pk1,pk2"), Keys("other"), List(FieldType("a"), FieldType("b"), FieldType("c")), List())
     val fieldNames = e.fieldsForCreate.map(_.name)
     fieldNames.take(3) shouldBe List("a", "b", "c")
     fieldNames should contain("pk1")
@@ -64,7 +64,7 @@ abstract class AbstractEntityTest[E <: OrmEntity] extends UtilsSpec {
   }
 
   it should "only have keys once even if the data fields have the same name" in {
-    val e = entity(someTable, "someAlias", Keys("a,b,pk"), Keys("c,other"), List(FieldType("a"), FieldType("b"), FieldType("c")), List())
+    val e = entity(someAlias, "someAlias", Keys("a,b,pk"), Keys("c,other"), List(FieldType("a"), FieldType("b"), FieldType("c")), List())
     val fieldNames = e.fieldsForCreate.map(_.name)
     withClue(fieldNames) {
       fieldNames.take(3) shouldBe List("a", "b", "c")
@@ -74,8 +74,8 @@ abstract class AbstractEntityTest[E <: OrmEntity] extends UtilsSpec {
   }
 
   it should "have extra fields if they are added by (say) the many to one table" in {
-    val m21 = ManyToOneEntity(otherTable, "otherAlias", Keys("whoCares"), Keys("added1,added2"), List(FieldType("x"), FieldType("y")), List())
-    val e = entity(someTable, "someAlias", Keys("a,b,pk"), Keys("other"), List(FieldType("a"), FieldType("b"), FieldType("c")), List(m21))
+    val m21 = ManyToOneEntity(otherAlias, "otherAlias", Keys("whoCares"), Keys("added1,added2"), List(FieldType("x"), FieldType("y")), List())
+    val e = entity(someAlias, "someAlias", Keys("a,b,pk"), Keys("other"), List(FieldType("a"), FieldType("b"), FieldType("c")), List(m21))
 
     val fieldNames = e.fieldsForCreate.map(_.name)
     withClue(fieldNames) {
@@ -90,7 +90,7 @@ abstract class AbstractEntityTest[E <: OrmEntity] extends UtilsSpec {
     }
   }
   it should "have a primaryKeyFieldsAndIndex" in {
-    val e = entity(someTable, "someAlias", Keys("a,b,pk"), Keys("other"), List(FieldType("a"), FieldType("b"), FieldType("c")), List())
+    val e = entity(someAlias, "someAlias", Keys("a,b,pk"), Keys("other"), List(FieldType("a"), FieldType("b"), FieldType("c")), List())
     val fieldNames = e.fieldsForCreate.map(_.name)
     e.primaryKeyFieldsAndIndex shouldBe KeysAndIndex(List(
       (0, FieldType("a")),
@@ -100,16 +100,16 @@ abstract class AbstractEntityTest[E <: OrmEntity] extends UtilsSpec {
 }
 
 class MainEntityTest extends AbstractEntityTest[MainEntity] {
-  override def entity(tableName: TableName, alias: String, primaryKey: Keys, otherKeys: Keys, dataFields: List[FieldType[_]], children: List[_ <: ChildEntity]): MainEntity =
-    MainEntity(tableName, alias, primaryKey, dataFields, children)
+  override def entity(alias: Alias, alias1: String, primaryKey: Keys, otherKeys: Keys, dataFields: List[FieldType[_]], children: List[_ <: ChildEntity]): MainEntity =
+    MainEntity(alias, alias1, primaryKey, dataFields, children)
 }
 class OneToManyTest extends AbstractEntityTest[OneToManyEntity] {
-  override def entity(tableName: TableName, alias: String, primaryKey: Keys, otherKeys: Keys, dataFields: List[FieldType[_]], children: List[_ <: ChildEntity]) = {
-    OneToManyEntity(tableName, alias, primaryKey, otherKeys, dataFields, children)
+  override def entity(alias: Alias, alias1: String, primaryKey: Keys, otherKeys: Keys, dataFields: List[FieldType[_]], children: List[_ <: ChildEntity]) = {
+    OneToManyEntity(alias, alias1, primaryKey, otherKeys, dataFields, children)
   }
 
   it should "have a parentIdsAndIndex" in {
-    val e: OneToManyEntity = entity(someTable, "someAlias", Keys("a,b,pk"), Keys("p1,p2,c"), List(FieldType("a"), FieldType("b"), FieldType("c")), List())
+    val e: OneToManyEntity = entity(someAlias, "someAlias", Keys("a,b,pk"), Keys("p1,p2,c"), List(FieldType("a"), FieldType("b"), FieldType("c")), List())
     val fieldNames = e.fieldsForCreate.map(_.name)
     e.parentIdsAndIndex shouldBe KeysAndIndex(List(
       (fieldNames.indexOf("p1"), FieldType("p1")),
@@ -119,17 +119,17 @@ class OneToManyTest extends AbstractEntityTest[OneToManyEntity] {
 
 }
 class ManyToOneTest extends AbstractEntityTest[ManyToOneEntity] {
-  override def entity(tableName: TableName, alias: String, primaryKey: Keys, otherKeys: Keys, dataFields: List[FieldType[_]], children: List[_ <: ChildEntity]) = {
-    ManyToOneEntity(tableName, alias, primaryKey, otherKeys, dataFields, children)
+  override def entity(alias: Alias, alias1: String, primaryKey: Keys, otherKeys: Keys, dataFields: List[FieldType[_]], children: List[_ <: ChildEntity]) = {
+    ManyToOneEntity(alias, alias1, primaryKey, otherKeys, dataFields, children)
   }
 }
 class SameIdEntityTest extends AbstractEntityTest[SameIdEntity] {
-  override def entity(tableName: TableName, alias: String, primaryKey: Keys, otherKeys: Keys, dataFields: List[FieldType[_]], children: List[_ <: ChildEntity]) = {
-    SameIdEntity(tableName, alias, primaryKey, dataFields, children)
+  override def entity(alias: Alias, alias1: String, primaryKey: Keys, otherKeys: Keys, dataFields: List[FieldType[_]], children: List[_ <: ChildEntity]) = {
+    SameIdEntity(alias, alias1, primaryKey, dataFields, children)
   }
 }
 class OneToZeroOneEntityTest extends AbstractEntityTest[OneToZeroOneEntity] {
-  override def entity(tableName: TableName, alias: String, primaryKey: Keys, otherKeys: Keys, dataFields: List[FieldType[_]], children: List[_ <: ChildEntity]) = {
-    OneToZeroOneEntity(tableName, alias, primaryKey, otherKeys, dataFields, children)
+  override def entity(alias: Alias, alias1: String, primaryKey: Keys, otherKeys: Keys, dataFields: List[FieldType[_]], children: List[_ <: ChildEntity]) = {
+    OneToZeroOneEntity(alias, alias1, primaryKey, otherKeys, dataFields, children)
   }
 }

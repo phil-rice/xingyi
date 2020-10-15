@@ -23,12 +23,12 @@ class PartitionedSchemaTest extends SharedOrmFixture {
     filter(SchemaItemWithChildren("c", false, List(schemaForEmail))) shouldBe false
     filter(SchemaItemWithChildren("c", true, List(schemaForEmail))) shouldBe false
   }
-  behavior of classOf[ArrayTableName[SchemaForTest]].getSimpleName
+  behavior of classOf[ArrayAlias[SchemaForTest]].getSimpleName
   it should "Checking the test fixture " in {
     implicit val arrayTableName = arrayTableNameForPerson
-    val filter = implicitly[ArrayTableName[SchemaForTest]]
-    filter(schemaForAddress) shouldBe Some(addressTable)
-    filter(schemaForPhone) shouldBe Some(phoneTable)
+    val filter = implicitly[ArrayAlias[SchemaForTest]]
+    filter(schemaForAddress) shouldBe Some(addressAlias)
+    filter(schemaForPhone) shouldBe Some(phoneAlias)
     filter(schemaForPerson) shouldBe None
     filter(schemaForEmail) shouldBe None
     filter(SchemaItem[String]("someKey")) shouldBe None
@@ -44,7 +44,7 @@ class PartitionedSchemaTest extends SharedOrmFixture {
       PartitionedSchema[SchemaForTest](schemaForEmployer.key, schemaForEmployer),
       PartitionedSchema[SchemaForTest](schemaForEmail.key, schemaForEmail))
     arrays shouldBe List(
-      (addressTable,PartitionedSchema[SchemaForTest](schemaForAddress.key, schemaForAddress)),
-      (phoneTable,PartitionedSchema[SchemaForTest](schemaForPhone.key, schemaForPhone)))
+      (addressAlias,PartitionedSchema[SchemaForTest](schemaForAddress.key, schemaForAddress)),
+      (phoneAlias,PartitionedSchema[SchemaForTest](schemaForPhone.key, schemaForPhone)))
   }
 }

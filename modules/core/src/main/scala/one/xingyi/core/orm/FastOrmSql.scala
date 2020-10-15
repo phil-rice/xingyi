@@ -38,45 +38,48 @@ trait FastOrmSql {
 
   def createMainTempTable(e: OrmEntity)(batchDetails: BatchDetails): String =
     s"create temporary table ${tempTableName(e)} as " +
-      s"select ${selectFields(e)} from ${e.tableName.tableName} ${e.alias} " +
+      s"select ${selectFields(e)} from ${tableAlias(e)} " +
       batchDetails.whereForTable.where(e.alias).fold("")(w => s"where $w ") +
       s"order by ${selectKey(e.alias, e.primaryKeyField)} " +
       s"limit ${batchDetails.batchSize} offset ${batchDetails.offset}"
 
   def createOneToManyTempTable(e: OneToManyEntity)(parent: OrmEntity): String =
-    s"create temporary table temp_${e.tableName.tableName} as " +
+    s"create temporary table ${tempTableName(e)} as " +
       s"select ${selectFields(e)} " +
-      s"from ${tempTableName(parent)} ${parent.alias},${e.tableName.tableName} ${e.alias} " +
+      s"from ${tempAlias(parent)},${tableAlias(e)} " +
       s"where ${whereKey(parent.alias, parent.primaryKeyField, e.alias, e.parentId)} " +
       s"order by ${selectKey(e.alias, e.parentId)},${selectKey(e.alias, e.primaryKeyField)} "
 
   def createManyToOneTempTable(e: ManyToOneEntity)(parent: OrmEntity): String =
-    s"create temporary table temp_${e.tableName.tableName} as " +
+    s"create temporary table temp_${e.alias.tableName.tableName} as " +
       s"select ${selectFields(e)} " +
-      s"from ${tempTableName(parent)} ${parent.alias},${e.tableName.tableName} ${e.alias} " +
+      s"from ${tempAlias(parent)},${tableAlias(e)} " +
       s"where ${whereKey(parent.alias, e.idInParent, e.alias, e.primaryKeyField)} " +
       s"order by ${selectKey(parent.alias, parent.primaryKeyField)} "
 
   def createOneToZeroOneEntityTempTable(e: OneToZeroOneEntity)(parent: OrmEntity): String =
-    s"create temporary table temp_${e.tableName.tableName} as " +
+    s"create temporary table temp_${e.alias.tableName.tableName} as " +
       s"select DISTINCT  ${selectFields(e)} " +
-      s"from ${tempTableName(parent)} ${parent.alias},${e.tableName.tableName} ${e.alias} " +
+      s"from ${tempAlias(parent)},${tableAlias(e)} " +
       s"where ${whereKey(parent.alias, e.idInParent, e.alias, e.primaryKeyField)} " +
       s"order by ${selectKey(parent.alias, parent.primaryKeyField)} "
 
   def createSameIdTempTable(e: SameIdEntity)(parent: OrmEntity): String =
-    s"create temporary table temp_${e.tableName.tableName} as " +
+    s"create temporary table temp_${e.alias.tableName.tableName} as " +
       s"select DISTINCT  ${selectFields(e)} " +
-      s"from ${tempTableName(parent)} ${parent.alias},${e.tableName.tableName} ${e.alias} " +
+      s"from ${tempAlias(parent)},${tableAlias(e)} " +
       s"where ${whereKey(parent.alias, parent.primaryKeyField, e.alias, e.primaryKeyField)} " +
       s"order by ${selectKey(e.alias, e.primaryKeyField)} "
 
 
   def drainSql(e: OrmEntity): String = s"select * from ${tempTableName(e)}"
 
-  def selectKey(alias: String, keys: Keys): String = keys.list.map(k => alias + "." + k.name).mkString(", ")
-  def whereKey(alias1: String, keys1: Keys, alias2: String, keys2: Keys): String = Keys.zip(keys1, keys2).map { case (k1, k2) => s"$alias1.${k1.name} = $alias2.${k2.name}" }.mkString(" and ")
-  def selectFields(e: OrmEntity): String = (e.fieldsForCreate).map(f => e.alias + "." + f.name).mkString(", ")
+  def tableAlias(e: OrmEntity): String = e.alias.tableName.tableName + " " + e.alias.alias
+  def tempAlias(e: OrmEntity): String = tempTableName(e) + " " + e.alias.alias
+  def selectKey(alias: Alias, keys: Keys): String = keys.list.map(k => alias.alias + "." + k.name).mkString(", ")
+  def whereKey(alias1: Alias, keys1: Keys, alias2: Alias, keys2: Keys): String =
+    Keys.zip(keys1, keys2).map { case (k1, k2) => s"${alias1.alias}.${k1.name} = ${alias2.alias}.${k2.name}" }.mkString(" and ")
+  def selectFields(e: OrmEntity): String = (e.fieldsForCreate).map(f => e.alias.alias + "." + f.name).mkString(", ")
 
   def insertSql(e: OrmEntity) =
     s"insert into ${e.tableName.tableName} (${e.fieldsForCreate.asString(_.name)}) values (${e.fieldsForCreate.asString(_ => "?")})"

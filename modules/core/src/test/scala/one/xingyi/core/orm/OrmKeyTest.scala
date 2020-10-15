@@ -15,21 +15,21 @@ trait OrmKeyFixture extends UtilsSpec {
   sealed trait SchemaForTest[T] {
     def key: String
     def jsonToStream: JsonToStream[String, SchemaForTest, T]
-    val tx: ValueFromMultipleTableFields[String, T]
+    val tx: ValueFromMultipleAliasFields[String, T]
   }
-  case class SchemaItem[T](key: String)(implicit val jsonToStream: JsonToStream[String, SchemaForTest, T], val tx: ValueFromMultipleTableFields[String, T]) extends SchemaForTest[T]
+  case class SchemaItem[T](key: String)(implicit val jsonToStream: JsonToStream[String, SchemaForTest, T], val tx: ValueFromMultipleAliasFields[String, T]) extends SchemaForTest[T]
   case class SchemaItemWithChildren(key: String, hasMany: Boolean, children: List[SchemaForTest[_]])
-                                   (implicit val jsonToStream: JsonToStream[String, SchemaForTest, Placeholder], val tx: ValueFromMultipleTableFields[String, Placeholder]) extends SchemaForTest[Placeholder]
+                                   (implicit val jsonToStream: JsonToStream[String, SchemaForTest, Placeholder], val tx: ValueFromMultipleAliasFields[String, Placeholder]) extends SchemaForTest[Placeholder]
 
   object SchemaForTest {
 
-    def parseToTableNameAndFiles[T](s: String): List[(TableName, List[FieldType[_]])] = {
+    def parseToTableNameAndFiles[T](s: String): List[(Alias, List[FieldType[_]])] = {
       val mainSplitter = Strings.split(";")
       val fieldsSplitter = Strings.split(",")
       mainSplitter(s).flatMap { tf =>
         if (tf.contains("/")) {
           val (name, fields) = Strings.splitInTwo("/")(tf)
-          List((TableName(name, ""), fieldsSplitter(fields).map(FieldType.apply)))
+          List((Alias(name), fieldsSplitter(fields).map(FieldType.apply)))
         }
         else List()
       }
@@ -39,10 +39,10 @@ trait OrmKeyFixture extends UtilsSpec {
     implicit def JsonToStreamFor: JsonToStreamFor[JContext, SchemaForTest] = new JsonToStreamFor[JContext, SchemaForTest] {
       override def putToJson[T](context: JContext, s: SchemaForTest[T]): JsonToStream[String, SchemaForTest, T] = s.jsonToStream
     }
-    implicit val toTableAndFieldTypes: ToTableAndFieldTypes[JContext, SchemaForTest] = new ToTableAndFieldTypes[JContext, SchemaForTest] {
-      override def apply[T](s: SchemaForTest[T]): List[TableAndFieldTypes[JContext, T]] =
+    implicit val toTableAndFieldTypes: ToAliasAndFieldTypes[JContext, SchemaForTest] = new ToAliasAndFieldTypes[JContext, SchemaForTest] {
+      override def apply[T](s: SchemaForTest[T]): List[AliasAndFieldTypes[JContext, T]] =
         parseToTableNameAndFiles(s.key).
-          map { case (tn, fields) => TableAndFieldTypes[String, T](tn, fields)(s.tx) }
+          map { case (alias, fields) => AliasAndFieldTypes[String, T](alias, fields)(s.tx) }
     }
 
 

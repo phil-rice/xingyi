@@ -45,12 +45,12 @@ trait SetupDatabaseForOrmFixture[DS <: DataSource] {
 
 trait SharedOrmFixture extends OrmKeyFixture {
 
-  val employerTable = TableName("Employer", "")
-  val addressTable = TableName("Address", "")
-  val phoneTable = TableName("Phone", "")
+  val employerAlias = Alias("Employer", alias="E")
+  val addressAlias = Alias("Address",  alias="A")
+  val phoneAlias = Alias("Phone",  alias="Ph")
   //each person has a contact email, and the id of the email is the same as the person
-  val emailTable = TableName("ContactEmail", "")
-  val personTable = TableName("Person", "")
+  val emailAlias = Alias("ContactEmail",  alias="E")
+  val personAlias = Alias("Person",  alias="P")
 
   val schemaForAddress = SchemaItemWithChildren("address", true, List[SchemaForTest[_]](SchemaItem[String]("Address/add")))
   val schemaForPhone = SchemaItemWithChildren("phone", true, List[SchemaForTest[_]](SchemaItem[String]("Phone/phoneNo")))
@@ -67,7 +67,7 @@ trait SharedOrmFixture extends OrmKeyFixture {
     )
   }
   val schemaForPerson = SchemaItemWithChildren("person", true, schemaListForPerson)
-  val arrayTableNameForPerson = ArrayTableNameFromMap[SchemaForTest](Map(schemaForAddress.key -> addressTable, schemaForPhone.key -> phoneTable))
+  val arrayTableNameForPerson = ArrayAliasFromMap[SchemaForTest](Map(schemaForAddress.key -> addressAlias, schemaForPhone.key -> phoneAlias))
 
 }
 

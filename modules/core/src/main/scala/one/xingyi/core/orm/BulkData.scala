@@ -7,8 +7,8 @@ import scala.language.higherKinds
 
 trait OrmBulkData[E] {
   def ormEntity: E with OrmEntity
-  def tableName: TableName = ormEntity.tableName
-  def data: List[List[Any]] = tableNameToData(tableName.tableName)
+  def alias: Alias = ormEntity.alias
+  def data: List[List[Any]] = tableNameToData(alias.tableName.tableName)
   def tableNameToData: Map[String, List[List[Any]]]
   def children: List[ChildOrmBulkData[_]]
   def prettyPrint(map: Map[OrmEntity, List[List[Any]]]): List[String] =
@@ -58,7 +58,7 @@ case class OneToManyBulkData(parentEntity: OrmEntity, ormEntity: OneToManyEntity
 }
 
 case class SameIdBulkData(ormEntity: SameIdEntity, tableNameToData: Map[String, List[List[Any]]], children: List[ChildOrmBulkData[_]]) extends ChildOrmBulkData[SameIdEntity] {
-  val idToIndex: Map[Any, Int] = tableNameToData(ormEntity.tableName.tableName).zipWithIndex.map { case (row, i) => ormEntity.primaryKeyFieldsAndIndex.getKey(row) -> i }.toMap
+  val idToIndex: Map[Any, Int] = tableNameToData(ormEntity.alias.tableName.tableName).zipWithIndex.map { case (row, i) => ormEntity.primaryKeyFieldsAndIndex.getKey(row) -> i }.toMap
   override def pointer(parentIndex: Int, parentId: Any, n: Int): ChildBulkDataPointer = {
     require(n == 0, s"In SameIdBulkData and asked for a pointer with a non zero n ${n}")
     idToIndex.lift(parentId) match {
@@ -70,7 +70,7 @@ case class SameIdBulkData(ormEntity: SameIdEntity, tableNameToData: Map[String, 
 }
 
 case class ManyToOneBulkData(parentEntity: OrmEntity, ormEntity: ManyToOneEntity, tableNameToData: Map[String, List[List[Any]]], children: List[ChildOrmBulkData[_]]) extends ChildOrmBulkData[ManyToOneEntity] {
-  val idToIndex: Map[Any, Int] = tableNameToData(ormEntity.tableName.tableName).zipWithIndex.map { case (row, i) => ormEntity.primaryKeyFieldsAndIndex.getKey(row) -> i }.toMap
+  val idToIndex: Map[Any, Int] = tableNameToData(ormEntity.alias.tableName.tableName).zipWithIndex.map { case (row, i) => ormEntity.primaryKeyFieldsAndIndex.getKey(row) -> i }.toMap
   val keysAndIndex = ormEntity.idInParent.toKeysAndIndex(parentEntity)
   override def pointer(parentIndex: Int, parentId: Any, n: Int): ChildBulkDataPointer = {
     require(n == 0, s"In SameIdBulkData and asked for a pointer with a non zero n ${n}")
@@ -88,7 +88,7 @@ case class ManyToOneBulkData(parentEntity: OrmEntity, ormEntity: ManyToOneEntity
 }
 
 class WriteToJsonForSchema[Schema[_], Context](context: Context, stream: OutputStream)
-                                              (implicit toKey: SchemaMapKey[Schema], toTableAndFieldTypes: ToTableAndFieldTypes[Context, Schema], jsonToStreamFor: JsonToStreamFor[Context, Schema]) {
+                                              (implicit toKey: SchemaMapKey[Schema], toTableAndFieldTypes: ToAliasAndFieldTypes[Context, Schema], jsonToStreamFor: JsonToStreamFor[Context, Schema]) {
   var printComma: Boolean = false
   def putKeyValue[T](main: MainBulkDataPointer, schema: Schema[T]) {
     putKeyColon(toKey.childKey(schema))
@@ -124,12 +124,12 @@ class WriteToJsonForSchema[Schema[_], Context](context: Context, stream: OutputS
       putKeyColon(singleChild.key)
       toJson(main, singleChild)
     }
-  def toJsonForOneManyChildObjects(main: MainBulkDataPointer, tableName: TableName, manyChildObject: PartitionedSchema[Schema]): Unit = {
+  def toJsonForOneManyChildObjects(main: MainBulkDataPointer, alias: Alias, manyChildObject: PartitionedSchema[Schema]): Unit = {
     putKeyColon(manyChildObject.key)
     val oldPrintComma = printComma
     printComma = false
     stream.write('[')
-    main.allPointers(tableName).foreach { child =>
+    main.allPointers(alias).foreach { child =>
       printCommaIfNeeded
       //      stream.write('<')
       toJson(child, manyChildObject)
@@ -138,8 +138,8 @@ class WriteToJsonForSchema[Schema[_], Context](context: Context, stream: OutputS
     stream.write(']')
     printComma = oldPrintComma
   }
-  def toJsonForManyChildObjects(main: MainBulkDataPointer, manyChildObjects: List[(TableName, PartitionedSchema[Schema])]): Unit =
-    manyChildObjects.foreach { case (tableName, singleChild) => toJsonForOneManyChildObjects(main, tableName, singleChild) }
+  def toJsonForManyChildObjects(main: MainBulkDataPointer, manyChildObjects: List[(Alias, PartitionedSchema[Schema])]): Unit =
+    manyChildObjects.foreach { case (alias, singleChild) => toJsonForOneManyChildObjects(main, alias, singleChild) }
 
   def toJson(main: MainBulkDataPointer, schema: PartitionedSchema[Schema]): Unit = {
     stream.write('{')
@@ -161,7 +161,7 @@ object PartitionedSchema {
                        isLinkFieldFilter: IsLinkFieldFilter[Schema],
                        isSimpleFieldFilter: IsSimpleFieldFilter[Schema],
                        isObjectFieldFilter: IsObjectFieldFilter[Schema],
-                       arrayTableName: ArrayTableName[Schema]): PartitionedSchema[Schema] = {
+                       arrayTableName: ArrayAlias[Schema]): PartitionedSchema[Schema] = {
 
     val children = mapKey.children(s)
     PartitionedSchema[Schema](key,
@@ -175,7 +175,7 @@ case class PartitionedSchema[Schema[_]](key: String,
                                         links: List[Schema[_]],
                                         simple: List[Schema[_]],
                                         objects: List[PartitionedSchema[Schema]],
-                                        arrays: List[(TableName, PartitionedSchema[Schema])]) {
+                                        arrays: List[(Alias, PartitionedSchema[Schema])]) {
 
 
 }
