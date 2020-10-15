@@ -34,6 +34,31 @@ object FastReader {
     new FastReaderImpl[T](batchConfig)
 }
 
+case class OrmBatchConfig(dataSource: DataSource, batchSize: Int, whereForTable: WhereForTable = NullWhereForTable) {
+  require(dataSource != null)
+}
+
+case class BatchDetails(batchSize: Int, index: Int, whereForTable: WhereForTable) {
+  def offset: Int = batchSize * index
+}
+class FastReaderImpl[T](batchConfig: OrmBatchConfig)(implicit ormMaker: OrmMaker[T], fastReaderOps: FastReaderDal, sqlOps: FastOrmSql) extends FastReader[T] {
+  //TODO rewrite using closable
+  override def apply(main: MainEntity): Int => Stream[T] = {
+    val fn = ormMaker(main);
+    { n: Int =>
+      val connection = batchConfig.dataSource.getConnection
+      try {
+        fn(FastReader.getOneBlockOfData(connection, main, batchConfig, n))
+      } finally {
+        connection.close()
+      }
+    }
+  }
+}
+
+
+
+
 trait FastReaderDal extends {
   def execute(ds: Connection): String => Unit
   def executePs(ds: Connection, setParams: SetParams[PreparedStatement]): String => Unit
