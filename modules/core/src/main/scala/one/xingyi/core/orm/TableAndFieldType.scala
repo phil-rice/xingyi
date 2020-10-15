@@ -18,10 +18,8 @@ case class TableName(tableName: String, description: String)
 case class TableAndFieldType[T](tableName: TableName, fieldType: FieldType[T]) {
   def fieldName = fieldType.name
 }
+
 case class TableAndFieldTypes[Context, T](tableName: TableName, fieldTypes: List[FieldType[_]])(implicit val tx: ValueFromMultipleTableFields[Context, T])
-trait ToTableAndFieldTypes[Context, Schema[_]] {
-  def apply[T](s: Schema[T]): List[TableAndFieldTypes[Context, T]]
-}
 
 trait ValueFromMultipleTableFields[Context, T] {
   def apply(context: Context, fieldTypeToIndex: FieldTypeToIndex, fieldTypes: List[FieldType[_]]): (List[Any] => T)

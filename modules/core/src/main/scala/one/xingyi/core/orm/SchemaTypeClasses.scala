@@ -16,59 +16,47 @@ import scala.language.higherKinds
  * there is a fake T called Placeholder. */
 trait SchemaMapKey[Schema[_]] {
   def childKey[T](t: Schema[T]): String // The main object might not have a key, but the children will
-  def children[T](t: Schema[T]): ChildrenInSchema[Schema]
+  def children[T](t: Schema[T]): List[Schema[_]]
   def descendants[T](t: Schema[T]): List[Schema[_]] = {
-    val c: List[Schema[_]] = children(t).children
-    c ::: c.flatMap(descendants(_))
+    children(t) ::: children(t).flatMap(descendants(_))
   }
 }
 
 object SchemaMapKey {
   implicit class SchemaMapKeyOps[S[_], T](s: S[T])(implicit k: SchemaMapKey[S]) {
     def key: String = k.childKey(s)
-    def children: ChildrenInSchema[S] = k.children(s)
+    def children: List[S[_]] = k.children(s)
     def descendants: List[S[_]] = k.descendants(s)
   }
 }
 
-sealed trait ChildArity
-case object NoChildren extends ChildArity
-case object OneChild extends ChildArity
-case object ManyChildren extends ChildArity
-
-sealed abstract class ChildrenInSchema[Schema[_]](val arity: ChildArity) {def children: List[Schema[_]]}
-case class Zero[Schema[_]]() extends ChildrenInSchema[Schema](NoChildren) {def children: List[Schema[_]] = Nil}
-case class AlwaysOne[Schema[_]](children: List[Schema[_]]) extends ChildrenInSchema[Schema](OneChild)
-case class ZeroOrMore[Schema[_]](children: List[Schema[_]]) extends ChildrenInSchema[Schema](ManyChildren)
+trait ToTableAndFieldTypes[Context, Schema[_]] {def apply[T](s: Schema[T]): List[TableAndFieldTypes[Context, T]]}
 
 trait Placeholder
+
 trait FieldFilter[F[_]] {
   def apply[T](f: F[T]): Boolean
   def filtered(it: Iterable[F[_]]): List[F[_]] = it.filter(apply(_)).toList
 }
-trait IsLinkFieldFilter[F[_]] extends FieldFilter[F]
 
+trait IsLinkFieldFilter[F[_]] extends FieldFilter[F]
+trait ArrayTableName[F[_]] {
+  def apply(f: F[_]): Option[TableName]
+}
+case class ArrayTableNameFromMap[S[_] : SchemaMapKey](map: Map[String, TableName]) extends ArrayTableName[S] {
+  override def apply(f: S[_]): Option[TableName] = map.get(f.key)
+}
 
 trait IsObjectFieldFilter[F[_]] extends FieldFilter[F]
 object IsObjectFieldFilter {
-  implicit def isObject[F[_]](implicit hasChildren: HasChildrenForHolder[F]): IsObjectFieldFilter[F] = new IsObjectFieldFilter[F] {
-    override def apply[T](f: F[T]): Boolean = hasChildren(f).nonEmpty
-  }
-}
-
-trait TableNameForManySchema[Schema[_]] {
-  def apply[T](s: Schema[T]): Option[TableName]
-}
-
-object TableNameForManySchema {
-  def apply[S[_]](keysToTableNames: Map[String, TableName])(implicit schemaMapKey: SchemaMapKey[S]): TableNameForManySchema[S] = new TableNameForManySchema[S] {
-    override def apply[T](s: S[T]): Option[TableName] = keysToTableNames.get(s.key)
-  }
+  implicit def isObject[F[_]](implicit hasChildren: HasChildrenForHolder[F], arrayFieldFilter: ArrayTableName[F]): IsObjectFieldFilter[F] =
+    new IsObjectFieldFilter[F] {override def apply[T](f: F[T]): Boolean = hasChildren(f).nonEmpty && arrayFieldFilter(f).isEmpty}
 }
 
 trait IsSimpleFieldFilter[F[_]] extends FieldFilter[F]
 object IsSimpleFieldFilter {
-  implicit def isSimple[F[_]](implicit isLink: IsLinkFieldFilter[F], isObject: IsObjectFieldFilter[F]): IsSimpleFieldFilter[F] = new IsSimpleFieldFilter[F] {
-    override def apply[T](f: F[T]): Boolean = !(isLink(f) || isObject(f))
-  }
+  implicit def isSimple[F[_] : SchemaMapKey](implicit isLink: IsLinkFieldFilter[F]): IsSimpleFieldFilter[F] =
+    new IsSimpleFieldFilter[F] {override def apply[T](f: F[T]): Boolean = f.children.isEmpty && !isLink(f)}
 }
+
+

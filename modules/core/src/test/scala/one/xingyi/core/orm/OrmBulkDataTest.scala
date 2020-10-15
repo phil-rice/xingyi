@@ -2,18 +2,13 @@ package one.xingyi.core.orm
 
 import java.io.ByteArrayOutputStream
 
-import javax.sql.DataSource
-import one.xingyi.core.closable.{ClosableM, SimpleClosable}
-import one.xingyi.core.jdbc.DatabaseSourceFixture
-import SimpleClosable._
-import one.xingyi.core.orm.FieldType.{int, string}
+import one.xingyi.core.closable.SimpleClosable
+import one.xingyi.core.orm.SchemaMapKey._
 
-import scala.language.higherKinds
-import scala.language.existentials
+import scala.language.{existentials, higherKinds}
 
 trait OrmBulkDataFixture[M[_]] extends FastOrmFixture[M] {
-  implicit val tableNameForManySchema = TableNameForManySchema[SchemaForTest](Map("address" -> address.tableName, "phone" -> phone.tableName))
-
+  implicit val tableNameForManySchema = ArrayTableNameFromMap[SchemaForTest](Map("address" -> address.tableName, "phone" -> phone.tableName))
 }
 
 class OrmBulkDataTest extends OrmBulkDataFixture[SimpleClosable] {
@@ -124,8 +119,8 @@ class OrmBulkDataTest extends OrmBulkDataFixture[SimpleClosable] {
     val p = PartitionedSchema("someKey", schemaForPerson)
     p.simple.map(_.key) shouldBe List("Person/name")
     p.links.map(_.key) shouldBe List()
-    p.manyChildObjects.map { case (tn, o) => tn.tableName + "->" + o.key } shouldBe List("Address->address", "Phone->phone")
-    p.singleChildObjects.map(_.key) shouldBe List("employer", "email")
+    p.arrays.map { case (tn, o) => tn.tableName + "->" + o.key } shouldBe List("Address->address", "Phone->phone")
+    p.objects.map(_.key) shouldBe List("employer", "email")
   }
 
   behavior of classOf[WriteToJsonForSchema[SchemaForTest, String]].getSimpleName

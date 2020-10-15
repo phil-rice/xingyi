@@ -32,7 +32,7 @@ abstract class AbtractFastOrmBulkSpecWithDeepNestingSpec[M[_] : ClosableM, J: Js
     implicit def toTableNameString(e: OrmEntity): String = e.tableName.tableName
 
     import one.xingyi.core.map.Maps._
-    implicit val tableNameForManySchema = TableNameForManySchema[SchemaForTest](Map[String, TableName]().
+    implicit val arrayTableName = ArrayTableNameFromMap[SchemaForTest](Map[String, TableName]().
       addIf(s2, "t2" -> new TableName("t2", "")).
       addIf(s3, "t3" -> new TableName("t3", "")).
       addIf(s4, "t4" -> new TableName("t4", "")))
@@ -69,7 +69,7 @@ abstract class AbtractFastOrmBulkSpecWithDeepNestingSpec[M[_] : ClosableM, J: Js
 
   def setupNestedManyToOne(fn: (MainEntity) => OrmMaker[String] => Unit): Unit = {
     setupSchema(false, false, false, false) { (maker, ormFactory,  schema1, schema2, schema3, schema4) =>
-      implicit val tableNameForManySchema = TableNameForManySchema[SchemaForTest](Map())
+      implicit val arrayTableName = ArrayTableNameFromMap[SchemaForTest](Map())
       implicit val maker: OrmMaker[String] = OrmMaker[String, SchemaForTest]("someContext", schema1)
 
       val entity4 = ormFactory.manyToOneEntity(table4, "a4", Keys("t4id:int"), Keys("childId:int"), List())

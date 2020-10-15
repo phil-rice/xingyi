@@ -10,7 +10,7 @@ import scala.language.{higherKinds, implicitConversions}
 
 
 trait OrmKeyFixture extends UtilsSpec {
-//  implicit def multipleFieldTx: OrmValueTransformer[String] = (ftis, data) => ftis.map(fti => fti.fieldType.name + ":" + data(fti.index)).mkString(",")
+  //  implicit def multipleFieldTx: OrmValueTransformer[String] = (ftis, data) => ftis.map(fti => fti.fieldType.name + ":" + data(fti.index)).mkString(",")
 
   sealed trait SchemaForTest[T] {
     def key: String
@@ -34,7 +34,7 @@ trait OrmKeyFixture extends UtilsSpec {
         else List()
       }
     }
-    type JContext=String
+    type JContext = String
 
     implicit def JsonToStreamFor: JsonToStreamFor[JContext, SchemaForTest] = new JsonToStreamFor[JContext, SchemaForTest] {
       override def putToJson[T](context: JContext, s: SchemaForTest[T]): JsonToStream[String, SchemaForTest, T] = s.jsonToStream
@@ -42,13 +42,14 @@ trait OrmKeyFixture extends UtilsSpec {
     implicit val toTableAndFieldTypes: ToTableAndFieldTypes[JContext, SchemaForTest] = new ToTableAndFieldTypes[JContext, SchemaForTest] {
       override def apply[T](s: SchemaForTest[T]): List[TableAndFieldTypes[JContext, T]] =
         parseToTableNameAndFiles(s.key).
-          map { case (tn, fields) => TableAndFieldTypes[String,T](tn, fields)(s.tx) }
+          map { case (tn, fields) => TableAndFieldTypes[String, T](tn, fields)(s.tx) }
     }
 
 
     implicit val isLink: IsLinkFieldFilter[SchemaForTest] = new IsLinkFieldFilter[SchemaForTest] {
       def apply[T](f: SchemaForTest[T]): Boolean = hasChildren(f).isEmpty && (f.key endsWith "c")
     }
+
     implicit def hasChildren: HasChildrenForHolder[SchemaForTest] = new HasChildrenForHolder[SchemaForTest] {
       override def apply[T](f: SchemaForTest[T]): List[SchemaForTest[_]] = f match {
         case s: SchemaItemWithChildren => s.children
@@ -58,10 +59,9 @@ trait OrmKeyFixture extends UtilsSpec {
 
     implicit object ObjectKeyMapForTest extends SchemaMapKey[SchemaForTest] {
       override def childKey[T](t: SchemaForTest[T]): String = t.key
-      override def children[T](t: SchemaForTest[T]): ChildrenInSchema[SchemaForTest] = t match {
-        case item: SchemaItem[_] => Zero()
-        case SchemaItemWithChildren(_, true, children) => ZeroOrMore(children)
-        case SchemaItemWithChildren(_, false, children) => AlwaysOne(children)
+      override def children[T](t: SchemaForTest[T]): List[SchemaForTest[_]] = t match {
+        case SchemaItemWithChildren(_, _, children) => children
+        case _ => Nil
       }
     }
   }
