@@ -87,7 +87,7 @@ case class ManyToOneBulkData(parentEntity: OrmEntity, ormEntity: ManyToOneEntity
   override def idsForPrettyPrint(parentIndex: Int, parentId: Any): String = idToIndex.get(myId(parentIndex)).toString
 }
 
-class WriteToJsonForSchema[Schema[_], Context](context: Context, stream: OutputStream)
+class WriteToJsonForSchema[Schema[_]:GetPattern, Context](context: Context, stream: OutputStream)
                                               (implicit toKey: SchemaMapKey[Schema], toTableAndFieldTypes: ToAliasAndFieldTypes[Context, Schema], jsonToStreamFor: JsonToStreamFor[Context, Schema]) {
   var printComma: Boolean = false
   def putKeyValue[T](main: MainBulkDataPointer, schema: Schema[T]) {

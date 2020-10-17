@@ -19,7 +19,7 @@ object OrmMaker {
       }
     }
   }
-  def apply[Context, Schema[_] : SchemaMapKey : IsLinkFieldFilter : HasChildrenForHolder : ArrayAlias]
+  def apply[Context, Schema[_] : SchemaMapKey : IsLinkFieldFilter : HasChildrenForHolder : ArrayAlias : GetPattern]
   (context: Context, schema: Schema[_])
   (implicit toTableAndFieldTypes: ToAliasAndFieldTypes[Context, Schema], jsonToStreamFor: JsonToStreamFor[Context, Schema]): OrmMaker[String] = new OrmMaker[String] {
     override def apply(main: MainEntity): Map[OrmEntity, List[List[Any]]] => Stream[String] = { entityToData =>

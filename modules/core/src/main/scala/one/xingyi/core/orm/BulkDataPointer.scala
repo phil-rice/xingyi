@@ -58,7 +58,7 @@ case class MainBulkDataPointer(nth: Int, bulkData: OrmBulkData[_], children: Lis
   def currentRow(alias: Alias): Option[List[Any]] = map(alias.tableName.tableName).currentRow
   override def currentRow: Option[List[Any]] = bulkData.data.lift(nth)
 
-  def keyValues[Context, Schema[_], T](context: Context, schema: Schema[T])(implicit getKey: SchemaMapKey[Schema], toTableAndFieldTypes: ToAliasAndFieldTypes[Context, Schema]): List[(String, T)] = {
+  def keyValues[Context, Schema[_] : GetPattern, T](context: Context, schema: Schema[T])(implicit getKey: SchemaMapKey[Schema], toTableAndFieldTypes: ToAliasAndFieldTypes[Context, Schema]): List[(String, T)] = {
     val key = getKey.childKey(schema)
     try {
       toTableAndFieldTypes(schema).flatMap {
@@ -66,7 +66,7 @@ case class MainBulkDataPointer(nth: Int, bulkData: OrmBulkData[_], children: Lis
           map.get(alias.tableName.tableName) match {
             case Some(pointer) => try {
               val bulkData = pointer.bulkData
-              currentRow(alias).map(row => (key -> t.tx(context, bulkData.ormEntity, fieldTypes)(row)))
+              currentRow(alias).map(row => (key -> t.tx(context, schema, bulkData.ormEntity, fieldTypes).apply(row)))
             } catch {case e: Exception => throw new RuntimeException(s"Error in keyValues($context,$key, $t", e)}
             case None => Nil
           }

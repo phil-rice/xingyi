@@ -23,6 +23,7 @@ trait OrmKeyFixture extends UtilsSpec {
 
   object SchemaForTest {
 
+    implicit def getPattern: GetPattern[SchemaForTest] = (s: SchemaForTest[_]) => Some(s.key)
     def parseToTableNameAndFiles[T](s: String): List[(Alias, List[FieldType[_]])] = {
       val mainSplitter = Strings.split(";")
       val fieldsSplitter = Strings.split(",")
