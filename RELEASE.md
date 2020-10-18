@@ -21,3 +21,5 @@
 0.6.6 Orm with bulk now loads complicated structures successfully 
 0.6.7 removing println noise 
 0.7.0 Removed the OrmKeys
+0.7.2 The MultipleFieldDates and LinkUrls can now have formats
+
