@@ -4,6 +4,7 @@ import java.io.OutputStream
 import java.text.MessageFormat
 import java.util.Date
 
+import com.sun.tools.javac.util.Context
 import one.xingyi.core.json.{GetFromJson, JsonParser, JsonString, WriteToJson}
 import one.xingyi.core.parserAndWriter.{Parser, Writer}
 
@@ -33,21 +34,21 @@ object LinkUrl {
     override def apply(name: String): FieldType[LinkUrl] = FieldType(name, "varchar(255", numericSort = false)
   }
 
-  implicit def ValueFromMultipleTableFieldsForMultipleFieldData[Context: ZerothValueFromContext, Schema[_]](implicit getPatternFrom: GetPattern[Schema]): ValueFromMultipleAliasFields[Context, LinkUrl] = {
-    new ValueFromMultipleAliasFields[Context, LinkUrl] {
-      override def apply[HasPattern[_] : GetPattern](context: Context, schema: HasPattern[LinkUrl], fieldTypeToIndex: FieldTypeToIndex, fieldTypes: List[FieldType[_]]): List[Any] => LinkUrl =
+  implicit def ValueFromMultipleTableFieldsForMultipleFieldData[Schema[_]](implicit getPatternFrom: GetPattern[Schema]): ValueFromMultipleAliasFields[LinkUrl] = {
+    new ValueFromMultipleAliasFields[LinkUrl] {
+      override def apply[Context: ZerothValueFromContext, HasPattern[_] : GetPattern](context: Context, schema: HasPattern[LinkUrl], fieldTypeToIndex: FieldTypeToIndex, fieldTypes: List[FieldType[_]]): List[Any] => LinkUrl =
         oneRow => LinkUrl(context, schema, fieldTypes.map(ft => oneRow(fieldTypeToIndex.fieldTypeToIndex(ft)).toString))
     }
   }
 
-  implicit def jsonToStreamForLinkUrl[Context: ZerothValueFromContext, Schema[_]]: JsonToStream[Context, Schema, LinkUrl] =
-    (c: Context, s: Schema[LinkUrl], t: Any, stream: OutputStream) => {
+  implicit def jsonToStreamForLinkUrl[Schema[_]]: JsonToStream[Schema, LinkUrl] = new JsonToStream[Schema, LinkUrl] {
+    override def put(f: Schema[LinkUrl], t: Any, stream: OutputStream): Unit =
       t match {
         case o: LinkUrl =>
           JsonToStream.putUnescaped(stream, """{"href":"""")
           JsonToStream.putUnescaped(stream, o.url)
           JsonToStream.putUnescaped(stream, """"}""")
       }
-    }
+  }
 }
 

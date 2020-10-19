@@ -58,7 +58,7 @@ case class MainBulkDataPointer(nth: Int, bulkData: OrmBulkData[_], children: Lis
   def currentRow(alias: Alias): Option[List[Any]] = map(alias.tableName.tableName).currentRow
   override def currentRow: Option[List[Any]] = bulkData.data.lift(nth)
 
-  def keyValues[Context, Schema[_] : GetPattern, T](context: Context, schema: Schema[T])(implicit getKey: SchemaMapKey[Schema], toTableAndFieldTypes: ToAliasAndFieldTypes[Context, Schema]): List[(String, T)] = {
+  def keyValues[Context: ZerothValueFromContext, Schema[_] : GetPattern, T](context: Context, schema: Schema[T])(implicit getKey: SchemaMapKey[Schema], toTableAndFieldTypes: ToAliasAndFieldTypes[Schema]): List[(String, T)] = {
     val key = getKey.childKey(schema)
     try {
       toTableAndFieldTypes(schema).flatMap {

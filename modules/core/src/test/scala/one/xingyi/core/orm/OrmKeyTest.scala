@@ -14,12 +14,13 @@ trait OrmKeyFixture extends UtilsSpec {
 
   sealed trait SchemaForTest[T] {
     def key: String
-    def jsonToStream: JsonToStream[String, SchemaForTest, T]
-    val tx: ValueFromMultipleAliasFields[String, T]
+    def jsonToStream: JsonToStream[SchemaForTest, T]
+    val tx: ValueFromMultipleAliasFields[T]
   }
-  case class SchemaItem[T](key: String)(implicit val jsonToStream: JsonToStream[String, SchemaForTest, T], val tx: ValueFromMultipleAliasFields[String, T]) extends SchemaForTest[T]
+  case class SchemaItem[T](key: String)(implicit val jsonToStream: JsonToStream[SchemaForTest, T], val tx: ValueFromMultipleAliasFields[T]) extends SchemaForTest[T]
   case class SchemaItemWithChildren(key: String, hasMany: Boolean, children: List[SchemaForTest[_]])
-                                   (implicit val jsonToStream: JsonToStream[String, SchemaForTest, Placeholder], val tx: ValueFromMultipleAliasFields[String, Placeholder]) extends SchemaForTest[Placeholder]
+                                   (implicit val jsonToStream: JsonToStream[SchemaForTest, Placeholder],
+                                    val tx: ValueFromMultipleAliasFields[Placeholder]) extends SchemaForTest[Placeholder]
 
   object SchemaForTest {
 
@@ -37,13 +38,13 @@ trait OrmKeyFixture extends UtilsSpec {
     }
     type JContext = String
 
-    implicit def JsonToStreamFor: JsonToStreamFor[JContext, SchemaForTest] = new JsonToStreamFor[JContext, SchemaForTest] {
-      override def putToJson[T](context: JContext, s: SchemaForTest[T]): JsonToStream[String, SchemaForTest, T] = s.jsonToStream
+    implicit def JsonToStreamFor: JsonToStreamFor[SchemaForTest] = new JsonToStreamFor[SchemaForTest] {
+      override def putToJson[T](s: SchemaForTest[T]): JsonToStream[SchemaForTest, T] = s.jsonToStream
     }
-    implicit val toTableAndFieldTypes: ToAliasAndFieldTypes[JContext, SchemaForTest] = new ToAliasAndFieldTypes[JContext, SchemaForTest] {
-      override def apply[T](s: SchemaForTest[T]): List[AliasAndFieldTypes[JContext, T]] =
+    implicit val toTableAndFieldTypes: ToAliasAndFieldTypes[SchemaForTest] = new ToAliasAndFieldTypes[SchemaForTest] {
+      override def apply[T](s: SchemaForTest[T]): List[AliasAndFieldTypes[T]] =
         parseToTableNameAndFiles(s.key).
-          map { case (alias, fields) => AliasAndFieldTypes[String, T](alias, fields)(s.tx) }
+          map { case (alias, fields) => AliasAndFieldTypes[T](alias, fields)(s.tx) }
     }
 
 

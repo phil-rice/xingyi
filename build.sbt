@@ -22,7 +22,8 @@ lazy val versions = new {
 }
 
 lazy val commonSettings = Seq(
-  version := "0.7.2",
+
+  version := "0.7.3-SNAPSHOT",
   resolvers += Resolver.sonatypeRepo("snapshots"), //for mustache
   organization := "one.xingyi",
   publishMavenStyle := true,

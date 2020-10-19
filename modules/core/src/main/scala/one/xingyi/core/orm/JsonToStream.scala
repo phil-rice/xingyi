@@ -4,11 +4,11 @@ import java.io.OutputStream
 
 import scala.language.higherKinds
 
-trait JsonToStreamFor[Context, Schema[_]] {
-  def putToJson[T](c: Context, s: Schema[T]): JsonToStream[Context, Schema, T]
+trait JsonToStreamFor[Schema[_]] {
+  def putToJson[T](s: Schema[T]): JsonToStream[Schema, T]
 }
-trait JsonToStream[Context, F[_], T] {
-  def put(c: Context, f: F[T], t: Any, stream: OutputStream)
+trait JsonToStream[F[_], T] {
+  def put(f: F[T], t: Any, stream: OutputStream)
 }
 
 object JsonToStream {
@@ -36,11 +36,22 @@ object JsonToStream {
     stream.write('"')
   }
 
-  def asStringWithQuotes[Context, F[_], T]: JsonToStream[Context, F, T] = (c: Context, f: F[T], s: Any, stream: OutputStream) => putEscapedWithQuotes(s.toString, stream)
-  def asStringFnWithQuotes[Context, F[_], T](fn: Any => String): JsonToStream[Context, F, T] = (c: Context, f: F[T], s: Any, stream: OutputStream) => putEscapedWithQuotes(fn(s), stream)
+  def asStringWithQuotes[F[_], T]: JsonToStream[F, T] = new JsonToStream[F, T] {
+    override def put(f: F[T], s: Any, stream: OutputStream): Unit = putEscapedWithQuotes(s.toString, stream)
+  }
 
-  implicit def StringJsonToStream[Context, F[_]]: JsonToStream[Context, F, String] = asStringWithQuotes //(s: Any, stream: OutputStream) => putEscapedWithQuotes(s.toString, stream)
-  implicit def IntJsonToStream[Context, F[_]]: JsonToStream[Context, F, Int] = (c: Context, f: F[Int], t: Any, stream: OutputStream) => putUnescaped(stream, t.toString)
-  implicit def DoubleJsonToStream[Context, F[_]]: JsonToStream[Context, F, Double] = (c: Context, f: F[Double], t: Any, stream: OutputStream) => putUnescaped(stream, t.toString)
-  implicit def PlaceholderJsonToStream[Context, F[_]]: JsonToStream[Context, F, Placeholder] = (c: Context, f: F[Placeholder], t: Any, stream: OutputStream) => throw new RuntimeException("Should not attempt to write a placeholder to the output stream")
+  def asStringFnWithQuotes[F[_], T](fn: Any => String): JsonToStream[F, T] = new JsonToStream[F, T] {
+    override def put(f: F[T], s: Any, stream: OutputStream): Unit = putEscapedWithQuotes(fn(s), stream)
+  }
+  def asStringFnWithoutQuotes[F[_], T](fn: Any => String): JsonToStream[F, T] = new JsonToStream[F, T] {
+    override def put(f: F[T], s: Any, stream: OutputStream): Unit = putUnescaped(stream, fn(s))
+  }
+
+
+  implicit def StringJsonToStream[F[_]]: JsonToStream[F, String] = asStringWithQuotes //(s: Any, stream: OutputStream) => putEscapedWithQuotes(s.toString, stream)
+  implicit def IntJsonToStream[F[_]]: JsonToStream[F, Int] = asStringFnWithoutQuotes(_.toString)
+  implicit def DoubleJsonToStream[F[_]]: JsonToStream[F, Double] = asStringFnWithoutQuotes(_.toString)
+  implicit def PlaceholderJsonToStream[F[_]]: JsonToStream[F, Placeholder] = new JsonToStream[F, Placeholder] {
+    override def put(f: F[Placeholder], t: Any, stream: OutputStream): Unit = throw new RuntimeException("Should not attempt to write a placeholder to the output stream")
+  }
 }

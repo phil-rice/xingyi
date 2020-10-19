@@ -45,12 +45,12 @@ trait SetupDatabaseForOrmFixture[DS <: DataSource] {
 
 trait SharedOrmFixture extends OrmKeyFixture {
 
-  val employerAlias = Alias("Employer", alias="E")
-  val addressAlias = Alias("Address",  alias="A")
-  val phoneAlias = Alias("Phone",  alias="Ph")
+  val employerAlias = Alias("Employer", alias = "E")
+  val addressAlias = Alias("Address", alias = "A")
+  val phoneAlias = Alias("Phone", alias = "Ph")
   //each person has a contact email, and the id of the email is the same as the person
-  val emailAlias = Alias("ContactEmail",  alias="CE")
-  val personAlias = Alias("Person",  alias="P")
+  val emailAlias = Alias("ContactEmail", alias = "CE")
+  val personAlias = Alias("Person", alias = "P")
 
   val schemaForAddress = SchemaItemWithChildren("address", true, List[SchemaForTest[_]](SchemaItem[String]("Address/add")))
   val schemaForPhone = SchemaItemWithChildren("phone", true, List[SchemaForTest[_]](SchemaItem[String]("Phone/phoneNo")))
@@ -108,7 +108,9 @@ abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSou
   def mainEntity: MainEntity
   def addressEntity: OneToManyEntity
   def phoneEntity: OneToManyEntity
-  lazy val ormFactory = OrmFactory[String, SchemaForTest](schemaForPerson)
+
+  implicit val zerothValueFromString: ZerothValueFromContext[String] = (c: String) => c
+  lazy val ormFactory = OrmFactory[SchemaForTest](schemaForPerson)
 
 
 }

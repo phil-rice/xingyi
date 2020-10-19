@@ -4,6 +4,7 @@ import java.io.OutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 
+import com.sun.tools.javac.util.Context
 import one.xingyi.core.json.{GetFromJson, JsonParser, JsonString, WriteToJson}
 import one.xingyi.core.parserAndWriter.{Parser, Writer}
 
@@ -37,12 +38,14 @@ object MultipleFieldDate {
       }
   }
   implicit def toFieldTypeForMultipleDate(implicit getDateFormatter: GetDateFormatter): ToFieldType[MultipleFieldDate] = FieldType(_, "fourdate", numericSort = false)
-  implicit def toJsonStreamForFourDate[Context, F[_]]: JsonToStream[Context, F, MultipleFieldDate] =
-    (c: Context, f: F[MultipleFieldDate], t: Any, stream: OutputStream) => JsonToStream.putEscapedWithQuotes(dateFormatter.get.format(t.asInstanceOf[MultipleFieldDate].date), stream)
+  implicit def toJsonStreamForFourDate[F[_]]: JsonToStream[F, MultipleFieldDate] = new JsonToStream[F, MultipleFieldDate] {
+    override def put(f: F[MultipleFieldDate], t: Any, stream: OutputStream): Unit =
+      JsonToStream.putEscapedWithQuotes(dateFormatter.get.format(t.asInstanceOf[MultipleFieldDate].date), stream)
+  }
 
-  implicit def ValueFromMultipleTableFieldsForMultipleFieldData[Context](implicit getDateFormatter: GetDateFormatter): ValueFromMultipleAliasFields[Context, MultipleFieldDate] =
-    new ValueFromMultipleAliasFields[Context, MultipleFieldDate] {
-      override def apply[Schema[_] : GetPattern](context: Context, schema: Schema[MultipleFieldDate], fieldTypeToIndex: FieldTypeToIndex, fieldTypes: List[FieldType[_]]): List[Any] => MultipleFieldDate = { oneRow =>
+  implicit def ValueFromMultipleTableFieldsForMultipleFieldData(implicit getDateFormatter: GetDateFormatter): ValueFromMultipleAliasFields[MultipleFieldDate] =
+    new ValueFromMultipleAliasFields[MultipleFieldDate] {
+      override def apply[Context: ZerothValueFromContext, Schema[_] : GetPattern](context: Context, schema: Schema[MultipleFieldDate], fieldTypeToIndex: FieldTypeToIndex, fieldTypes: List[FieldType[_]]): List[Any] => MultipleFieldDate = { oneRow =>
         require(fieldTypes.size == 3 || fieldTypes.size == 4, s"Cannot apply ValueFromMultipleTableFieldsForMultipleFieldData as the listsize is not 3 or 4.\nList is ${fieldTypes.map(_.name)}\nfull ${fieldTypes}")
         val dd = oneRow(fieldTypeToIndex.fieldTypeToIndex(fieldTypes(0))).toString
         val mm = oneRow(fieldTypeToIndex.fieldTypeToIndex(fieldTypes(1))).toString

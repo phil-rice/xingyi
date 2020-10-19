@@ -18,7 +18,7 @@ abstract class AbtractFastOrmBulkSpecWithDeepNestingSpec[M[_] : ClosableM, J: Js
   type JContext = String
 
   def executeIt = { s: String => jdbcOps.executeSql(s) apply ds }
-  implicit val x = ValueFromMultipleAliasFields.valueFromMultipleTableFieldsFor[JContext, String](Parser.ParserForString)
+  implicit val x = ValueFromMultipleAliasFields.valueFromMultipleTableFieldsFor[String](Parser.ParserForString)
 
   def setupSchema(s1: Boolean, s2: Boolean, s3: Boolean, s4: Boolean)(fn: (OrmMaker[String], OrmFactory[SchemaForTest], SchemaForTest[_], SchemaForTest[_], SchemaForTest[_], SchemaForTest[_]) => Unit): Unit = {
     implicit def stringToSchemaForTest(s: String): (SchemaForTest[String]) = SchemaItem[String](s)
@@ -38,8 +38,10 @@ abstract class AbtractFastOrmBulkSpecWithDeepNestingSpec[M[_] : ClosableM, J: Js
       addIf(s3, "t3" -> Alias("t3")).
       addIf(s4, "t4" -> Alias("t4")))
 
+    implicit val zerothValueFromString: ZerothValueFromContext[String] = (c: String) => c
+
     val maker: OrmMaker[String] = OrmMaker[String, SchemaForTest]("someContext", schema1)
-    lazy val ormFactory: OrmFactory[SchemaForTest] = OrmFactory[String, SchemaForTest](schema1)
+    lazy val ormFactory: OrmFactory[SchemaForTest] = OrmFactory[SchemaForTest](schema1)
 
     fn(maker, ormFactory, schema1, schema2, schema3, schema4)
   }
@@ -71,6 +73,7 @@ abstract class AbtractFastOrmBulkSpecWithDeepNestingSpec[M[_] : ClosableM, J: Js
   def setupNestedManyToOne(fn: (MainEntity) => OrmMaker[String] => Unit): Unit = {
     setupSchema(false, false, false, false) { (maker, ormFactory, schema1, schema2, schema3, schema4) =>
       implicit val arrayTableName = ArrayAliasFromMap[SchemaForTest](Map())
+      implicit val zerothValueFromString: ZerothValueFromContext[String] = (c: String) => c
       implicit val maker: OrmMaker[String] = OrmMaker[String, SchemaForTest]("someContext", schema1)
 
       val entity4 = ormFactory.manyToOneEntity(alias4, Keys("t4id:int"), Keys("childId:int"), List())

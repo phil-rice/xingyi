@@ -9,6 +9,7 @@ import one.xingyi.core.jdbc.DatabaseSourceFixture
 import scala.language.higherKinds
 
 abstract class AbstractOrmBulkDataIntegrationTest[M[_] : ClosableM, DS <: DataSource] extends OrmBulkDataFixture[SimpleClosable] with DatabaseSourceFixture[DS] {
+  implicit val zerothValueFromString: ZerothValueFromContext[String] = (c: String) => c
   it should "stream json" in {
     implicit val ormMaker = OrmMaker("someContext", schemaForPerson)
     setupPerson(ds) {

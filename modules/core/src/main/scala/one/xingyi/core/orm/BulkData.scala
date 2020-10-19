@@ -87,8 +87,8 @@ case class ManyToOneBulkData(parentEntity: OrmEntity, ormEntity: ManyToOneEntity
   override def idsForPrettyPrint(parentIndex: Int, parentId: Any): String = idToIndex.get(myId(parentIndex)).toString
 }
 
-class WriteToJsonForSchema[Schema[_]:GetPattern, Context](context: Context, stream: OutputStream)
-                                              (implicit toKey: SchemaMapKey[Schema], toTableAndFieldTypes: ToAliasAndFieldTypes[Context, Schema], jsonToStreamFor: JsonToStreamFor[Context, Schema]) {
+class WriteToJsonForSchema[Schema[_] : GetPattern, Context: ZerothValueFromContext](context: Context, stream: OutputStream)
+                                                                                   (implicit toKey: SchemaMapKey[Schema], toTableAndFieldTypes: ToAliasAndFieldTypes[Schema], jsonToStreamFor: JsonToStreamFor[Schema]) {
   var printComma: Boolean = false
   def putKeyValue[T](main: MainBulkDataPointer, schema: Schema[T]) {
     putKeyColon(toKey.childKey(schema))
@@ -105,7 +105,7 @@ class WriteToJsonForSchema[Schema[_]:GetPattern, Context](context: Context, stre
   }
   def putValue[T](main: MainBulkDataPointer, schema: Schema[T]) =
     main.keyValues(context, schema).headOption match {
-      case Some(kv) => jsonToStreamFor.putToJson(context, schema).put(context, schema, kv._2, stream)
+      case Some(kv) => jsonToStreamFor.putToJson(schema).put(schema, kv._2, stream)
       case _ => JsonToStream.putUnescaped(stream, "null")
     }
 

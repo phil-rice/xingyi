@@ -32,24 +32,24 @@ case class AliasAndFieldType[T](alias: Alias, fieldType: FieldType[T]) {
   def fieldName = fieldType.name
 }
 
-case class AliasAndFieldTypes[Context, T](alias: Alias, fieldTypes: List[FieldType[_]])(implicit val tx: ValueFromMultipleAliasFields[Context, T])
+case class AliasAndFieldTypes[T](alias: Alias, fieldTypes: List[FieldType[_]])(implicit val tx: ValueFromMultipleAliasFields[T])
 
 
 trait GetPattern[Schema[_]] {
   def apply(s: Schema[_]): Option[String]
-  def getOrException(s: Schema[_], errorContext: =>String): String = apply(s).getOrElse(throw new RuntimeException(s"No pattern specified for $errorContext. s is ${s.getClass} / $s"))
+  def getOrException(s: Schema[_], errorContext: => String): String = apply(s).getOrElse(throw new RuntimeException(s"No pattern specified for $errorContext. s is ${s.getClass} / $s"))
 }
 
-trait GetPatternFor[Schema[_],T] {
+trait GetPatternFor[Schema[_], T] {
   def apply(s: Schema[_]): Option[String]
 }
 
-trait ValueFromMultipleAliasFields[Context, T] {
-  def apply[HasPattern[_] : GetPattern](context: Context, schema: HasPattern[T], fieldTypeToIndex: FieldTypeToIndex, fieldTypes: List[FieldType[_]]): (List[Any] => T)
+trait ValueFromMultipleAliasFields[T] {
+  def apply[Context: ZerothValueFromContext, HasPattern[_] : GetPattern](context: Context, schema: HasPattern[T], fieldTypeToIndex: FieldTypeToIndex, fieldTypes: List[FieldType[_]]): (List[Any] => T)
 }
 object ValueFromMultipleAliasFields {
-  implicit def valueFromMultipleTableFieldsFor[Context, T](implicit parser: Parser[T]): ValueFromMultipleAliasFields[Context, T] = new ValueFromMultipleAliasFields[Context, T] {
-    override def apply[HasPattern[_] : GetPattern](context: Context, schema: HasPattern[T], fieldTypeToIndex: FieldTypeToIndex, fieldTypes: List[FieldType[_]]): List[Any] => T = {
+  implicit def valueFromMultipleTableFieldsFor[T](implicit parser: Parser[T]): ValueFromMultipleAliasFields[T] = new ValueFromMultipleAliasFields[T] {
+    override def apply[Context: ZerothValueFromContext, HasPattern[_] : GetPattern](context: Context, schema: HasPattern[T], fieldTypeToIndex: FieldTypeToIndex, fieldTypes: List[FieldType[_]]): List[Any] => T = {
       require(fieldTypes.size == 1);
       { row =>
         val i = fieldTypeToIndex.fieldTypeToIndex(fieldTypes.head)
@@ -58,8 +58,8 @@ object ValueFromMultipleAliasFields {
       }
     }
   }
-  implicit def valueFromMultipleTableFieldsForPlaceHolder[Context]: ValueFromMultipleAliasFields[Context, Placeholder] = new ValueFromMultipleAliasFields[Context, Placeholder] {
-    override def apply[HasPattern[_] : GetPattern](context: Context, schema: HasPattern[Placeholder], fieldTypeToIndex: FieldTypeToIndex, fieldTypes: List[FieldType[_]]): List[Any] => Placeholder = {
+  implicit def valueFromMultipleTableFieldsForPlaceHolder: ValueFromMultipleAliasFields[Placeholder] = new ValueFromMultipleAliasFields[Placeholder] {
+    override def apply[Context: ZerothValueFromContext, HasPattern[_] : GetPattern](context: Context, schema: HasPattern[Placeholder], fieldTypeToIndex: FieldTypeToIndex, fieldTypes: List[FieldType[_]]): List[Any] => Placeholder = {
       throw new RuntimeException(s"Software bug: the code should not try to create a value for this")
     }
   }

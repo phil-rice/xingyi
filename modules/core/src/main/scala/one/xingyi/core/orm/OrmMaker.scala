@@ -19,9 +19,9 @@ object OrmMaker {
       }
     }
   }
-  def apply[Context, Schema[_] : SchemaMapKey : IsLinkFieldFilter : HasChildrenForHolder : ArrayAlias : GetPattern]
+  def apply[Context: ZerothValueFromContext, Schema[_] : SchemaMapKey : IsLinkFieldFilter : HasChildrenForHolder : ArrayAlias : GetPattern]
   (context: Context, schema: Schema[_])
-  (implicit toTableAndFieldTypes: ToAliasAndFieldTypes[Context, Schema], jsonToStreamFor: JsonToStreamFor[Context, Schema]): OrmMaker[String] = new OrmMaker[String] {
+  (implicit toTableAndFieldTypes: ToAliasAndFieldTypes[Schema], jsonToStreamFor: JsonToStreamFor[Schema]): OrmMaker[String] = new OrmMaker[String] {
     override def apply(main: MainEntity): Map[OrmEntity, List[List[Any]]] => Stream[String] = { entityToData =>
       val mainBulkData = MainBulkData(main, entityToData)
       entityToData(main).indices.map { i =>
