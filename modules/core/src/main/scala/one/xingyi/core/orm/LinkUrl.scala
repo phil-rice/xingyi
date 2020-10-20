@@ -7,6 +7,7 @@ import java.util.Date
 import com.sun.tools.javac.util.Context
 import one.xingyi.core.json.{GetFromJson, JsonParser, JsonString, WriteToJson}
 import one.xingyi.core.parserAndWriter.{Parser, Writer}
+import one.xingyi.core.strings.Strings
 
 import scala.language.higherKinds
 
@@ -16,6 +17,8 @@ case class LinkUrl(url: String) extends AnyVal
 trait ZerothValueFromContext[Context] {def apply(c: Context): String}
 
 object LinkUrl {
+
+
   def apply[Context, Schema[_]](c: Context, s: Schema[LinkUrl], list: List[String])(implicit zerothValueFromContext: ZerothValueFromContext[Context], getLinkPattern: GetPattern[Schema]): LinkUrl = {
     val pattern = getLinkPattern.getOrException(s, classOf[LinkUrl].getSimpleName)
     val zero = zerothValueFromContext(c)

@@ -2,6 +2,7 @@
 package one.xingyi.core.strings
 
 import one.xingyi.core.UtilsWithLoggingSpec
+import one.xingyi.core.orm.LinkUrl
 
 
 class StringsTest extends UtilsWithLoggingSpec {
@@ -84,5 +85,48 @@ class StringsTest extends UtilsWithLoggingSpec {
     the[ParseException] thrownBy (splitter("one:abdc:a")) should have message ("Cannot split a string into two non empty parts using [:] string was [one:abdc:a]")
 
   }
+  
+  behavior of "Strings.extract"
+
+  it should "extract data from paths" in {
+    Strings.extractFromUrl("/{0}/path1/")("a/path1") shouldBe List("a")
+    Strings.extractFromUrl("/{0}/path1/{1}")("a/path1/b") shouldBe List("a", "b")
+    Strings.extractFromUrl("/{1}/path1/{0}")("a/path1/b") shouldBe List("b", "a")
+    Strings.extractFromUrl("/{0}/path1/{1}/path2")("a/path1/b/path2") shouldBe List("a", "b")
+    Strings.extractFromUrl("/prefix/{0}/path1/{1}/path2")("prefix/a/path1/b/path2") shouldBe List("a", "b")
+    Strings.extractFromUrl("prefix/{0}/path1/{1}/path2")("prefix/a/path1/b/path2") shouldBe List("a", "b")
+    Strings.extractFromUrl("some/path1/{0}")("some/path1/x") shouldBe List("x")
+  }
+
+  it should "work with or without leading or tailing /" in {
+    Strings.extractFromUrl("{0}/path1/{1}/path2")("a/path1/b/path2") shouldBe List("a", "b")
+    Strings.extractFromUrl("{0}/path1/{1}/path2")("a/path1/b/path2/") shouldBe List("a", "b")
+    Strings.extractFromUrl("{0}/path1/{1}/path2/")("a/path1/b/path2") shouldBe List("a", "b")
+    Strings.extractFromUrl("{0}/path1/{1}/path2/")("a/path1/b/path2/") shouldBe List("a", "b")
+
+    Strings.extractFromUrl("/{0}/path1/{1}/path2")("a/path1/b/path2") shouldBe List("a", "b")
+    Strings.extractFromUrl("/{0}/path1/{1}/path2")("a/path1/b/path2/") shouldBe List("a", "b")
+    Strings.extractFromUrl("/{0}/path1/{1}/path2/")("a/path1/b/path2") shouldBe List("a", "b")
+    Strings.extractFromUrl("/{0}/path1/{1}/path2/")("a/path1/b/path2/") shouldBe List("a", "b")
+  }
+
+  it should "reject paths that don't make sense - non consecutive paths" in {
+    the[IllegalArgumentException] thrownBy (Strings.extractFromUrl("/{0}/path1/{3}/path2/")) should have message ("requirement failed: Must have consecutive {0}/{1} etc in template: [/{0}/path1/{3}/path2/] dataNumbers List((0,0), (3,2))")
+  }
+  it should "reject paths that don't make sense - non numeric items" in {
+    the[RuntimeException] thrownBy (Strings.extractFromUrl("/{id}/path1/{0}/path2/")) should have message ("Error finding the numbers in template [/{id}/path1/{0}/path2/]")
+  }
+  it should "reject paths that don't make sense - fillers with { or }" in {
+    the[IllegalArgumentException] thrownBy (Strings.extractFromUrl("/{0}/pat{h1/{1}/")) should have message ("requirement failed: Cannot have { or } in the template [/{0}/pat{h1/{1}/] except in format /{n}/.")
+    the[IllegalArgumentException] thrownBy (Strings.extractFromUrl("/{0}/pat}h1/{1}/")) should have message ("requirement failed: Cannot have { or } in the template [/{0}/pat}h1/{1}/] except in format /{n}/.")
+  }
+
+  it should "return an empty list if it doesn't match" in {
+    Strings.extractFromUrl("/{0}/path1/{1}/path2")("a/notpath1/b/path2") shouldBe List()
+    Strings.extractFromUrl("/{0}/path1/{1}/path2")("a/path1/b/notpath2") shouldBe List()
+    Strings.extractFromUrl("/{0}/path1/{1}/path2")("predix/a/path1/b/path2") shouldBe List()
+    Strings.extractFromUrl("/{0}/path1/{1}/path2")("a/path1/b/path2/post") shouldBe List()
+  }
+
 
 }

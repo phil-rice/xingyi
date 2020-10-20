@@ -23,4 +23,5 @@ class LinkUrlTest extends OrmKeyFixture {
   it should "be creatable with apply using the data in context and the schema" in {
     LinkUrl("xyz", schemaWithlink, List("zero", "one")) shouldBe LinkUrl("some/x/with/zero")
   }
+
 }
