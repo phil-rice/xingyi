@@ -9,7 +9,7 @@ import one.xingyi.core.jdbc.DatabaseSourceFixture
 import scala.language.higherKinds
 
 abstract class AbstractOrmBulkDataIntegrationTest[M[_] : ClosableM, DS <: DataSource] extends OrmBulkDataFixture[SimpleClosable] with DatabaseSourceFixture[DS] {
-  implicit val zerothValueFromString: ZerothValueFromContext[String] = (c: String) => c
+  implicit val linkPrefix: LinkPrefixFrom[String] = (c: String) => List(c)
   it should "stream json" in {
     implicit val ormMaker = OrmMaker("someContext", schemaForPerson)
     setupPerson(ds) {
@@ -38,8 +38,8 @@ abstract class AbstractOrmBulkDataIntegrationTest[M[_] : ClosableM, DS <: DataSo
   it should "stream json in response to a query" in {
     implicit val ormMaker = OrmMaker("someContext", schemaForPerson)
     setupPerson(ds) {
-      val List(phil) = main.stream[String](OrmBatchConfig(ds, 2, IDWhereForTable[Int](FieldType("pid:int"), 1))).toList
-      val List(bob) = main.stream[String](OrmBatchConfig(ds, 2, IDWhereForTable[Int](FieldType("pid:int"), 2))).toList
+      val List(phil) = main.stream[String](OrmBatchConfig(ds, 2, IDWhereForTable(Keys("pid:int"), List(1)))).toList
+      val List(bob) = main.stream[String](OrmBatchConfig(ds, 2, IDWhereForTable(Keys("pid:int"), List(2)))).toList
       checkStrings(phil,
         """{"employer":{"Employer/name":"Employer1"},
           |"email":{"ContactEmail/email":"philsEmail"},

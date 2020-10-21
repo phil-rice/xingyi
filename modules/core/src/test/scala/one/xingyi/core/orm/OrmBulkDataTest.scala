@@ -12,7 +12,7 @@ trait OrmBulkDataFixture[M[_]] extends FastOrmFixture[M] {
 }
 
 class OrmBulkDataTest extends OrmBulkDataFixture[SimpleClosable] {
-  implicit val zerothValueFromString: ZerothValueFromContext[String] = (c: String) => c
+  implicit val linkPrefix: LinkPrefixFrom[String] = (c: String) => List(c)
 
 
   val entityToData: Map[OrmEntity, List[List[Any]]] = Map(

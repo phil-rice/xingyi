@@ -37,13 +37,24 @@ class MatchesServiceRequestSpec extends UtilsSpec with ServiceRequestForEndpoint
 
   behavior of "Regex"
 
+  def sr(path: String, method: Method = Get) = ServiceRequest(method, Uri(path), List(), None)
   it should "match if regex and method match" in {
-    def sr(path: String, method: Method = Get) = ServiceRequest(method, Uri(path), List(), None)
-    val matcher = MatchesServiceRequest.regex(Get)("/some/([^/])*/path") _
+    val matcher = MatchesServiceRequest.regex(Get)("/some/([^/])*/path")
     matcher(sr("/some/path")) shouldBe false
     matcher(sr("/some/123/path")) shouldBe true
     matcher(sr("/some/12/3/path")) shouldBe false
     matcher(sr("/some/123/path", Post)) shouldBe false
+  }
+
+  behavior of "LinkUrl Pattern Matcher"
+
+  it should "mach if template and method match" in {
+     val matcher = MatchesServiceRequest.link(Get)("/path/{0}/next/{1}")
+    matcher(sr("/path/id1/next/id2")) shouldBe true
+    matcher(sr("/path/id1/notnext/id2")) shouldBe false
+    matcher(sr("/notpath/id1/next/id2")) shouldBe false
+    matcher(sr("/path/id1/next/id2/extra")) shouldBe false
+
   }
 
 }

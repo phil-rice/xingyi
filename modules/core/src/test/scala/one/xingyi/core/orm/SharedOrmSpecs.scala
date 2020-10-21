@@ -109,7 +109,7 @@ abstract class SharedFastOrmTests[M[_] : ClosableM, J: JsonParser, DS <: DataSou
   def addressEntity: OneToManyEntity
   def phoneEntity: OneToManyEntity
 
-  implicit val zerothValueFromString: ZerothValueFromContext[String] = (c: String) => c
+  implicit val linkPrefix: LinkPrefixFrom[String] = (c: String) => List(c)
   lazy val ormFactory = OrmFactory[SchemaForTest](schemaForPerson)
 
 

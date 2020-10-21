@@ -8,7 +8,7 @@ class LinkUrlTest extends OrmKeyFixture {
   behavior of classOf[LinkUrl].getSimpleName
 
   val someUrlLink = LinkUrl("someUrl")
-  implicit val zerothValueFromContext: ZerothValueFromContext[String] = s => s.take(1)
+  implicit val linkPrefix: LinkPrefixFrom[String] = s => List(s.take(1))
 
   val schemaWithlink: SchemaForTest[LinkUrl] = SchemaItem[LinkUrl]("some/{0}/with/{1}")
 

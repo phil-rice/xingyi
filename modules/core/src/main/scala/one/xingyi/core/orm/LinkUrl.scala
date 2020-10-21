@@ -14,15 +14,14 @@ import scala.language.higherKinds
 
 case class LinkUrl(url: String) extends AnyVal
 
-trait ZerothValueFromContext[Context] {def apply(c: Context): String}
+trait LinkPrefixFrom[Context] {def apply(c: Context): List[String]}
 
 object LinkUrl {
 
 
-  def apply[Context, Schema[_]](c: Context, s: Schema[LinkUrl], list: List[String])(implicit zerothValueFromContext: ZerothValueFromContext[Context], getLinkPattern: GetPattern[Schema]): LinkUrl = {
+  def apply[Context, Schema[_]](c: Context, s: Schema[LinkUrl], list: List[String])(implicit linkPrefix: LinkPrefixFrom[Context], getLinkPattern: GetPattern[Schema]): LinkUrl = {
     val pattern = getLinkPattern.getOrException(s, classOf[LinkUrl].getSimpleName)
-    val zero = zerothValueFromContext(c)
-    LinkUrl(MessageFormat.format(pattern, (zero :: list): _*))
+    LinkUrl(MessageFormat.format(pattern, (linkPrefix(c) ::: list): _*))
   }
 
   implicit object ParserForLinkUrl extends Parser[LinkUrl] {def apply(s: String): LinkUrl = LinkUrl(s)}
@@ -39,7 +38,7 @@ object LinkUrl {
 
   implicit def ValueFromMultipleTableFieldsForMultipleFieldData[Schema[_]](implicit getPatternFrom: GetPattern[Schema]): ValueFromMultipleAliasFields[LinkUrl] = {
     new ValueFromMultipleAliasFields[LinkUrl] {
-      override def apply[Context: ZerothValueFromContext, HasPattern[_] : GetPattern](context: Context, schema: HasPattern[LinkUrl], fieldTypeToIndex: FieldTypeToIndex, fieldTypes: List[FieldType[_]]): List[Any] => LinkUrl =
+      override def apply[Context: LinkPrefixFrom, HasPattern[_] : GetPattern](context: Context, schema: HasPattern[LinkUrl], fieldTypeToIndex: FieldTypeToIndex, fieldTypes: List[FieldType[_]]): List[Any] => LinkUrl =
         oneRow => LinkUrl(context, schema, fieldTypes.map(ft => oneRow(fieldTypeToIndex.fieldTypeToIndex(ft)).toString))
     }
   }

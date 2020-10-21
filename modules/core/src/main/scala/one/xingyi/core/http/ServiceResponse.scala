@@ -15,14 +15,16 @@ import scala.util.{Failure, Success, Try}
 
 case class ServiceResponse(status: Status, body: Body, headers: List[Header]) {
   private def getHeader[H: ClassTag]: Option[H] = ClassTags.collectAll[H](headers).headOption
-   def findHeader(name: String): Option[String] = headers.find(h=>name.equalsIgnoreCase(h.name)).map(_.value)
+  def findHeader(name: String): Option[String] = headers.find(h => name.equalsIgnoreCase(h.name)).map(_.value)
 
   def contentType: Option[ContentType] = getHeader[ContentType]
 }
 
 
 object ServiceResponse extends JsonWriterLanguage {
-  def apply(html: String): ServiceResponse = ServiceResponse(Status(200), Body(html), ContentType("text/html"))
+  def apply(html: String, status: Status = Status(200)): ServiceResponse = ServiceResponse(status, Body(html), ContentType("text/html"))
+  def json(json: String, status: Status = Status(200)): ServiceResponse = ServiceResponse(status, Body(json), ContentType("application/json"))
+  def notFound(msg: String, status: Status = Status(404)): ServiceResponse = ServiceResponse(status, Body(msg), ContentType("text/html"))
 
   def apply(status: Status, body: Body, contentType: ContentType): ServiceResponse = new ServiceResponse(status, body, List(contentType))
 
@@ -36,13 +38,13 @@ object ServiceResponse extends JsonWriterLanguage {
     (code, body.substring(index + 1))
   }
 
-  def bodyToJson(serviceResponse: ServiceResponse): (String,JsonValue) = {
+  def bodyToJson(serviceResponse: ServiceResponse): (String, JsonValue) = {
     serviceResponse.findHeader("content-type") match {
       case Some(ct) if ct.startsWith("application/xingyi") =>
         val (code, body) = serviceResponseToXingYiCodeAndBody(serviceResponse)
-        "xingyi"-> JsonObject("code" -> code, "body" -> body)
+        "xingyi" -> JsonObject("code" -> code, "body" -> body)
       case Some(ct) if ct.startsWith("application/json") => "jsonBody" -> serviceResponse.body.s
-      case _ => "body"-> serviceResponse.body.s
+      case _ => "body" -> serviceResponse.body.s
     }
   }
 

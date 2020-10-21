@@ -11,6 +11,7 @@ import one.xingyi.core.strings.Strings
 
 import scala.language.higherKinds
 import scala.reflect.ClassTag
+import scala.util.matching
 
 trait EndpointKleisli[M[_]] {
 
@@ -94,7 +95,7 @@ case class EndPoint[M[_] : Monad, Req, Res](normalisedPath: String, matchesServi
 trait MatchesServiceRequest {
   //  def method: Method
 
-  def apply(endpointName: String)(serviceRequest: ServiceRequest): Boolean
+  def apply(endpointName: String): ServiceRequest => Boolean
 }
 
 
@@ -105,36 +106,44 @@ object MatchesServiceRequest {
 
   def idAtEnd(method: Method) = IdAtEndAndVerb(method)
   def regex(method: Method) = Regex(method)
+  def link(method: Method) = LinkPatternMatcher(method)
 
   def prefixIdCommand(method: Method, command: String) = PrefixThenIdThenCommand(method, command)
 
 }
 
 case class FixedPathAndVerb(method: Method) extends MatchesServiceRequest {
-  override def apply(endpointName: String)(serviceRequest: ServiceRequest): Boolean =
-    serviceRequest.method == method && serviceRequest.uri.path.asUriString == endpointName
+  override def apply(endpointName: String) =
+    (sr: ServiceRequest) => sr.method == method && sr.uri.path.asUriString == endpointName
 }
 
 case class Prefix(method: Method) extends MatchesServiceRequest {
-  override def apply(endpointName: String)(serviceRequest: ServiceRequest): Boolean =
-    serviceRequest.method == method && serviceRequest.uri.path.asUriString.startsWith(endpointName)
+  override def apply(endpointName: String) =
+    (sr: ServiceRequest) => sr.method == method && sr.uri.path.asUriString.startsWith(endpointName)
 }
 case object AnyPathOrVerb extends MatchesServiceRequest {
-  override def apply(endpointName: String)(serviceRequest: ServiceRequest): Boolean = true
+  override def apply(endpointName: String) = (sr: ServiceRequest) => true
 
 }
 case class Regex(method: Method) extends MatchesServiceRequest {
-  override def apply(endpointName: String)(serviceRequest: ServiceRequest): Boolean = {
-    val r = endpointName.r
-    method == serviceRequest.method && r.findFirstIn(serviceRequest.uri.asUriString).isDefined
+  override def apply(endpointName: String) = {
+    val r: matching.Regex = endpointName.r
+    (sr: ServiceRequest) => method == sr.method && r.findFirstIn(sr.uri.asUriString).isDefined
   }
 }
+case class LinkPatternMatcher(method: Method) extends MatchesServiceRequest {
+  override def apply(endpointName: String) = {
+    val matcher = Strings.extractFromUrl(endpointName)
+    (sr: ServiceRequest) => method == sr.method && matcher(sr.uri.asUriString).nonEmpty
+  }
+}
+
 case class IdAtEndAndVerb(method: Method) extends MatchesServiceRequest {
   val startFn = Strings.allButlastSection("/") _
 
-  override def apply(endpointName: String)(serviceRequest: ServiceRequest): Boolean = {
-    val methodMatch = serviceRequest.method == method
-    val startString = startFn(serviceRequest.uri.path.asUriString)
+  override def apply(endpointName: String) = (sr: ServiceRequest) => {
+    val methodMatch = sr.method == method
+    val startString = startFn(sr.uri.path.asUriString)
     val start = startString == endpointName
     methodMatch && start
   }
@@ -143,7 +152,7 @@ case class IdAtEndAndVerb(method: Method) extends MatchesServiceRequest {
 
 case class PrefixThenIdThenCommand(method: Method, command: String) extends MatchesServiceRequest {
 
-  override def apply(endpointName: String)(serviceRequest: ServiceRequest): Boolean = {
+  override def apply(endpointName: String) = { (serviceRequest: ServiceRequest) =>
     try {
       val path = serviceRequest.path.asUriString
       //    println("path: " + path + ", endpoint name: " + endpointName)

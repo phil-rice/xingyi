@@ -45,11 +45,11 @@ trait GetPatternFor[Schema[_], T] {
 }
 
 trait ValueFromMultipleAliasFields[T] {
-  def apply[Context: ZerothValueFromContext, HasPattern[_] : GetPattern](context: Context, schema: HasPattern[T], fieldTypeToIndex: FieldTypeToIndex, fieldTypes: List[FieldType[_]]): (List[Any] => T)
+  def apply[Context: LinkPrefixFrom, HasPattern[_] : GetPattern](context: Context, schema: HasPattern[T], fieldTypeToIndex: FieldTypeToIndex, fieldTypes: List[FieldType[_]]): (List[Any] => T)
 }
 object ValueFromMultipleAliasFields {
   implicit def valueFromMultipleTableFieldsFor[T](implicit parser: Parser[T]): ValueFromMultipleAliasFields[T] = new ValueFromMultipleAliasFields[T] {
-    override def apply[Context: ZerothValueFromContext, HasPattern[_] : GetPattern](context: Context, schema: HasPattern[T], fieldTypeToIndex: FieldTypeToIndex, fieldTypes: List[FieldType[_]]): List[Any] => T = {
+    override def apply[Context: LinkPrefixFrom, HasPattern[_] : GetPattern](context: Context, schema: HasPattern[T], fieldTypeToIndex: FieldTypeToIndex, fieldTypes: List[FieldType[_]]): List[Any] => T = {
       require(fieldTypes.size == 1);
       { row =>
         val i = fieldTypeToIndex.fieldTypeToIndex(fieldTypes.head)
@@ -59,7 +59,7 @@ object ValueFromMultipleAliasFields {
     }
   }
   implicit def valueFromMultipleTableFieldsForPlaceHolder: ValueFromMultipleAliasFields[Placeholder] = new ValueFromMultipleAliasFields[Placeholder] {
-    override def apply[Context: ZerothValueFromContext, HasPattern[_] : GetPattern](context: Context, schema: HasPattern[Placeholder], fieldTypeToIndex: FieldTypeToIndex, fieldTypes: List[FieldType[_]]): List[Any] => Placeholder = {
+    override def apply[Context: LinkPrefixFrom, HasPattern[_] : GetPattern](context: Context, schema: HasPattern[Placeholder], fieldTypeToIndex: FieldTypeToIndex, fieldTypes: List[FieldType[_]]): List[Any] => Placeholder = {
       throw new RuntimeException(s"Software bug: the code should not try to create a value for this")
     }
   }
