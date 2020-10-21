@@ -22,13 +22,7 @@ lazy val versions = new {
 }
 
 lazy val commonSettings = Seq(
-  credentials += Credentials("Sonatype Nexus Repository Manager",
-    "oss.sonatype.org",
-    "phil.rice",
-    "9KQWeLgpVG6GXem!")
-
-,
-    version := "0.7.5",
+  version := "0.7.5",
   resolvers += Resolver.sonatypeRepo("snapshots"), //for mustache
   organization := "one.xingyi",
   publishMavenStyle := true,
