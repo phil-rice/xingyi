@@ -100,20 +100,20 @@ object Strings {
   def extractFromUrl(template: String): String => List[String] = new StringsUrlExtractor(template)
 
 }
-  class StringsUrlExtractor(template: String) extends (String => List[String]) {
-    val templateParts = Strings.split("/")(template)
-    val (data, filler) = templateParts.zipWithIndex.partition(s => s._1.startsWith("{") && s._1.endsWith("}"))
-    require(filler.forall(f => !(f._1.contains("{") || f._1.contains("}"))), s"Cannot have { or } in the template [$template] except in format /{n}/.")
-    val dataNumbers = try {
-      data.map { case (s, i) => (s.drop(1).dropRight(1).toInt, i) }.sortBy(_._1)
-    } catch {case e: Exception => throw new RuntimeException(s"Error finding the numbers in template [$template]", e)}
-    require(dataNumbers.map(_._1) == (0 to dataNumbers.size - 1), s"Must have consecutive {0}/{1} etc in template: [$template] dataNumbers ${dataNumbers}")
-    val indexes = dataNumbers.map(_._2)
+class StringsUrlExtractor(template: String) extends (String => List[String]) {
+  val templateParts = Strings.split("/")(template)
+  val (data, filler) = templateParts.zipWithIndex.partition(s => s._1.startsWith("{") && s._1.endsWith("}"))
+  require(filler.forall(f => !(f._1.contains("{") || f._1.contains("}"))), s"Cannot have { or } in the template [$template] except in format /{n}/.")
+  val dataNumbers = try {
+    data.map { case (s, i) => (s.drop(1).dropRight(1).toInt, i) }.sortBy(_._1)
+  } catch {case e: Exception => throw new RuntimeException(s"Error finding the numbers in template [$template]", e)}
+  require(dataNumbers.map(_._1) == (0 to dataNumbers.size - 1), s"Must have consecutive {0}/{1} etc in template: [$template] dataNumbers ${dataNumbers}")
+  val indexes = dataNumbers.map(_._2)
 
-    def apply(data: String): List[String] = {
-      val parts: List[String] = Strings.split("/")(data)
-      val matches = templateParts.size == parts.size && filler.forall { case (s, i) => s == parts(i) }
-      if (matches) indexes.map(parts(_)) else Nil
-    }
+  def apply(data: String): List[String] = {
+    val parts: List[String] = Strings.split("/")(data)
+    val matches = templateParts.size == parts.size && filler.forall { case (s, i) => s == parts(i) }
+    if (matches) indexes.map(parts(_)) else Nil
   }
+}
 

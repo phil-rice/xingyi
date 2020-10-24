@@ -23,4 +23,4 @@
 0.7.0 Removed the OrmKeys
 0.7.2 The MultipleFieldDates and LinkUrls can now have formats
 0.7.3 Technical debt removed: Typeclasses that had context and didn't need it
-
+0.7.6 Minor changes: just moving code/renaming/cleaing

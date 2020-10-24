@@ -19,18 +19,18 @@ class OrmFactoryImpl[Schema[_]](schema: Schema[_])(implicit toTableAndFieldTypes
     schemaMapKey.descendants(schema).
       flatMap { s: Schema[_] => toTableAndFieldTypes.apply(s).map(tf => tf.alias -> tf.fieldTypes) }.
       groupBy(_._1).map { case (alias, list) => alias -> list.flatMap(_._2) }
-
+def get(alias: Alias) = tableToFieldTypes.getOrElse(alias, Nil)
   def mainEntity(alias: Alias, primaryKey: Keys, children: List[ChildEntity]): MainEntity =
-    MainEntity(alias, primaryKey, tableToFieldTypes(alias), children)
+    MainEntity(alias, primaryKey, get(alias), children)
 
   def manyToOneEntity(alias: Alias, primaryKey: Keys, idInParent: Keys, children: List[ChildEntity]): ManyToOneEntity =
-    ManyToOneEntity(alias, primaryKey, idInParent, tableToFieldTypes(alias), children)
+    ManyToOneEntity(alias, primaryKey, idInParent, get(alias), children)
 
   def sameIdEntity(alias: Alias, primaryKey: Keys, children: List[ChildEntity]): SameIdEntity =
-    SameIdEntity(alias, primaryKey, tableToFieldTypes(alias), children)
+    SameIdEntity(alias, primaryKey, get(alias), children)
 
   def oneToManyEntity(alias: Alias, primaryKey: Keys, parentId: Keys, children: List[ChildEntity]): OneToManyEntity =
-    OneToManyEntity(alias, primaryKey, parentId, tableToFieldTypes(alias), children)
+    OneToManyEntity(alias, primaryKey, parentId, get(alias), children)
 }
 
 

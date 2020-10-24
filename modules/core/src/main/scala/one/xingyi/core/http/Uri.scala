@@ -20,9 +20,10 @@ object Method {
 
 sealed trait Method {
   override def toString: String = getClass.getSimpleName.dropRight(1)
-
 }
-
+trait HasMethod[T]{
+  def apply(t:T): Method
+}
 case object Get extends Method
 
 case object Post extends Method

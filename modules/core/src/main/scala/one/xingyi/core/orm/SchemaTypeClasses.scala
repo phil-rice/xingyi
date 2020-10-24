@@ -1,6 +1,6 @@
 package one.xingyi.core.orm
 
-import one.xingyi.core.aggregate.HasChildrenForHolder
+import one.xingyi.core.accessors.HasChildrenF
 import one.xingyi.core.orm.SchemaMapKey._
 
 import scala.collection.immutable.List
@@ -50,7 +50,7 @@ case class ArrayAliasFromMap[S[_] : SchemaMapKey](map: Map[String, Alias]) exten
 
 trait IsObjectFieldFilter[F[_]] extends FieldFilter[F]
 object IsObjectFieldFilter {
-  implicit def isObject[F[_]](implicit hasChildren: HasChildrenForHolder[F], arrayFieldFilter: ArrayAlias[F]): IsObjectFieldFilter[F] =
+  implicit def isObject[F[_]](implicit hasChildren: HasChildrenF[F], arrayFieldFilter: ArrayAlias[F]): IsObjectFieldFilter[F] =
     new IsObjectFieldFilter[F] {override def apply[T](f: F[T]): Boolean = hasChildren(f).nonEmpty && arrayFieldFilter(f).isEmpty}
 }
 

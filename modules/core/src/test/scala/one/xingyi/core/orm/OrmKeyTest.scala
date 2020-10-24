@@ -1,9 +1,7 @@
 package one.xingyi.core.orm
 
-import java.io.{ByteArrayOutputStream, OutputStream}
-
 import one.xingyi.core.UtilsSpec
-import one.xingyi.core.aggregate.{HasChildren, HasChildrenForHolder}
+import one.xingyi.core.accessors.HasChildrenF
 import one.xingyi.core.strings.Strings
 
 import scala.language.{higherKinds, implicitConversions}
@@ -52,7 +50,7 @@ trait OrmKeyFixture extends UtilsSpec {
       def apply[T](f: SchemaForTest[T]): Boolean = hasChildren(f).isEmpty && (f.key endsWith "c")
     }
 
-    implicit def hasChildren: HasChildrenForHolder[SchemaForTest] = new HasChildrenForHolder[SchemaForTest] {
+    implicit def hasChildren: HasChildrenF[SchemaForTest] = new HasChildrenF[SchemaForTest] {
       override def apply[T](f: SchemaForTest[T]): List[SchemaForTest[_]] = f match {
         case s: SchemaItemWithChildren => s.children
         case _ => Nil

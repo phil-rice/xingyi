@@ -24,6 +24,7 @@ case class ServiceResponse(status: Status, body: Body, headers: List[Header]) {
 object ServiceResponse extends JsonWriterLanguage {
   def apply(html: String, status: Status = Status(200)): ServiceResponse = ServiceResponse(status, Body(html), ContentType("text/html"))
   def json(json: String, status: Status = Status(200)): ServiceResponse = ServiceResponse(status, Body(json), ContentType("application/json"))
+  def halJson(json: String, status: Status = Status(200)): ServiceResponse = ServiceResponse(status, Body(json), ContentType("application/json+hal"))
   def notFound(msg: String, status: Status = Status(404)): ServiceResponse = ServiceResponse(status, Body(msg), ContentType("text/html"))
 
   def apply(status: Status, body: Body, contentType: ContentType): ServiceResponse = new ServiceResponse(status, body, List(contentType))

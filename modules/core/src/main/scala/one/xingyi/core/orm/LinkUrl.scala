@@ -5,7 +5,7 @@ import java.text.MessageFormat
 import java.util.Date
 
 import com.sun.tools.javac.util.Context
-import one.xingyi.core.json.{GetFromJson, JsonParser, JsonString, WriteToJson}
+import one.xingyi.core.json.{GetFromJson, JsonObject, JsonParser, JsonString, JsonValue, ToJsonLib, WriteToJson}
 import one.xingyi.core.parserAndWriter.{Parser, Writer}
 import one.xingyi.core.strings.Strings
 
@@ -15,9 +15,9 @@ import scala.language.higherKinds
 case class LinkUrl(url: String) extends AnyVal
 
 trait LinkPrefixFrom[Context] {def apply(c: Context): List[String]}
+trait MakeContextFromLink[Context] {def apply(url: String): Context}
 
 object LinkUrl {
-
 
   def apply[Context, Schema[_]](c: Context, s: Schema[LinkUrl], list: List[String])(implicit linkPrefix: LinkPrefixFrom[Context], getLinkPattern: GetPattern[Schema]): LinkUrl = {
     val pattern = getLinkPattern.getOrException(s, classOf[LinkUrl].getSimpleName)
@@ -52,5 +52,6 @@ object LinkUrl {
           JsonToStream.putUnescaped(stream, """"}""")
       }
   }
+
 }
 

@@ -2,7 +2,7 @@ package one.xingyi.core.orm
 
 import java.io.ByteArrayOutputStream
 
-import one.xingyi.core.aggregate.HasChildrenForHolder
+import one.xingyi.core.accessors.HasChildrenF
 import one.xingyi.core.json.{JsonObject, JsonParser, JsonValue}
 import one.xingyi.core.map.Maps.MapOfListsOps
 
@@ -19,7 +19,7 @@ object OrmMaker {
       }
     }
   }
-  def apply[Context: LinkPrefixFrom, Schema[_] : SchemaMapKey : IsLinkFieldFilter : HasChildrenForHolder : ArrayAlias : GetPattern]
+  def apply[Context: LinkPrefixFrom, Schema[_] : SchemaMapKey : IsLinkFieldFilter : HasChildrenF : ArrayAlias : GetPattern]
   (context: Context, schema: Schema[_])
   (implicit toTableAndFieldTypes: ToAliasAndFieldTypes[Schema], jsonToStreamFor: JsonToStreamFor[Schema]): OrmMaker[String] = new OrmMaker[String] {
     override def apply(main: MainEntity): Map[OrmEntity, List[List[Any]]] => Stream[String] = { entityToData =>
