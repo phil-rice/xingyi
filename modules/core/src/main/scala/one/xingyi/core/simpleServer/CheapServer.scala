@@ -14,11 +14,12 @@ object CheapServer {
   def apply[M[_] : Async, Fail: Failer]
   (port: Port, endPoints: ServiceRequest => M[Option[ServiceResponse]], stopAtEnd: Boolean = false)
   (block: => Unit)
-  (implicit monad: MonadCanFailWithException[M, Fail]): Unit = {
+  (implicit monad: MonadCanFailWithException[M, Fail]): (CheapServer[M, Fail], SimpleHttpServer) = {
     val cheapServer = new CheapServer[M, Fail](port.port, endPoints)
     val server = cheapServer.start
     try {
       block
+      (cheapServer, server)
     } finally {
       if (stopAtEnd) cheapServer.stop(server)
     }

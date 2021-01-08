@@ -1,15 +1,14 @@
 /** Copyright (c) 2020, Phil Rice. Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS AS IS AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 package one.xingyi.core.language
 
-import java.text.MessageFormat
 import java.util.concurrent.atomic.AtomicInteger
 
 import one.xingyi.core.functions._
 import one.xingyi.core.monad._
 
-import scala.util.Try
 import scala.language.higherKinds
 import scala.reflect.ClassTag
+import scala.util.Try
 
 object AnyLanguage extends AnyLanguage
 trait AnyLanguage {
@@ -78,21 +77,24 @@ trait AnyLanguage {
     }
   }
 
-  implicit class ListOps[X](s: List[X]) {
-    def asString(fn: X => String, separator: String = ",") = s.map(fn).mkString(separator)
-    def foldLeftWithOptions[Acc](initial: Acc)(foldFn: (Acc, X) => Option[Acc]) =
-      s.foldLeft[Option[Acc]](Some(initial)) { case (Some(acc), v) => foldFn(acc, v); case _ => None }
-    def foldLeftWithOptionsEatingExceptions[Acc](initial: Acc)(foldFn: (Acc, X) => Option[Acc]) =
+  implicit class ListOps[T](list: List[T]) {
+    def asString(fn: T => String, separator: String = ",") = list.map(fn).mkString(separator)
+    def foldLeftWithOptions[Acc](initial: Acc)(foldFn: (Acc, T) => Option[Acc]) =
+      list.foldLeft[Option[Acc]](Some(initial)) { case (Some(acc), v) => foldFn(acc, v); case _ => None }
+    def foldLeftWithOptionsEatingExceptions[Acc](initial: Acc)(foldFn: (Acc, T) => Option[Acc]) =
       foldLeftWithOptions(initial) { (acc, v) => try (foldFn(acc, v)) catch {case e: Exception => None} }
-    def +(opt: Option[X]): List[X] = opt.fold(s)(_ :: s)
+    def +(opt: Option[T]): List[T] = opt.fold(list)(_ :: list)
+
+    def transformIfNotEmpty[T1](default: => T1, fn: List[T] => T1) = if (list.isEmpty) default else fn(list)
+    def orIfEmpty(other: => List[T]) = if (list.isEmpty) other else list
   }
-//  implicit class IteratorOps[T](it: Iterator[T]) {
-//    def split(batchSize: Int): Iterator[Iterator[T]] = new Iterator[Iterator[T]] {
-//      val lock = new Object()
-//      override def hasNext: Boolean = lock.synchronized(it.hasNext)
-//      override def next(): Iterator[T] = lock.synchronized(it.take(batchSize))
-//    }
-//  }
+  //  implicit class IteratorOps[T](it: Iterator[T]) {
+  //    def split(batchSize: Int): Iterator[Iterator[T]] = new Iterator[Iterator[T]] {
+  //      val lock = new Object()
+  //      override def hasNext: Boolean = lock.synchronized(it.hasNext)
+  //      override def next(): Iterator[T] = lock.synchronized(it.take(batchSize))
+  //    }
+  //  }
 
 
 }

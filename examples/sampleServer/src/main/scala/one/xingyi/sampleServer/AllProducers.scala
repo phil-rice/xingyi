@@ -42,6 +42,7 @@ class AllProducers[M[_], J: JsonWriter : JsonParser, Fail](port: Int)(implicit e
     billboardSetup.billboardEndpoint,
     fnordSetup.productionEndpoint,
     fnordSetup.programmeEndpoint)
+
   val rawMicroservice = chain(endpoints: _*)
   val server = new SimpleHttpServer(port, new EndpointHandler[M, Fail](rawMicroservice))
 
