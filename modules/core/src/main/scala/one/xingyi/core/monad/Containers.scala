@@ -24,6 +24,8 @@ trait Monad[M[_]] extends Functor[M] {
   def flattenListM[T](ms: List[M[T]]): M[List[T]] = ms.foldLeft(liftM(List[T]())) { (mAcc: M[List[T]], mV: M[T]) => flatMap(mAcc, (acc: List[T]) => flatMap(mV, (v: T) => liftM(acc :+ v))) }
 }
 
+
+
 trait SuccessOrFail[S[_]] extends Functor[S] {
   def exception[T](t: Throwable): S[T]
   def fold[T, Res](t: S[T], errorFn: Throwable => Res, fn: T => Res): Res

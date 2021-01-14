@@ -33,7 +33,7 @@ object LinkUrl {
   }
 
   implicit def toFieldTypeForLinkUrl: ToFieldType[LinkUrl] = new ToFieldType[LinkUrl] {
-    override def apply(name: String): FieldType[LinkUrl] = FieldType(name, "varchar(255", numericSort = false)
+    override def apply(name: String): FieldType[LinkUrl] = FieldType(name, "varchar(255)", numericSort = false)
   }
 
   implicit def ValueFromMultipleTableFieldsForMultipleFieldData[Schema[_]](implicit getPatternFrom: GetPattern[Schema]): ValueFromMultipleAliasFields[LinkUrl] = {

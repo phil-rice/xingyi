@@ -25,3 +25,7 @@
 0.7.3 Technical debt removed: Typeclasses that had context and didn't need it
 0.7.6 Minor changes: just moving code/renaming/cleaing
 0.7.7 Minor changes to Listops and HigherOrderAccessors
+1.2.0   Just lifting the number because of an error back in march 2019
+1.2.1 Continuing to fix the march 2019 issue
+1.2.2 Fixed typo in LinkUrl
+
