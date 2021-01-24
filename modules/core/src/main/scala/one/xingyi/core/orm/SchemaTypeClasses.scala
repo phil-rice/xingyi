@@ -31,7 +31,7 @@ object SchemaMapKey {
 }
 
 
-trait ToAliasAndFieldTypes[Schema[_]] {def apply[T](s: Schema[T]): List[AliasAndFieldTypes[T]]}
+trait ToAliasAndFieldTypes[Schema[_]] {def apply[T](s: Schema[T]): List[AliasAndFieldTypes[Schema, T]]}
 
 trait Placeholder
 

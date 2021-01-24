@@ -13,7 +13,7 @@ case class Keys(val list: List[FieldType[_]]) {
     val result: KeysAndIndex = KeysAndIndex(list.map(l => (entity.fieldsForCreate.indexOf(l), l)))
     map = map + (entity -> result)
     result
-  } catch {case e: Exception => throw new RuntimeException(s"Error creating index. Entity was ${entity.tableName.tableName}/${entity.alias}", e)}
+  } catch {case e: Exception => throw new RuntimeException(s"Error creating index. Entity was ${entity.tableName.name}/${entity.alias}", e)}
   def toKeysAndIndex(entity: OrmEntity): KeysAndIndex = map.getOrElse(entity, addToMap(entity))
 }
 

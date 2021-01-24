@@ -28,4 +28,6 @@
 1.2.0   Just lifting the number because of an error back in march 2019
 1.2.1 Continuing to fix the march 2019 issue
 1.2.2 Fixed typo in LinkUrl
+1.2.4 Changes some of the variable names in the ORM
+
 

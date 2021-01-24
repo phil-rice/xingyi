@@ -4,17 +4,35 @@ import java.io.OutputStream
 
 import scala.language.higherKinds
 
-
+/** OrmBuildData is 'the data we have loaded about an entity'. many of the implemtors have a 'pointer' which points to
+ *  the 'current item being pulled in'. We use the pointers to 'walkthrough the data',
+ *
+*
+ * When we pull an object graph into memory, we pull it into a 'tableNameToData' and then rip it apart into OrmBuildData.
+ * So here:
+ * <ul><li>ormEntity/Alias define the entity
+ * <li>data is the data about this entity
+ * <li>children is about how this relates to other nodes in the object graph
+ * </ul>
+ *
+ * *
+ */
 trait OrmBulkData[E] {
   def ormEntity: E with OrmEntity
   def alias: Alias = ormEntity.alias
-  def data: List[List[Any]] = tableNameToData(alias.tableName.tableName)
+  def data: List[List[Any]] = tableNameToData(alias.table.name)
   def tableNameToData: Map[String, List[List[Any]]]
   def children: List[ChildOrmBulkData[_]]
   def prettyPrint(map: Map[OrmEntity, List[List[Any]]]): List[String] =
     s"${ormEntity.alias.prettyPrint}" :: map(ormEntity).map(l => "  " + l) ::: children.flatMap(_.prettyPrint(map))
 }
 
+
+/** This is the root interface for BulkData that are children.
+ *
+ * The most important method is  'pointer' which 'given a parent id' return a pointer to the data in this about that parent.
+ * The pointers are mutable
+ * */
 trait ChildOrmBulkData[E] extends OrmBulkData[E] {
   def idsForPrettyPrint(parentIndex: Int, parentId: Any): String
   //  def mapOfTableNameToIndexForParentId(parentId: Any, parentRow: List[Any]): List[(String, Int)]
@@ -24,7 +42,7 @@ trait ChildOrmBulkData[E] extends OrmBulkData[E] {
 
 object MainBulkData {
   def apply(main: MainEntity, data: Map[OrmEntity, List[List[Any]]]): MainBulkData = {
-    val tableNameToData = data.map { case (k, v) => k.tableName.tableName -> v }
+    val tableNameToData = data.map { case (k, v) => k.tableName.name -> v }
     MainBulkData(main, tableNameToData, main.children.map(makeChild(main, _, tableNameToData)))
   }
   def makeChild(parent: OrmEntity, child: ChildEntity, tableNameToData: Map[String, List[List[Any]]]): ChildOrmBulkData[_] = child match {
@@ -34,6 +52,9 @@ object MainBulkData {
   }
 }
 
+/** This is a BulkData, and it's defining characteristic is that it isn't the child of any other BulkData.
+ *
+ * it's pointer method points to the 'nth' item in the main bulk. When we are iterating over the data we use the pointer to do that*/
 case class MainBulkData(ormEntity: MainEntity, tableNameToData: Map[String, List[List[Any]]], children: List[ChildOrmBulkData[_]]) extends OrmBulkData[MainEntity] {
   def pointer(n: Int): MainBulkDataPointer = {
     val id = ormEntity.primaryKeyFieldsAndIndex.getKey(data(n))
@@ -41,6 +62,9 @@ case class MainBulkData(ormEntity: MainEntity, tableNameToData: Map[String, List
   }
 
 }
+/** As the name suggests this is a Bulk data that for every parent has zero or more child items.
+ *
+ * We know that the parent id is stored in this data: which you can see looking at the pointer method*/
 case class OneToManyBulkData(parentEntity: OrmEntity, ormEntity: OneToManyEntity, tableNameToData: Map[String, List[List[Any]]], children: List[ChildOrmBulkData[_]]) extends ChildOrmBulkData[OneToManyEntity] {
   val parentIdToListOfIndexes: Map[Any, List[Int]] = data.zipWithIndex.map { case (row, i) => (ormEntity.parentIdsAndIndex.getKey(row), i) }.groupBy(_._1).map(kv => kv._1 -> kv._2.map(_._2))
 
@@ -57,8 +81,9 @@ case class OneToManyBulkData(parentEntity: OrmEntity, ormEntity: OneToManyEntity
   override def idsForPrettyPrint(parentIndex: Int, parentId: Any): String = parentIdToListOfIndexes(parentId).mkString(",")
 }
 
+/** As the name suggests this is a Bulk data for a table that shares the same primary key as the parent. Thus there will be zero or one items for every parent */
 case class SameIdBulkData(ormEntity: SameIdEntity, tableNameToData: Map[String, List[List[Any]]], children: List[ChildOrmBulkData[_]]) extends ChildOrmBulkData[SameIdEntity] {
-  val idToIndex: Map[Any, Int] = tableNameToData(ormEntity.alias.tableName.tableName).zipWithIndex.map { case (row, i) => ormEntity.primaryKeyFieldsAndIndex.getKey(row) -> i }.toMap
+  val idToIndex: Map[Any, Int] = tableNameToData(ormEntity.alias.table.name).zipWithIndex.map { case (row, i) => ormEntity.primaryKeyFieldsAndIndex.getKey(row) -> i }.toMap
   override def pointer(parentIndex: Int, parentId: Any, n: Int): ChildBulkDataPointer = {
     require(n == 0, s"In SameIdBulkData and asked for a pointer with a non zero n ${n}")
     idToIndex.lift(parentId) match {
@@ -69,8 +94,10 @@ case class SameIdBulkData(ormEntity: SameIdEntity, tableNameToData: Map[String, 
   override def idsForPrettyPrint(parentIndex: Int, parentId: Any): String = idToIndex(parentId).toString
 }
 
+/** As the name suggests this is a Bulk data for a table in which the childId is stored in the parent. Thus there will be zero or one items for every parent. There may well be one or multiple parents that
+ * share the child */
 case class ManyToOneBulkData(parentEntity: OrmEntity, ormEntity: ManyToOneEntity, tableNameToData: Map[String, List[List[Any]]], children: List[ChildOrmBulkData[_]]) extends ChildOrmBulkData[ManyToOneEntity] {
-  val idToIndex: Map[Any, Int] = tableNameToData(ormEntity.alias.tableName.tableName).zipWithIndex.map { case (row, i) => ormEntity.primaryKeyFieldsAndIndex.getKey(row) -> i }.toMap
+  val idToIndex: Map[Any, Int] = tableNameToData(ormEntity.alias.table.name).zipWithIndex.map { case (row, i) => ormEntity.primaryKeyFieldsAndIndex.getKey(row) -> i }.toMap
   val keysAndIndex = ormEntity.idInParent.toKeysAndIndex(parentEntity)
   override def pointer(parentIndex: Int, parentId: Any, n: Int): ChildBulkDataPointer = {
     require(n == 0, s"In SameIdBulkData and asked for a pointer with a non zero n ${n}")
@@ -81,7 +108,7 @@ case class ManyToOneBulkData(parentEntity: OrmEntity, ormEntity: ManyToOneEntity
     }
   }
   def myId(parentIndex: Int): Any = {
-    val parentRow = tableNameToData(parentEntity.tableName.tableName)(parentIndex)
+    val parentRow = tableNameToData(parentEntity.tableName.name)(parentIndex)
     keysAndIndex.getKey(parentRow)
   }
   override def idsForPrettyPrint(parentIndex: Int, parentId: Any): String = idToIndex.get(myId(parentIndex)).toString
@@ -131,9 +158,7 @@ class WriteToJsonForSchema[Schema[_] : GetPattern, Context: LinkPrefixFrom](cont
     stream.write('[')
     main.allPointers(alias).foreach { child =>
       printCommaIfNeeded
-      //      stream.write('<')
       toJson(child, manyChildObject)
-      //      stream.write('>')
     }
     stream.write(']')
     printComma = oldPrintComma

@@ -18,7 +18,7 @@ abstract class AbtractFastOrmBulkSpecWithDeepNestingSpec[M[_] : ClosableM, J: Js
   type JContext = String
 
   def executeIt = { s: String => jdbcOps.executeSql(s) apply ds }
-  implicit val x = ValueFromMultipleAliasFields.valueFromMultipleTableFieldsFor[String](Parser.ParserForString)
+  implicit val x: ValueFromMultipleAliasFields[SchemaForTest, String] = ValueFromMultipleAliasFields.valueFromMultipleTableFieldsFor[SchemaForTest, String](Parser.ParserForString)
 
   def setupSchema(s1: Boolean, s2: Boolean, s3: Boolean, s4: Boolean)(fn: (OrmMaker[String], OrmFactory[SchemaForTest], SchemaForTest[_], SchemaForTest[_], SchemaForTest[_], SchemaForTest[_]) => Unit): Unit = {
     implicit def stringToSchemaForTest(s: String): (SchemaForTest[String]) = SchemaItem[String](s)
@@ -30,7 +30,7 @@ abstract class AbtractFastOrmBulkSpecWithDeepNestingSpec[M[_] : ClosableM, J: Js
     val schema1 = SchemaItemWithChildren("s1", false, schemaListFort1)
 
     implicit def toTableName(e: OrmEntity): TableName = e.tableName
-    implicit def toTableNameString(e: OrmEntity): String = e.tableName.tableName
+    implicit def toTableNameString(e: OrmEntity): String = e.tableName.name
 
     import one.xingyi.core.map.Maps._
     implicit val arrayTableName = ArrayAliasFromMap[SchemaForTest](Map[String, Alias]().

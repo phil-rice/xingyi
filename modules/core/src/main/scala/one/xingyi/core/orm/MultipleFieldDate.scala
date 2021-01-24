@@ -43,9 +43,9 @@ object MultipleFieldDate {
       JsonToStream.putEscapedWithQuotes(dateFormatter.get.format(t.asInstanceOf[MultipleFieldDate].date), stream)
   }
 
-  implicit def ValueFromMultipleTableFieldsForMultipleFieldData(implicit getDateFormatter: GetDateFormatter): ValueFromMultipleAliasFields[MultipleFieldDate] =
-    new ValueFromMultipleAliasFields[MultipleFieldDate] {
-      override def apply[Context: LinkPrefixFrom, Schema[_] : GetPattern](context: Context, schema: Schema[MultipleFieldDate], fieldTypeToIndex: FieldTypeToIndex, fieldTypes: List[FieldType[_]]): List[Any] => MultipleFieldDate = { oneRow =>
+  implicit def ValueFromMultipleTableFieldsForMultipleFieldData[Schema[_] : GetPattern](implicit getDateFormatter: GetDateFormatter): ValueFromMultipleAliasFields[Schema, MultipleFieldDate] =
+    new ValueFromMultipleAliasFields[Schema, MultipleFieldDate] {
+      override def apply[Context: LinkPrefixFrom](context: Context, schema: Schema[MultipleFieldDate], fieldTypeToIndex: FieldTypeToIndex, fieldTypes: List[FieldType[_]]): List[Any] => MultipleFieldDate = { oneRow =>
         require(fieldTypes.size == 3 || fieldTypes.size == 4, s"Cannot apply ValueFromMultipleTableFieldsForMultipleFieldData as the listsize is not 3 or 4.\nList is ${fieldTypes.map(_.name)}\nfull ${fieldTypes}")
         val dd = oneRow(fieldTypeToIndex.fieldTypeToIndex(fieldTypes(0))).toString
         val mm = oneRow(fieldTypeToIndex.fieldTypeToIndex(fieldTypes(1))).toString

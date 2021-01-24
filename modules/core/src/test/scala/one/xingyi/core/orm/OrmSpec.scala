@@ -7,8 +7,8 @@ class OrmSpec extends UtilsSpec with EntityFixture {
 
   behavior of "EntityStrategy"
 
-  val es = EntityStrategy(m => m.alias.tableName.tableName + "_m", o1 => o2 => o1.tableName.tableName + "/" + o2.tableName.tableName)
-  val esSimple = EntityStrategy(m => m.tableName.tableName + "_s")
+  val es = EntityStrategy(m => m.alias.table.name + "_m", o1 => o2 => o1.tableName.name + "/" + o2.tableName.name)
+  val esSimple = EntityStrategy(m => m.tableName.name + "_s")
   val es2 = es.map(_ + "_done")
 
   it should "have a map method that produces a new strategy that is the composition of the two" in {
@@ -22,7 +22,7 @@ class OrmSpec extends UtilsSpec with EntityFixture {
   }
 
   it should "have a walk method that walks the tree and returns a list of all places it visits and the result of the function" in {
-    es.walk(mainEntity).map { case (e, x) => (e.tableName.tableName, x) } shouldBe List(
+    es.walk(mainEntity).map { case (e, x) => (e.tableName.name, x) } shouldBe List(
       ("person", "person_m"),
       ("address", "person/address"),
       ("phone", "person/phone"),
@@ -30,7 +30,7 @@ class OrmSpec extends UtilsSpec with EntityFixture {
   }
 
   it should "have a constructor that takes just one function and applies to both sides" in {
-    esSimple.walk(mainEntity).map { case (e, x) => (e.tableName.tableName, x) } shouldBe List(
+    esSimple.walk(mainEntity).map { case (e, x) => (e.tableName.name, x) } shouldBe List(
       ("person", "person_s"),
       ("address", "address_s"),
       ("phone", "phone_s"),

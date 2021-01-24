@@ -13,7 +13,7 @@ import scala.language.{higherKinds, implicitConversions}
 trait CheckStrategyFixture extends Matchers {
   def checkStrategy(name: String, block: List[(OrmEntity, String)], expected: List[(OrmEntity, String)]): Unit = {
     val actual = block
-    val fullDescription = List(name, actual.map(t => t._1.tableName.tableName + "->" + '"' + t._2 + '"').mkString(",\n"), "\n")
+    val fullDescription = List(name, actual.map(t => t._1.tableName.name + "->" + '"' + t._2 + '"').mkString(",\n"), "\n")
     val diffs = actual.zip(expected).collect { case (a, e) if a != e => s"Actual   ${a._1.tableName} -> ${a._2}\nExpected ${e._1.tableName} -> ${e._2}\n" }
     withClue((fullDescription ::: diffs).mkString("\n")) {
       actual.zip(expected).foreach { case (a, e) =>

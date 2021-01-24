@@ -19,7 +19,7 @@ sealed trait BulkDataPointer {
 
   def currentRow: Option[List[Any]]
   def pointerOrException: Int = if (nth == -1) throw new RuntimeException(s"Cannot access bulk pointer for ${bulkData.alias}") else nth
-  def listOfAliasToDataPoint: List[(String, BulkDataPointer)] = (bulkData.alias.tableName.tableName -> this) :: children.flatMap(_.listOfAliasToDataPoint)
+  def listOfAliasToDataPoint: List[(String, BulkDataPointer)] = (bulkData.alias.table.name -> this) :: children.flatMap(_.listOfAliasToDataPoint)
 }
 
 
@@ -53,9 +53,9 @@ case class NullBulkDataPointer(bulkData: ChildOrmBulkData[_], children: List[Chi
 case class MainBulkDataPointer(nth: Int, bulkData: OrmBulkData[_], children: List[ChildBulkDataPointer]) extends BulkDataPointer {
   override def prettyPrint(indent: String): String = s"${indent}Found(nth=$nth, bulkData=${bulkData.alias.prettyPrint},row=${currentRow},${prettyPrintChildren(indent)}"
   def fail(msg: String) = throw new RuntimeException(s"$msg. Legal tableMames are ${map.keys.toList.sortBy(_.toString)}")
-  lazy val map: Map[String, BulkDataPointer] = ((bulkData.alias.tableName.tableName -> this) :: listOfAliasToDataPoint).toMap
+  lazy val map: Map[String, BulkDataPointer] = ((bulkData.alias.table.name -> this) :: listOfAliasToDataPoint).toMap
 
-  def currentRow(alias: Alias): Option[List[Any]] = map(alias.tableName.tableName).currentRow
+  def currentRow(alias: Alias): Option[List[Any]] = map(alias.table.name).currentRow
   override def currentRow: Option[List[Any]] = bulkData.data.lift(nth)
 
   def keyValues[Context: LinkPrefixFrom, Schema[_] : GetPattern, T](context: Context, schema: Schema[T])(implicit getKey: SchemaMapKey[Schema], toTableAndFieldTypes: ToAliasAndFieldTypes[Schema]): List[(String, T)] = {
@@ -63,7 +63,7 @@ case class MainBulkDataPointer(nth: Int, bulkData: OrmBulkData[_], children: Lis
     try {
       toTableAndFieldTypes(schema).flatMap {
         case t@AliasAndFieldTypes(alias, fieldTypes) =>
-          map.get(alias.tableName.tableName) match {
+          map.get(alias.table.name) match {
             case Some(pointer) => try {
               val bulkData = pointer.bulkData
               currentRow(alias).map(row => (key -> t.tx(context, schema, bulkData.ormEntity, fieldTypes).apply(row)))

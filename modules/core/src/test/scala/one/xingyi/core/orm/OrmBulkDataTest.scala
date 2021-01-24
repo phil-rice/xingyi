@@ -29,11 +29,11 @@ class OrmBulkDataTest extends OrmBulkDataFixture[SimpleClosable] {
   it should "make a mainBulkData" in {
     mainBulkData.alias shouldBe main.alias
     mainBulkData.tableNameToData shouldBe Map(
-      address.alias.tableName.tableName -> List(List("Phils first address", 3, 1), List("SomeOneElse address", 4, 2), List("Phils second address", 2, 1)),
-      employer.alias.tableName .tableName-> List(List("Employer1", 1), List("Employer2", 2)),
-      email.alias.tableName .tableName-> List(List("anotherEmail", 0), List("philsEmail", 1), List("bobsEmail", 2)),
-      phone.alias.tableName.tableName -> List(),
-      main.alias.tableName.tableName -> List(List("Phil", 1, 1), List("Bob", 2, 2)))
+      address.alias.table.name -> List(List("Phils first address", 3, 1), List("SomeOneElse address", 4, 2), List("Phils second address", 2, 1)),
+      employer.alias.table .name-> List(List("Employer1", 1), List("Employer2", 2)),
+      email.alias.table .name-> List(List("anotherEmail", 0), List("philsEmail", 1), List("bobsEmail", 2)),
+      phone.alias.table.name -> List(),
+      main.alias.table.name -> List(List("Phil", 1, 1), List("Bob", 2, 2)))
   }
 
   it should "make children" in {
@@ -120,7 +120,7 @@ class OrmBulkDataTest extends OrmBulkDataFixture[SimpleClosable] {
     val p = PartitionedSchema("someKey", schemaForPerson)
     p.simple.map(_.key) shouldBe List("Person/name")
     p.links.map(_.key) shouldBe List()
-    p.arrays.map { case (alias, o) => alias.tableName.tableName + "->" + o.key } shouldBe List("Address->address", "Phone->phone")
+    p.arrays.map { case (alias, o) => alias.table.name + "->" + o.key } shouldBe List("Address->address", "Phone->phone")
     p.objects.map(_.key) shouldBe List("employer", "email")
   }
 

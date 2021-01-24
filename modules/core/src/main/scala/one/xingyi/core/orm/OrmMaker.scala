@@ -13,7 +13,7 @@ trait OrmMaker[T] extends (MainEntity => Map[OrmEntity, List[List[AnyRef]]] => S
 object OrmMaker {
   def prettyPrintData(data: Map[OrmEntity, List[List[AnyRef]]]) = {
     data.flatMap { case (entity, lists) =>
-      s"${entity.tableName.tableName}(size=${lists.size})" :: lists.map { oneRow =>
+      s"${entity.tableName.name}(size=${lists.size})" :: lists.map { oneRow =>
         entity.fieldsForCreate.zipAll(oneRow, FieldType("missingName"), "missingValues").zipWithIndex.
           map { case ((f, d), i) => s"  $i ${f.name}=$d" }.mkString(",")
       }
@@ -70,7 +70,7 @@ object OrmMaker {
 
   def toJson[J: JsonParser](entity: OrmEntity, map: Map[OrmEntity, List[List[AnyRef]]]): List[(String, JsonObject)] = {
     val dataJsonObject: List[(String, JsonObject)] = map(entity).map(toIdAndJson[J](entity))
-    val childJsonObjects: List[(String, JsonObject)] = entity.children.map(child => child.tableName.tableName -> JsonObject(toJson(child, map): _*))
+    val childJsonObjects: List[(String, JsonObject)] = entity.children.map(child => child.tableName.name -> JsonObject(toJson(child, map): _*))
     dataJsonObject ::: childJsonObjects
 
   }

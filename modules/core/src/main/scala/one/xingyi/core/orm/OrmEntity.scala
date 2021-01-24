@@ -9,7 +9,7 @@ trait FieldTypeToIndex {
 trait OrmEntity extends FieldTypeToIndex {
   override def fieldTypeToIndex[T](fieldType: FieldType[T]): Int = fieldsForCreate.indexOf(fieldType)
   def alias: Alias
-  def tableName: TableName = alias.tableName
+  def tableName: TableName = alias.table
   def primaryKeyField: Keys
   def primaryKeyFieldsAndIndex: KeysAndIndex = primaryKeyField.toKeysAndIndex(this)
   def dataFields: List[FieldType[_]]
@@ -70,7 +70,7 @@ case class OneToManyEntity(alias: Alias, primaryKeyField: Keys, parentId: Keys, 
   override lazy val fieldsForCreate: List[FieldType[_]] = (super.fieldsForCreate ::: parentId.list).distinct
   val parentIdsAndIndex = parentId.toKeysAndIndex(this)
   override def parentFields: List[FieldType[_]] = List()
-  override def prettyPrint(i: String) = s"${i}OneToMany(${alias.tableName}, id=${primaryKeyFieldsAndIndex.prettyPrint}, parent=${parentId.nameString} $fieldsPrettyString)${childrenPrettyString(i)}"
+  override def prettyPrint(i: String) = s"${i}OneToMany(${alias.table}, id=${primaryKeyFieldsAndIndex.prettyPrint}, parent=${parentId.nameString} $fieldsPrettyString)${childrenPrettyString(i)}"
   override def createTempTable(implicit fastOrmSql: FastOrmSql) = fastOrmSql.createOneToManyTempTable(this)
   def toOneToManyMap[X](data: Map[OrmEntity, List[List[Any]]], parent: OrmEntity, fn: List[Any] => X): Map[Any, List[X]] =
     data(this).groupBy(parentIdsAndIndex.getKey).map { t => (t._1, t._2.map(fn)) }
@@ -82,7 +82,7 @@ case class OneToManyEntity(alias: Alias, primaryKeyField: Keys, parentId: Keys, 
 /** This will have zero or one entries for each item in the parent. It will be in 'step' with it... allowing cursors to advance together */
 case class OneToZeroOneEntity(alias: Alias, primaryKeyField: Keys, idInParent: Keys, dataFields: List[FieldType[_]], children: List[ChildEntity]) extends SingleChild {
   override def parentFields: List[FieldType[_]] = idInParent.list
-  override def prettyPrint(i: String) = s"${i}ManyToOne(${alias.tableName}, id=${primaryKeyField.nameString}, idInParent=${idInParent.nameString} $fieldsPrettyString)${childrenPrettyString(i)}"
+  override def prettyPrint(i: String) = s"${i}ManyToOne(${alias.table}, id=${primaryKeyField.nameString}, idInParent=${idInParent.nameString} $fieldsPrettyString)${childrenPrettyString(i)}"
   override def createTempTable(implicit fastOrmSql: FastOrmSql): OrmEntity => String = fastOrmSql.createOneToZeroOneEntityTempTable(this)
   def getData[X](parent: OrmEntity, childsData: Map[Any, X], parentsData: List[Any], default: (KeysAndIndex, Map[Any, X], Any) => X = Keys.notFound): X = {
     val idsInParentAndIndex = idInParent.toKeysAndIndex(parent)
@@ -92,7 +92,7 @@ case class OneToZeroOneEntity(alias: Alias, primaryKeyField: Keys, idInParent: K
 /** this is typically a look up reference. It is very similar to 'oneToZeroOneEntity' except that many of the parent are likely to share the same value. Thus it won't be in sync */
 case class ManyToOneEntity(alias: Alias, primaryKeyField: Keys, idInParent: Keys, dataFields: List[FieldType[_]], children: List[ChildEntity]) extends SingleChild {
   override def parentFields: List[FieldType[_]] = idInParent.list
-  override def prettyPrint(i: String) = s"${i}ManyToOne(${alias.tableName}, id=${primaryKeyField.nameString}, idInParent=${idInParent.nameString} $fieldsPrettyString)${childrenPrettyString(i)}"
+  override def prettyPrint(i: String) = s"${i}ManyToOne(${alias.table}, id=${primaryKeyField.nameString}, idInParent=${idInParent.nameString} $fieldsPrettyString)${childrenPrettyString(i)}"
   override def createTempTable(implicit fastOrmSql: FastOrmSql): OrmEntity => String = fastOrmSql.createManyToOneTempTable(this)
   def getData[X](parent: OrmEntity, childsData: Map[Any, X], parentsData: List[Any], default: (KeysAndIndex, Map[Any, X], Any) => X = Keys.notFound): X = {
     val idsInParentAndIndex = idInParent.toKeysAndIndex(parent)
@@ -102,7 +102,7 @@ case class ManyToOneEntity(alias: Alias, primaryKeyField: Keys, idInParent: Keys
 
 case class SameIdEntity(alias: Alias, primaryKeyField: Keys, dataFields: List[FieldType[_]], children: List[ChildEntity]) extends SingleChild {
   override def parentFields: List[FieldType[_]] = List()
-  override def prettyPrint(i: String) = s"${i}SameId(${alias.tableName}, id=${primaryKeyField.nameString}, $fieldsPrettyString)${childrenPrettyString(i)}"
+  override def prettyPrint(i: String) = s"${i}SameId(${alias.table}, id=${primaryKeyField.nameString}, $fieldsPrettyString)${childrenPrettyString(i)}"
   override def createTempTable(implicit fastOrmSql: FastOrmSql): OrmEntity => String = fastOrmSql.createSameIdTempTable(this)
   def getData[X](parent: OrmEntity, childsData: Map[Any, X], parentsData: List[Any], default: (KeysAndIndex, Map[Any, X], Any) => X = Keys.notFound): X =
     parent.primaryKeyFieldsAndIndex.getFrom[X](childsData, parentsData, default)

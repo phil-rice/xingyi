@@ -30,11 +30,11 @@ case class EntityStrategy[X](mainEntityFn: MainEntity => X, childFn: OrmEntity =
 trait FastOrmSql {
   import FieldType.nameAndTypeName
 
-  def dropTable(e: OrmEntity) = s"drop table if exists ${e.tableName.tableName}"
+  def dropTable(e: OrmEntity) = s"drop table if exists ${e.tableName.name}"
   def dropTempTable(e: OrmEntity) = s"drop table if exists ${tempTableName(e)}"
-  def tempTableName(e: OrmEntity): String = "temp_" + e.tableName.tableName
+  def tempTableName(e: OrmEntity): String = "temp_" + e.tableName.name
 
-  def createTable(e: OrmEntity): String = s"create table ${e.tableName.tableName} (${e.fieldsForCreate.asString(nameAndTypeName(_))})"
+  def createTable(e: OrmEntity): String = s"create table ${e.tableName.name} (${e.fieldsForCreate.asString(nameAndTypeName(_))})"
 
   def createMainTempTable(e: OrmEntity)(batchDetails: BatchDetails): String =
     s"create temporary table ${tempTableName(e)} as " +
@@ -51,21 +51,21 @@ trait FastOrmSql {
       s"order by ${selectKey(e.alias, e.parentId)},${selectKey(e.alias, e.primaryKeyField)} "
 
   def createManyToOneTempTable(e: ManyToOneEntity)(parent: OrmEntity): String =
-    s"create temporary table temp_${e.alias.tableName.tableName} as " +
+    s"create temporary table temp_${e.alias.table.name} as " +
       s"select ${selectFields(e)} " +
       s"from ${tempAlias(parent)},${tableAlias(e)} " +
       s"where ${whereKey(parent.alias, e.idInParent, e.alias, e.primaryKeyField)} " +
       s"order by ${selectKey(parent.alias, parent.primaryKeyField)} "
 
   def createOneToZeroOneEntityTempTable(e: OneToZeroOneEntity)(parent: OrmEntity): String =
-    s"create temporary table temp_${e.alias.tableName.tableName} as " +
+    s"create temporary table temp_${e.alias.table.name} as " +
       s"select DISTINCT  ${selectFields(e)} " +
       s"from ${tempAlias(parent)},${tableAlias(e)} " +
       s"where ${whereKey(parent.alias, e.idInParent, e.alias, e.primaryKeyField)} " +
       s"order by ${selectKey(parent.alias, parent.primaryKeyField)} "
 
   def createSameIdTempTable(e: SameIdEntity)(parent: OrmEntity): String =
-    s"create temporary table temp_${e.alias.tableName.tableName} as " +
+    s"create temporary table temp_${e.alias.table.name} as " +
       s"select DISTINCT  ${selectFields(e)} " +
       s"from ${tempAlias(parent)},${tableAlias(e)} " +
       s"where ${whereKey(parent.alias, parent.primaryKeyField, e.alias, e.primaryKeyField)} " +
@@ -74,7 +74,7 @@ trait FastOrmSql {
 
   def drainSql(e: OrmEntity): String = s"select * from ${tempTableName(e)}"
 
-  def tableAlias(e: OrmEntity): String = e.alias.tableName.tableName + " " + e.alias.alias
+  def tableAlias(e: OrmEntity): String = e.alias.table.name + " " + e.alias.alias
   def tempAlias(e: OrmEntity): String = tempTableName(e) + " " + e.alias.alias
   def selectKey(alias: Alias, keys: Keys): String = keys.list.map(k => alias.alias + "." + k.name).mkString(", ")
   def whereKey(alias1: Alias, keys1: Keys, alias2: Alias, keys2: Keys): String =
@@ -82,7 +82,7 @@ trait FastOrmSql {
   def selectFields(e: OrmEntity): String = (e.fieldsForCreate).map(f => e.alias.alias + "." + f.name).mkString(", ")
 
   def insertSql(e: OrmEntity) =
-    s"insert into ${e.tableName.tableName} (${e.fieldsForCreate.asString(_.name)}) values (${e.fieldsForCreate.asString(_ => "?")})"
+    s"insert into ${e.tableName.name} (${e.fieldsForCreate.asString(_.name)}) values (${e.fieldsForCreate.asString(_ => "?")})"
 
 }
 object FastOrmSql {

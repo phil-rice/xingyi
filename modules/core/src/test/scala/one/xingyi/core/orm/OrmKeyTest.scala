@@ -2,6 +2,7 @@ package one.xingyi.core.orm
 
 import one.xingyi.core.UtilsSpec
 import one.xingyi.core.accessors.HasChildrenF
+import one.xingyi.core.parserAndWriter.Parser
 import one.xingyi.core.strings.Strings
 
 import scala.language.{higherKinds, implicitConversions}
@@ -10,15 +11,18 @@ import scala.language.{higherKinds, implicitConversions}
 trait OrmKeyFixture extends UtilsSpec {
   //  implicit def multipleFieldTx: OrmValueTransformer[String] = (ftis, data) => ftis.map(fti => fti.fieldType.name + ":" + data(fti.index)).mkString(",")
 
+
+  implicit def valueFromDatabaseFor[T: Parser]: ValueFromMultipleAliasFields[SchemaForTest, T] =
+    ValueFromMultipleAliasFields.valueFromMultipleTableFieldsFor[SchemaForTest, T]
   sealed trait SchemaForTest[T] {
     def key: String
     def jsonToStream: JsonToStream[SchemaForTest, T]
-    val tx: ValueFromMultipleAliasFields[T]
+    val tx: ValueFromMultipleAliasFields[SchemaForTest, T]
   }
-  case class SchemaItem[T](key: String)(implicit val jsonToStream: JsonToStream[SchemaForTest, T], val tx: ValueFromMultipleAliasFields[T]) extends SchemaForTest[T]
+  case class SchemaItem[T](key: String)(implicit val jsonToStream: JsonToStream[SchemaForTest, T], val tx: ValueFromMultipleAliasFields[SchemaForTest, T]) extends SchemaForTest[T]
   case class SchemaItemWithChildren(key: String, hasMany: Boolean, children: List[SchemaForTest[_]])
                                    (implicit val jsonToStream: JsonToStream[SchemaForTest, Placeholder],
-                                    val tx: ValueFromMultipleAliasFields[Placeholder]) extends SchemaForTest[Placeholder]
+                                    val tx: ValueFromMultipleAliasFields[SchemaForTest, Placeholder]) extends SchemaForTest[Placeholder]
 
   object SchemaForTest {
 
@@ -40,11 +44,10 @@ trait OrmKeyFixture extends UtilsSpec {
       override def putToJson[T](s: SchemaForTest[T]): JsonToStream[SchemaForTest, T] = s.jsonToStream
     }
     implicit val toTableAndFieldTypes: ToAliasAndFieldTypes[SchemaForTest] = new ToAliasAndFieldTypes[SchemaForTest] {
-      override def apply[T](s: SchemaForTest[T]): List[AliasAndFieldTypes[T]] =
+      override def apply[T](s: SchemaForTest[T]): List[AliasAndFieldTypes[SchemaForTest, T]] =
         parseToTableNameAndFiles(s.key).
-          map { case (alias, fields) => AliasAndFieldTypes[T](alias, fields)(s.tx) }
+          map { case (alias, fields) => AliasAndFieldTypes[SchemaForTest, T](alias, fields)(s.tx) }
     }
-
 
     implicit val isLink: IsLinkFieldFilter[SchemaForTest] = new IsLinkFieldFilter[SchemaForTest] {
       def apply[T](f: SchemaForTest[T]): Boolean = hasChildren(f).isEmpty && (f.key endsWith "c")

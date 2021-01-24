@@ -16,6 +16,9 @@ pasting for another.
 * [This is a presentation on why kleislis and kleisli transformers are good for microservices](https://docs.google.com/presentation/d/e/2PACX-1vTSCQp2YsdnOxsqkDU9nfGt4lyC7lRxoeCZySixtMjy7L-nmZvJGt-fpgsXlChYKyKIqrxS8PDXUaYJ/pub?start=false&loop=false&delayms=3000)
 * [Dependencies are just really bad , Please see this presentation for why](https://docs.google.com/presentation/d/e/2PACX-1vQ2Rfb9crw29IVh7vg9NFngFozEtkjCbe53F89ZqgY5jCFOsLhup06Oj8sO9hcHIk3Y4r9FVCoO_qaD/pub?start=false&loop=false&delayms=3000)
 
+# Other Readmes
+* [ORM](modules/core/src/main/scala/one/xingyi/core/orm/README.md)
+
 # Goals
 ## No Dependancies 
 

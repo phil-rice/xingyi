@@ -24,6 +24,7 @@ class PartitionedSchemaTest extends SharedOrmFixture {
     filter(SchemaItemWithChildren("c", true, List(schemaForEmail))) shouldBe false
   }
   behavior of classOf[ArrayAlias[SchemaForTest]].getSimpleName
+
   it should "Checking the test fixture " in {
     implicit val arrayTableName = arrayTableNameForPerson
     val filter = implicitly[ArrayAlias[SchemaForTest]]

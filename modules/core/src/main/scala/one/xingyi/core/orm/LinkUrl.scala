@@ -36,9 +36,9 @@ object LinkUrl {
     override def apply(name: String): FieldType[LinkUrl] = FieldType(name, "varchar(255)", numericSort = false)
   }
 
-  implicit def ValueFromMultipleTableFieldsForMultipleFieldData[Schema[_]](implicit getPatternFrom: GetPattern[Schema]): ValueFromMultipleAliasFields[LinkUrl] = {
-    new ValueFromMultipleAliasFields[LinkUrl] {
-      override def apply[Context: LinkPrefixFrom, HasPattern[_] : GetPattern](context: Context, schema: HasPattern[LinkUrl], fieldTypeToIndex: FieldTypeToIndex, fieldTypes: List[FieldType[_]]): List[Any] => LinkUrl =
+  implicit def ValueFromMultipleTableFieldsForMultipleFieldDataForLinkUrl[Schema[_]](implicit getPatternFrom: GetPattern[Schema]): ValueFromMultipleAliasFields[Schema, LinkUrl] = {
+    new ValueFromMultipleAliasFields[Schema, LinkUrl] {
+      override def apply[Context: LinkPrefixFrom](context: Context, schema: Schema[LinkUrl], fieldTypeToIndex: FieldTypeToIndex, fieldTypes: List[FieldType[_]]): List[Any] => LinkUrl =
         oneRow => LinkUrl(context, schema, fieldTypes.map(ft => oneRow(fieldTypeToIndex.fieldTypeToIndex(ft)).toString))
     }
   }
