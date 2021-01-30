@@ -5,9 +5,9 @@ import java.io.OutputStream
 import scala.language.higherKinds
 
 /** OrmBuildData is 'the data we have loaded about an entity'. many of the implemtors have a 'pointer' which points to
- *  the 'current item being pulled in'. We use the pointers to 'walkthrough the data',
+ * the 'current item being pulled in'. We use the pointers to 'walkthrough the data',
  *
-*
+ *
  * When we pull an object graph into memory, we pull it into a 'tableNameToData' and then rip it apart into OrmBuildData.
  * So here:
  * <ul><li>ormEntity/Alias define the entity
@@ -54,7 +54,7 @@ object MainBulkData {
 
 /** This is a BulkData, and it's defining characteristic is that it isn't the child of any other BulkData.
  *
- * it's pointer method points to the 'nth' item in the main bulk. When we are iterating over the data we use the pointer to do that*/
+ * it's pointer method points to the 'nth' item in the main bulk. When we are iterating over the data we use the pointer to do that */
 case class MainBulkData(ormEntity: MainEntity, tableNameToData: Map[String, List[List[Any]]], children: List[ChildOrmBulkData[_]]) extends OrmBulkData[MainEntity] {
   def pointer(n: Int): MainBulkDataPointer = {
     val id = ormEntity.primaryKeyFieldsAndIndex.getKey(data(n))
@@ -64,7 +64,7 @@ case class MainBulkData(ormEntity: MainEntity, tableNameToData: Map[String, List
 }
 /** As the name suggests this is a Bulk data that for every parent has zero or more child items.
  *
- * We know that the parent id is stored in this data: which you can see looking at the pointer method*/
+ * We know that the parent id is stored in this data: which you can see looking at the pointer method */
 case class OneToManyBulkData(parentEntity: OrmEntity, ormEntity: OneToManyEntity, tableNameToData: Map[String, List[List[Any]]], children: List[ChildOrmBulkData[_]]) extends ChildOrmBulkData[OneToManyEntity] {
   val parentIdToListOfIndexes: Map[Any, List[Int]] = data.zipWithIndex.map { case (row, i) => (ormEntity.parentIdsAndIndex.getKey(row), i) }.groupBy(_._1).map(kv => kv._1 -> kv._2.map(_._2))
 
@@ -117,10 +117,6 @@ case class ManyToOneBulkData(parentEntity: OrmEntity, ormEntity: ManyToOneEntity
 class WriteToJsonForSchema[Schema[_] : GetPattern, Context: LinkPrefixFrom](context: Context, stream: OutputStream)
                                                                            (implicit toKey: SchemaMapKey[Schema], toTableAndFieldTypes: ToAliasAndFieldTypes[Schema], jsonToStreamFor: JsonToStreamFor[Schema]) {
   var printComma: Boolean = false
-  def putKeyValue[T](main: MainBulkDataPointer, schema: Schema[T]) {
-    putKeyColon(toKey.childKey(schema))
-    putValue(main, schema)
-  }
   private def putKeyColon[T](key: String) = {
     printCommaIfNeeded
     JsonToStream.putEscapedWithQuotes(key, stream);
@@ -130,11 +126,14 @@ class WriteToJsonForSchema[Schema[_] : GetPattern, Context: LinkPrefixFrom](cont
     if (printComma) stream.write(',')
     printComma = true
   }
-  def putValue[T](main: MainBulkDataPointer, schema: Schema[T]) =
+  def putKeyValue[T](main: MainBulkDataPointer, schema: Schema[T]) =
     main.keyValues(context, schema).headOption match {
-      case Some(kv) => jsonToStreamFor.putToJson(schema).put(schema, kv._2, stream)
-      case _ => JsonToStream.putUnescaped(stream, "null")
+      case Some(kv) =>
+        putKeyColon(toKey.childKey(schema))
+        jsonToStreamFor.putToJson(schema).put(schema, kv._2, stream)
+      case _ => ;
     }
+
 
   def toJsonforSimples(main: MainBulkDataPointer, simple: List[Schema[_]]): Unit = simple.foreach(putKeyValue(main, _))
 
@@ -143,6 +142,7 @@ class WriteToJsonForSchema[Schema[_] : GetPattern, Context: LinkPrefixFrom](cont
       JsonToStream.putUnescaped(stream, """"_links":{""")
       links.foreach(putKeyValue(main, _))
       stream.write('}')
+      printComma = true
     }
   }
 

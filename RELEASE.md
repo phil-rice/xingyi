@@ -29,5 +29,7 @@
 1.2.1 Continuing to fix the march 2019 issue
 1.2.2 Fixed typo in LinkUrl
 1.2.4 Changes some of the variable names in the ORM
+1.2.5 ORM json now doesn't display 'nulls'
+1.2.6 Fixed bug with commas in orm json
 
 

@@ -152,8 +152,7 @@ class OrmBulkDataTest extends OrmBulkDataFixture[SimpleClosable] {
         |"address":[{"Address/add":"Phils first address"},
         |{"Address/add":"Phils second address"}],
         |"phone":[],
-        |"Person/name":"Phil",
-        |"NotIn/someField":null}""".stripMargin)
+        |"Person/name":"Phil"}""".stripMargin)
   }
 
 }
