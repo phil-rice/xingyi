@@ -1,7 +1,7 @@
 package one.xingyi.core.throttle
 
 import one.xingyi.core.UtilsSpec
-import one.xingyi.core.throttle.Throttle.ThrottleStreamOps
+import one.xingyi.core.throttle.Throttle.ThrottleLazyListOps
 
 import java.util.concurrent.ArrayBlockingQueue
 import scala.concurrent.ExecutionContext.Implicits._
@@ -16,8 +16,8 @@ class ThrottleTest extends UtilsSpec {
   it should "put items on a queue as fast as it can" in {
     val capacity = 2
     val queue = new ArrayBlockingQueue[Int](capacity)
-    val stream = Stream(1, 2, 3, 4, 5, 6)
-    val thread = new PutOnQueueThread(stream, queue)
+    val list = LazyList(1, 2, 3, 4, 5, 6)
+    val thread = new PutOnQueueThread(list, queue)
     Thread.sleep(0) // not really needed. Just makes it so that we wait a tiny amount of time and give the queue thread a chance to mess up.
     queue.size() shouldBe 0
     thread.start()
@@ -37,19 +37,19 @@ class ThrottleTest extends UtilsSpec {
 
   implicit val throttleContext = ThrottleContext(2, Duration.Inf)
 
-  it should "return a stream of the results - happy path" in {
-    val stream = Stream(1, 2, 3, 4, 5, 6)
-    stream.throttledMap((x: Int) => Future(x.toString)).take(6).toList shouldBe List("1", "2", "3", "4", "5", "6").map(Success(_))
+  it should "return a list of the results - happy path" in {
+    val list = LazyList(1, 2, 3, 4, 5, 6)
+    list.throttledMap((x: Int) => Future(x.toString)).take(6).toList shouldBe List("1", "2", "3", "4", "5", "6").map(Success(_))
   }
 
-  it should "return a stream of the results when the passed in function returns a future exception" in {
-    val stream = Stream(1, 2, 3, 4, 5, 6)
+  it should "return a list of the results when the passed in function returns a future exception" in {
+    val list = LazyList(1, 2, 3, 4, 5, 6)
     val exception = new RuntimeException
-    stream.throttledMap((x: Int) => Future.failed(exception)).take(6).toList shouldBe List.fill(6)(Failure[Int](exception))
+    list.throttledMap((x: Int) => Future.failed(exception)).take(6).toList shouldBe List.fill(6)(Failure[Int](exception))
   }
-  it should "return a stream of the results when the passed in function returns an immediate exception" in {
-    val stream = Stream(1, 2, 3, 4, 5, 6)
+  it should "return a list of the results when the passed in function returns an immediate exception" in {
+    val list = LazyList(1, 2, 3, 4, 5, 6)
     val exception = new RuntimeException
-    stream.throttledMap((x: Int) => throw exception).take(6).toList shouldBe List.fill(6)(Failure[Int](exception))
+    list.throttledMap((x: Int) => throw exception).take(6).toList shouldBe List.fill(6)(Failure[Int](exception))
   }
 }

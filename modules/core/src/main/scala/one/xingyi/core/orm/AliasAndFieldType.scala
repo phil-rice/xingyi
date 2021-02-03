@@ -23,6 +23,8 @@ object Alias {
   def apply(tableName: String, description: String = "", alias: String = ""): Alias = Alias(TableName(tableName, description), if (alias == "") defaultAlias(tableName) else alias)
   //  def apply(tableName: TableName): Alias = Alias(tableName, "A" + tableName.tableName)
 }
+
+
 case class Alias(table: TableName, alias: String) {
   def prettyPrint = if (alias == defaultAlias(table.name)) table.name else table.name + "/" + alias
 }
