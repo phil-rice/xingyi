@@ -31,5 +31,6 @@
 1.2.4 Changes some of the variable names in the ORM
 1.2.5 ORM json now doesn't display 'nulls'
 1.2.6 Fixed bug with commas in orm json
+1.2.7 Adding the 'throttling' package for throttling streams
 
 
