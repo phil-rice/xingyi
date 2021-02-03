@@ -31,9 +31,9 @@ trait EntityFixture {
   val phoneDetailsAlias = Alias("phonedetails", alias = "pd")
   val personAlias = Alias("person", alias = "p")
 
-  val addressEntity = OneToManyEntity(addressAlias, addressIdField, addressPersonIdField, List(line1Field, line2Field), List())
-  val phoneDetailsEntity = OneToManyEntity(phoneDetailsAlias, phoneDetailsIdField, phonePersonIdField, List(purposeField, telField), List())
-  val phoneEntity = OneToManyEntity(phoneAlias, phoneIdField, phonePersonIdField, List(manufacturerField), List(phoneDetailsEntity))
+  val addressEntity = OneToManyEntity(addressAlias, addressIdField, addressPersonIdField, List(line1Field, line2Field), List(), None)
+  val phoneDetailsEntity = OneToManyEntity(phoneDetailsAlias, phoneDetailsIdField, phonePersonIdField, List(purposeField, telField), List(), None)
+  val phoneEntity = OneToManyEntity(phoneAlias, phoneIdField, phonePersonIdField, List(manufacturerField), List(phoneDetailsEntity), None)
   val mainEntity = MainEntity(personAlias, personIdField, List(nameField), List(addressEntity, phoneEntity))
 }
 
@@ -74,7 +74,7 @@ abstract class AbstractEntityTest[E <: OrmEntity] extends UtilsSpec {
   }
 
   it should "have extra fields if they are added by (say) the many to one table" in {
-    val m21 = ManyToOneEntity(otherAlias, Keys("whoCares"), Keys("added1,added2"), List(FieldType("x"), FieldType("y")), List())
+    val m21 = ManyToOneEntity(otherAlias, Keys("whoCares"), Keys("added1,added2"), List(FieldType("x"), FieldType("y")), List(), None)
     val e = entity(someAlias, Keys("a,b,pk"), Keys("other"), List(FieldType("a"), FieldType("b"), FieldType("c")), List(m21))
 
     val fieldNames = e.fieldsForCreate.map(_.name)
@@ -105,7 +105,7 @@ class MainEntityTest extends AbstractEntityTest[MainEntity] {
 }
 class OneToManyTest extends AbstractEntityTest[OneToManyEntity] {
   override def entity(alias: Alias, primaryKey: Keys, otherKeys: Keys, dataFields: List[FieldType[_]], children: List[_ <: ChildEntity]): OneToManyEntity = {
-    OneToManyEntity(alias, primaryKey, otherKeys, dataFields, children)
+    OneToManyEntity(alias, primaryKey, otherKeys, dataFields, children, None)
   }
 
   it should "have a parentIdsAndIndex" in {
@@ -120,16 +120,16 @@ class OneToManyTest extends AbstractEntityTest[OneToManyEntity] {
 }
 class ManyToOneTest extends AbstractEntityTest[ManyToOneEntity] {
   override def entity(alias: Alias, primaryKey: Keys, otherKeys: Keys, dataFields: List[FieldType[_]], children: List[_ <: ChildEntity]): ManyToOneEntity = {
-    ManyToOneEntity(alias, primaryKey, otherKeys, dataFields, children)
+    ManyToOneEntity(alias, primaryKey, otherKeys, dataFields, children, None)
   }
 }
 class SameIdEntityTest extends AbstractEntityTest[SameIdEntity] {
   override def entity(alias: Alias, primaryKey: Keys, otherKeys: Keys, dataFields: List[FieldType[_]], children: List[_ <: ChildEntity]): SameIdEntity = {
-    SameIdEntity(alias, primaryKey, dataFields, children)
+    SameIdEntity(alias, primaryKey, dataFields, children, None)
   }
 }
 class OneToZeroOneEntityTest extends AbstractEntityTest[OneToZeroOneEntity] {
   override def entity(alias: Alias, primaryKey: Keys, otherKeys: Keys, dataFields: List[FieldType[_]], children: List[_ <: ChildEntity]): OneToZeroOneEntity = {
-    OneToZeroOneEntity(alias, primaryKey, otherKeys, dataFields, children)
+    OneToZeroOneEntity(alias, primaryKey, otherKeys, dataFields, children, None)
   }
 }

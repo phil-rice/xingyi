@@ -22,11 +22,11 @@ case class Person(name: String, employer: Employer, address: List[Address], phon
 trait OrmFixture extends SharedOrmFixture {
   implicit def fieldToKeys[T](f: FieldType[T]) = Keys(List(f))
 
-  val employer = ManyToOneEntity(employerAlias, int("eid"), int("employerid"), List(string("name")), List())
-  val address = OneToManyEntity(addressAlias, int("aid"), int("personid"), List(string("add")), List())
-  val phone = OneToManyEntity(phoneAlias, int("phid"), int("personid"), List(string("phoneNo")), List())
+  val employer = ManyToOneEntity(employerAlias, int("eid"), int("employerid"), List(string("name")), List(),None)
+  val address = OneToManyEntity(addressAlias, int("aid"), int("personid"), List(string("add")), List(),None)
+  val phone = OneToManyEntity(phoneAlias, int("phid"), int("personid"), List(string("phoneNo")), List(),None)
   //each person has a contact email, and the id of the email is the same as the person
-  val email = SameIdEntity(emailAlias, int("eid"), List(string("email")), List())
+  val email = SameIdEntity(emailAlias, int("eid"), List(string("email")), List(),None)
   val main = MainEntity(personAlias, int("pid"), List(string("name")), List(employer, address, phone, email))
 
 
