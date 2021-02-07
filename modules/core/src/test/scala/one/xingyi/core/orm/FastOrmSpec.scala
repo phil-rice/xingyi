@@ -22,11 +22,11 @@ case class Person(name: String, employer: Employer, address: List[Address], phon
 trait OrmFixture extends SharedOrmFixture {
   implicit def fieldToKeys[T](f: FieldType[T]) = Keys(List(f))
 
-  val employer = ManyToOneEntity(employerAlias, int("eid"), int("employerid"), List(string("name")), List(),None)
-  val address = OneToManyEntity(addressAlias, int("aid"), int("personid"), List(string("add")), List(),None)
-  val phone = OneToManyEntity(phoneAlias, int("phid"), int("personid"), List(string("phoneNo")), List(),None)
+  val employer = ManyToOneEntity(employerAlias, int("eid"), int("employerid"), List(string("name")), List(), None)
+  val address = OneToManyEntity(addressAlias, int("aid"), int("personid"), List(string("add")), List(), None)
+  val phone = OneToManyEntity(phoneAlias, int("phid"), int("personid"), List(string("phoneNo")), List(), None)
   //each person has a contact email, and the id of the email is the same as the person
-  val email = SameIdEntity(emailAlias, int("eid"), List(string("email")), List(),None)
+  val email = SameIdEntity(emailAlias, int("eid"), List(string("email")), List(), None)
   val main = MainEntity(personAlias, int("pid"), List(string("name")), List(employer, address, phone, email))
 
 
@@ -126,12 +126,22 @@ abstract class AbstractFastOrmWithSingleLinkingKeysSpec[M[_] : ClosableM, J: Jso
   it should "make createTempTables sql" in {
     val where = WhereForTableForTest("someWhere")
     checkStrategy("createTempTables", OrmStrategies.createTempTables(BatchDetails(1000, 3, where)).walk(main), List(
-      main -> "create temporary table temp_Person as select P.name, P.employerid, P.pid from Person P where someWhere order by P.pid limit 1000 offset 3000",
+      main -> "create temporary table temp_Person as select P.name, P.employerid, P.pid from Person P where P/someWhere order by P.pid limit 1000 offset 3000",
       employer -> "create temporary table temp_Employer as select E.name, E.eid from temp_Person P,Employer E where P.employerid = E.eid order by P.pid ",
       address -> "create temporary table temp_Address as select A.add, A.aid, A.personid from temp_Person P,Address A where P.pid = A.personid order by A.personid,A.aid ",
       phone -> "create temporary table temp_Phone as select Ph.phoneNo, Ph.phid, Ph.personid from temp_Person P,Phone Ph where P.pid = Ph.personid order by Ph.personid,Ph.phid ",
       email -> "create temporary table temp_ContactEmail as select DISTINCT  CE.email, CE.eid from temp_Person P,ContactEmail CE where P.pid = CE.eid order by CE.eid "
     ))
+  }
+  it should "make createTempTables sql if a where clause is specified for the child entities" in {
+    val fastOrmSql = implicitly[FastOrmSql]
+    val where = WhereForChildTableForTest("someWhere")
+    fastOrmSql.createManyToOneTempTable(employer.copy(where = Some(where)))(main) shouldBe "create temporary table temp_Employer as select E.name, E.eid from temp_Person P,Employer E where P.employerid = E.eid and P/E/someWhere order by P.pid "
+    fastOrmSql.createOneToManyTempTable(address.copy(where = Some(where)))(main) shouldBe "create temporary table temp_Address as select A.add, A.aid, A.personid from temp_Person P,Address A where P.pid = A.personid and P/A/someWhere order by A.personid,A.aid "
+    fastOrmSql.createSameIdTempTable(email.copy(where = Some(where)))(main) shouldBe "create temporary table temp_ContactEmail as select DISTINCT  CE.email, CE.eid from temp_Person P,ContactEmail CE where P.pid = CE.eid and P/CE/someWhere order by CE.eid "
+
+    val zeroOne = OneToZeroOneEntity(phoneAlias, int("phid"), int("personid"), List(string("phoneNo")), List(), None)
+    fastOrmSql.createOneToZeroOneEntityTempTable(zeroOne.copy(where = Some(where)))(main) shouldBe "create temporary table temp_Phone as select DISTINCT  Ph.phoneNo, Ph.phid from temp_Person P,Phone Ph where P.personid = Ph.phid and P/Ph/someWhere order by P.pid "
   }
 
   it should "have a pretty print" in {

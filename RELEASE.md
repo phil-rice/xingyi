@@ -32,5 +32,9 @@
 1.2.5 ORM json now doesn't display 'nulls'
 1.2.6 Fixed bug with commas in orm json
 1.2.7 Adding the 'throttling' package for throttling streams
-
+1.2.8 Experimented with changing from streams to lazylists (and rolled back in next release)
+1.2.9 Added where clauses to ORM child entities to support things like "and language='en'" in queries 
+1.2.10 Simplified WhereForChildTable
+1.2.11 Cleaned up the throttling, and added throttling for kleislis
+1.2.12 SingletonMap and PrintWriterMap
 

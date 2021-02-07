@@ -31,6 +31,7 @@ class AsyncForScalaFuture(implicit ex: ExecutionContextWithLocal) extends Async[
   override def respond[T](m: Future[T], fn: Try[T] => Unit): Future[T] = m.transform(wrap(fn))
   override def liftM[T](t: T): Future[T] = Future.successful(t)
   override def await[T](m: Future[T]): T = Await.result(m, 5 seconds)
+  override def await[T](m: Future[T], duration: Duration): T = Await.result(m, duration)
 
   override def exception[T](t: Throwable) = Future.failed(t)
   override def map[T, T1](m: Future[T], fn: T => T1): Future[T1] = m.map(fn)
@@ -43,7 +44,6 @@ class AsyncForScalaFuture(implicit ex: ExecutionContextWithLocal) extends Async[
     case Success(t) => fn(Right(t))
     case Failure(t) => fn(Left(t))
   }
-
 }
 
 class HadUnexpectedFailException(f: Any) extends Exception(f.toString)
@@ -61,7 +61,8 @@ class AsyncForScalaFutureEither[Fail] {
         case Failure(t) => fn(Failure(t)); exception(t)
       }
     }
-    override def await[T](m: FutureEither[T]): T = Await.result(m, Duration(5, TimeUnit.SECONDS)).fold(f => throw new HadUnexpectedFailException(f), Functions.identity)
+    override def await[T](m: FutureEither[T], duration: Duration): T = Await.result(m, duration).fold(f => throw new HadUnexpectedFailException(f), Functions.identity)
+    override def await[T](m: FutureEither[T]): T = await(m, Duration(5, TimeUnit.SECONDS))
     override def delay[T](duration: Duration)(block: => FutureEither[T]): FutureEither[T] = DelayedFuture(duration)(block)
     override def flatMap[T, T1](m: FutureEither[T], fn: T => FutureEither[T1]): FutureEither[T1] = {
       m.flatMap {

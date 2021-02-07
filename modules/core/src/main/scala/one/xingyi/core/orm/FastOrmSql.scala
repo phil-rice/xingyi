@@ -43,32 +43,33 @@ trait FastOrmSql {
       s"order by ${selectKey(e.alias, e.primaryKeyField)} " +
       s"limit ${batchDetails.batchSize} offset ${batchDetails.offset}"
 
+  def addWhere(parent: OrmEntity, e: ChildEntity) = e.where.flatMap(w => w.where(parent.alias, e.alias)).map(w => s"and $w ").getOrElse("")
   def createOneToManyTempTable(e: OneToManyEntity)(parent: OrmEntity): String =
     s"create temporary table ${tempTableName(e)} as " +
       s"select ${selectFields(e)} " +
       s"from ${tempAlias(parent)},${tableAlias(e)} " +
-      s"where ${whereKey(parent.alias, parent.primaryKeyField, e.alias, e.parentId)} " +
+      s"where ${whereKey(parent.alias, parent.primaryKeyField, e.alias, e.parentId)} " + addWhere(parent, e) +
       s"order by ${selectKey(e.alias, e.parentId)},${selectKey(e.alias, e.primaryKeyField)} "
 
   def createManyToOneTempTable(e: ManyToOneEntity)(parent: OrmEntity): String =
     s"create temporary table temp_${e.alias.table.name} as " +
       s"select ${selectFields(e)} " +
       s"from ${tempAlias(parent)},${tableAlias(e)} " +
-      s"where ${whereKey(parent.alias, e.idInParent, e.alias, e.primaryKeyField)} " +
+      s"where ${whereKey(parent.alias, e.idInParent, e.alias, e.primaryKeyField)} " + addWhere(parent, e) +
       s"order by ${selectKey(parent.alias, parent.primaryKeyField)} "
 
   def createOneToZeroOneEntityTempTable(e: OneToZeroOneEntity)(parent: OrmEntity): String =
     s"create temporary table temp_${e.alias.table.name} as " +
       s"select DISTINCT  ${selectFields(e)} " +
       s"from ${tempAlias(parent)},${tableAlias(e)} " +
-      s"where ${whereKey(parent.alias, e.idInParent, e.alias, e.primaryKeyField)} " +
+      s"where ${whereKey(parent.alias, e.idInParent, e.alias, e.primaryKeyField)} " + addWhere(parent, e) +
       s"order by ${selectKey(parent.alias, parent.primaryKeyField)} "
 
   def createSameIdTempTable(e: SameIdEntity)(parent: OrmEntity): String =
     s"create temporary table temp_${e.alias.table.name} as " +
       s"select DISTINCT  ${selectFields(e)} " +
       s"from ${tempAlias(parent)},${tableAlias(e)} " +
-      s"where ${whereKey(parent.alias, parent.primaryKeyField, e.alias, e.primaryKeyField)} " +
+      s"where ${whereKey(parent.alias, parent.primaryKeyField, e.alias, e.primaryKeyField)} " + addWhere(parent, e) +
       s"order by ${selectKey(e.alias, e.primaryKeyField)} "
 
 
