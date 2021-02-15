@@ -13,6 +13,7 @@ object FromJson {
 }
 
 trait JsonParser[J] extends (String => J) {
+  def isDefined(j: J): Boolean
   def extractInt(j: J): Int
   def extractDouble(j: J): Double
   def extractBoolean(j: J): Boolean
@@ -23,10 +24,12 @@ trait JsonParser[J] extends (String => J) {
   def \(j: J, s: String): J
 }
 
-trait  FromJsonLib[J, T] extends (J => T)
+trait FromJsonLib[J, T] extends (J => T)
 
 object FromJsonLib {
-  implicit def fromString[J](implicit jsonParser: JsonParser[J]): FromJsonLib[J, String] = jsonParser.extractString(_)
+  implicit def fromJsonLibForString[J](implicit jsonParser: JsonParser[J]): FromJsonLib[J, String] = jsonParser.extractString(_)
+  implicit def fromJsonLibForInt[J](implicit jsonParser: JsonParser[J]): FromJsonLib[J, Int] = jsonParser.extractInt(_)
+  implicit def fromJsonLibForDouble[J](implicit jsonParser: JsonParser[J]): FromJsonLib[J, Double] = jsonParser.extractDouble(_)
   import JsonParserLanguage._
 
   implicit def fromJsonLibForMap[J](implicit parser: JsonParser[J]): FromJsonLib[J, Map[String, String]] = _.asObject match {
@@ -44,6 +47,9 @@ object FromJsonLib {
     QueryResults(names, values)
   }
 
+  implicit def fromJsonLibForOption[J, T](implicit jsonParser: JsonParser[J], fromJsonLib: FromJsonLib[J, T]): FromJsonLib[J, Option[T]] =
+    j => if (jsonParser.isDefined(j)) Some(j.as[T]) else None
+
 }
 object JsonParserLanguage extends JsonParserLanguage
 trait JsonParserLanguage {
@@ -60,6 +66,7 @@ trait JsonParserLanguage {
     def asListP[Shared, Domain](implicit projection: Projection[Shared, Domain]): List[Domain] = map[Domain](projection.fromJson)
     def as[T1](implicit fromJson: FromJsonLib[J, T1]): T1 = fromJson(j)
     def \(s: String): J = jsonParser.\(j, s)
+    def isJsonDefined: Boolean= jsonParser.isDefined(j)
   }
 
 }

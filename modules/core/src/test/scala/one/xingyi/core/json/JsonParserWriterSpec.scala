@@ -7,13 +7,17 @@ import one.xingyi.core.parserAndWriter.Parser
 import scala.reflect.ClassTag
 
 case class ThingForJsonTests(a: Int, b: String, children: Seq[ChildForJsonTests])
+
 case class ChildForJsonTests(c: Double, d: Boolean)
 
 abstract class JsonParserWriterSpec[J: ClassTag](implicit val jsonParser: JsonParser[J], jsonWriter: JsonWriter[J]) extends UtilsSpec with JsonParserLanguage with JsonWriterLanguage {
 
   def intAsJ(i: Int): J = jsonWriter.toJ(JsonInt(i))
+
   def stringAsJ(s: String): J = jsonWriter.toJ(JsonString(s))
+
   def doubleAsJ(d: Double): J = jsonWriter.toJ(JsonDouble(d))
+
   def listAsJ(list: List[Int]): J = jsonWriter.toJ(JsonList(list.map(JsonInt.apply)))
 
   // has {main: {a:1, b:2}, secondary: {c:3,d:4}}
@@ -21,20 +25,40 @@ abstract class JsonParserWriterSpec[J: ClassTag](implicit val jsonParser: JsonPa
 
   behavior of "JsonParser for " + implicitly[ClassTag[J]].runtimeClass.getName
 
+  it should "have a 'isdefined'" in {
+    jsonParser.isDefined(mainA1B2SecondaryC3D4) shouldBe true
+    jsonParser.isDefined(mainA1B2SecondaryC3D4 \ "main" \ "a") shouldBe true
+    jsonParser.isDefined(mainA1B2SecondaryC3D4 \ "main" \ "b") shouldBe true
+    jsonParser.isDefined(mainA1B2SecondaryC3D4 \ "main" \ "b" \ "c" \ "d" \ "e" \ "etc") shouldBe false
+
+  }
+  it should "have a '.isJsonDefined'" in {
+    new JsonParserOps(mainA1B2SecondaryC3D4).isJsonDefined shouldBe true
+    (mainA1B2SecondaryC3D4 \ "main" \ "a").isJsonDefined shouldBe true
+    (mainA1B2SecondaryC3D4 \ "main" \ "b").isJsonDefined shouldBe true
+    (mainA1B2SecondaryC3D4 \ "main" \ "c").isJsonDefined shouldBe false
+    (mainA1B2SecondaryC3D4 \ "main" \ "b" \ "c" \ "d" \ "e" \ "etc").isJsonDefined shouldBe false
+  }
+
   it should "extract ints" in {
     jsonParser.extractInt(intAsJ(1)) shouldBe 1
     jsonParser.extractInt(intAsJ(12)) shouldBe 12
     jsonParser.extractInt(intAsJ(-1)) shouldBe -1
+    (mainA1B2SecondaryC3D4 \ "main" \ "a").as[Int] shouldBe 1
   }
 
   it should "extract strings" in {
     jsonParser.extractString(stringAsJ("abc")) shouldBe "abc"
     jsonParser.extractString(stringAsJ("")) shouldBe ""
+    (mainA1B2SecondaryC3D4 \ "main" \ "b").as[String] shouldBe "2"
   }
 
   it should "extract options of strings " in {
     jsonParser.extractOptString(stringAsJ("abc")) shouldBe Some("abc")
     jsonParser.extractOptString(mainA1B2SecondaryC3D4 \ "a") shouldBe None
+    (mainA1B2SecondaryC3D4 \ "main" \ "a").as[Option[String]] shouldBe Some("1")
+    (mainA1B2SecondaryC3D4 \ "main" \ "b").as[Option[String]] shouldBe Some("2")
+
   }
 
   it should "change a J into a list of J if possible" in {
@@ -82,6 +106,7 @@ abstract class JsonParserWriterSpec[J: ClassTag](implicit val jsonParser: JsonPa
     JsonObject("a" -> 1, "b" -> 2, "c" -> 3).toString shouldBe """JsonObject((a,JsonInt(1)),(b,JsonInt(2)),(c,JsonInt(3)))"""
 
   }
+
   behavior of "Parser"
 
   it should "turns a String into a T as long as the jsonparser exists" in {
@@ -93,14 +118,18 @@ abstract class JsonParserWriterSpec[J: ClassTag](implicit val jsonParser: JsonPa
     Parser.default[J, SimpleForTest].apply("""{"a":1}""") shouldBe SimpleForTest(1)
   }
 
+
   it should "support a map method for lists" in {
     val j: J = jsonWriter.toJ(JsonList(List(1, 2, 3)))
     new JsonParserOps(j).map(json => jsonParser.extractInt(json).toString) shouldBe List("1", "2", "3")
   }
 
   implicit def toJsonLibForChild: ToJsonLib[ChildForJsonTests] = t => JsonObject("c" -> t.c, "d" -> t.d)
+
   implicit def toJsonLibForThing: ToJsonLib[ThingForJsonTests] = t => JsonObject("a" -> t.a, "b" -> t.b, "children" -> toListT(t.children))
+
   implicit def fromJsonForChild: FromJsonLib[J, ChildForJsonTests] = json => ChildForJsonTests(json \ "c", json \ "d")
+
   implicit def fromJsonForThing: FromJsonLib[J, ThingForJsonTests] = json => ThingForJsonTests(json \ "a", json \ "b", (json \ "children").asList[ChildForJsonTests])
 
   behavior of "round trip objects"

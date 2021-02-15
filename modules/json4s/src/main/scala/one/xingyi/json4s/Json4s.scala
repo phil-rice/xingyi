@@ -4,7 +4,7 @@ package one.xingyi.json4s
 import one.xingyi.core.json._
 import org.json4s.JsonAST.{JArray, JObject}
 import org.json4s.native.JsonMethods
-import org.json4s.{DefaultFormats, JValue}
+import org.json4s.{DefaultFormats, JNothing, JValue}
 
 import scala.language.implicitConversions
 import one.xingyi.core.language.FunctionLanguage._
@@ -28,6 +28,7 @@ trait Json4sParser {
       case JObject(values) => values.toMap
       case _ => throw new FromJson4sException(s"Cannot extract as object, J is $j", null)
     }
+    override def isDefined(j: JValue): Boolean = j != JNothing
   }
 
 }

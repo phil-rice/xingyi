@@ -51,7 +51,7 @@ trait ValueFromMultipleAliasFields[Schema[_], T] {
 }
 object ValueFromMultipleAliasFields {
   //This is deliberately not implicit because it is complicated to override: often getting ambiguous implicit messages.
-     def valueFromMultipleTableFieldsFor[Schema[_], T](implicit parser: Parser[T]): ValueFromMultipleAliasFields[Schema, T] = new ValueFromMultipleAliasFields[Schema, T] {
+  def valueFromMultipleTableFieldsFor[Schema[_], T](implicit parser: Parser[T]): ValueFromMultipleAliasFields[Schema, T] = new ValueFromMultipleAliasFields[Schema, T] {
     override def apply[Context: LinkPrefixFrom](context: Context, schema: Schema[T], fieldTypeToIndex: FieldTypeToIndex, fieldTypes: List[FieldType[_]]): List[Any] => T = {
       require(fieldTypes.size == 1);
       { row =>
